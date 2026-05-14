@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useEffect, useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -324,14 +324,14 @@ export default function StatsPage() {
                       const status = box.estado || box.status || 'PENDING';
                       const pos = box.row && box.column
                         ? `${box.row}${box.column} L${box.level}`
-                        : box.position || 'â€”';
+                        : box.position || '—';
                       return (
                         <tr key={box.box_id || i} className="border-b border-gray-50 hover:bg-gray-50">
                           <td className="px-6 py-3 font-medium text-gray-900">{pos}</td>
                           <td className="px-6 py-3 text-gray-500">
                             <div className="flex items-center gap-1.5">
                               <div className={`w-2 h-2 rounded-full ${JOB_COLORS[box.job_type] || 'bg-gray-400'}`} />
-                              {box.job_type || 'â€”'}
+                              {box.job_type || '—'}
                             </div>
                           </td>
                           <td className="px-6 py-3 text-gray-500">
@@ -339,7 +339,7 @@ export default function StatsPage() {
                               <Building2 className="w-3.5 h-3.5" /> WH{box.warehouse_id}
                             </div>
                           </td>
-                          <td className="px-6 py-3 text-gray-500">{box.packer || 'â€”'}</td>
+                          <td className="px-6 py-3 text-gray-500">{box.packer || '—'}</td>
                           <td className="px-6 py-3">
                             <span className={`text-xs font-medium px-2.5 py-1 rounded-full ${STATUS_TEXT[status] || 'bg-gray-100 text-gray-600'}`}>
                               {status}

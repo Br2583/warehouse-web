@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -366,7 +366,7 @@ export default function ProductionPage() {
                                 {box.client_name} · {box.position}
                               </span>
                               <span className={`text-xs w-5 h-5 flex items-center justify-center rounded-full ${selected ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-400'}`}>
-                                {selected ? 'âœ“' : '+'}
+                                {selected ? '✓' : '+'}
                               </span>
                             </button>
                           );
