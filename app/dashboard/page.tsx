@@ -91,7 +91,7 @@ export default function DashboardPage() {
         <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="mb-8">
           <p className="text-gray-400 text-sm">{greeting()},</p>
           <h1 className="text-2xl font-bold text-gray-900 mt-0.5">
-            {user?.name?.split(' ')[0] || 'User'} ðŸ‘‹
+            {user?.name?.split(‘ ‘)[0] || ‘User’} 👋
           </h1>
           <p className="text-gray-500 text-sm mt-1">{user?.company_name}</p>
         </motion.div>
@@ -108,7 +108,7 @@ export default function DashboardPage() {
                       <Icon className="w-5 h-5 text-white" />
                     </div>
                     <p className="text-3xl font-bold text-gray-900">
-                      {loading ? 'â€”' : card.value}
+                      {loading ? '—' : card.value}
                     </p>
                     <p className="text-sm text-gray-500 mt-1">{card.label}</p>
                   </div>

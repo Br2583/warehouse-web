@@ -54,7 +54,7 @@ export default function WarehousesPage() {
                       <span className="text-sm text-gray-400">volts stored</span>
                     </div>
                     <div className="mt-4 pt-4 border-t border-gray-50">
-                      <span className="text-xs text-blue-600 font-medium">View inventory â†’</span>
+                      <span className="text-xs text-blue-600 font-medium">View inventory →</span>
                     </div>
                   </div>
                 </Link>
