@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Package, Plus, Search, Trash2, X, Camera, LayoutGrid, List } from 'lucide-react';
+import { Package, Plus, Search, Trash2, X, Camera, LayoutGrid, List, Pencil } from 'lucide-react';
 import Sidebar from '@/components/Sidebar';
 import { api } from '@/lib/api';
 import { useParams } from 'next/navigation';
@@ -57,7 +57,16 @@ const emptyForm = {
   packer: '',
   status: 'PENDING',
   comments: '',
+  photos: [] as string[],
 };
+
+const toBase64 = (file: File): Promise<string> =>
+  new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
 
 export default function WarehouseDetailPage() {
   const { id } = useParams();
@@ -73,6 +82,10 @@ export default function WarehouseDetailPage() {
   const [apiError, setApiError] = useState('');
   const [viewMode, setViewMode] = useState<'map' | 'list'>('map');
   const [mapLevel, setMapLevel] = useState<1 | 2>(1);
+  const [showEdit, setShowEdit] = useState(false);
+  const [editForm, setEditForm] = useState<any>(null);
+  const [editSaving, setEditSaving] = useState(false);
+  const [editError, setEditError] = useState('');
 
   const fetchBoxes = () => {
     setApiError('');
@@ -95,6 +108,55 @@ export default function WarehouseDetailPage() {
     b.packer?.toLowerCase().includes(search.toLowerCase())
   );
 
+  const openEdit = (box: Box) => {
+    setEditForm({
+      client_name: box.client_name || '',
+      job_type: box.job_type || 'Moving',
+      contents_type: box.content_type || 'Boxes',
+      room_location: box.room_location || [],
+      vault_status: box.vault_status || [],
+      packer: box.packer || '',
+      status: box.estado || box.status || 'PENDING',
+      comments: box.comments || '',
+      photos: box.photos || [],
+    });
+    setEditError('');
+    setShowEdit(true);
+  };
+
+  const handleEditPhotos = async (files: FileList | null) => {
+    if (!files) return;
+    const converted = await Promise.all(Array.from(files).slice(0, 6).map(f => toBase64(f)));
+    setEditForm((f: any) => ({ ...f, photos: [...f.photos, ...converted].slice(0, 6) }));
+  };
+
+  const saveEdit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selected || !editForm.client_name.trim()) { setEditError('Client name is required'); return; }
+    setEditSaving(true);
+    setEditError('');
+    try {
+      await api.put(`/api/boxes/${selected.box_id}`, {
+        client_name:  editForm.client_name.trim(),
+        job_type:     editForm.job_type,
+        content_type: editForm.contents_type,
+        room_location: editForm.room_location,
+        vault_status: editForm.vault_status,
+        packer:       editForm.packer,
+        estado:       editForm.status,
+        comments:     editForm.comments,
+        photos:       editForm.photos,
+      });
+      setShowEdit(false);
+      setSelected(null);
+      fetchBoxes();
+    } catch (err: any) {
+      setEditError(err?.message || 'Failed to save');
+    } finally {
+      setEditSaving(false);
+    }
+  };
+
   const deleteBox = async (boxId: string) => {
     if (!confirm('Delete this volt?')) return;
     await api.delete(`/api/boxes/${boxId}`);
@@ -104,6 +166,17 @@ export default function WarehouseDetailPage() {
 
   const toggleMulti = (arr: string[], val: string) =>
     arr.includes(val) ? arr.filter(x => x !== val) : [...arr, val];
+
+  const handlePhotoFiles = async (files: FileList | null) => {
+    if (!files) return;
+    const converted = await Promise.all(
+      Array.from(files).slice(0, 6).map(f => toBase64(f))
+    );
+    setForm(f => ({ ...f, photos: [...f.photos, ...converted].slice(0, 6) }));
+  };
+
+  const removePhoto = (idx: number) =>
+    setForm(f => ({ ...f, photos: f.photos.filter((_, i) => i !== idx) }));
 
   const addVolt = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -126,6 +199,7 @@ export default function WarehouseDetailPage() {
         packer: form.packer,
         estado: form.status,
         comments: form.comments,
+        photos: form.photos,
       });
       setShowAdd(false);
       setForm(emptyForm);
@@ -373,12 +447,167 @@ export default function WarehouseDetailPage() {
                 )}
                 <div className="flex gap-3 mt-6">
                   <button
+                    onClick={() => openEdit(selected)}
+                    className="flex items-center gap-2 px-4 py-2 text-sm text-blue-600 hover:bg-blue-50 rounded-xl transition-colors font-medium"
+                  >
+                    <Pencil className="w-4 h-4" /> Edit
+                  </button>
+                  <button
                     onClick={() => deleteBox(selected.box_id)}
                     className="flex items-center gap-2 px-4 py-2 text-sm text-red-600 hover:bg-red-50 rounded-xl transition-colors"
                   >
                     <Trash2 className="w-4 h-4" /> Delete
                   </button>
                 </div>
+              </motion.div>
+            </div>
+          )}
+        </AnimatePresence>
+
+        {/* Edit Volt Modal */}
+        <AnimatePresence>
+          {showEdit && editForm && selected && (
+            <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50 p-4" onClick={() => setShowEdit(false)}>
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.95 }}
+                className="bg-white rounded-2xl p-6 w-full max-w-lg shadow-xl max-h-[90vh] overflow-y-auto"
+                onClick={e => e.stopPropagation()}
+              >
+                <div className="flex items-center justify-between mb-5">
+                  <h2 className="text-lg font-bold text-gray-900">Edit Volt</h2>
+                  <button onClick={() => setShowEdit(false)} className="text-gray-400 hover:text-gray-600">
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+
+                <div className="bg-gray-50 rounded-xl p-3 text-sm text-gray-500 mb-4">
+                  WH{warehouseId} · Row {selected.row} · Col {selected.column} · {selected.level === 1 ? 'Lower (L1)' : 'Upper (L2)'}
+                </div>
+
+                <form onSubmit={saveEdit} className="space-y-4">
+                  <div>
+                    <label className="block text-xs text-gray-500 mb-1">Client Name <span className="text-red-500">*</span></label>
+                    <input type="text" value={editForm.client_name}
+                      onChange={e => setEditForm((f: any) => ({ ...f, client_name: e.target.value }))}
+                      className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs text-gray-500 mb-2">Job Type</label>
+                    <div className="flex flex-wrap gap-2">
+                      {JOB_TYPES.map(t => (
+                        <button type="button" key={t}
+                          onClick={() => setEditForm((f: any) => ({ ...f, job_type: t }))}
+                          className={`px-3 py-1.5 text-sm rounded-lg border transition-colors ${editForm.job_type === t ? 'bg-blue-600 text-white border-blue-600' : 'border-gray-200 text-gray-600 hover:border-blue-300'}`}>
+                          {t}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs text-gray-500 mb-2">Contents Type</label>
+                    <div className="flex flex-wrap gap-2">
+                      {CONTENTS_TYPES.map(t => (
+                        <button type="button" key={t}
+                          onClick={() => setEditForm((f: any) => ({ ...f, contents_type: t }))}
+                          className={`px-3 py-1.5 text-sm rounded-lg border transition-colors ${editForm.contents_type === t ? 'bg-blue-600 text-white border-blue-600' : 'border-gray-200 text-gray-600 hover:border-blue-300'}`}>
+                          {t}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs text-gray-500 mb-2">Room Location</label>
+                    <div className="flex flex-wrap gap-2">
+                      {ROOM_LOCATIONS.map(r => (
+                        <button type="button" key={r}
+                          onClick={() => setEditForm((f: any) => ({ ...f, room_location: toggleMulti(f.room_location, r) }))}
+                          className={`px-3 py-1.5 text-sm rounded-lg border transition-colors ${editForm.room_location.includes(r) ? 'bg-blue-600 text-white border-blue-600' : 'border-gray-200 text-gray-600 hover:border-blue-300'}`}>
+                          {r}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs text-gray-500 mb-2">Vault Status</label>
+                    <div className="flex flex-wrap gap-2">
+                      {VAULT_STATUSES.map(s => (
+                        <button type="button" key={s}
+                          onClick={() => setEditForm((f: any) => ({ ...f, vault_status: toggleMulti(f.vault_status, s) }))}
+                          className={`px-3 py-1.5 text-sm rounded-lg border transition-colors ${editForm.vault_status.includes(s) ? 'bg-blue-600 text-white border-blue-600' : 'border-gray-200 text-gray-600 hover:border-blue-300'}`}>
+                          {s}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs text-gray-500 mb-1">Packer</label>
+                    <input type="text" value={editForm.packer}
+                      onChange={e => setEditForm((f: any) => ({ ...f, packer: e.target.value }))}
+                      className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs text-gray-500 mb-2">Status</label>
+                    <div className="flex gap-2">
+                      {['PENDING', 'READY', 'DELIVERED'].map(s => (
+                        <button type="button" key={s}
+                          onClick={() => setEditForm((f: any) => ({ ...f, status: s }))}
+                          className={`px-3 py-1.5 text-sm rounded-lg border transition-colors ${editForm.status === s ? 'bg-blue-600 text-white border-blue-600' : 'border-gray-200 text-gray-600 hover:border-blue-300'}`}>
+                          {s}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs text-gray-500 mb-1">Comments</label>
+                    <textarea value={editForm.comments}
+                      onChange={e => setEditForm((f: any) => ({ ...f, comments: e.target.value }))}
+                      rows={3}
+                      className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none" />
+                  </div>
+
+                  {/* Photos */}
+                  <div>
+                    <label className="block text-xs text-gray-500 mb-2">Photos</label>
+                    {editForm.photos.length > 0 && (
+                      <div className="grid grid-cols-3 gap-2 mb-2">
+                        {editForm.photos.map((src: string, idx: number) => (
+                          <div key={idx} className="relative group">
+                            <img src={src} alt="" className="w-full h-20 object-cover rounded-xl" />
+                            <button type="button"
+                              onClick={() => setEditForm((f: any) => ({ ...f, photos: f.photos.filter((_: any, i: number) => i !== idx) }))}
+                              className="absolute top-1 right-1 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                              <X className="w-3 h-3" />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    {editForm.photos.length < 6 && (
+                      <label className="flex items-center justify-center gap-2 w-full h-16 border-2 border-dashed border-gray-200 rounded-xl cursor-pointer hover:border-blue-400 hover:bg-blue-50 transition-colors">
+                        <Camera className="w-4 h-4 text-gray-300" />
+                        <span className="text-xs text-gray-400">Add more photos</span>
+                        <input type="file" accept="image/*" multiple className="hidden"
+                          onChange={e => handleEditPhotos(e.target.files)} />
+                      </label>
+                    )}
+                  </div>
+
+                  {editError && <p className="text-sm text-red-500">{editError}</p>}
+
+                  <button type="submit" disabled={editSaving}
+                    className="w-full py-3 bg-blue-600 text-white text-sm font-medium rounded-xl hover:bg-blue-700 transition-colors disabled:opacity-50">
+                    {editSaving ? 'Saving...' : 'Save Changes'}
+                  </button>
+                </form>
               </motion.div>
             </div>
           )}
@@ -517,6 +746,38 @@ export default function WarehouseDetailPage() {
                       onChange={e => setForm(f => ({ ...f, comments: e.target.value }))}
                       rows={3}
                       className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none" />
+                  </div>
+
+                  {/* Photos */}
+                  <div>
+                    <label className="block text-xs text-gray-500 mb-2">Photos (max 6)</label>
+                    <label className="flex flex-col items-center justify-center w-full h-24 border-2 border-dashed border-gray-200 rounded-xl cursor-pointer hover:border-blue-400 hover:bg-blue-50 transition-colors">
+                      <Camera className="w-6 h-6 text-gray-300 mb-1" />
+                      <span className="text-xs text-gray-400">Click to add photos</span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        multiple
+                        className="hidden"
+                        onChange={e => handlePhotoFiles(e.target.files)}
+                      />
+                    </label>
+                    {form.photos.length > 0 && (
+                      <div className="grid grid-cols-3 gap-2 mt-2">
+                        {form.photos.map((src, idx) => (
+                          <div key={idx} className="relative group">
+                            <img src={src} alt="" className="w-full h-20 object-cover rounded-xl" />
+                            <button
+                              type="button"
+                              onClick={() => removePhoto(idx)}
+                              className="absolute top-1 right-1 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                            >
+                              <X className="w-3 h-3" />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
 
                   {saveError && <p className="text-sm text-red-500">{saveError}</p>}
