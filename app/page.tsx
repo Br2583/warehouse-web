@@ -185,6 +185,8 @@ export default function Home() {
                   background: 'rgba(255,255,255,0.05)',
                   border: error ? '1px solid rgba(239,68,68,0.5)' : '1px solid rgba(255,255,255,0.1)',
                   caretColor: 'white',
+                  color: 'white',
+                  backgroundColor: 'rgba(255,255,255,0.05)',
                 }}
                 autoFocus
                 inputMode="numeric"
