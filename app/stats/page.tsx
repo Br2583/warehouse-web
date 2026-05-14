@@ -101,7 +101,7 @@ export default function StatsPage() {
   return (
     <div className="flex min-h-screen bg-gray-50">
       <Sidebar />
-      <main className="ml-64 flex-1 p-8">
+      <main className="md:ml-64 flex-1 p-4 md:p-8 pb-20 md:pb-8">
         <div className="mb-8">
           <h1 className="text-2xl font-bold text-gray-900">Statistics</h1>
           <p className="text-gray-500 text-sm mt-1">Inventory analytics & client comparison</p>
@@ -176,7 +176,7 @@ export default function StatsPage() {
               <div className="flex items-center justify-between mb-5">
                 <div>
                   <h2 className="font-semibold text-gray-900">Clients</h2>
-                  <p className="text-xs text-gray-400 mt-0.5">{clientList.length} clients · {boxes.length} total volts</p>
+                  <p className="text-xs text-gray-400 mt-0.5">{clientList.length} clients Â· {boxes.length} total volts</p>
                 </div>
                 <div className="flex items-center gap-3">
                   {/* Sort */}
@@ -187,7 +187,7 @@ export default function StatsPage() {
                     </button>
                     <button onClick={() => setSortBy('name')}
                       className={`px-3 py-1.5 font-medium transition-colors ${sortBy === 'name' ? 'bg-blue-600 text-white' : 'text-gray-500'}`}>
-                      A–Z
+                      Aâ€“Z
                     </button>
                   </div>
                   {/* Search */}
@@ -324,14 +324,14 @@ export default function StatsPage() {
                       const status = box.estado || box.status || 'PENDING';
                       const pos = box.row && box.column
                         ? `${box.row}${box.column} L${box.level}`
-                        : box.position || '—';
+                        : box.position || 'â€”';
                       return (
                         <tr key={box.box_id || i} className="border-b border-gray-50 hover:bg-gray-50">
                           <td className="px-6 py-3 font-medium text-gray-900">{pos}</td>
                           <td className="px-6 py-3 text-gray-500">
                             <div className="flex items-center gap-1.5">
                               <div className={`w-2 h-2 rounded-full ${JOB_COLORS[box.job_type] || 'bg-gray-400'}`} />
-                              {box.job_type || '—'}
+                              {box.job_type || 'â€”'}
                             </div>
                           </td>
                           <td className="px-6 py-3 text-gray-500">
@@ -339,7 +339,7 @@ export default function StatsPage() {
                               <Building2 className="w-3.5 h-3.5" /> WH{box.warehouse_id}
                             </div>
                           </td>
-                          <td className="px-6 py-3 text-gray-500">{box.packer || '—'}</td>
+                          <td className="px-6 py-3 text-gray-500">{box.packer || 'â€”'}</td>
                           <td className="px-6 py-3">
                             <span className={`text-xs font-medium px-2.5 py-1 rounded-full ${STATUS_TEXT[status] || 'bg-gray-100 text-gray-600'}`}>
                               {status}
@@ -358,3 +358,4 @@ export default function StatsPage() {
     </div>
   );
 }
+

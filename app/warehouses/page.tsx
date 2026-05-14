@@ -23,7 +23,7 @@ export default function WarehousesPage() {
   return (
     <div className="flex min-h-screen bg-gray-50">
       <Sidebar />
-      <main className="ml-64 flex-1 p-8">
+      <main className="md:ml-64 flex-1 p-4 md:p-8 pb-20 md:pb-8">
         <div className="mb-8">
           <h1 className="text-2xl font-bold text-gray-900">Warehouses</h1>
           <p className="text-gray-500 text-sm mt-1">Select a warehouse to manage its inventory</p>
@@ -54,7 +54,7 @@ export default function WarehousesPage() {
                       <span className="text-sm text-gray-400">volts stored</span>
                     </div>
                     <div className="mt-4 pt-4 border-t border-gray-50">
-                      <span className="text-xs text-blue-600 font-medium">View inventory →</span>
+                      <span className="text-xs text-blue-600 font-medium">View inventory â†’</span>
                     </div>
                   </div>
                 </Link>
@@ -66,3 +66,4 @@ export default function WarehousesPage() {
     </div>
   );
 }
+

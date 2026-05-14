@@ -89,13 +89,13 @@ export default function SnapshotsPage() {
       const cols = [1,2,3,4,5,6,7,8];
       const formatLevel = (level: number) => {
         const levelName = level === 1 ? 'LOWER' : 'UPPER';
-        let text = `\n=== Level ${level} — ${levelName} ===\n`;
+        let text = `\n=== Level ${level} â€” ${levelName} ===\n`;
         text += `     ` + cols.map(c => `Col${c}`.padEnd(14)).join('') + '\n';
         rows.forEach(row => {
           text += `${row}    `;
           cols.forEach(col => {
             const box = report.boxes.find(b => b.row === row && Number(b.column) === col && Number(b.level) === level);
-            text += box ? `${box.client_name.slice(0,10)}(${(box.estado||box.status||'PND').slice(0,3)})`.padEnd(14) : '—'.padEnd(14);
+            text += box ? `${box.client_name.slice(0,10)}(${(box.estado||box.status||'PND').slice(0,3)})`.padEnd(14) : 'â€”'.padEnd(14);
           });
           text += '\n';
         });
@@ -130,7 +130,7 @@ export default function SnapshotsPage() {
 
   return (
     <>
-      {/* Print styles — only affects @media print */}
+      {/* Print styles â€” only affects @media print */}
       <style>{`
         @media print {
           body * { visibility: hidden; }
@@ -141,12 +141,12 @@ export default function SnapshotsPage() {
 
       <div className="flex min-h-screen bg-gray-50">
         <Sidebar />
-        <main className="ml-64 flex-1 p-8">
+        <main className="md:ml-64 flex-1 p-4 md:p-8 pb-20 md:pb-8">
           {/* Header */}
           <div className="flex items-center justify-between mb-8">
             <div>
               <h1 className="text-2xl font-bold text-gray-900">Snapshots</h1>
-              <p className="text-gray-500 text-sm mt-1">Daily inventory records — click to view & print</p>
+              <p className="text-gray-500 text-sm mt-1">Daily inventory records â€” click to view & print</p>
             </div>
             <div className="flex gap-2">
               {[1, 2, 3].map(id => (
@@ -183,7 +183,7 @@ export default function SnapshotsPage() {
                     </button>
                   </div>
                   <p className="font-semibold text-gray-900">Warehouse {snap.warehouse_id}</p>
-                  <p className="text-sm text-gray-500 mt-0.5">{snap.snapshot_date} · {snap.snapshot_time}</p>
+                  <p className="text-sm text-gray-500 mt-0.5">{snap.snapshot_date} Â· {snap.snapshot_time}</p>
                   <p className="text-2xl font-bold text-gray-900 mt-3">{snap.total_boxes}</p>
                   <p className="text-xs text-gray-400 mb-4">total volts</p>
                   <button
@@ -212,7 +212,7 @@ export default function SnapshotsPage() {
               {/* Modal toolbar (hidden on print) */}
               <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 print:hidden">
                 <h2 className="font-bold text-gray-900">
-                  Warehouse {report.snap.warehouse_id} — {report.snap.snapshot_date} {report.snap.snapshot_time}
+                  Warehouse {report.snap.warehouse_id} â€” {report.snap.snapshot_date} {report.snap.snapshot_time}
                 </h2>
                 <div className="flex items-center gap-3">
                   <button
@@ -240,7 +240,7 @@ export default function SnapshotsPage() {
                   <div className="flex items-center justify-between">
                     <div>
                       <h1 className="text-2xl font-bold text-gray-900">Inventory Report</h1>
-                      <p className="text-gray-500 mt-1">Warehouse {report.snap.warehouse_id} · {report.snap.snapshot_date} at {report.snap.snapshot_time}</p>
+                      <p className="text-gray-500 mt-1">Warehouse {report.snap.warehouse_id} Â· {report.snap.snapshot_date} at {report.snap.snapshot_time}</p>
                     </div>
                     <div className="text-right">
                       <p className="text-sm text-gray-400">Generated</p>
@@ -285,7 +285,7 @@ export default function SnapshotsPage() {
                           return (
                             <div key={level}>
                               <div className="flex items-center gap-3 mb-3">
-                                <h2 className="font-bold text-gray-900 text-base">Level {level} — {levelName}</h2>
+                                <h2 className="font-bold text-gray-900 text-base">Level {level} â€” {levelName}</h2>
                                 <span className="text-xs text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">{levelBoxes.length} volts</span>
                               </div>
 
@@ -321,7 +321,7 @@ export default function SnapshotsPage() {
                                                   </span>
                                                 </div>
                                               ) : (
-                                                <div className="text-gray-200 text-[10px]">—</div>
+                                                <div className="text-gray-200 text-[10px]">â€”</div>
                                               )}
                                             </td>
                                           );
@@ -341,7 +341,7 @@ export default function SnapshotsPage() {
 
                     {/* Print footer */}
                     <div className="mt-8 pt-4 border-t border-gray-100 flex justify-between text-xs text-gray-400">
-                      <span>Warehouse {report.snap.warehouse_id} · Snapshot {report.snap.snapshot_date}</span>
+                      <span>Warehouse {report.snap.warehouse_id} Â· Snapshot {report.snap.snapshot_date}</span>
                       <span>Printed {new Date().toLocaleString()}</span>
                     </div>
                   </>
@@ -369,7 +369,7 @@ export default function SnapshotsPage() {
                 </button>
               </div>
               <p className="text-sm text-gray-500 mb-4">
-                Warehouse {report.snap.warehouse_id} · {report.snap.snapshot_date}
+                Warehouse {report.snap.warehouse_id} Â· {report.snap.snapshot_date}
               </p>
               <input
                 type="email"
@@ -379,7 +379,7 @@ export default function SnapshotsPage() {
                 className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 mb-4"
               />
               {sendResult === 'ok' && (
-                <p className="text-sm text-green-600 font-medium mb-3">✓ Email sent successfully!</p>
+                <p className="text-sm text-green-600 font-medium mb-3">âœ“ Email sent successfully!</p>
               )}
               {sendResult === 'err' && (
                 <p className="text-sm text-red-500 mb-3">Failed to send. Check the Template ID in the code.</p>
@@ -398,3 +398,4 @@ export default function SnapshotsPage() {
     </>
   );
 }
+

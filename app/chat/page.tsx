@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useEffect, useState, useRef } from 'react';
 import { motion } from 'framer-motion';
@@ -58,7 +58,7 @@ export default function ChatPage() {
   return (
     <div className="flex min-h-screen bg-gray-50">
       <Sidebar />
-      <main className="ml-64 flex-1 flex flex-col h-screen">
+      <main className="md:ml-64 flex-1 flex flex-col h-screen">
         <div className="p-8 pb-4 border-b border-gray-100 bg-white">
           <h1 className="text-2xl font-bold text-gray-900">Team Chat</h1>
           <p className="text-gray-500 text-sm mt-1">Internal company communication</p>
@@ -128,3 +128,4 @@ export default function ChatPage() {
     </div>
   );
 }
+

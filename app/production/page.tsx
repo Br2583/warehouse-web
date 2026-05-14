@@ -142,7 +142,7 @@ export default function ProductionPage() {
   return (
     <div className="flex min-h-screen bg-gray-50">
       <Sidebar />
-      <main className="ml-64 flex-1 p-8">
+      <main className="md:ml-64 flex-1 p-4 md:p-8 pb-20 md:pb-8">
         <div className="flex items-center justify-between mb-8">
           <div>
             <h1 className="text-2xl font-bold text-gray-900">Production</h1>
@@ -182,7 +182,7 @@ export default function ProductionPage() {
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="font-semibold text-gray-900 truncate">{order.client_name}</p>
-                    <p className="text-sm text-gray-500">{order.work_type} · {order.date} · {order.volts?.length || order.volt_ids?.length || 0} volts</p>
+                    <p className="text-sm text-gray-500">{order.work_type} Â· {order.date} Â· {order.volts?.length || order.volt_ids?.length || 0} volts</p>
                   </div>
                   <span className={`flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-full ${cfg.color}`}>
                     <Icon className="w-3 h-3" /> {cfg.label}
@@ -363,10 +363,10 @@ export default function ProductionPage() {
                               onClick={() => toggleVolt(box)}
                               className={`w-full flex items-center justify-between px-4 py-2.5 text-sm border-b border-gray-50 last:border-0 transition-colors ${selected ? 'bg-blue-50' : 'hover:bg-gray-50'}`}>
                               <span className={selected ? 'text-blue-700 font-medium' : 'text-gray-700'}>
-                                {box.client_name} · {box.position}
+                                {box.client_name} Â· {box.position}
                               </span>
                               <span className={`text-xs w-5 h-5 flex items-center justify-center rounded-full ${selected ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-400'}`}>
-                                {selected ? '✓' : '+'}
+                                {selected ? 'âœ“' : '+'}
                               </span>
                             </button>
                           );
@@ -401,3 +401,4 @@ export default function ProductionPage() {
     </div>
   );
 }
+

@@ -26,7 +26,7 @@ export default function Sidebar() {
   const pathname = usePathname();
 
   return (
-    <div className="w-64 bg-white border-r border-gray-100 h-screen flex flex-col shadow-sm fixed left-0 top-0 z-40">
+    <div className="hidden md:flex w-64 bg-white border-r border-gray-100 h-screen flex-col shadow-sm fixed left-0 top-0 z-40">
       {/* Logo */}
       <div className="p-6 border-b border-gray-100">
         <div className="flex items-center gap-3">
@@ -50,18 +50,13 @@ export default function Sidebar() {
               <motion.div
                 whileHover={{ x: 2 }}
                 className={`flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer transition-colors ${
-                  active
-                    ? 'bg-blue-50 text-blue-600'
-                    : 'text-gray-500 hover:bg-gray-50 hover:text-gray-700'
+                  active ? 'bg-blue-50 text-blue-600' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-700'
                 }`}
               >
                 <Icon className="w-4 h-4 flex-shrink-0" />
                 <span className="text-sm font-medium">{item.label}</span>
                 {active && (
-                  <motion.div
-                    layoutId="activeIndicator"
-                    className="ml-auto w-1.5 h-1.5 rounded-full bg-blue-600"
-                  />
+                  <motion.div layoutId="activeIndicator" className="ml-auto w-1.5 h-1.5 rounded-full bg-blue-600" />
                 )}
               </motion.div>
             </Link>
