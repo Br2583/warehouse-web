@@ -176,7 +176,7 @@ export default function StatsPage() {
               <div className="flex items-center justify-between mb-5">
                 <div>
                   <h2 className="font-semibold text-gray-900">Clients</h2>
-                  <p className="text-xs text-gray-400 mt-0.5">{clientList.length} clients Â· {boxes.length} total volts</p>
+                  <p className="text-xs text-gray-400 mt-0.5">{clientList.length} clients · {boxes.length} total volts</p>
                 </div>
                 <div className="flex items-center gap-3">
                   {/* Sort */}

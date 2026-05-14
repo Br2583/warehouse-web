@@ -183,7 +183,7 @@ export default function SnapshotsPage() {
                     </button>
                   </div>
                   <p className="font-semibold text-gray-900">Warehouse {snap.warehouse_id}</p>
-                  <p className="text-sm text-gray-500 mt-0.5">{snap.snapshot_date} Â· {snap.snapshot_time}</p>
+                  <p className="text-sm text-gray-500 mt-0.5">{snap.snapshot_date} · {snap.snapshot_time}</p>
                   <p className="text-2xl font-bold text-gray-900 mt-3">{snap.total_boxes}</p>
                   <p className="text-xs text-gray-400 mb-4">total volts</p>
                   <button
@@ -240,7 +240,7 @@ export default function SnapshotsPage() {
                   <div className="flex items-center justify-between">
                     <div>
                       <h1 className="text-2xl font-bold text-gray-900">Inventory Report</h1>
-                      <p className="text-gray-500 mt-1">Warehouse {report.snap.warehouse_id} Â· {report.snap.snapshot_date} at {report.snap.snapshot_time}</p>
+                      <p className="text-gray-500 mt-1">Warehouse {report.snap.warehouse_id} · {report.snap.snapshot_date} at {report.snap.snapshot_time}</p>
                     </div>
                     <div className="text-right">
                       <p className="text-sm text-gray-400">Generated</p>
@@ -341,7 +341,7 @@ export default function SnapshotsPage() {
 
                     {/* Print footer */}
                     <div className="mt-8 pt-4 border-t border-gray-100 flex justify-between text-xs text-gray-400">
-                      <span>Warehouse {report.snap.warehouse_id} Â· Snapshot {report.snap.snapshot_date}</span>
+                      <span>Warehouse {report.snap.warehouse_id} · Snapshot {report.snap.snapshot_date}</span>
                       <span>Printed {new Date().toLocaleString()}</span>
                     </div>
                   </>
@@ -369,7 +369,7 @@ export default function SnapshotsPage() {
                 </button>
               </div>
               <p className="text-sm text-gray-500 mb-4">
-                Warehouse {report.snap.warehouse_id} Â· {report.snap.snapshot_date}
+                Warehouse {report.snap.warehouse_id} · {report.snap.snapshot_date}
               </p>
               <input
                 type="email"
