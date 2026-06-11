@@ -97,7 +97,7 @@ export default function DashboardPage() {
         </motion.div>
 
         {/* Overview Cards */}
-        <div className="grid grid-cols-4 gap-4 mb-8">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
           {overviewCards.map((card, i) => {
             const Icon = card.icon;
             return (
@@ -118,7 +118,7 @@ export default function DashboardPage() {
           })}
         </div>
 
-        <div className="grid grid-cols-3 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
           {/* Inventory Status */}
           <motion.div custom={4} variants={fadeUp} initial="hidden" animate="show" className="col-span-2 bg-white rounded-2xl border border-gray-100 p-6">
             <h2 className="font-semibold text-gray-900 mb-5">Inventory Status</h2>
@@ -208,7 +208,7 @@ export default function DashboardPage() {
         {/* Quick Actions */}
         <motion.div custom={6} variants={fadeUp} initial="hidden" animate="show">
           <h2 className="font-semibold text-gray-900 mb-4">Quick Actions</h2>
-          <div className="grid grid-cols-4 gap-3">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             {[
               { label: 'Add Volt', icon: Plus, href: '/warehouses', color: 'bg-blue-50 text-blue-600 hover:bg-blue-100' },
               { label: 'New Order', icon: ClipboardList, href: '/production', color: 'bg-amber-50 text-amber-600 hover:bg-amber-100' },

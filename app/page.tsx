@@ -17,7 +17,8 @@ export default function Home() {
   const router = useRouter();
   const [showCodeInput, setShowCodeInput] = useState(false);
   const [code, setCode] = useState('');
-  const [error, setError] = useState(false);
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
   const [displayed, setDisplayed] = useState('');
   const [phraseIndex, setPhraseIndex] = useState(0);
   const [typing, setTyping] = useState(true);
@@ -47,15 +48,39 @@ export default function Home() {
     return () => clearTimeout(timeout);
   }, [displayed, typing, phraseIndex]);
 
-  const handleSubmit = () => {
-    if (code === '2019') {
-      document.cookie = 'portal_unlocked=true; path=/; max-age=2592000';
-      router.replace('/login');
-    } else {
-      setError(true);
+  const handleSubmit = async () => {
+    if (!code.trim() || loading) return;
+    setLoading(true);
+    setError('');
+
+    try {
+      const res = await fetch('/api/portal', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code }),
+      });
+
+      const data = await res.json();
+
+      if (res.ok) {
+        router.replace('/login');
+      } else {
+        setError(data.error || 'Incorrect code.');
+        setCode('');
+      }
+    } catch {
+      setError('Connection error. Try again.');
       setCode('');
-      setTimeout(() => setError(false), 1500);
+    } finally {
+      setLoading(false);
     }
+  };
+
+  const closeModal = () => {
+    if (loading) return;
+    setShowCodeInput(false);
+    setCode('');
+    setError('');
   };
 
   return (
@@ -63,7 +88,7 @@ export default function Home() {
       className="relative min-h-screen flex items-center justify-center overflow-hidden"
       style={{ background: 'linear-gradient(135deg, #0a0f1a 0%, #111827 50%, #0d1117 100%)' }}
     >
-      {/* Video background with fallback gradient */}
+      {/* Video background */}
       <video
         autoPlay muted loop playsInline
         onCanPlay={() => setVideoLoaded(true)}
@@ -83,8 +108,6 @@ export default function Home() {
 
       {/* Content */}
       <div className="relative z-20 flex flex-col items-center text-center px-6 w-full max-w-md">
-
-        {/* Company name */}
         <motion.div
           initial={{ opacity: 0, y: -12, filter: 'blur(6px)' }}
           animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
@@ -98,7 +121,6 @@ export default function Home() {
           <div className="h-px flex-1 max-w-8 bg-white/25" />
         </motion.div>
 
-        {/* Portal Access button */}
         <motion.button
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
@@ -118,7 +140,7 @@ export default function Home() {
         </motion.button>
       </div>
 
-      {/* Typewriter — bottom left */}
+      {/* Typewriter */}
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
@@ -129,7 +151,7 @@ export default function Home() {
         <span className="inline-block w-px h-3 bg-white/25 animate-pulse" />
       </motion.div>
 
-      {/* PixelCore — bottom right */}
+      {/* PixelCore */}
       <motion.p
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
@@ -149,7 +171,7 @@ export default function Home() {
             exit={{ opacity: 0 }}
             className="fixed inset-0 z-50 flex items-center justify-center px-4"
             style={{ background: 'rgba(0,0,0,0.65)', backdropFilter: 'blur(16px)' }}
-            onClick={e => { if (e.target === e.currentTarget) { setShowCodeInput(false); setCode(''); } }}
+            onClick={e => { if (e.target === e.currentTarget) closeModal(); }}
           >
             <motion.div
               initial={{ scale: 0.92, opacity: 0, y: 16 }}
@@ -177,10 +199,11 @@ export default function Home() {
               <input
                 type="password"
                 value={code}
-                onChange={e => setCode(e.target.value)}
+                onChange={e => { setCode(e.target.value); setError(''); }}
                 onKeyDown={e => e.key === 'Enter' && handleSubmit()}
                 placeholder="••••"
-                className="w-full px-4 py-3 rounded-xl text-center tracking-[0.4em] outline-none transition-all text-white text-lg"
+                disabled={loading}
+                className="w-full px-4 py-3 rounded-xl text-center tracking-[0.4em] outline-none transition-all text-white text-lg disabled:opacity-50"
                 style={{
                   background: 'rgba(255,255,255,0.05)',
                   border: error ? '1px solid rgba(239,68,68,0.5)' : '1px solid rgba(255,255,255,0.1)',
@@ -192,32 +215,40 @@ export default function Home() {
                 inputMode="numeric"
               />
 
-              {error && (
-                <motion.p
-                  initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-                  className="text-red-400 text-xs text-center mt-2"
-                >
-                  Incorrect code
-                </motion.p>
-              )}
+              <AnimatePresence>
+                {error && (
+                  <motion.p
+                    initial={{ opacity: 0, y: -4 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0 }}
+                    className="text-red-400 text-xs text-center mt-2 leading-snug"
+                  >
+                    {error}
+                  </motion.p>
+                )}
+              </AnimatePresence>
 
               <div className="flex gap-3 mt-5">
                 <button
-                  onClick={() => { setShowCodeInput(false); setCode(''); }}
-                  className="flex-1 py-2.5 rounded-xl text-white/30 text-sm hover:text-white/50 transition-colors"
+                  onClick={closeModal}
+                  disabled={loading}
+                  className="flex-1 py-2.5 rounded-xl text-white/30 text-sm hover:text-white/50 transition-colors disabled:opacity-40"
                   style={{ border: '1px solid rgba(255,255,255,0.07)' }}
                 >
                   Cancel
                 </button>
                 <button
                   onClick={handleSubmit}
-                  className="flex-1 py-2.5 rounded-xl text-white font-semibold text-sm hover:brightness-125 transition-all"
+                  disabled={loading || !code.trim()}
+                  className="flex-1 py-2.5 rounded-xl text-white font-semibold text-sm hover:brightness-125 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
                   style={{
                     background: 'rgba(255,255,255,0.12)',
                     border: '1px solid rgba(255,255,255,0.2)',
                   }}
                 >
-                  Continue
+                  {loading ? (
+                    <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  ) : 'Continue'}
                 </button>
               </div>
             </motion.div>

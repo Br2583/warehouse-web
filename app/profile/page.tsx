@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
-import { User, Shield, Users, Copy, Trash2, Plus } from 'lucide-react';
+import { User, Shield, Users, Copy, Trash2, Plus, KeyRound } from 'lucide-react';
 import Sidebar from '@/components/Sidebar';
 import { api } from '@/lib/api';
 import { useAuth } from '@/lib/auth-context';
@@ -13,6 +13,9 @@ export default function ProfilePage() {
   const [members, setMembers] = useState<any[]>([]);
   const [pin, setPin] = useState({ current: '', newPin: '', confirm: '' });
   const [pinMsg, setPinMsg] = useState('');
+  const [portalCode, setPortalCode] = useState({ current: '', newCode: '', confirm: '' });
+  const [portalMsg, setPortalMsg] = useState('');
+  const [portalLoading, setPortalLoading] = useState(false);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -24,10 +27,39 @@ export default function ProfilePage() {
   }, []);
 
   const generateCode = async () => {
-    const data = await api.post('/api/company/generate-code', {});
-    alert(`Invitation code: ${data.code}`);
-    const c = await api.get('/api/company/info');
-    setCompany(c);
+    try {
+      await api.post('/api/company/generate-code', {});
+      const c = await api.get('/api/company/info');
+      setCompany(c);
+    } catch (err: any) {
+      alert(err?.message || 'Failed to generate invitation code');
+    }
+  };
+
+  const changePortalCode = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (portalCode.newCode !== portalCode.confirm) { setPortalMsg('Codes do not match.'); return; }
+    if (portalCode.newCode.length < 4) { setPortalMsg('New code must be at least 4 characters.'); return; }
+    setPortalLoading(true);
+    setPortalMsg('');
+    try {
+      const res = await fetch('/api/portal/change-code', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ current: portalCode.current, newCode: portalCode.newCode }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setPortalMsg('Portal code updated successfully!');
+        setPortalCode({ current: '', newCode: '', confirm: '' });
+      } else {
+        setPortalMsg(data.error || 'Failed to update portal code.');
+      }
+    } catch {
+      setPortalMsg('Connection error. Try again.');
+    } finally {
+      setPortalLoading(false);
+    }
   };
 
   const changePin = async (e: React.FormEvent) => {
@@ -156,6 +188,41 @@ export default function ProfilePage() {
                 </button>
               </form>
             </motion.div>
+
+            {/* Change Portal Code — owner only */}
+            {company?.is_owner && (
+              <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 }} className="bg-white rounded-2xl border border-gray-100 p-6">
+                <h3 className="font-semibold text-gray-900 mb-1 flex items-center gap-2">
+                  <KeyRound className="w-4 h-4 text-blue-600" /> Portal Access Code
+                </h3>
+                <p className="text-xs text-gray-400 mb-4">Change the code required to access the portal. Takes effect immediately — no restart needed.</p>
+                <form onSubmit={changePortalCode} className="space-y-3">
+                  {[
+                    { label: 'Current Code', key: 'current' },
+                    { label: 'New Code (min 4 chars)', key: 'newCode' },
+                    { label: 'Confirm New Code', key: 'confirm' },
+                  ].map(f => (
+                    <input key={f.key} type="password" placeholder={f.label}
+                      value={(portalCode as any)[f.key]}
+                      onChange={e => setPortalCode(p => ({ ...p, [f.key]: e.target.value }))}
+                      disabled={portalLoading}
+                      className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
+                    />
+                  ))}
+                  {portalMsg && (
+                    <p className={`text-sm ${portalMsg.includes('success') ? 'text-green-600' : 'text-red-500'}`}>
+                      {portalMsg}
+                    </p>
+                  )}
+                  <button type="submit" disabled={portalLoading}
+                    className="w-full py-2.5 bg-blue-600 text-white text-sm font-medium rounded-xl hover:bg-blue-700 transition-colors disabled:opacity-50 flex items-center justify-center gap-2">
+                    {portalLoading
+                      ? <span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+                      : 'Update Portal Code'}
+                  </button>
+                </form>
+              </motion.div>
+            )}
           </div>
         )}
       </main>

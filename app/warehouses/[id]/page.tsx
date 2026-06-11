@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Package, Plus, Search, Trash2, X, Camera, LayoutGrid, List, Pencil } from 'lucide-react';
+import { Package, Plus, Search, Trash2, X, Camera, LayoutGrid, List, Pencil, ChevronLeft, ChevronRight } from 'lucide-react';
 import Sidebar from '@/components/Sidebar';
 import { api } from '@/lib/api';
 import { useParams } from 'next/navigation';
@@ -60,8 +60,14 @@ const emptyForm = {
   photos: [] as string[],
 };
 
+const MAX_PHOTO_SIZE = 5 * 1024 * 1024; // 5MB
+
 const toBase64 = (file: File): Promise<string> =>
   new Promise((resolve, reject) => {
+    if (file.size > MAX_PHOTO_SIZE) {
+      reject(new Error(`"${file.name}" exceeds 5MB limit`));
+      return;
+    }
     const reader = new FileReader();
     reader.onload = () => resolve(reader.result as string);
     reader.onerror = reject;
@@ -86,6 +92,7 @@ export default function WarehouseDetailPage() {
   const [editForm, setEditForm] = useState<any>(null);
   const [editSaving, setEditSaving] = useState(false);
   const [editError, setEditError] = useState('');
+  const [lightbox, setLightbox] = useState<{ photos: string[]; index: number } | null>(null);
 
   const fetchBoxes = () => {
     setApiError('');
@@ -126,8 +133,12 @@ export default function WarehouseDetailPage() {
 
   const handleEditPhotos = async (files: FileList | null) => {
     if (!files) return;
-    const converted = await Promise.all(Array.from(files).slice(0, 6).map(f => toBase64(f)));
-    setEditForm((f: any) => ({ ...f, photos: [...f.photos, ...converted].slice(0, 6) }));
+    try {
+      const converted = await Promise.all(Array.from(files).slice(0, 6).map(f => toBase64(f)));
+      setEditForm((f: any) => ({ ...f, photos: [...f.photos, ...converted].slice(0, 6) }));
+    } catch (err: any) {
+      setEditError(err?.message || 'Photo too large');
+    }
   };
 
   const saveEdit = async (e: React.FormEvent) => {
@@ -159,9 +170,13 @@ export default function WarehouseDetailPage() {
 
   const deleteBox = async (boxId: string) => {
     if (!confirm('Delete this volt?')) return;
-    await api.delete(`/api/boxes/${boxId}`);
-    setSelected(null);
-    fetchBoxes();
+    try {
+      await api.delete(`/api/boxes/${boxId}`);
+      setSelected(null);
+      fetchBoxes();
+    } catch (err: any) {
+      alert(err?.message || 'Failed to delete volt');
+    }
   };
 
   const toggleMulti = (arr: string[], val: string) =>
@@ -169,10 +184,14 @@ export default function WarehouseDetailPage() {
 
   const handlePhotoFiles = async (files: FileList | null) => {
     if (!files) return;
-    const converted = await Promise.all(
-      Array.from(files).slice(0, 6).map(f => toBase64(f))
-    );
-    setForm(f => ({ ...f, photos: [...f.photos, ...converted].slice(0, 6) }));
+    try {
+      const converted = await Promise.all(
+        Array.from(files).slice(0, 6).map(f => toBase64(f))
+      );
+      setForm(f => ({ ...f, photos: [...f.photos, ...converted].slice(0, 6) }));
+    } catch (err: any) {
+      setSaveError(err?.message || 'Photo too large');
+    }
   };
 
   const removePhoto = (idx: number) =>
@@ -440,7 +459,13 @@ export default function WarehouseDetailPage() {
                     <p className="text-sm text-gray-400 mb-2">Photos</p>
                     <div className="grid grid-cols-2 gap-2">
                       {selected.photos.map((photo, i) => (
-                        <img key={i} src={photo} alt={`Photo ${i + 1}`} className="w-full h-32 object-cover rounded-xl" />
+                        <img
+                          key={i}
+                          src={photo}
+                          alt={`Photo ${i + 1}`}
+                          onClick={() => setLightbox({ photos: selected.photos, index: i })}
+                          className="w-full h-32 object-cover rounded-xl cursor-pointer hover:opacity-90 transition-opacity"
+                        />
                       ))}
                     </div>
                   </div>
@@ -789,6 +814,65 @@ export default function WarehouseDetailPage() {
                 </form>
               </motion.div>
             </div>
+          )}
+        </AnimatePresence>
+
+        {/* Photo Lightbox */}
+        <AnimatePresence>
+          {lightbox && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-[60] flex items-center justify-center bg-black/90"
+              onClick={() => setLightbox(null)}
+            >
+              {/* Close */}
+              <button
+                onClick={() => setLightbox(null)}
+                className="absolute top-4 right-4 text-white/60 hover:text-white transition-colors z-10"
+              >
+                <X className="w-7 h-7" />
+              </button>
+
+              {/* Counter */}
+              <span className="absolute top-4 left-1/2 -translate-x-1/2 text-white/50 text-sm">
+                {lightbox.index + 1} / {lightbox.photos.length}
+              </span>
+
+              {/* Prev */}
+              {lightbox.photos.length > 1 && (
+                <button
+                  onClick={e => { e.stopPropagation(); setLightbox(l => l ? { ...l, index: (l.index - 1 + l.photos.length) % l.photos.length } : null); }}
+                  className="absolute left-4 text-white/60 hover:text-white transition-colors z-10"
+                >
+                  <ChevronLeft className="w-9 h-9" />
+                </button>
+              )}
+
+              {/* Image */}
+              <motion.img
+                key={lightbox.index}
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.2 }}
+                src={lightbox.photos[lightbox.index]}
+                alt=""
+                onClick={e => e.stopPropagation()}
+                className="max-h-[85vh] max-w-[90vw] object-contain rounded-xl shadow-2xl"
+              />
+
+              {/* Next */}
+              {lightbox.photos.length > 1 && (
+                <button
+                  onClick={e => { e.stopPropagation(); setLightbox(l => l ? { ...l, index: (l.index + 1) % l.photos.length } : null); }}
+                  className="absolute right-4 text-white/60 hover:text-white transition-colors z-10"
+                >
+                  <ChevronRight className="w-9 h-9" />
+                </button>
+              )}
+            </motion.div>
           )}
         </AnimatePresence>
       </main>

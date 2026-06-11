@@ -115,7 +115,7 @@ export default function StatsPage() {
           <div className="space-y-6">
 
             {/* Summary cards */}
-            <div className="grid grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               {[
                 { label: 'Total Volts',      value: total,                          color: 'bg-blue-50 text-blue-600' },
                 { label: 'Pending',          value: stats?.statuses?.PENDING ?? 0,  color: 'bg-amber-50 text-amber-600' },
@@ -130,7 +130,7 @@ export default function StatsPage() {
             </div>
 
             {/* Status + Job type */}
-            <div className="grid grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="bg-white rounded-2xl border border-gray-100 p-6">
                 <h2 className="font-semibold text-gray-900 mb-5">By Status</h2>
                 <div className="space-y-4">
@@ -187,7 +187,7 @@ export default function StatsPage() {
                     </button>
                     <button onClick={() => setSortBy('name')}
                       className={`px-3 py-1.5 font-medium transition-colors ${sortBy === 'name' ? 'bg-blue-600 text-white' : 'text-gray-500'}`}>
-                      Aâ€“Z
+                      A–Z
                     </button>
                   </div>
                   {/* Search */}

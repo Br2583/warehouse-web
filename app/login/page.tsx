@@ -4,8 +4,7 @@ import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Package, Building2, Ticket, ArrowLeft, LogIn } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-
-const BACKEND_URL = 'https://storagemap-3.emergent.host';
+import { BACKEND_URL } from '@/lib/api';
 
 type Screen = 'main' | 'create' | 'join';
 

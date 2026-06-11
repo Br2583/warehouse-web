@@ -7,9 +7,9 @@ import Sidebar from '@/components/Sidebar';
 import { api } from '@/lib/api';
 import emailjs from '@emailjs/browser';
 
-const EMAILJS_SERVICE_ID  = 'service_gxur23h';
-const EMAILJS_TEMPLATE_ID = 'warehouse_report'; // reemplaza con tu nuevo Template ID
-const EMAILJS_PUBLIC_KEY  = 'I_NflBogOJ5lZnKiG';
+const EMAILJS_SERVICE_ID  = process.env.NEXT_PUBLIC_EMAILJS_SERVICE_ID!;
+const EMAILJS_TEMPLATE_ID = process.env.NEXT_PUBLIC_EMAILJS_TEMPLATE_ID!;
+const EMAILJS_PUBLIC_KEY  = process.env.NEXT_PUBLIC_EMAILJS_PUBLIC_KEY!;
 
 const STATUS_COLORS: Record<string, string> = {
   PENDING:   'bg-amber-100 text-amber-700',
@@ -165,7 +165,7 @@ export default function SnapshotsPage() {
           ) : snapshots.length === 0 ? (
             <div className="text-center py-16 text-gray-400">No snapshots yet. Create one above.</div>
           ) : (
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               {snapshots.map((snap, i) => (
                 <motion.div
                   key={snap.snapshot_id}
@@ -256,7 +256,7 @@ export default function SnapshotsPage() {
                   </div>
                 ) : (
                   <>
-                    <div className="grid grid-cols-4 gap-4 mb-8">
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
                       {[
                         { label: 'Total Volts', value: report.boxes.length || report.snap.total_boxes, icon: Package, color: 'bg-gray-50 text-gray-700' },
                         { label: 'Pending',     value: pending,   icon: Clock,        color: 'bg-amber-50 text-amber-700' },

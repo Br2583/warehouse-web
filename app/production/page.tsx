@@ -57,18 +57,14 @@ export default function ProductionPage() {
     setSelected(order);
     try {
       const id = order.id || order.work_order_id || order._id;
-      console.log('openDetail order keys:', Object.keys(order), 'id used:', id);
       const detail = await api.get(`/api/work-orders/${id}`);
-      console.log('detail response:', JSON.stringify(detail, null, 2));
       setSelectedDetail(detail);
-    } catch (e) {
-      console.log('detail fetch error:', e);
+    } catch {
       setSelectedDetail(order);
     }
   };
 
   const updateVoltStatus = async (workOrderId: string, voltId: string, status: string) => {
-    console.log('updateVoltStatus', { workOrderId, voltId, status });
     try {
       await api.put(`/api/work-orders/${workOrderId}/volt`, { volt_id: voltId, status });
       const detail = await api.get(`/api/work-orders/${workOrderId}`);

@@ -1,4 +1,4 @@
-const BACKEND_URL = 'https://storagemap-3.emergent.host';
+export const BACKEND_URL = 'https://storagemap-3.emergent.host';
 
 export const getToken = (): string | null => {
   if (typeof window === 'undefined') return null;
@@ -72,6 +72,7 @@ export const api = {
       headers: { Authorization: `Bearer ${token}` },
     });
     if (!res.ok) throw new Error(`${res.status}`);
+    if (res.status === 204 || res.headers.get('content-length') === '0') return null;
     return res.json();
   },
 };

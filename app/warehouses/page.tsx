@@ -29,7 +29,7 @@ export default function WarehousesPage() {
           <p className="text-gray-500 text-sm mt-1">Select a warehouse to manage its inventory</p>
         </div>
 
-        <div className="grid grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {WAREHOUSES.map((wh, i) => {
             const count = stats?.by_warehouse?.[wh.id] ?? 0;
             return (

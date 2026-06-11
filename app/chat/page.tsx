@@ -40,19 +40,27 @@ export default function ChatPage() {
   const send = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!text.trim()) return;
-    await api.post('/api/chat/messages', {
-      sender_email: user?.email,
-      sender_name: user?.name,
-      sender_photo: user?.picture || null,
-      text: text.trim(),
-    });
-    setText('');
-    fetchMessages();
+    try {
+      await api.post('/api/chat/messages', {
+        sender_email: user?.email,
+        sender_name: user?.name,
+        sender_photo: user?.picture || null,
+        text: text.trim(),
+      });
+      setText('');
+      fetchMessages();
+    } catch {
+      // message failed silently — input stays so user can retry
+    }
   };
 
   const deleteMsg = async (id: string) => {
-    await api.delete(`/api/chat/messages/${id}`);
-    fetchMessages();
+    try {
+      await api.delete(`/api/chat/messages/${id}`);
+      fetchMessages();
+    } catch {
+      // deletion failed, list stays unchanged
+    }
   };
 
   return (
