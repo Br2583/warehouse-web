@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Wrench, Clock, Play, Check, Plus, X, Trash2, ChevronRight } from 'lucide-react';
+import { Wrench, Clock, Play, Check, Plus, X, Trash2, ChevronRight, AlertCircle } from 'lucide-react';
 import Sidebar from '@/components/Sidebar';
 import { api } from '@/lib/api';
 
@@ -39,6 +39,7 @@ export default function ProductionPage() {
   const [form, setForm] = useState(emptyForm);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState('');
+  const [detailError, setDetailError] = useState('');
   const [voltSearch, setVoltSearch] = useState('');
   const [voltResults, setVoltResults] = useState<any[]>([]);
   const [voltSearching, setVoltSearching] = useState(false);
@@ -65,25 +66,27 @@ export default function ProductionPage() {
   };
 
   const updateVoltStatus = async (workOrderId: string, voltId: string, status: string) => {
+    setDetailError('');
     try {
       await api.put(`/api/work-orders/${workOrderId}/volt`, { volt_id: voltId, status });
       const detail = await api.get(`/api/work-orders/${workOrderId}`);
       setSelectedDetail(detail);
       fetchOrders();
     } catch (e: any) {
-      alert(e.message || 'Failed to update volt');
+      setDetailError(e.message || 'Failed to update volt');
     }
   };
 
   const deleteOrder = async (id: string) => {
     if (!confirm('Delete this work order?')) return;
+    setDetailError('');
     try {
       await api.delete(`/api/work-orders/${id}`);
       setSelected(null);
       setSelectedDetail(null);
       fetchOrders();
     } catch (e: any) {
-      alert(e.message || 'Failed to delete');
+      setDetailError(e.message || 'Failed to delete');
     }
   };
 
@@ -278,6 +281,13 @@ export default function ProductionPage() {
                   })()}
                 </div>
 
+                {detailError && (
+                  <div className="flex items-center gap-2 text-sm text-red-600 bg-red-50 border border-red-100 rounded-xl px-4 py-2.5 mb-2">
+                    <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                    <span className="flex-1">{detailError}</span>
+                    <button onClick={() => setDetailError('')}><X className="w-4 h-4" /></button>
+                  </div>
+                )}
                 {/* Actions */}
                 <div className="flex gap-3 pt-4 border-t border-gray-50">
                   <button

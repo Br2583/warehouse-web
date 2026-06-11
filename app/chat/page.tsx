@@ -25,7 +25,7 @@ export default function ChatPage() {
   const bottomRef = useRef<HTMLDivElement>(null);
 
   const fetchMessages = () =>
-    api.get('/api/chat/messages').then(setMessages).catch(console.error).finally(() => setLoading(false));
+    api.get('/api/chat/messages').then(setMessages).catch(() => {}).finally(() => setLoading(false));
 
   useEffect(() => {
     fetchMessages();
@@ -91,7 +91,7 @@ export default function ChatPage() {
                   className={`flex gap-3 group ${isMe ? 'flex-row-reverse' : ''}`}
                 >
                   {msg.sender_photo ? (
-                    <img src={msg.sender_photo} className="w-8 h-8 rounded-full flex-shrink-0 mt-1" />
+                    <img src={msg.sender_photo} alt={msg.sender_name} className="w-8 h-8 rounded-full flex-shrink-0 mt-1" />
                   ) : (
                     <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0 mt-1">
                       <span className="text-blue-600 text-xs font-bold">{msg.sender_name?.[0]}</span>

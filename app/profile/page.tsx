@@ -23,7 +23,7 @@ export default function ProfilePage() {
       api.get('/api/company/info'),
       api.get('/api/company/members'),
     ]).then(([c, m]) => { setCompany(c); setMembers(m); })
-      .catch(console.error).finally(() => setLoading(false));
+      .catch(() => {}).finally(() => setLoading(false));
   }, []);
 
   const generateCode = async () => {
@@ -92,7 +92,7 @@ export default function ProfilePage() {
             <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="bg-white rounded-2xl border border-gray-100 p-6">
               <div className="flex items-center gap-4">
                 {user?.picture ? (
-                  <img src={user.picture} className="w-16 h-16 rounded-2xl object-cover" />
+                  <img src={user.picture} alt={user.name} className="w-16 h-16 rounded-2xl object-cover" />
                 ) : (
                   <div className="w-16 h-16 rounded-2xl bg-blue-100 flex items-center justify-center">
                     <User className="w-8 h-8 text-blue-600" />
@@ -149,7 +149,7 @@ export default function ProfilePage() {
                 {members.map(m => (
                   <div key={m.user_id} className="flex items-center gap-3">
                     {m.picture ? (
-                      <img src={m.picture} className="w-9 h-9 rounded-full object-cover" />
+                      <img src={m.picture} alt={m.name} className="w-9 h-9 rounded-full object-cover" />
                     ) : (
                       <div className="w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center">
                         <span className="text-sm font-bold text-gray-500">{m.name?.[0]}</span>

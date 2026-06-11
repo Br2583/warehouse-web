@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Camera, Trash2, Plus, Printer, X, Package, CheckCircle, Truck, Clock, Mail } from 'lucide-react';
+import { Camera, Trash2, Plus, Printer, X, Package, CheckCircle, Truck, Clock, Mail, AlertCircle } from 'lucide-react';
 import Sidebar from '@/components/Sidebar';
 import { api } from '@/lib/api';
 import emailjs from '@emailjs/browser';
@@ -26,32 +26,35 @@ export default function SnapshotsPage() {
   const [toEmail, setToEmail] = useState('');
   const [sending, setSending] = useState(false);
   const [sendResult, setSendResult] = useState<'ok' | 'err' | null>(null);
+  const [actionError, setActionError] = useState('');
   const printRef = useRef<HTMLDivElement>(null);
 
   const fetchSnapshots = () =>
     api.get('/api/snapshots')
       .then(data => setSnapshots(Array.isArray(data) ? data : []))
-      .catch(console.error)
+      .catch(() => {})
       .finally(() => setLoading(false));
 
   useEffect(() => { fetchSnapshots(); }, []);
 
   const createSnapshot = async (warehouseId: number) => {
+    setActionError('');
     try {
       await api.post(`/api/snapshots/create/${warehouseId}`, {});
       fetchSnapshots();
     } catch (e: any) {
-      alert(e.message || 'Failed to create snapshot');
+      setActionError(e.message || 'Failed to create snapshot');
     }
   };
 
   const deleteSnapshot = async (id: string) => {
     if (!confirm('Delete this snapshot?')) return;
+    setActionError('');
     try {
       await api.delete(`/api/snapshots/${id}`);
       fetchSnapshots();
     } catch (e: any) {
-      alert(e.message || 'Failed to delete');
+      setActionError(e.message || 'Failed to delete snapshot');
     }
   };
 
@@ -157,6 +160,14 @@ export default function SnapshotsPage() {
               ))}
             </div>
           </div>
+
+          {actionError && (
+            <div className="flex items-center gap-3 bg-red-50 border border-red-100 text-red-700 text-sm px-4 py-3 rounded-xl mb-4">
+              <AlertCircle className="w-4 h-4 flex-shrink-0" />
+              <span className="flex-1">{actionError}</span>
+              <button onClick={() => setActionError('')} className="text-red-400 hover:text-red-600"><X className="w-4 h-4" /></button>
+            </div>
+          )}
 
           {loading ? (
             <div className="flex justify-center py-16">

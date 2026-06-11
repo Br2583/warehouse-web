@@ -1,17 +1,21 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { motion } from 'framer-motion';
-import { Trash2, RotateCcw, X } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Trash2, RotateCcw, X, AlertCircle } from 'lucide-react';
 import Sidebar from '@/components/Sidebar';
 import { api } from '@/lib/api';
 
 export default function DeletedPage() {
   const [deleted, setDeleted] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
   const fetchDeleted = () =>
-    api.get('/api/deleted-boxes').then(setDeleted).catch(console.error).finally(() => setLoading(false));
+    api.get('/api/deleted-boxes')
+      .then(setDeleted)
+      .catch(() => {})
+      .finally(() => setLoading(false));
 
   useEffect(() => { fetchDeleted(); }, []);
 
@@ -20,7 +24,7 @@ export default function DeletedPage() {
       await api.post(`/api/deleted-boxes/${id}/restore`, {});
       fetchDeleted();
     } catch (e: any) {
-      alert(e.message || 'Could not restore volt');
+      setError(e.message || 'Could not restore volt');
     }
   };
 
@@ -30,7 +34,7 @@ export default function DeletedPage() {
       await api.delete(`/api/deleted-boxes/${id}`);
       fetchDeleted();
     } catch (e: any) {
-      alert(e.message || 'Could not delete volt');
+      setError(e.message || 'Could not delete volt');
     }
   };
 
@@ -42,6 +46,19 @@ export default function DeletedPage() {
           <h1 className="text-2xl font-bold text-gray-900">Deleted Volts</h1>
           <p className="text-gray-500 text-sm mt-1">{deleted.length} archived volts</p>
         </div>
+
+        <AnimatePresence>
+          {error && (
+            <motion.div
+              initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
+              className="flex items-center gap-3 bg-red-50 border border-red-100 text-red-700 text-sm px-4 py-3 rounded-xl mb-4"
+            >
+              <AlertCircle className="w-4 h-4 flex-shrink-0" />
+              <span className="flex-1">{error}</span>
+              <button onClick={() => setError('')} className="text-red-400 hover:text-red-600"><X className="w-4 h-4" /></button>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {loading ? (
           <div className="flex justify-center py-16">
@@ -96,4 +113,3 @@ export default function DeletedPage() {
     </div>
   );
 }
-

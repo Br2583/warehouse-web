@@ -27,7 +27,7 @@ export default function DashboardPage() {
       try {
         const globalStats = await api.get('/api/stats/global');
         setStats(globalStats);
-      } catch (e) { console.error('stats error', e); }
+      } catch { /* stats unavailable, show zeros */ }
 
       // Try multiple possible endpoint names for work orders
       for (const path of ['/api/work-orders', '/api/production/orders', '/api/orders']) {
