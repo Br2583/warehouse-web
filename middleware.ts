@@ -19,7 +19,7 @@ export function middleware(request: NextRequest) {
   // Refresh the cookie on every request to implement sliding 2h window
   const res = NextResponse.next();
   res.cookies.set('portal_unlocked', 'true', {
-    sameSite: 'strict',
+    sameSite: 'lax',
     secure: process.env.NODE_ENV === 'production',
     maxAge: SESSION_TIMEOUT,
     path: '/',

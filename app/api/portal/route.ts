@@ -73,7 +73,7 @@ export async function POST(req: NextRequest) {
 
   const res = NextResponse.json({ success: true });
   res.cookies.set('portal_unlocked', 'true', {
-    sameSite: 'strict',
+    sameSite: 'lax',
     secure: process.env.NODE_ENV === 'production',
     maxAge: 2 * 60 * 60, // 2 hours, refreshed on every request by middleware
     path: '/',
