@@ -4,7 +4,7 @@ import type { NextRequest } from 'next/server';
 const SESSION_TIMEOUT = 2 * 60 * 60; // 2 hours in seconds
 const PUBLIC_PATHS = ['/', '/api/portal'];
 
-export function middleware(request: NextRequest) {
+export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // Always allow public paths and static assets
