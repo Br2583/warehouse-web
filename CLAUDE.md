@@ -65,7 +65,10 @@ packer, photos[] (base64, max 6, 5MB each), estado/status (PENDING/READY/DELIVER
 - No console.log in production. No alert() to show invitation codes (they show inline).
 - Design: bg-gray-50 base, blue-600 accent, rounded-2xl cards, border-gray-100
 
+## Portal Code Runtime Change
+- `data/portal-code.json` — written by `POST /api/portal/change-code`, gitignored
+- `app/api/portal/route.ts` reads file first, falls back to `PORTAL_CODE` env var
+- Change requires current code as verification; owner-only UI in `/profile`
+
 ## PENDING — Next Session
-1. **Change portal code from Profile page** — owner UI to update PORTAL_CODE without touching files
-2. **Verify EmailJS template ID** — confirm `warehouse_report` matches actual template ID in EmailJS dashboard
-3. **Commit all changes** — many files modified, nothing committed yet
+1. **Verify EmailJS template ID** — confirm `warehouse_report` matches actual template ID in EmailJS dashboard
