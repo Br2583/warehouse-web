@@ -117,7 +117,7 @@ export default function StatsPage() {
             {/* Summary cards */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               {[
-                { label: 'Total Volts',      value: total,                          color: 'bg-blue-50 text-blue-600' },
+                { label: 'Total Vaults',      value: total,                          color: 'bg-blue-50 text-blue-600' },
                 { label: 'Pending',          value: stats?.statuses?.PENDING ?? 0,  color: 'bg-amber-50 text-amber-600' },
                 { label: 'Ready',            value: stats?.statuses?.READY ?? 0,    color: 'bg-green-50 text-green-600' },
                 { label: 'Delivered',        value: stats?.statuses?.DELIVERED ?? 0,color: 'bg-purple-50 text-purple-600' },
@@ -176,14 +176,14 @@ export default function StatsPage() {
               <div className="flex items-center justify-between mb-5">
                 <div>
                   <h2 className="font-semibold text-gray-900">Clients</h2>
-                  <p className="text-xs text-gray-400 mt-0.5">{clientList.length} clients · {boxes.length} total volts</p>
+                  <p className="text-xs text-gray-400 mt-0.5">{clientList.length} clients · {boxes.length} total vaults</p>
                 </div>
                 <div className="flex items-center gap-3">
                   {/* Sort */}
                   <div className="flex bg-gray-100 rounded-xl overflow-hidden text-xs">
                     <button onClick={() => setSortBy('count')}
                       className={`px-3 py-1.5 font-medium transition-colors ${sortBy === 'count' ? 'bg-blue-600 text-white' : 'text-gray-500'}`}>
-                      Most volts
+                      Most vaults
                     </button>
                     <button onClick={() => setSortBy('name')}
                       className={`px-3 py-1.5 font-medium transition-colors ${sortBy === 'name' ? 'bg-blue-600 text-white' : 'text-gray-500'}`}>
@@ -224,7 +224,7 @@ export default function StatsPage() {
                           <div className="flex items-center justify-between mb-2">
                             <p className="font-semibold text-gray-900 truncate">{client.name}</p>
                             <div className="flex items-center gap-2 ml-2 flex-shrink-0">
-                              <span className="text-sm font-bold text-gray-900">{client.total} volt{client.total !== 1 ? 's' : ''}</span>
+                              <span className="text-sm font-bold text-gray-900">{client.total} vault{client.total !== 1 ? 's' : ''}</span>
                               <ChevronRight className="w-4 h-4 text-gray-300" />
                             </div>
                           </div>
@@ -273,7 +273,7 @@ export default function StatsPage() {
                   </div>
                   <div>
                     <h2 className="text-lg font-bold text-gray-900">{selectedClient}</h2>
-                    <p className="text-sm text-gray-400">{clientVolts.length} volt{clientVolts.length !== 1 ? 's' : ''}</p>
+                    <p className="text-sm text-gray-400">{clientVolts.length} vault{clientVolts.length !== 1 ? 's' : ''}</p>
                   </div>
                 </div>
                 <button onClick={() => setSelectedClient(null)} className="text-gray-400 hover:text-gray-600">

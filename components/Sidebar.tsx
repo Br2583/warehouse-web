@@ -68,7 +68,7 @@ export default function Sidebar() {
       <div className="p-4 border-t border-gray-100">
         <div className="flex items-center gap-3 mb-3">
           {user?.picture ? (
-            <img src={user.picture} alt={user.name} className="w-8 h-8 rounded-full object-cover" />
+            <img src={user.picture} alt={user.name} referrerPolicy="no-referrer" className="w-8 h-8 rounded-full object-cover" />
           ) : (
             <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center">
               <span className="text-blue-600 text-xs font-bold">{user?.name?.[0]}</span>

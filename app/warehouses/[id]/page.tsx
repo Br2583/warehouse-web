@@ -169,13 +169,13 @@ export default function WarehouseDetailPage() {
   };
 
   const deleteBox = async (boxId: string) => {
-    if (!confirm('Delete this volt?')) return;
+    if (!confirm('Delete this vault?')) return;
     try {
       await api.delete(`/api/boxes/${boxId}`);
       setSelected(null);
       fetchBoxes();
     } catch (err: any) {
-      alert(err?.message || 'Failed to delete volt');
+      alert(err?.message || 'Failed to delete vault');
     }
   };
 
@@ -224,7 +224,7 @@ export default function WarehouseDetailPage() {
       setForm(emptyForm);
       fetchBoxes();
     } catch (err: any) {
-      setSaveError(err?.message || 'Failed to add volt');
+      setSaveError(err?.message || 'Failed to add vault');
     } finally {
       setSaving(false);
     }
@@ -247,32 +247,32 @@ export default function WarehouseDetailPage() {
       <Sidebar />
       <main className="md:ml-64 flex-1 p-4 md:p-8 pb-20 md:pb-8">
         {/* Header */}
-        <div className="flex items-center justify-between mb-8">
+        <div className="flex flex-wrap items-center justify-between gap-3 mb-8">
           <div>
             <h1 className="text-2xl font-bold text-gray-900">Warehouse {warehouseId}</h1>
-            <p className="text-gray-500 text-sm mt-1">{boxes.length} volts stored</p>
+            <p className="text-gray-500 text-sm mt-1">{boxes.length} vaults stored</p>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
             {/* View toggle */}
             <div className="flex bg-white border border-gray-200 rounded-xl overflow-hidden">
               <button
                 onClick={() => setViewMode('map')}
                 className={`flex items-center gap-1.5 px-3 py-2 text-sm font-medium transition-colors ${viewMode === 'map' ? 'bg-blue-600 text-white' : 'text-gray-500 hover:text-gray-700'}`}
               >
-                <LayoutGrid className="w-4 h-4" /> Map
+                <LayoutGrid className="w-4 h-4" /><span className="hidden sm:inline ml-1">Map</span>
               </button>
               <button
                 onClick={() => setViewMode('list')}
                 className={`flex items-center gap-1.5 px-3 py-2 text-sm font-medium transition-colors ${viewMode === 'list' ? 'bg-blue-600 text-white' : 'text-gray-500 hover:text-gray-700'}`}
               >
-                <List className="w-4 h-4" /> List
+                <List className="w-4 h-4" /><span className="hidden sm:inline ml-1">List</span>
               </button>
             </div>
             <button
               onClick={() => { setForm(emptyForm); setShowAdd(true); setSaveError(''); }}
-              className="flex items-center gap-2 px-4 py-2.5 bg-blue-600 text-white text-sm font-medium rounded-xl hover:bg-blue-700 transition-colors"
+              className="flex items-center gap-2 px-3 py-2 md:px-4 md:py-2.5 bg-blue-600 text-white text-sm font-medium rounded-xl hover:bg-blue-700 transition-colors"
             >
-              <Plus className="w-4 h-4" /> Add Volt
+              <Plus className="w-4 h-4" /><span className="hidden sm:inline">Add Vault</span><span className="sm:hidden">Add</span>
             </button>
           </div>
         </div>
@@ -288,28 +288,29 @@ export default function WarehouseDetailPage() {
         ) : viewMode === 'map' ? (
           /* ── MAP VIEW ── */
           <div>
-            {/* Level selector */}
-            <div className="flex items-center gap-3 mb-5">
-              <span className="text-sm text-gray-500 font-medium">Level:</span>
-              <div className="flex bg-white border border-gray-200 rounded-xl overflow-hidden">
-                <button
-                  onClick={() => setMapLevel(1)}
-                  className={`px-4 py-2 text-sm font-medium transition-colors ${mapLevel === 1 ? 'bg-blue-600 text-white' : 'text-gray-500 hover:text-gray-700'}`}
-                >
-                  Lower (L1)
-                </button>
-                <button
-                  onClick={() => setMapLevel(2)}
-                  className={`px-4 py-2 text-sm font-medium transition-colors ${mapLevel === 2 ? 'bg-blue-600 text-white' : 'text-gray-500 hover:text-gray-700'}`}
-                >
-                  Upper (L2)
-                </button>
+            {/* Level selector + Legend */}
+            <div className="flex flex-wrap items-center gap-3 mb-5">
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-gray-500 font-medium">Level:</span>
+                <div className="flex bg-white border border-gray-200 rounded-xl overflow-hidden">
+                  <button
+                    onClick={() => setMapLevel(1)}
+                    className={`px-3 py-2 text-sm font-medium transition-colors ${mapLevel === 1 ? 'bg-blue-600 text-white' : 'text-gray-500 hover:text-gray-700'}`}
+                  >
+                    Lower
+                  </button>
+                  <button
+                    onClick={() => setMapLevel(2)}
+                    className={`px-3 py-2 text-sm font-medium transition-colors ${mapLevel === 2 ? 'bg-blue-600 text-white' : 'text-gray-500 hover:text-gray-700'}`}
+                  >
+                    Upper
+                  </button>
+                </div>
               </div>
-              {/* Legend */}
-              <div className="flex items-center gap-4 ml-4">
+              <div className="flex items-center gap-3 flex-wrap">
                 {[['bg-gray-100', 'Empty'], ['bg-amber-400', 'Pending'], ['bg-green-500', 'Ready'], ['bg-blue-500', 'Delivered']].map(([color, label]) => (
-                  <div key={label} className="flex items-center gap-1.5">
-                    <div className={`w-3 h-3 rounded-sm ${color}`} />
+                  <div key={label} className="flex items-center gap-1">
+                    <div className={`w-2.5 h-2.5 rounded-sm ${color}`} />
                     <span className="text-xs text-gray-500">{label}</span>
                   </div>
                 ))}
@@ -317,18 +318,18 @@ export default function WarehouseDetailPage() {
             </div>
 
             {/* Grid */}
-            <div className="bg-white rounded-2xl border border-gray-100 p-6 overflow-x-auto">
+            <div className="bg-white rounded-2xl border border-gray-100 p-3 md:p-6 overflow-x-auto">
               {/* Column headers */}
-              <div className="flex gap-2 mb-2 ml-10">
+              <div className="flex gap-1 md:gap-2 mb-1 md:mb-2 ml-7 md:ml-10">
                 {COLUMNS.map(col => (
-                  <div key={col} className="w-20 text-center text-xs font-semibold text-gray-400">Col {col}</div>
+                  <div key={col} className="w-9 md:w-20 text-center text-[10px] md:text-xs font-semibold text-gray-400">{col}</div>
                 ))}
               </div>
 
               {ROWS.map(row => (
-                <div key={row} className="flex items-center gap-2 mb-2">
+                <div key={row} className="flex items-center gap-1 md:gap-2 mb-1 md:mb-2">
                   {/* Row label */}
-                  <div className="w-8 text-center text-xs font-bold text-gray-500">{row}</div>
+                  <div className="w-6 md:w-8 text-center text-xs font-bold text-gray-500">{row}</div>
 
                   {COLUMNS.map(col => {
                     const box = getBox(row, col, mapLevel);
@@ -338,7 +339,7 @@ export default function WarehouseDetailPage() {
                         key={col}
                         whileHover={{ scale: 1.03 }}
                         onClick={() => box ? setSelected(box) : openAddAtPosition(row, col, mapLevel)}
-                        className={`w-20 h-14 rounded-xl border-2 flex flex-col items-center justify-center transition-all text-center
+                        className={`w-9 h-9 md:w-20 md:h-14 rounded-lg md:rounded-xl border-2 flex flex-col items-center justify-center transition-all text-center
                           ${box
                             ? `${STATUS_CELL[status!] || 'bg-gray-300'} border-transparent text-white cursor-pointer`
                             : 'bg-gray-50 border-dashed border-gray-200 hover:border-blue-400 hover:bg-blue-50 cursor-pointer'
@@ -346,11 +347,11 @@ export default function WarehouseDetailPage() {
                       >
                         {box ? (
                           <>
-                            <span className="text-xs font-bold leading-tight truncate w-full px-1 text-center">{box.client_name}</span>
-                            <span className="text-[10px] opacity-80">{box.job_type}</span>
+                            <span className="text-[8px] md:text-xs font-bold leading-tight truncate w-full px-0.5 text-center">{box.client_name}</span>
+                            <span className="hidden md:block text-[10px] opacity-80">{box.job_type}</span>
                           </>
                         ) : (
-                          <Plus className="w-4 h-4 text-gray-300" />
+                          <Plus className="w-3 h-3 md:w-4 md:h-4 text-gray-300" />
                         )}
                       </motion.button>
                     );
@@ -411,7 +412,7 @@ export default function WarehouseDetailPage() {
                     </motion.tr>
                   ))}
                   {filtered.length === 0 && (
-                    <tr><td colSpan={6} className="text-center py-16 text-gray-400 text-sm">No volts found</td></tr>
+                    <tr><td colSpan={6} className="text-center py-16 text-gray-400 text-sm">No vaults found</td></tr>
                   )}
                 </tbody>
               </table>
@@ -431,7 +432,7 @@ export default function WarehouseDetailPage() {
                 onClick={e => e.stopPropagation()}
               >
                 <div className="flex items-center justify-between mb-5">
-                  <h2 className="text-lg font-bold text-gray-900">Volt Detail</h2>
+                  <h2 className="text-lg font-bold text-gray-900">Vault Detail</h2>
                   <button onClick={() => setSelected(null)} className="text-gray-400 hover:text-gray-600">
                     <X className="w-5 h-5" />
                   </button>
@@ -501,7 +502,7 @@ export default function WarehouseDetailPage() {
                 onClick={e => e.stopPropagation()}
               >
                 <div className="flex items-center justify-between mb-5">
-                  <h2 className="text-lg font-bold text-gray-900">Edit Volt</h2>
+                  <h2 className="text-lg font-bold text-gray-900">Edit Vault</h2>
                   <button onClick={() => setShowEdit(false)} className="text-gray-400 hover:text-gray-600">
                     <X className="w-5 h-5" />
                   </button>
@@ -650,7 +651,7 @@ export default function WarehouseDetailPage() {
                 onClick={e => e.stopPropagation()}
               >
                 <div className="flex items-center justify-between mb-5">
-                  <h2 className="text-lg font-bold text-gray-900">New Volt</h2>
+                  <h2 className="text-lg font-bold text-gray-900">New Vault</h2>
                   <button onClick={() => setShowAdd(false)} className="text-gray-400 hover:text-gray-600">
                     <X className="w-5 h-5" />
                   </button>
@@ -809,7 +810,7 @@ export default function WarehouseDetailPage() {
 
                   <button type="submit" disabled={saving}
                     className="w-full py-3 bg-blue-600 text-white text-sm font-medium rounded-xl hover:bg-blue-700 transition-colors disabled:opacity-50">
-                    {saving ? 'Saving...' : 'Create Volt'}
+                    {saving ? 'Saving...' : 'Create Vault'}
                   </button>
                 </form>
               </motion.div>

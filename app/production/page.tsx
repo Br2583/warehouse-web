@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Wrench, Clock, Play, Check, Plus, X, Trash2, ChevronRight, AlertCircle } from 'lucide-react';
 import Sidebar from '@/components/Sidebar';
 import { api } from '@/lib/api';
+import { notify, requestNotificationPermission } from '@/lib/notifications';
 
 const STATUS_CONFIG: Record<string, { color: string; icon: any; label: string }> = {
   pending:     { color: 'bg-gray-100 text-gray-600',   icon: Clock,  label: 'Pending' },
@@ -52,7 +53,7 @@ export default function ProductionPage() {
     finally { setLoading(false); }
   };
 
-  useEffect(() => { fetchOrders(); }, []);
+  useEffect(() => { fetchOrders(); requestNotificationPermission(); }, []);
 
   const openDetail = async (order: any) => {
     setSelected(order);
@@ -73,7 +74,7 @@ export default function ProductionPage() {
       setSelectedDetail(detail);
       fetchOrders();
     } catch (e: any) {
-      setDetailError(e.message || 'Failed to update volt');
+      setDetailError(e.message || 'Failed to update vault');
     }
   };
 
@@ -127,6 +128,7 @@ export default function ProductionPage() {
       setVoltSearch('');
       setVoltResults([]);
       fetchOrders();
+      notify('New Work Order', `${form.work_type} order created for ${form.client_name.trim()}`);
     } catch (e: any) {
       setSaveError(e.message || 'Failed to create order');
     } finally {
@@ -181,7 +183,7 @@ export default function ProductionPage() {
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="font-semibold text-gray-900 truncate">{order.client_name}</p>
-                    <p className="text-sm text-gray-500">{order.work_type} · {order.date} · {order.volts?.length || order.volt_ids?.length || 0} volts</p>
+                    <p className="text-sm text-gray-500">{order.work_type} · {order.date} · {order.volts?.length || order.volt_ids?.length || 0} vaults</p>
                   </div>
                   <span className={`flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-full ${cfg.color}`}>
                     <Icon className="w-3 h-3" /> {cfg.label}
@@ -237,17 +239,17 @@ export default function ProductionPage() {
                   </div>
                 </div>
 
-                {/* Volts */}
+                {/* Vaults */}
                 <div className="mb-4">
                   {(() => {
                     const voltList = detailOrder?.volt_details || detailOrder?.volts || [];
                     return (
                       <>
                         <p className="text-sm font-semibold text-gray-700 mb-3">
-                          Volts ({voltList.length})
+                          Vaults ({voltList.length})
                         </p>
                         {voltList.length === 0 ? (
-                          <p className="text-sm text-gray-400 text-center py-4">No volts assigned to this order</p>
+                          <p className="text-sm text-gray-400 text-center py-4">No vaults assigned to this order</p>
                         ) : (
                           <div className="space-y-2">
                             {voltList.map((volt: any) => {
@@ -348,9 +350,9 @@ export default function ProductionPage() {
                       className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
                   </div>
 
-                  {/* Volt selector */}
+                  {/* Vault selector */}
                   <div>
-                    <label className="block text-xs text-gray-500 mb-1">Select Volts</label>
+                    <label className="block text-xs text-gray-500 mb-1">Select Vaults</label>
                     <input
                       type="text"
                       placeholder="Search by client name..."
@@ -380,7 +382,7 @@ export default function ProductionPage() {
                       </div>
                     )}
                     {form.volt_ids.length > 0 && (
-                      <p className="text-xs text-blue-600 font-medium">{form.volt_ids.length} volt(s) selected</p>
+                      <p className="text-xs text-blue-600 font-medium">{form.volt_ids.length} vault(s) selected</p>
                     )}
                   </div>
 

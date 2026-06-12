@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
-import { User, Shield, Users, Copy, Trash2, Plus, KeyRound } from 'lucide-react';
+import { User, Shield, Users, Copy, Trash2, Plus, KeyRound, AlertCircle, X } from 'lucide-react';
+import { AnimatePresence } from 'framer-motion';
 import Sidebar from '@/components/Sidebar';
 import { api } from '@/lib/api';
 import { useAuth } from '@/lib/auth-context';
@@ -16,6 +17,7 @@ export default function ProfilePage() {
   const [portalCode, setPortalCode] = useState({ current: '', newCode: '', confirm: '' });
   const [portalMsg, setPortalMsg] = useState('');
   const [portalLoading, setPortalLoading] = useState(false);
+  const [genError, setGenError] = useState('');
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -27,12 +29,13 @@ export default function ProfilePage() {
   }, []);
 
   const generateCode = async () => {
+    setGenError('');
     try {
       await api.post('/api/company/generate-code', {});
       const c = await api.get('/api/company/info');
       setCompany(c);
     } catch (err: any) {
-      alert(err?.message || 'Failed to generate invitation code');
+      setGenError(err?.message || 'Failed to generate invitation code');
     }
   };
 
@@ -92,7 +95,7 @@ export default function ProfilePage() {
             <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="bg-white rounded-2xl border border-gray-100 p-6">
               <div className="flex items-center gap-4">
                 {user?.picture ? (
-                  <img src={user.picture} alt={user.name} className="w-16 h-16 rounded-2xl object-cover" />
+                  <img src={user.picture} alt={user.name} referrerPolicy="no-referrer" className="w-16 h-16 rounded-2xl object-cover" />
                 ) : (
                   <div className="w-16 h-16 rounded-2xl bg-blue-100 flex items-center justify-center">
                     <User className="w-8 h-8 text-blue-600" />
@@ -125,6 +128,15 @@ export default function ProfilePage() {
                   <Plus className="w-4 h-4" /> Generate Invitation Code
                 </button>
               )}
+              <AnimatePresence>
+                {genError && (
+                  <motion.div className="mt-3 flex items-center gap-2 bg-red-50 border border-red-100 text-red-700 text-sm rounded-xl px-3 py-2">
+                    <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                    <span className="flex-1">{genError}</span>
+                    <button onClick={() => setGenError('')}><X className="w-4 h-4" /></button>
+                  </motion.div>
+                )}
+              </AnimatePresence>
               {company?.active_invitation_codes?.length > 0 && (
                 <div className="mt-4">
                   <p className="text-xs text-gray-400 mb-2">Active codes:</p>
@@ -149,7 +161,7 @@ export default function ProfilePage() {
                 {members.map(m => (
                   <div key={m.user_id} className="flex items-center gap-3">
                     {m.picture ? (
-                      <img src={m.picture} alt={m.name} className="w-9 h-9 rounded-full object-cover" />
+                      <img src={m.picture} alt={m.name} referrerPolicy="no-referrer" className="w-9 h-9 rounded-full object-cover" />
                     ) : (
                       <div className="w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center">
                         <span className="text-sm font-bold text-gray-500">{m.name?.[0]}</span>

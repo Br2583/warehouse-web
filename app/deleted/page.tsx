@@ -24,17 +24,17 @@ export default function DeletedPage() {
       await api.post(`/api/deleted-boxes/${id}/restore`, {});
       fetchDeleted();
     } catch (e: any) {
-      setError(e.message || 'Could not restore volt');
+      setError(e.message || 'Could not restore vault');
     }
   };
 
   const permDelete = async (id: string) => {
-    if (!confirm('Permanently delete this volt?')) return;
+    if (!confirm('Permanently delete this vault?')) return;
     try {
       await api.delete(`/api/deleted-boxes/${id}`);
       fetchDeleted();
     } catch (e: any) {
-      setError(e.message || 'Could not delete volt');
+      setError(e.message || 'Could not delete vault');
     }
   };
 
@@ -43,8 +43,8 @@ export default function DeletedPage() {
       <Sidebar />
       <main className="md:ml-64 flex-1 p-4 md:p-8 pb-20 md:pb-8">
         <div className="mb-8">
-          <h1 className="text-2xl font-bold text-gray-900">Deleted Volts</h1>
-          <p className="text-gray-500 text-sm mt-1">{deleted.length} archived volts</p>
+          <h1 className="text-2xl font-bold text-gray-900">Deleted Vaults</h1>
+          <p className="text-gray-500 text-sm mt-1">{deleted.length} archived vaults</p>
         </div>
 
         <AnimatePresence>
@@ -65,7 +65,7 @@ export default function DeletedPage() {
             <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
           </div>
         ) : deleted.length === 0 ? (
-          <div className="text-center py-16 text-gray-400">No deleted volts</div>
+          <div className="text-center py-16 text-gray-400">No deleted vaults</div>
         ) : (
           <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
             <table className="w-full">

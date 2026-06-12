@@ -6,6 +6,7 @@ import { Send, Trash2 } from 'lucide-react';
 import Sidebar from '@/components/Sidebar';
 import { api } from '@/lib/api';
 import { useAuth } from '@/lib/auth-context';
+import { notify, requestNotificationPermission } from '@/lib/notifications';
 
 interface Message {
   id: string;
@@ -23,11 +24,22 @@ export default function ChatPage() {
   const [text, setText] = useState('');
   const [loading, setLoading] = useState(true);
   const bottomRef = useRef<HTMLDivElement>(null);
+  const lastCountRef = useRef(-1);
 
   const fetchMessages = () =>
-    api.get('/api/chat/messages').then(setMessages).catch(() => {}).finally(() => setLoading(false));
+    api.get('/api/chat/messages').then((msgs: Message[]) => {
+      if (lastCountRef.current >= 0 && msgs.length > lastCountRef.current) {
+        const newest = msgs[msgs.length - 1];
+        if (newest && newest.sender_email !== user?.email) {
+          notify(`${newest.sender_name}`, newest.text);
+        }
+      }
+      lastCountRef.current = msgs.length;
+      setMessages(msgs);
+    }).catch(() => {}).finally(() => setLoading(false));
 
   useEffect(() => {
+    requestNotificationPermission();
     fetchMessages();
     const interval = setInterval(fetchMessages, 10000);
     return () => clearInterval(interval);
@@ -66,7 +78,7 @@ export default function ChatPage() {
   return (
     <div className="flex min-h-screen bg-gray-50">
       <Sidebar />
-      <main className="md:ml-64 flex-1 flex flex-col h-screen">
+      <main className="md:ml-64 flex-1 flex flex-col" style={{ height: '100dvh' }}>
         <div className="p-8 pb-4 border-b border-gray-100 bg-white">
           <h1 className="text-2xl font-bold text-gray-900">Team Chat</h1>
           <p className="text-gray-500 text-sm mt-1">Internal company communication</p>
@@ -91,7 +103,7 @@ export default function ChatPage() {
                   className={`flex gap-3 group ${isMe ? 'flex-row-reverse' : ''}`}
                 >
                   {msg.sender_photo ? (
-                    <img src={msg.sender_photo} alt={msg.sender_name} className="w-8 h-8 rounded-full flex-shrink-0 mt-1" />
+                    <img src={msg.sender_photo} alt={msg.sender_name} referrerPolicy="no-referrer" className="w-8 h-8 rounded-full flex-shrink-0 mt-1" />
                   ) : (
                     <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0 mt-1">
                       <span className="text-blue-600 text-xs font-bold">{msg.sender_name?.[0]}</span>
@@ -116,7 +128,7 @@ export default function ChatPage() {
           <div ref={bottomRef} />
         </div>
 
-        <form onSubmit={send} className="p-4 bg-white border-t border-gray-100 flex gap-3">
+        <form onSubmit={send} className="p-4 pb-20 md:pb-4 bg-white border-t border-gray-100 flex gap-3">
           <input
             type="text"
             placeholder="Type a message..."

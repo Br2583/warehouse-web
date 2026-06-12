@@ -58,7 +58,7 @@ export default function DashboardPage() {
   };
 
   const overviewCards = [
-    { label: 'Total Volts', value: stats?.total_boxes ?? 0, icon: Package, color: 'blue', href: '/warehouses' },
+    { label: 'Total Vaults', value: stats?.total_boxes ?? 0, icon: Package, color: 'blue', href: '/warehouses' },
     { label: 'Work Orders', value: workStats.total, icon: ClipboardList, color: 'amber', href: '/production' },
     { label: 'Ready', value: stats?.statuses?.READY ?? 0, icon: CheckCircle, color: 'green', href: '/search?status=READY' },
     { label: 'Delivered', value: stats?.statuses?.DELIVERED ?? 0, icon: Truck, color: 'purple', href: '/search?status=DELIVERED' },
@@ -157,7 +157,7 @@ export default function DashboardPage() {
                 </>
               )}
             </div>
-            <p className="text-xs text-gray-400 mt-2">{total} total volts across all warehouses</p>
+            <p className="text-xs text-gray-400 mt-2">{total} total vaults across all warehouses</p>
 
             {/* By warehouse */}
             {stats?.by_warehouse && (
@@ -210,7 +210,7 @@ export default function DashboardPage() {
           <h2 className="font-semibold text-gray-900 mb-4">Quick Actions</h2>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             {[
-              { label: 'Add Volt', icon: Plus, href: '/warehouses', color: 'bg-blue-50 text-blue-600 hover:bg-blue-100' },
+              { label: 'Add Vault', icon: Plus, href: '/warehouses', color: 'bg-blue-50 text-blue-600 hover:bg-blue-100' },
               { label: 'New Order', icon: ClipboardList, href: '/production', color: 'bg-amber-50 text-amber-600 hover:bg-amber-100' },
               { label: 'Search', icon: Search, href: '/search', color: 'bg-green-50 text-green-600 hover:bg-green-100' },
               { label: 'Chat', icon: MessageSquare, href: '/chat', color: 'bg-purple-50 text-purple-600 hover:bg-purple-100' },

@@ -196,7 +196,7 @@ export default function SnapshotsPage() {
                   <p className="font-semibold text-gray-900">Warehouse {snap.warehouse_id}</p>
                   <p className="text-sm text-gray-500 mt-0.5">{snap.snapshot_date} · {snap.snapshot_time}</p>
                   <p className="text-2xl font-bold text-gray-900 mt-3">{snap.total_boxes}</p>
-                  <p className="text-xs text-gray-400 mb-4">total volts</p>
+                  <p className="text-xs text-gray-400 mb-4">total vaults</p>
                   <button
                     onClick={() => openReport(snap)}
                     className="w-full flex items-center justify-center gap-2 py-2 text-sm text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-xl transition-colors font-medium"
@@ -269,7 +269,7 @@ export default function SnapshotsPage() {
                   <>
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
                       {[
-                        { label: 'Total Volts', value: report.boxes.length || report.snap.total_boxes, icon: Package, color: 'bg-gray-50 text-gray-700' },
+                        { label: 'Total Vaults', value: report.boxes.length || report.snap.total_boxes, icon: Package, color: 'bg-gray-50 text-gray-700' },
                         { label: 'Pending',     value: pending,   icon: Clock,        color: 'bg-amber-50 text-amber-700' },
                         { label: 'Ready',       value: ready,     icon: CheckCircle,  color: 'bg-green-50 text-green-700' },
                         { label: 'Delivered',   value: delivered, icon: Truck,        color: 'bg-blue-50 text-blue-700' },
@@ -297,7 +297,7 @@ export default function SnapshotsPage() {
                             <div key={level}>
                               <div className="flex items-center gap-3 mb-3">
                                 <h2 className="font-bold text-gray-900 text-base">Level {level} — {levelName}</h2>
-                                <span className="text-xs text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">{levelBoxes.length} volts</span>
+                                <span className="text-xs text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">{levelBoxes.length} vaults</span>
                               </div>
 
                               <div className="border border-gray-200 rounded-xl overflow-hidden">
@@ -347,7 +347,7 @@ export default function SnapshotsPage() {
                         })}
                       </div>
                     ) : (
-                      <p className="text-center py-8 text-gray-400">No volt data available for this snapshot.</p>
+                      <p className="text-center py-8 text-gray-400">No vault data available for this snapshot.</p>
                     )}
 
                     {/* Print footer */}

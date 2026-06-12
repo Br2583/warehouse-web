@@ -17,7 +17,7 @@ export default function WarehousesPage() {
   const [stats, setStats] = useState<any>(null);
 
   useEffect(() => {
-    api.get('/api/stats/global').then(setStats).catch(console.error);
+    api.get('/api/stats/global').then(setStats).catch(() => {});
   }, []);
 
   return (
@@ -51,7 +51,7 @@ export default function WarehousesPage() {
                     <div className="flex items-center gap-2 mt-2">
                       <Package className="w-4 h-4 text-gray-400" />
                       <span className="text-2xl font-bold text-gray-900">{count}</span>
-                      <span className="text-sm text-gray-400">volts stored</span>
+                      <span className="text-sm text-gray-400">vaults stored</span>
                     </div>
                     <div className="mt-4 pt-4 border-t border-gray-50">
                       <span className="text-xs text-blue-600 font-medium">View inventory →</span>

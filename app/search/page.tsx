@@ -59,7 +59,7 @@ function SearchContent() {
       <main className="md:ml-64 flex-1 p-4 md:p-8 pb-20 md:pb-8">
         <div className="mb-8">
           <h1 className="text-2xl font-bold text-gray-900">
-            {statusFilter ? `${statusFilter} Volts` : 'Global Search'}
+            {statusFilter ? `${statusFilter} Vaults` : 'Global Search'}
           </h1>
           <p className="text-gray-500 text-sm mt-1">Search across all warehouses</p>
         </div>
