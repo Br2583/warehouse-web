@@ -90,7 +90,7 @@ export default function Home() {
         autoPlay muted loop playsInline
         onCanPlay={() => setVideoLoaded(true)}
         className="absolute inset-0 w-full h-full object-cover z-0 transition-opacity duration-1000"
-        style={{ opacity: 0 }}
+        style={{ opacity: videoLoaded ? 0.55 : 0 }}
         src="/bg.mp4"
       />
 
