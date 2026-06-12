@@ -90,7 +90,7 @@ export default function Home() {
         autoPlay muted loop playsInline
         onCanPlay={() => setVideoLoaded(true)}
         className="absolute inset-0 w-full h-full object-cover z-0 transition-opacity duration-1000"
-        style={{ opacity: videoLoaded ? 0.55 : 0 }}
+        style={{ opacity: 0 }}
         src="/bg.mp4"
       />
 
@@ -135,7 +135,7 @@ export default function Home() {
           initial={{ opacity: 0, y: 20, filter: 'blur(8px)' }}
           animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
           transition={{ delay: 1.0, duration: 1.0, ease: [0.25, 0.1, 0.25, 1] }}
-          className="text-5xl md:text-7xl font-black text-white leading-none tracking-tight mb-3"
+          className="text-4xl md:text-6xl font-black text-white leading-none tracking-tight mb-3"
           style={{ textShadow: '0 2px 40px rgba(0,0,0,0.5)' }}
         >
           Warehouse
@@ -144,7 +144,7 @@ export default function Home() {
           initial={{ opacity: 0, y: 20, filter: 'blur(8px)' }}
           animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
           transition={{ delay: 1.1, duration: 1.0, ease: [0.25, 0.1, 0.25, 1] }}
-          className="text-5xl md:text-7xl font-black leading-none tracking-tight mb-10"
+          className="text-4xl md:text-6xl font-black leading-none tracking-tight mb-10"
           style={{
             background: 'linear-gradient(135deg, #60a5fa 0%, #a78bfa 50%, #f472b6 100%)',
             WebkitBackgroundClip: 'text',
