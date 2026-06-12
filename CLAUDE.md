@@ -14,7 +14,7 @@
 - `components/AppShell.tsx` — shows BottomNav on auth routes
 - `components/Sidebar.tsx` — desktop only (hidden on mobile)
 - `components/BottomNav.tsx` — mobile bottom nav (5 items)
-- `middleware.ts` — checks portal_unlocked cookie, refreshes sliding 2h window
+- `proxy.ts` — checks portal_unlocked cookie, refreshes sliding 2h window (renamed from middleware.ts in Next.js 16)
 - `app/api/portal/route.ts` — server-side portal code check with rate limiting
 
 ## Routes
@@ -37,7 +37,7 @@
 - Portal code in `.env.local` as `PORTAL_CODE` (server-only, never in browser bundle)
 - `app/api/portal/route.ts` verifies server-side — 5 attempts max, 30s lockout per IP
 - Middleware enforces 2-hour sliding inactivity timeout on `portal_unlocked` cookie
-- Cookie set server-side: `SameSite=Strict`, `Secure` in production
+- Cookie set server-side: `SameSite=Lax` (Strict broke OAuth redirect), `Secure` in production
 - Security headers in `next.config.ts`: X-Content-Type-Options, X-Frame-Options, Referrer-Policy, Permissions-Policy
 - EmailJS keys in `.env.local` with NEXT_PUBLIC_ prefix
 - `api.delete` handles 204 No Content safely
@@ -70,5 +70,23 @@ packer, photos[] (base64, max 6, 5MB each), estado/status (PENDING/READY/DELIVER
 - `app/api/portal/route.ts` reads file first, falls back to `PORTAL_CODE` env var
 - Change requires current code as verification; owner-only UI in `/profile`
 
+## Deploy — Next Session
+- **Railway** — plataforma elegida ($5/mes, subdominio gratis `xxx.up.railway.app`)
+- Pasos: subir repo a GitHub → crear cuenta Railway → conectar repo → pegar variables de .env.local → listo
+- `data/portal-code.json` necesita volumen persistente en Railway (configurar en settings)
+- Build command: `npm run build` — Start command: `npm run start`
+- Todas las variables de .env.local van en Railway → Variables panel
+
+## Estado actual — Todo listo para producción
+- Build limpio: `npx next build` sin warnings ni errores
+- `middleware.ts` migrado a `proxy.ts` (Next.js 16 convention)
+- Todos los `alert()` reemplazados por banners de error inline
+- Todos los `console.error` eliminados de producción
+- `alt` en todas las imágenes
+- Mobile: landing, portal modal y login se ven bien en 375px
+- SameSite=Lax en cookie (fix del loop infinito con Google OAuth)
+- ngrok instalado en `C:\Users\PC\ngrok\ngrok.exe` para testing local
+
 ## PENDING — Next Session
-1. **Verify EmailJS template ID** — confirm `warehouse_report` matches actual template ID in EmailJS dashboard
+1. **Desplegar en Railway** — usuario tiene $5, listo para hacerlo
+2. **Verificar EmailJS template ID** — confirmar que `warehouse_report` es el ID real en el dashboard de EmailJS
