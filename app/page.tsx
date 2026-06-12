@@ -99,11 +99,6 @@ export default function Home() {
         background: 'linear-gradient(to bottom, rgba(0,0,0,0.3) 0%, rgba(0,0,0,0.5) 60%, rgba(0,0,0,0.75) 100%)'
       }} />
 
-      {/* Grid overlay */}
-      <div className="absolute inset-0 z-10 opacity-[0.04]" style={{
-        backgroundImage: 'linear-gradient(rgba(255,255,255,1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,1) 1px, transparent 1px)',
-        backgroundSize: '60px 60px'
-      }} />
 
       {/* Curtain */}
       <motion.div
