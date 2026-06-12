@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { getToken } from '@/lib/api';
-import { Lock } from 'lucide-react';
+import { Lock, ArrowRight } from 'lucide-react';
 
 const PHRASES = [
   'Content & Records Management.',
@@ -52,16 +52,13 @@ export default function Home() {
     if (!code.trim() || loading) return;
     setLoading(true);
     setError('');
-
     try {
       const res = await fetch('/api/portal', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ code }),
       });
-
       const data = await res.json();
-
       if (res.ok) {
         router.replace('/login');
       } else {
@@ -93,10 +90,20 @@ export default function Home() {
         autoPlay muted loop playsInline
         onCanPlay={() => setVideoLoaded(true)}
         className="absolute inset-0 w-full h-full object-cover z-0 transition-opacity duration-1000"
-        style={{ opacity: videoLoaded ? 1 : 0 }}
+        style={{ opacity: videoLoaded ? 0.55 : 0 }}
         src="/bg.mp4"
       />
-      <div className="absolute inset-0 z-10 bg-black/45" />
+
+      {/* Gradient overlay */}
+      <div className="absolute inset-0 z-10" style={{
+        background: 'linear-gradient(to bottom, rgba(0,0,0,0.3) 0%, rgba(0,0,0,0.5) 60%, rgba(0,0,0,0.75) 100%)'
+      }} />
+
+      {/* Grid overlay */}
+      <div className="absolute inset-0 z-10 opacity-[0.04]" style={{
+        backgroundImage: 'linear-gradient(rgba(255,255,255,1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,1) 1px, transparent 1px)',
+        backgroundSize: '60px 60px'
+      }} />
 
       {/* Curtain */}
       <motion.div
@@ -107,37 +114,78 @@ export default function Home() {
       />
 
       {/* Content */}
-      <div className="relative z-20 flex flex-col items-center text-center px-6 w-full max-w-md">
+      <div className="relative z-20 flex flex-col items-center text-center px-6 w-full max-w-lg">
+
+        {/* Badge */}
         <motion.div
-          initial={{ opacity: 0, y: -12, filter: 'blur(6px)' }}
-          animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
-          transition={{ delay: 0.9, duration: 0.9, ease: [0.25, 0.1, 0.25, 1] }}
-          className="flex items-center gap-3 mb-12"
+          initial={{ opacity: 0, y: -12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.9, duration: 0.8 }}
+          className="flex items-center gap-3 mb-8"
         >
-          <div className="h-px flex-1 max-w-8 bg-white/25" />
-          <span className="text-white/40 text-xs tracking-[0.2em] uppercase text-center">
+          <div className="h-px w-8 bg-white/20" />
+          <span className="text-white/40 text-[11px] tracking-[0.25em] uppercase">
             Archive Contents Restoration
           </span>
-          <div className="h-px flex-1 max-w-8 bg-white/25" />
+          <div className="h-px w-8 bg-white/20" />
         </motion.div>
 
-        <motion.button
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 1.4, duration: 0.7, ease: [0.25, 0.1, 0.25, 1] }}
-          whileHover={{ scale: 1.04 }}
-          whileTap={{ scale: 0.97 }}
-          onClick={() => setShowCodeInput(true)}
-          className="flex items-center justify-center gap-2 px-10 py-3.5 rounded-2xl text-sm font-semibold text-white"
+        {/* Main title */}
+        <motion.h1
+          initial={{ opacity: 0, y: 20, filter: 'blur(8px)' }}
+          animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+          transition={{ delay: 1.0, duration: 1.0, ease: [0.25, 0.1, 0.25, 1] }}
+          className="text-5xl md:text-7xl font-black text-white leading-none tracking-tight mb-3"
+          style={{ textShadow: '0 2px 40px rgba(0,0,0,0.5)' }}
+        >
+          Warehouse
+        </motion.h1>
+        <motion.h1
+          initial={{ opacity: 0, y: 20, filter: 'blur(8px)' }}
+          animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+          transition={{ delay: 1.1, duration: 1.0, ease: [0.25, 0.1, 0.25, 1] }}
+          className="text-5xl md:text-7xl font-black leading-none tracking-tight mb-10"
           style={{
-            background: 'rgba(255,255,255,0.1)',
-            border: '1px solid rgba(255,255,255,0.18)',
-            backdropFilter: 'blur(12px)',
+            background: 'linear-gradient(135deg, #60a5fa 0%, #a78bfa 50%, #f472b6 100%)',
+            WebkitBackgroundClip: 'text',
+            WebkitTextFillColor: 'transparent',
+            backgroundClip: 'text',
+            textShadow: 'none',
           }}
         >
-          <Lock size={14} />
-          Portal Access
+          Manager
+        </motion.h1>
+
+        {/* Portal button */}
+        <motion.button
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 1.4, duration: 0.7 }}
+          whileHover={{ scale: 1.04, y: -2 }}
+          whileTap={{ scale: 0.97 }}
+          onClick={() => setShowCodeInput(true)}
+          className="group flex items-center gap-3 px-8 py-4 rounded-2xl text-sm font-semibold text-white transition-all"
+          style={{
+            background: 'linear-gradient(135deg, rgba(96,165,250,0.15) 0%, rgba(167,139,250,0.15) 100%)',
+            border: '1px solid rgba(255,255,255,0.2)',
+            backdropFilter: 'blur(20px)',
+            boxShadow: '0 8px 32px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.1)',
+          }}
+        >
+          <Lock size={15} className="text-white/70" />
+          <span>Portal Access</span>
+          <ArrowRight size={14} className="text-white/40 group-hover:text-white/70 group-hover:translate-x-0.5 transition-all" />
         </motion.button>
+
+        {/* Subtext */}
+        <motion.p
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 1.8, duration: 1 }}
+          className="mt-5 text-white/20 text-xs tracking-wide"
+        >
+          Authorized personnel only
+        </motion.p>
       </div>
 
       {/* Typewriter */}
@@ -145,10 +193,10 @@ export default function Home() {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: 2.2, duration: 1 }}
-        className="absolute bottom-5 left-5 md:left-8 z-20 flex items-center gap-1"
+        className="absolute bottom-6 left-6 md:left-8 z-20 flex items-center gap-1"
       >
-        <span className="text-xs" style={{ color: 'rgba(255,255,255,0.25)' }}>{displayed}</span>
-        <span className="inline-block w-px h-3 bg-white/25 animate-pulse" />
+        <span className="text-xs" style={{ color: 'rgba(255,255,255,0.22)' }}>{displayed}</span>
+        <span className="inline-block w-px h-3 bg-white/20 animate-pulse" />
       </motion.div>
 
       {/* PixelCore */}
@@ -156,10 +204,10 @@ export default function Home() {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: 2.4, duration: 1 }}
-        className="absolute bottom-5 right-5 md:right-8 z-20 text-xs"
+        className="absolute bottom-6 right-6 md:right-8 z-20 text-xs"
         style={{ color: 'rgba(255,255,255,0.15)' }}
       >
-        Built by <span style={{ color: 'rgba(255,255,255,0.25)', fontWeight: 500 }}>PixelCore</span>
+        Built by <span style={{ color: 'rgba(255,255,255,0.3)', fontWeight: 600 }}>PixelCore</span>
       </motion.p>
 
       {/* Code Modal */}
@@ -170,30 +218,34 @@ export default function Home() {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             className="fixed inset-0 z-50 flex items-center justify-center px-4"
-            style={{ background: 'rgba(0,0,0,0.65)', backdropFilter: 'blur(16px)' }}
+            style={{ background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(20px)' }}
             onClick={e => { if (e.target === e.currentTarget) closeModal(); }}
           >
             <motion.div
-              initial={{ scale: 0.92, opacity: 0, y: 16 }}
+              initial={{ scale: 0.9, opacity: 0, y: 20 }}
               animate={{ scale: 1, opacity: 1, y: 0 }}
-              exit={{ scale: 0.92, opacity: 0, y: 16 }}
-              transition={{ type: 'spring', stiffness: 300, damping: 28 }}
-              className="w-full max-w-xs rounded-2xl p-7"
+              exit={{ scale: 0.9, opacity: 0, y: 20 }}
+              transition={{ type: 'spring', stiffness: 320, damping: 28 }}
+              className="w-full max-w-xs rounded-3xl p-8"
               style={{
-                background: 'rgba(10,10,14,0.97)',
+                background: 'linear-gradient(135deg, rgba(15,15,25,0.98) 0%, rgba(20,20,35,0.98) 100%)',
                 border: '1px solid rgba(255,255,255,0.1)',
-                boxShadow: '0 32px 64px rgba(0,0,0,0.6)',
+                boxShadow: '0 40px 80px rgba(0,0,0,0.7), inset 0 1px 0 rgba(255,255,255,0.07)',
               }}
             >
-              <div className="text-center mb-6">
+              {/* Icon */}
+              <div className="flex flex-col items-center mb-7">
                 <div
-                  className="w-11 h-11 rounded-xl flex items-center justify-center mx-auto mb-4"
-                  style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)' }}
+                  className="w-14 h-14 rounded-2xl flex items-center justify-center mb-4"
+                  style={{
+                    background: 'linear-gradient(135deg, rgba(96,165,250,0.15) 0%, rgba(167,139,250,0.15) 100%)',
+                    border: '1px solid rgba(255,255,255,0.1)',
+                  }}
                 >
-                  <Lock className="text-white/50" size={18} />
+                  <Lock className="text-white/60" size={20} />
                 </div>
-                <h2 className="text-white font-bold text-base">Portal Access</h2>
-                <p className="text-white/30 text-xs mt-1">Enter your access code</p>
+                <h2 className="text-white font-bold text-lg">Portal Access</h2>
+                <p className="text-white/30 text-xs mt-1">Enter your access code to continue</p>
               </div>
 
               <input
@@ -203,13 +255,12 @@ export default function Home() {
                 onKeyDown={e => e.key === 'Enter' && handleSubmit()}
                 placeholder="••••"
                 disabled={loading}
-                className="w-full px-4 py-3 rounded-xl text-center tracking-[0.4em] outline-none transition-all text-white text-lg disabled:opacity-50"
+                className="w-full px-4 py-3.5 rounded-xl text-center tracking-[0.5em] outline-none transition-all text-white text-xl font-bold disabled:opacity-50"
                 style={{
                   background: 'rgba(255,255,255,0.05)',
-                  border: error ? '1px solid rgba(239,68,68,0.5)' : '1px solid rgba(255,255,255,0.1)',
+                  border: error ? '1px solid rgba(239,68,68,0.6)' : '1px solid rgba(255,255,255,0.1)',
                   caretColor: 'white',
                   color: 'white',
-                  backgroundColor: 'rgba(255,255,255,0.05)',
                 }}
                 autoFocus
                 inputMode="numeric"
@@ -221,18 +272,18 @@ export default function Home() {
                     initial={{ opacity: 0, y: -4 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0 }}
-                    className="text-red-400 text-xs text-center mt-2 leading-snug"
+                    className="text-red-400 text-xs text-center mt-2.5"
                   >
                     {error}
                   </motion.p>
                 )}
               </AnimatePresence>
 
-              <div className="flex gap-3 mt-5">
+              <div className="flex gap-3 mt-6">
                 <button
                   onClick={closeModal}
                   disabled={loading}
-                  className="flex-1 py-2.5 rounded-xl text-white/30 text-sm hover:text-white/50 transition-colors disabled:opacity-40"
+                  className="flex-1 py-3 rounded-xl text-white/30 text-sm hover:text-white/50 transition-colors disabled:opacity-40"
                   style={{ border: '1px solid rgba(255,255,255,0.07)' }}
                 >
                   Cancel
@@ -240,15 +291,15 @@ export default function Home() {
                 <button
                   onClick={handleSubmit}
                   disabled={loading || !code.trim()}
-                  className="flex-1 py-2.5 rounded-xl text-white font-semibold text-sm hover:brightness-125 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+                  className="flex-1 py-3 rounded-xl text-white font-semibold text-sm transition-all disabled:opacity-40 flex items-center justify-center gap-2"
                   style={{
-                    background: 'rgba(255,255,255,0.12)',
-                    border: '1px solid rgba(255,255,255,0.2)',
+                    background: 'linear-gradient(135deg, rgba(96,165,250,0.25) 0%, rgba(167,139,250,0.25) 100%)',
+                    border: '1px solid rgba(255,255,255,0.15)',
                   }}
                 >
-                  {loading ? (
-                    <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                  ) : 'Continue'}
+                  {loading
+                    ? <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    : <>Continue <ArrowRight size={13} /></>}
                 </button>
               </div>
             </motion.div>
