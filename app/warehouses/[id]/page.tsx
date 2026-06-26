@@ -76,7 +76,8 @@ const toBase64 = (file: File): Promise<string> =>
 
 export default function WarehouseDetailPage() {
   const { id } = useParams();
-  const warehouseId = Number(id);
+  const warehouseId = id as string;
+  const [warehouseName, setWarehouseName] = useState('');
   const [boxes, setBoxes] = useState<Box[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -107,7 +108,12 @@ export default function WarehouseDetailPage() {
       .finally(() => setLoading(false));
   };
 
-  useEffect(() => { fetchBoxes(); }, [warehouseId]);
+  useEffect(() => {
+    fetchBoxes();
+    import('@/lib/pb').then(({ pb }) =>
+      pb.collection('warehouses').getOne(warehouseId).then(w => setWarehouseName(w.name)).catch(() => {})
+    );
+  }, [warehouseId]);
 
   const filtered = boxes.filter(b =>
     b.client_name?.toLowerCase().includes(search.toLowerCase()) ||
@@ -249,7 +255,7 @@ export default function WarehouseDetailPage() {
         {/* Header */}
         <div className="flex flex-wrap items-center justify-between gap-3 mb-8">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">Warehouse {warehouseId}</h1>
+            <h1 className="text-2xl font-bold text-gray-900">{warehouseName || 'Warehouse'}</h1>
             <p className="text-gray-500 text-sm mt-1">{boxes.length} vaults stored</p>
           </div>
           <div className="flex items-center gap-2">

@@ -1,10 +1,12 @@
-﻿'use client';
+'use client';
 
 import { useEffect, useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Camera, Trash2, Plus, Printer, X, Package, CheckCircle, Truck, Clock, Mail, AlertCircle } from 'lucide-react';
 import Sidebar from '@/components/Sidebar';
 import { api } from '@/lib/api';
+import { pb } from '@/lib/pb';
+import { useAuth } from '@/lib/auth-context';
 import emailjs from '@emailjs/browser';
 
 const EMAILJS_SERVICE_ID  = process.env.NEXT_PUBLIC_EMAILJS_SERVICE_ID!;
@@ -18,7 +20,9 @@ const STATUS_COLORS: Record<string, string> = {
 };
 
 export default function SnapshotsPage() {
+  const { user } = useAuth();
   const [snapshots, setSnapshots] = useState<any[]>([]);
+  const [warehouses, setWarehouses] = useState<{ id: string; name: string }[]>([]);
   const [loading, setLoading] = useState(true);
   const [report, setReport] = useState<{ snap: any; boxes: any[] } | null>(null);
   const [reportLoading, setReportLoading] = useState(false);
@@ -37,7 +41,15 @@ export default function SnapshotsPage() {
 
   useEffect(() => { fetchSnapshots(); }, []);
 
-  const createSnapshot = async (warehouseId: number) => {
+  useEffect(() => {
+    if (!user?.company_id) return;
+    pb.collection('warehouses')
+      .getFullList({ filter: `company_id="${user.company_id}"`, sort: 'created' })
+      .then(whs => setWarehouses(whs.map(w => ({ id: w.id, name: w['name'] as string }))))
+      .catch(() => {});
+  }, [user?.company_id]);
+
+  const createSnapshot = async (warehouseId: string) => {
     setActionError('');
     try {
       await api.post(`/api/snapshots/create/${warehouseId}`, {});
@@ -62,20 +74,8 @@ export default function SnapshotsPage() {
     setReportLoading(true);
     setReport({ snap, boxes: [] });
     try {
-      // Try to get snapshot detail first
-      const detail = await api.get(`/api/snapshots/${snap.snapshot_id}`).catch(() => null);
-      const boxes = detail?.boxes || detail?.volts || detail?.items || null;
-
-      if (boxes && Array.isArray(boxes) && boxes.length > 0) {
-        setReport({ snap, boxes });
-      } else {
-        // Fallback: fetch current warehouse boxes
-        const whData = await api.get(`/api/boxes?warehouse_id=${snap.warehouse_id}`);
-        const whBoxes = Array.isArray(whData) ? whData : whData?.boxes || [];
-        setReport({ snap, boxes: whBoxes });
-      }
-    } catch {
-      setReport({ snap, boxes: [] });
+      const boxes = snap.data?.vaults || [];
+      setReport({ snap, boxes });
     } finally {
       setReportLoading(false);
     }
@@ -107,10 +107,9 @@ export default function SnapshotsPage() {
 
       await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
         to_email:       toEmail,
-        warehouse_id:   report.snap.warehouse_id,
-        snapshot_date:  report.snap.snapshot_date,
-        snapshot_time:  report.snap.snapshot_time,
-        total:          report.boxes.length || report.snap.total_boxes,
+        warehouse_name: report.snap.warehouse_name,
+        snapshot_date:  report.snap.date,
+        total:          report.boxes.length || report.snap.box_count,
         pending:        report.boxes.filter(b => (b.estado||b.status) === 'PENDING').length,
         ready:          report.boxes.filter(b => (b.estado||b.status) === 'READY').length,
         delivered:      report.boxes.filter(b => (b.estado||b.status) === 'DELIVERED').length,
@@ -151,11 +150,11 @@ export default function SnapshotsPage() {
               <h1 className="text-2xl font-bold text-gray-900">Snapshots</h1>
               <p className="text-gray-500 text-sm mt-1">Daily inventory records — click to view & print</p>
             </div>
-            <div className="flex gap-2">
-              {[1, 2, 3].map(id => (
-                <button key={id} onClick={() => createSnapshot(id)}
+            <div className="flex gap-2 flex-wrap justify-end">
+              {warehouses.map(wh => (
+                <button key={wh.id} onClick={() => createSnapshot(wh.id)}
                   className="flex items-center gap-2 px-4 py-2 text-sm bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors">
-                  <Plus className="w-4 h-4" /> WH {id}
+                  <Plus className="w-4 h-4" /> {wh.name}
                 </button>
               ))}
             </div>
@@ -179,7 +178,7 @@ export default function SnapshotsPage() {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               {snapshots.map((snap, i) => (
                 <motion.div
-                  key={snap.snapshot_id}
+                  key={snap.id}
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: i * 0.06 }}
@@ -189,13 +188,13 @@ export default function SnapshotsPage() {
                     <div className="w-9 h-9 bg-blue-50 rounded-xl flex items-center justify-center">
                       <Camera className="w-4 h-4 text-blue-600" />
                     </div>
-                    <button onClick={() => deleteSnapshot(snap.snapshot_id)} className="text-gray-300 hover:text-red-400 transition-colors">
+                    <button onClick={() => deleteSnapshot(snap.id)} className="text-gray-300 hover:text-red-400 transition-colors">
                       <Trash2 className="w-4 h-4" />
                     </button>
                   </div>
-                  <p className="font-semibold text-gray-900">Warehouse {snap.warehouse_id}</p>
-                  <p className="text-sm text-gray-500 mt-0.5">{snap.snapshot_date} · {snap.snapshot_time}</p>
-                  <p className="text-2xl font-bold text-gray-900 mt-3">{snap.total_boxes}</p>
+                  <p className="font-semibold text-gray-900">{snap.warehouse_name}</p>
+                  <p className="text-sm text-gray-500 mt-0.5">{snap.date}</p>
+                  <p className="text-2xl font-bold text-gray-900 mt-3">{snap.box_count}</p>
                   <p className="text-xs text-gray-400 mb-4">total vaults</p>
                   <button
                     onClick={() => openReport(snap)}
@@ -223,7 +222,7 @@ export default function SnapshotsPage() {
               {/* Modal toolbar (hidden on print) */}
               <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 print:hidden">
                 <h2 className="font-bold text-gray-900">
-                  Warehouse {report.snap.warehouse_id} — {report.snap.snapshot_date} {report.snap.snapshot_time}
+                  {report.snap.warehouse_name} — {report.snap.date}
                 </h2>
                 <div className="flex items-center gap-3">
                   <button
@@ -251,7 +250,7 @@ export default function SnapshotsPage() {
                   <div className="flex items-center justify-between">
                     <div>
                       <h1 className="text-2xl font-bold text-gray-900">Inventory Report</h1>
-                      <p className="text-gray-500 mt-1">Warehouse {report.snap.warehouse_id} · {report.snap.snapshot_date} at {report.snap.snapshot_time}</p>
+                      <p className="text-gray-500 mt-1">{report.snap.warehouse_name} · {report.snap.date}</p>
                     </div>
                     <div className="text-right">
                       <p className="text-sm text-gray-400">Generated</p>
@@ -269,7 +268,7 @@ export default function SnapshotsPage() {
                   <>
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
                       {[
-                        { label: 'Total Vaults', value: report.boxes.length || report.snap.total_boxes, icon: Package, color: 'bg-gray-50 text-gray-700' },
+                        { label: 'Total Vaults', value: report.boxes.length || report.snap.box_count, icon: Package, color: 'bg-gray-50 text-gray-700' },
                         { label: 'Pending',     value: pending,   icon: Clock,        color: 'bg-amber-50 text-amber-700' },
                         { label: 'Ready',       value: ready,     icon: CheckCircle,  color: 'bg-green-50 text-green-700' },
                         { label: 'Delivered',   value: delivered, icon: Truck,        color: 'bg-blue-50 text-blue-700' },
@@ -352,7 +351,7 @@ export default function SnapshotsPage() {
 
                     {/* Print footer */}
                     <div className="mt-8 pt-4 border-t border-gray-100 flex justify-between text-xs text-gray-400">
-                      <span>Warehouse {report.snap.warehouse_id} · Snapshot {report.snap.snapshot_date}</span>
+                      <span>{report.snap.warehouse_name} · Snapshot {report.snap.date}</span>
                       <span>Printed {new Date().toLocaleString()}</span>
                     </div>
                   </>
@@ -380,7 +379,7 @@ export default function SnapshotsPage() {
                 </button>
               </div>
               <p className="text-sm text-gray-500 mb-4">
-                Warehouse {report.snap.warehouse_id} · {report.snap.snapshot_date}
+                {report.snap.warehouse_name} · {report.snap.date}
               </p>
               <input
                 type="email"
@@ -409,4 +408,3 @@ export default function SnapshotsPage() {
     </>
   );
 }
-

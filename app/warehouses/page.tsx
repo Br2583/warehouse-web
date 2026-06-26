@@ -2,37 +2,127 @@
 
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
-import { Building2, Package, Plus, ChevronRight } from 'lucide-react';
+import { Building2, Package, Plus, ChevronRight, Loader2 } from 'lucide-react';
 import Sidebar from '@/components/Sidebar';
-import { api } from '@/lib/api';
+import { pb } from '@/lib/pb';
+import { useAuth } from '@/lib/auth-context';
 import Link from 'next/link';
 
-const WAREHOUSES = [
-  { id: 1, name: 'Warehouse 1' },
-  { id: 2, name: 'Warehouse 2' },
-  { id: 3, name: 'Warehouse 3' },
-];
+interface Warehouse {
+  id: string;
+  name: string;
+  address?: string;
+  color?: string;
+  vault_count: number;
+}
 
 export default function WarehousesPage() {
-  const [stats, setStats] = useState<any>(null);
+  const { user } = useAuth();
+  const [warehouses, setWarehouses] = useState<Warehouse[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [creating, setCreating] = useState(false);
+  const [newName, setNewName] = useState('');
+  const [showCreate, setShowCreate] = useState(false);
 
-  useEffect(() => {
-    api.get('/api/stats/global').then(setStats).catch(() => {});
-  }, []);
+  const fetchWarehouses = async () => {
+    const cid = user?.company_id;
+    if (!cid) return;
+    try {
+      const [whs, vaults] = await Promise.all([
+        pb.collection('warehouses').getFullList({ filter: `company_id="${cid}"`, sort: 'created' }),
+        pb.collection('vaults').getFullList({ filter: `company_id="${cid}"`, fields: 'id,warehouse_id' }),
+      ]);
+      const counts: Record<string, number> = {};
+      for (const v of vaults) counts[v.warehouse_id] = (counts[v.warehouse_id] || 0) + 1;
+      setWarehouses(whs.map(w => ({
+        id:         w.id,
+        name:       w['name'] as string,
+        address:    w['address'] as string | undefined,
+        color:      w['color'] as string | undefined,
+        vault_count: counts[w.id] || 0,
+      })));
+    } catch {}
+    finally { setLoading(false); }
+  };
+
+  useEffect(() => { if (user?.company_id) fetchWarehouses(); }, [user?.company_id]);
+
+  const createWarehouse = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newName.trim() || !user?.company_id) return;
+    setCreating(true);
+    try {
+      await pb.collection('warehouses').create({
+        company_id: user.company_id,
+        name:       newName.trim(),
+        rows:       10,
+        cols:       8,
+      });
+      setNewName('');
+      setShowCreate(false);
+      await fetchWarehouses();
+    } catch {}
+    finally { setCreating(false); }
+  };
 
   return (
     <div className="flex min-h-screen bg-gray-50">
       <Sidebar />
       <main className="md:ml-64 flex-1 p-4 md:p-8 pb-20 md:pb-8">
-        <div className="mb-8">
-          <h1 className="text-2xl font-bold text-gray-900">Warehouses</h1>
-          <p className="text-gray-500 text-sm mt-1">Select a warehouse to manage its inventory</p>
+        <div className="flex items-center justify-between mb-8">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">Warehouses</h1>
+            <p className="text-gray-500 text-sm mt-1">Select a warehouse to manage its inventory</p>
+          </div>
+          {user?.role === 'owner' && (
+            <button
+              onClick={() => setShowCreate(s => !s)}
+              className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-xl hover:bg-blue-700 transition-colors"
+            >
+              <Plus className="w-4 h-4" /> New Warehouse
+            </button>
+          )}
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {WAREHOUSES.map((wh, i) => {
-            const count = stats?.by_warehouse?.[wh.id] ?? 0;
-            return (
+        {showCreate && (
+          <motion.form
+            initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }}
+            onSubmit={createWarehouse}
+            className="bg-white rounded-2xl border border-gray-100 p-5 mb-6 flex gap-3"
+          >
+            <input
+              type="text"
+              placeholder="Warehouse name..."
+              value={newName}
+              onChange={e => setNewName(e.target.value)}
+              autoFocus
+              className="flex-1 border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+            <button
+              type="submit"
+              disabled={creating || !newName.trim()}
+              className="px-5 py-2.5 bg-blue-600 text-white text-sm font-medium rounded-xl hover:bg-blue-700 disabled:opacity-50 transition-colors flex items-center gap-2"
+            >
+              {creating && <Loader2 className="w-4 h-4 animate-spin" />}
+              Create
+            </button>
+            <button type="button" onClick={() => setShowCreate(false)} className="px-4 py-2.5 text-gray-400 hover:text-gray-600 text-sm">Cancel</button>
+          </motion.form>
+        )}
+
+        {loading ? (
+          <div className="flex justify-center py-16">
+            <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
+          </div>
+        ) : warehouses.length === 0 ? (
+          <div className="text-center py-16 text-gray-400">
+            <Building2 className="w-12 h-12 mx-auto mb-3 opacity-30" />
+            <p className="font-medium">No warehouses yet</p>
+            <p className="text-sm mt-1">Create your first warehouse to get started</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {warehouses.map((wh, i) => (
               <motion.div
                 key={wh.id}
                 initial={{ opacity: 0, y: 20 }}
@@ -48,9 +138,10 @@ export default function WarehousesPage() {
                       <ChevronRight className="w-5 h-5 text-gray-300 group-hover:text-blue-500 transition-colors" />
                     </div>
                     <h2 className="text-lg font-semibold text-gray-900">{wh.name}</h2>
+                    {wh.address && <p className="text-xs text-gray-400 mt-0.5">{wh.address}</p>}
                     <div className="flex items-center gap-2 mt-2">
                       <Package className="w-4 h-4 text-gray-400" />
-                      <span className="text-2xl font-bold text-gray-900">{count}</span>
+                      <span className="text-2xl font-bold text-gray-900">{wh.vault_count}</span>
                       <span className="text-sm text-gray-400">vaults stored</span>
                     </div>
                     <div className="mt-4 pt-4 border-t border-gray-50">
@@ -59,11 +150,10 @@ export default function WarehousesPage() {
                   </div>
                 </Link>
               </motion.div>
-            );
-          })}
-        </div>
+            ))}
+          </div>
+        )}
       </main>
     </div>
   );
 }
-

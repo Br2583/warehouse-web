@@ -1,10 +1,11 @@
 'use client';
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { api, getToken, removeToken, setToken } from './api';
+import { pb } from './pb';
 
-interface User {
+export interface User {
   user_id: string;
+  id: string;
   email: string;
   name: string;
   picture?: string;
@@ -24,43 +25,72 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+async function buildUser(model: any): Promise<User> {
+  let company_name = '';
+  if (model.company_id) {
+    try {
+      const c = await pb.collection('companies').getOne(model.company_id);
+      company_name = c.name;
+    } catch {}
+  }
+  return {
+    user_id:      model.id,
+    id:           model.id,
+    email:        model.email,
+    name:         model.name,
+    picture:      model.avatar || undefined,
+    company_id:   model.company_id,
+    company_name,
+    role:         model.role,
+    pin_changed:  !!model.pin,
+  };
+}
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const token = getToken();
-    if (token) {
-      api.get('/api/auth/me')
+    if (pb.authStore.isValid && pb.authStore.model) {
+      buildUser(pb.authStore.model)
         .then(setUser)
-        .catch(() => removeToken())
+        .catch(() => pb.authStore.clear())
         .finally(() => setLoading(false));
     } else {
       setLoading(false);
     }
+
+    // Subscribe to auth changes
+    const unsub = pb.authStore.onChange((_token, model) => {
+      if (model) {
+        buildUser(model).then(setUser).catch(() => setUser(null));
+      } else {
+        setUser(null);
+      }
+    });
+
+    return () => unsub();
   }, []);
 
   const refreshUser = async () => {
     try {
-      const data = await api.get('/api/auth/me');
-      setUser(data);
+      await pb.collection('users').authRefresh();
+      if (pb.authStore.model) {
+        setUser(await buildUser(pb.authStore.model));
+      }
     } catch {
-      removeToken();
+      pb.authStore.clear();
       setUser(null);
     }
   };
 
   const logout = async () => {
-    try {
-      await api.post('/api/auth/logout', {});
-    } catch {}
-    removeToken();
+    pb.authStore.clear();
     setUser(null);
     window.location.href = '/login';
   };
 
-  const setUserFromLogin = (userData: User, token: string) => {
-    setToken(token);
+  const setUserFromLogin = (userData: User, _token: string) => {
     setUser(userData);
   };
 

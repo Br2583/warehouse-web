@@ -2,9 +2,9 @@
 
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Building2, Ticket, ArrowLeft, ArrowRight, Package } from 'lucide-react';
+import { Building2, Ticket, ArrowLeft, ArrowRight, Package, Loader2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { BACKEND_URL } from '@/lib/api';
+import { pb } from '@/lib/pb';
 
 type Screen = 'main' | 'create' | 'join';
 
@@ -17,6 +17,8 @@ const GoogleIcon = () => (
   </svg>
 );
 
+const genCode = () => Math.random().toString(36).substring(2, 10).toUpperCase();
+
 export default function LoginPage() {
   const router = useRouter();
   const [screen, setScreen] = useState<Screen>('main');
@@ -27,83 +29,92 @@ export default function LoginPage() {
   const [authLoading, setAuthLoading] = useState(false);
 
   useEffect(() => {
-    const hash = window.location.hash;
-    const params = new URLSearchParams(hash.replace('#', ''));
-    const sessionId = params.get('session_id');
-
-    if (sessionId) {
-      window.history.replaceState({}, document.title, window.location.pathname);
-      handleGoogleCallback(sessionId);
-      return;
-    }
-
-    const token = localStorage.getItem('session_token');
-    if (token) {
-      fetch(`${BACKEND_URL}/api/auth/me`, {
-        headers: { Authorization: `Bearer ${token}` },
-      }).then((res) => {
-        if (res.ok) router.replace('/dashboard');
-        else {
-          localStorage.removeItem('session_token');
-          setLoading(false);
-        }
-      }).catch(() => setLoading(false));
+    if (pb.authStore.isValid && pb.authStore.model?.company_id) {
+      router.replace('/dashboard');
     } else {
       setLoading(false);
     }
   }, []);
 
-  const handleGoogleCallback = async (sessionId: string) => {
-    setAuthLoading(true);
-    const action = localStorage.getItem('pending_auth_action');
-    const savedCompany = localStorage.getItem('pending_company_name');
-    const savedCode = localStorage.getItem('pending_invitation_code');
-    localStorage.removeItem('pending_auth_action');
-    localStorage.removeItem('pending_company_name');
-    localStorage.removeItem('pending_invitation_code');
+  // After Google OAuth completes (PocketBase popup flow), handle company setup
+  const afterOAuth = async (action: 'login' | 'create' | 'join') => {
+    const model = pb.authStore.model;
+    if (!model) { setError('Authentication failed'); setAuthLoading(false); return; }
 
-    let endpoint = '/api/auth/login';
-    let body: any = { session_id: sessionId };
+    // Already has a company → go to dashboard
+    if (model.company_id) { router.replace('/dashboard'); return; }
 
-    if (action === 'create' && savedCompany) {
-      endpoint = '/api/auth/create-company';
-      body = { company_name: savedCompany, google_session_id: sessionId };
-    } else if (action === 'join' && savedCode) {
-      endpoint = '/api/auth/join-company';
-      body = { invitation_code: savedCode, google_session_id: sessionId };
+    if (action === 'login') {
+      // Returning user with no company — ask them to create or join
+      setScreen('main');
+      setError('Your account has no company. Please create or join one.');
+      setAuthLoading(false);
+      return;
     }
 
-    try {
-      const res = await fetch(`${BACKEND_URL}${endpoint}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
-      });
-      const data = await res.json();
-      if (res.ok && data.session_token) {
-        localStorage.setItem('session_token', data.session_token);
-        localStorage.setItem('pin_verified', 'true');
+    if (action === 'create') {
+      try {
+        const code = genCode();
+        const company = await pb.collection('companies').create({
+          name:        companyName.trim(),
+          invite_code: code,
+          portal_code: '2019',
+          owner_id:    model.id,
+          plan:        'active',
+        });
+        await pb.collection('users').update(model.id, {
+          company_id: company.id,
+          role:       'owner',
+        });
+        // Refresh auth so model has updated fields
+        await pb.collection('users').authRefresh();
         router.replace('/dashboard');
-      } else {
-        setError(data.detail || 'Authentication failed');
+      } catch (e: any) {
+        setError(e.message || 'Failed to create company');
         setAuthLoading(false);
-        setLoading(false);
       }
-    } catch {
-      setError('Connection error. Please try again.');
-      setAuthLoading(false);
-      setLoading(false);
+      return;
+    }
+
+    if (action === 'join') {
+      try {
+        const company = await pb.collection('companies').getFirstListItem(`invite_code="${inviteCode.trim().toUpperCase()}"`);
+        await pb.collection('users').update(model.id, {
+          company_id: company.id,
+          role:       'worker',
+        });
+        await pb.collection('users').authRefresh();
+        router.replace('/dashboard');
+      } catch {
+        setError('Invitation code not found or expired');
+        setAuthLoading(false);
+      }
+      return;
     }
   };
 
-  const startGoogleAuth = (action: 'login' | 'create' | 'join') => {
+  const startGoogleAuth = async (action: 'login' | 'create' | 'join') => {
     if (action === 'create' && !companyName.trim()) { setError('Enter a company name'); return; }
-    if (action === 'join' && inviteCode.length < 6) { setError('Enter a valid invitation code'); return; }
-    localStorage.setItem('pending_auth_action', action);
-    if (action === 'create') localStorage.setItem('pending_company_name', companyName);
-    if (action === 'join') localStorage.setItem('pending_invitation_code', inviteCode.toUpperCase());
-    const redirect = encodeURIComponent(window.location.origin + '/login');
-    window.location.href = `https://auth.emergentagent.com/?redirect=${redirect}`;
+    if (action === 'join' && inviteCode.length < 6)  { setError('Enter a valid invitation code'); return; }
+
+    setError('');
+    setAuthLoading(true);
+    try {
+      await pb.collection('users').authWithOAuth2({
+        provider: 'google',
+        createData: { role: 'worker', notifications_enabled: false },
+      });
+      await afterOAuth(action);
+    } catch (e: any) {
+      if (e?.message?.includes('cancelled') || e?.message?.includes('popup')) {
+        setError('Sign-in cancelled');
+      } else if (e?.message?.includes('google') || e?.message?.includes('provider')) {
+        setError('Google sign-in is not configured yet. Contact your administrator.');
+      } else {
+        setError(e?.message || 'Authentication error');
+      }
+      setAuthLoading(false);
+    }
   };
 
   if (loading || authLoading) {
@@ -122,8 +133,6 @@ export default function LoginPage() {
       className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden"
       style={{ background: 'linear-gradient(135deg, #0a0f1a 0%, #111827 60%, #0d1117 100%)' }}
     >
-
-      {/* Glow */}
       <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 rounded-full opacity-[0.07] blur-3xl pointer-events-none"
         style={{ background: 'radial-gradient(circle, #60a5fa 0%, #a78bfa 50%, transparent 70%)' }} />
 
@@ -133,7 +142,6 @@ export default function LoginPage() {
         transition={{ duration: 0.6, ease: [0.25, 0.1, 0.25, 1] }}
         className="w-full max-w-sm relative z-10"
       >
-        {/* Logo */}
         <div className="text-center mb-8">
           <motion.div
             initial={{ scale: 0.8, opacity: 0 }}
@@ -150,13 +158,12 @@ export default function LoginPage() {
           </motion.div>
           <h1 className="text-2xl font-bold text-white tracking-tight">Warehouse Manager</h1>
           <p className="text-white/30 text-sm mt-1.5">
-            {screen === 'main' && 'Access your workspace'}
+            {screen === 'main'   && 'Access your workspace'}
             {screen === 'create' && 'Create a new company'}
-            {screen === 'join' && 'Join with invitation code'}
+            {screen === 'join'   && 'Join with invitation code'}
           </p>
         </div>
 
-        {/* Card */}
         <div
           className="rounded-3xl p-7"
           style={{
@@ -166,7 +173,6 @@ export default function LoginPage() {
             boxShadow: '0 32px 64px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.06)',
           }}
         >
-          {/* Error */}
           <AnimatePresence>
             {error && (
               <motion.div
@@ -181,12 +187,10 @@ export default function LoginPage() {
             )}
           </AnimatePresence>
 
-          {/* MAIN */}
           <AnimatePresence mode="wait">
+            {/* MAIN */}
             {screen === 'main' && (
               <motion.div key="main" initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 10 }} className="space-y-3">
-
-                {/* Sign In */}
                 <button
                   onClick={() => startGoogleAuth('login')}
                   className="w-full flex items-center gap-3 py-3.5 px-5 rounded-2xl font-semibold text-sm transition-all hover:brightness-110 active:scale-[0.98]"
@@ -207,7 +211,6 @@ export default function LoginPage() {
                   <div className="flex-1 h-px bg-white/8" />
                 </div>
 
-                {/* Create */}
                 <button
                   onClick={() => { setError(''); setScreen('create'); }}
                   className="w-full flex items-center gap-3 py-3.5 px-5 rounded-2xl text-sm font-medium transition-all hover:bg-white/8 active:scale-[0.98]"
@@ -218,7 +221,6 @@ export default function LoginPage() {
                   <ArrowRight size={14} className="text-white/20" />
                 </button>
 
-                {/* Join */}
                 <button
                   onClick={() => { setError(''); setScreen('join'); }}
                   className="w-full flex items-center gap-3 py-3.5 px-5 rounded-2xl text-sm font-medium transition-all hover:bg-white/8 active:scale-[0.98]"
@@ -229,9 +231,7 @@ export default function LoginPage() {
                   <ArrowRight size={14} className="text-white/20" />
                 </button>
 
-                <p className="text-white/15 text-xs text-center pt-3">
-                  Built by PixelCore
-                </p>
+                <p className="text-white/15 text-xs text-center pt-3">Built by PixelCore</p>
               </motion.div>
             )}
 
@@ -248,7 +248,7 @@ export default function LoginPage() {
                     style={{ background: 'rgba(96,165,250,0.1)', border: '1px solid rgba(96,165,250,0.2)' }}>
                     <Building2 size={20} className="text-blue-400" />
                   </div>
-                  <p className="text-white/30 text-xs">You'll be the owner — invite up to 4 members</p>
+                  <p className="text-white/30 text-xs">You will be the owner and can invite team members</p>
                 </div>
 
                 <input
@@ -258,11 +258,7 @@ export default function LoginPage() {
                   onChange={(e) => setCompanyName(e.target.value)}
                   onKeyDown={e => e.key === 'Enter' && startGoogleAuth('create')}
                   className="w-full px-4 py-3 rounded-xl text-sm outline-none transition-all text-white placeholder-white/20"
-                  style={{
-                    background: 'rgba(255,255,255,0.05)',
-                    border: '1px solid rgba(255,255,255,0.1)',
-                    caretColor: 'white',
-                  }}
+                  style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', caretColor: 'white' }}
                   autoFocus
                 />
 
@@ -294,7 +290,7 @@ export default function LoginPage() {
                     style={{ background: 'rgba(167,139,250,0.1)', border: '1px solid rgba(167,139,250,0.2)' }}>
                     <Ticket size={20} className="text-purple-400" />
                   </div>
-                  <p className="text-white/30 text-xs">Your admin shared a single-use code with you</p>
+                  <p className="text-white/30 text-xs">Your admin shared an invitation code with you</p>
                 </div>
 
                 <input
@@ -305,11 +301,7 @@ export default function LoginPage() {
                   onKeyDown={e => e.key === 'Enter' && startGoogleAuth('join')}
                   maxLength={8}
                   className="w-full px-4 py-3.5 rounded-xl text-center text-2xl tracking-widest font-bold outline-none transition-all text-white placeholder-white/15"
-                  style={{
-                    background: 'rgba(255,255,255,0.05)',
-                    border: '1px solid rgba(255,255,255,0.1)',
-                    caretColor: 'white',
-                  }}
+                  style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', caretColor: 'white' }}
                   autoFocus
                 />
 
