@@ -100,19 +100,25 @@ export default function LoginPage() {
     setError('');
     setAuthLoading(true);
     try {
-      await pb.collection('users').authWithOAuth2({
-        provider: 'google',
-        createData: { role: 'worker', notifications_enabled: false },
-      });
-      await afterOAuth(action);
+      // Store context for the callback page
+      sessionStorage.setItem('oauth_action',  action);
+      sessionStorage.setItem('oauth_company', companyName.trim());
+      sessionStorage.setItem('oauth_invite',  inviteCode.trim().toUpperCase());
+
+      // Fetch raw auth methods (without SDK adding PocketBase's own redirect_uri)
+      const res = await fetch(`${pb.baseURL}/api/collections/users/auth-methods`);
+      const methods = await res.json();
+      const google = methods.oauth2?.providers?.find((p: any) => p.name === 'google');
+      if (!google) throw new Error('Google sign-in is not configured yet. Contact your administrator.');
+
+      // Store PKCE verifier for the callback exchange
+      sessionStorage.setItem('pkce_verifier', google.codeVerifier);
+
+      // Redirect to Google with our own callback URL (no popup, no SSE)
+      const callbackUrl = `${window.location.origin}/auth/callback`;
+      window.location.href = google.authUrl + '&redirect_uri=' + encodeURIComponent(callbackUrl);
     } catch (e: any) {
-      if (e?.message?.includes('cancelled') || e?.message?.includes('popup')) {
-        setError('Sign-in cancelled');
-      } else if (e?.message?.includes('google') || e?.message?.includes('provider')) {
-        setError('Google sign-in is not configured yet. Contact your administrator.');
-      } else {
-        setError(e?.message || 'Authentication error');
-      }
+      setError(e?.message || 'Authentication error');
       setAuthLoading(false);
     }
   };
