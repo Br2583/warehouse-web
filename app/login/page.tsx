@@ -114,9 +114,11 @@ export default function LoginPage() {
       // Store PKCE verifier for the callback exchange
       sessionStorage.setItem('pkce_verifier', google.codeVerifier);
 
-      // Redirect to Google with our own callback URL (no popup, no SSE)
+      // Replace the empty redirect_uri PocketBase leaves in the URL
       const callbackUrl = `${window.location.origin}/auth/callback`;
-      window.location.href = google.authUrl + '&redirect_uri=' + encodeURIComponent(callbackUrl);
+      const authUrl = new URL(google.authUrl);
+      authUrl.searchParams.set('redirect_uri', callbackUrl);
+      window.location.href = authUrl.toString();
     } catch (e: any) {
       setError(e?.message || 'Authentication error');
       setAuthLoading(false);
