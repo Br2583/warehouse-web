@@ -20,7 +20,9 @@ const WORK_TYPES = ['Cleaning', 'Restoration', 'Delivery'];
 function formatDate(d: string) {
   if (!d) return '—';
   try {
-    return new Date(d.includes('T') ? d : d + 'T00:00:00').toLocaleDateString('en-US', {
+    // Normalize PocketBase formats: "2026-06-26 00:00:00.000Z" or "2026-06-26"
+    const clean = d.replace(' ', 'T').split('T')[0];
+    return new Date(clean + 'T00:00:00').toLocaleDateString('en-US', {
       month: 'short', day: 'numeric', year: 'numeric',
     });
   } catch { return d; }

@@ -25,7 +25,7 @@ export default function StoragePage() {
   const [showCreate, setShowCreate] = useState(false);
   const [saving, setSaving] = useState(false);
   const [createError, setCreateError] = useState('');
-  const [form, setForm] = useState({ unit_name: '', address: '', city: '', state: '', client_name: '', capacity: '', status: 'AVAILABLE', notes: '' });
+  const [form, setForm] = useState({ unit_name: '', address: '', city: '', state: '', client_name: '', capacity: '', access_code: '', status: 'AVAILABLE', notes: '' });
 
   const fetchUnits = async () => {
     try {
@@ -45,7 +45,7 @@ export default function StoragePage() {
     try {
       const created = await api.post('/api/storage', form);
       setShowCreate(false);
-      setForm({ unit_name: '', address: '', city: '', state: '', client_name: '', capacity: '', status: 'AVAILABLE', notes: '' });
+      setForm({ unit_name: '', address: '', city: '', state: '', client_name: '', capacity: '', access_code: '', status: 'AVAILABLE', notes: '' });
       router.push(`/storage/${created.id}`);
     } catch (e: any) {
       setCreateError(e?.message || 'Failed to create storage unit');
@@ -111,6 +111,12 @@ export default function StoragePage() {
                   <label className="block text-xs text-gray-500 mb-1">Capacity (optional)</label>
                   <input type="text" placeholder="e.g. 200 sq ft, 50 units" value={form.capacity}
                     onChange={e => setForm(f => ({ ...f, capacity: e.target.value }))}
+                    className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                </div>
+                <div>
+                  <label className="block text-xs text-gray-500 mb-1">Access Code (optional)</label>
+                  <input type="text" placeholder="Gate or door code" value={form.access_code}
+                    onChange={e => setForm(f => ({ ...f, access_code: e.target.value }))}
                     className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
                 </div>
                 {createError && (

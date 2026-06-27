@@ -210,7 +210,7 @@ export default function StorageDetailPage() {
             </div>
           )}
           {photoError && <p className="text-xs text-red-500 mt-2">{photoError}</p>}
-          <input ref={fileRef} type="file" accept="image/*" multiple className="hidden" onChange={addPhotos} />
+          <input ref={fileRef} type="file" accept="image/*,.heic,.heif,.webp,.avif,.pdf" multiple className="hidden" onChange={addPhotos} />
         </motion.div>
 
         {/* Map */}
@@ -267,6 +267,11 @@ export default function StorageDetailPage() {
                     className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
                 </div>
                 <div>
+                  <label className="block text-xs text-gray-500 mb-1">Access Code</label>
+                  <input type="text" placeholder="Gate or door code" value={form.access_code || ''} onChange={e => setForm((f: any) => ({ ...f, access_code: e.target.value }))}
+                    className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                </div>
+                <div>
                   <label className="block text-xs text-gray-500 mb-2">Status</label>
                   <div className="flex gap-2">
                     {STATUSES.map(s => (
@@ -288,11 +293,12 @@ export default function StorageDetailPage() {
           ) : (
             <div className="space-y-3">
               {[
-                { label: 'Unit Name',  value: unit?.unit_name },
-                { label: 'Address',    value: [unit?.address, unit?.city, unit?.state].filter(Boolean).join(', ') || '—' },
-                { label: 'Client',     value: unit?.client_name || '—' },
-                { label: 'Capacity',   value: unit?.capacity || '—' },
-                { label: 'Notes',      value: unit?.notes || '—' },
+                { label: 'Unit Name',    value: unit?.unit_name },
+                { label: 'Address',      value: [unit?.address, unit?.city, unit?.state].filter(Boolean).join(', ') || '—' },
+                { label: 'Client',       value: unit?.client_name || '—' },
+                { label: 'Capacity',     value: unit?.capacity || '—' },
+                { label: 'Access Code',  value: unit?.access_code || '—' },
+                { label: 'Notes',        value: unit?.notes || '—' },
               ].map(({ label, value }) => (
                 <div key={label} className="flex justify-between text-sm gap-4">
                   <span className="text-gray-400 flex-shrink-0">{label}</span>

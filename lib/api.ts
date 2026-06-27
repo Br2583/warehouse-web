@@ -52,6 +52,7 @@ function mapStorage(s: any) {
     state:       s.state || '',
     client_name: s.client_id || '',
     capacity:    s.capacity || '',
+    access_code: s.access_code || '',
     status:      s.status || 'AVAILABLE',
     photos,
     notes:       s.notes || '',
@@ -193,7 +194,7 @@ async function routeGet(path: string): Promise<any> {
         type:        o.type,
         status:      (o.status || 'PENDING').toLowerCase(),
         phase:       phaseMap[o.status] || 1,
-        date:        o.due_date || o.created?.split(' ')[0],
+        date:        o.due_date ? o.due_date.replace(' ', 'T').split('T')[0] : o.created?.split(' ')[0],
         notes:       o.notes,
         assigned_to: o.assigned_to,
         vault_id:    o.vault_id,
@@ -216,17 +217,19 @@ async function routeGet(path: string): Promise<any> {
   // GET /api/work-orders/:id
   const woMatch = p.match(/^\/api\/work-orders\/([^/]+)$/);
   if (woMatch) {
+    const phaseMap2: Record<string, number> = { PENDING: 1, IN_PROGRESS: 2, REVIEW: 3, DONE: 4 };
     const o = await pb.collection('work_orders').getOne(woMatch[1]);
     return {
-      id:          o.id,
+      id:            o.id,
       work_order_id: o.id,
-      client_name: o.notes ? o.notes.split('\n')[0] : 'Work Order',
-      work_type:   o.type,
-      status:      (o.status || 'PENDING').toLowerCase(),
-      date:        o.due_date || o.created?.split(' ')[0],
-      notes:       o.notes,
-      vault_ids:   o.vault_id ? [o.vault_id] : [],
-      vaults:      [],
+      client_name:   o.notes ? o.notes.split('\n')[0] : 'Work Order',
+      work_type:     o.type,
+      status:        (o.status || 'PENDING').toLowerCase(),
+      phase:         phaseMap2[o.status] || 1,
+      date:          o.due_date ? o.due_date.replace(' ', 'T').split('T')[0] : o.created?.split(' ')[0],
+      notes:         o.notes,
+      vault_ids:     o.vault_id ? [o.vault_id] : [],
+      vaults:        [],
     };
   }
 
@@ -415,6 +418,7 @@ async function routePost(path: string, body: any): Promise<any> {
       state:       body.state || '',
       client_id:   body.client_name || '',
       capacity:    body.capacity || '',
+      access_code: body.access_code || '',
       status:      body.status || 'AVAILABLE',
       photos:      body.photos || [],
       notes:       body.notes || '',
@@ -487,15 +491,16 @@ async function routePut(path: string, body: any): Promise<any> {
   const storageMatch = p.match(/^\/api\/storage\/([^/]+)$/);
   if (storageMatch) {
     await pb.collection('storage_units').update(storageMatch[1], {
-      unit_name:  body.unit_name,
-      address:    body.address || '',
-      city:       body.city || '',
-      state:      body.state || '',
-      client_id:  body.client_name || '',
-      capacity:   body.capacity || '',
-      status:     body.status || 'AVAILABLE',
-      photos:     body.photos || [],
-      notes:      body.notes || '',
+      unit_name:   body.unit_name,
+      address:     body.address || '',
+      city:        body.city || '',
+      state:       body.state || '',
+      client_id:   body.client_name || '',
+      capacity:    body.capacity || '',
+      access_code: body.access_code || '',
+      status:      body.status || 'AVAILABLE',
+      photos:      body.photos || [],
+      notes:       body.notes || '',
     });
     const s = await pb.collection('storage_units').getOne(storageMatch[1]);
     return mapStorage(s);
