@@ -55,7 +55,17 @@ function CallbackHandler() {
         const model = pb.authStore.model;
         if (!model) throw new Error('Authentication failed');
 
-        if (model.company_id) { router.replace('/dashboard'); return; }
+        // Returning user who already has a company and completed profile
+        if (model.company_id && model.profile_complete) {
+          router.replace('/dashboard');
+          return;
+        }
+
+        // Returning user with company but never finished onboarding
+        if (model.company_id && !model.profile_complete) {
+          router.replace('/onboarding');
+          return;
+        }
 
         if (action === 'create' && companyName) {
           const company = await pb.collection('companies').create({
@@ -67,7 +77,7 @@ function CallbackHandler() {
           });
           await pb.collection('users').update(model.id, { company_id: company.id, role: 'owner' });
           await pb.collection('users').authRefresh();
-          router.replace('/dashboard');
+          router.replace('/onboarding');
           return;
         }
 
@@ -75,7 +85,7 @@ function CallbackHandler() {
           const company = await pb.collection('companies').getFirstListItem(`invite_code="${inviteCode}"`);
           await pb.collection('users').update(model.id, { company_id: company.id, role: 'worker' });
           await pb.collection('users').authRefresh();
-          router.replace('/dashboard');
+          router.replace('/onboarding');
           return;
         }
 

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { pb } from './pb';
 
 export interface User {
@@ -13,6 +13,8 @@ export interface User {
   company_id?: string;
   company_name?: string;
   role?: string;
+  job_title?: string;
+  profile_complete?: boolean;
 }
 
 interface AuthContextType {
@@ -34,15 +36,17 @@ async function buildUser(model: any): Promise<User> {
     } catch {}
   }
   return {
-    user_id:      model.id,
-    id:           model.id,
-    email:        model.email,
-    name:         model.name,
-    picture:      model.avatar || undefined,
-    company_id:   model.company_id,
+    user_id:          model.id,
+    id:               model.id,
+    email:            model.email,
+    name:             model.name,
+    picture:          model.avatar ? pb.files.getURL(model, model.avatar) : undefined,
+    company_id:       model.company_id,
     company_name,
-    role:         model.role,
-    pin_changed:  !!model.pin,
+    role:             model.role,
+    pin_changed:      !!model.pin,
+    job_title:        model.job_title,
+    profile_complete: !!model.profile_complete,
   };
 }
 

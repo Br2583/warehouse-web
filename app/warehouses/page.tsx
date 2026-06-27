@@ -23,10 +23,11 @@ export default function WarehousesPage() {
   const [creating, setCreating] = useState(false);
   const [newName, setNewName] = useState('');
   const [showCreate, setShowCreate] = useState(false);
+  const [createError, setCreateError] = useState('');
 
   const fetchWarehouses = async () => {
     const cid = user?.company_id;
-    if (!cid) return;
+    if (!cid) { setLoading(false); return; }
     try {
       const [whs, vaults] = await Promise.all([
         pb.collection('warehouses').getFullList({ filter: `company_id="${cid}"`, sort: 'created' }),
@@ -49,7 +50,9 @@ export default function WarehousesPage() {
 
   const createWarehouse = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newName.trim() || !user?.company_id) return;
+    setCreateError('');
+    if (!newName.trim()) return;
+    if (!user?.company_id) { setCreateError('No company linked to your account. Please contact support.'); return; }
     setCreating(true);
     try {
       await pb.collection('warehouses').create({
@@ -61,8 +64,9 @@ export default function WarehousesPage() {
       setNewName('');
       setShowCreate(false);
       await fetchWarehouses();
-    } catch {}
-    finally { setCreating(false); }
+    } catch (err: any) {
+      setCreateError(err?.message || 'Failed to create warehouse. Please try again.');
+    } finally { setCreating(false); }
   };
 
   return (
@@ -106,8 +110,11 @@ export default function WarehousesPage() {
               {creating && <Loader2 className="w-4 h-4 animate-spin" />}
               Create
             </button>
-            <button type="button" onClick={() => setShowCreate(false)} className="px-4 py-2.5 text-gray-400 hover:text-gray-600 text-sm">Cancel</button>
+            <button type="button" onClick={() => { setShowCreate(false); setCreateError(''); }} className="px-4 py-2.5 text-gray-400 hover:text-gray-600 text-sm">Cancel</button>
           </motion.form>
+        )}
+        {createError && (
+          <p className="text-red-500 text-sm mb-4 px-1">{createError}</p>
         )}
 
         {loading ? (
