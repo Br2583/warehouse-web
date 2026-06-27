@@ -7,6 +7,8 @@ import Sidebar from '@/components/Sidebar';
 import { pb } from '@/lib/pb';
 import { useAuth } from '@/lib/auth-context';
 import Link from 'next/link';
+import TutorialOverlay from '@/components/TutorialOverlay';
+import { useTutorial } from '@/hooks/useTutorial';
 
 interface Warehouse {
   id: string;
@@ -16,6 +18,12 @@ interface Warehouse {
   vault_count: number;
 }
 
+const TUTORIAL_STEPS = [
+  { target: 'warehouses-header', title: 'Your Warehouses', text: 'Each card represents a physical warehouse. Tap one to manage its vaults — location grid, photos, and client info.', position: 'bottom' as const },
+  { target: 'warehouses-list', title: 'Vault Count', text: 'The number shows how many vaults are currently stored in that warehouse. Click to browse them.', position: 'bottom' as const },
+  { target: 'new-warehouse-btn', title: 'Add Warehouse', text: 'Owners can create new warehouse locations here. Give it a name and it\'s ready to use.', position: 'bottom' as const },
+];
+
 export default function WarehousesPage() {
   const { user } = useAuth();
   const [warehouses, setWarehouses] = useState<Warehouse[]>([]);
@@ -24,6 +32,7 @@ export default function WarehousesPage() {
   const [newName, setNewName] = useState('');
   const [showCreate, setShowCreate] = useState(false);
   const [createError, setCreateError] = useState('');
+  const { seen, markSeen } = useTutorial('warehouses');
 
   const fetchWarehouses = async () => {
     const cid = user?.company_id;
@@ -71,15 +80,17 @@ export default function WarehousesPage() {
 
   return (
     <div className="flex min-h-screen bg-gray-50">
+      {!seen && <TutorialOverlay steps={TUTORIAL_STEPS} onDone={markSeen} />}
       <Sidebar />
       <main className="md:ml-64 flex-1 p-4 md:p-8 pb-20 md:pb-8">
-        <div className="flex items-center justify-between mb-8">
+        <div data-tutorial="warehouses-header" className="flex items-center justify-between mb-8">
           <div>
             <h1 className="text-2xl font-bold text-gray-900">Warehouses</h1>
             <p className="text-gray-500 text-sm mt-1">Select a warehouse to manage its inventory</p>
           </div>
           {user?.role === 'owner' && (
             <button
+              data-tutorial="new-warehouse-btn"
               onClick={() => setShowCreate(s => !s)}
               className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-xl hover:bg-blue-700 transition-colors"
             >
@@ -128,7 +139,7 @@ export default function WarehousesPage() {
             <p className="text-sm mt-1">Create your first warehouse to get started</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div data-tutorial="warehouses-list" className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {warehouses.map((wh, i) => (
               <motion.div
                 key={wh.id}

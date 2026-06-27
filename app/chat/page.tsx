@@ -7,6 +7,8 @@ import Sidebar from '@/components/Sidebar';
 import { api } from '@/lib/api';
 import { useAuth } from '@/lib/auth-context';
 import { notify, requestNotificationPermission } from '@/lib/notifications';
+import TutorialOverlay from '@/components/TutorialOverlay';
+import { useTutorial } from '@/hooks/useTutorial';
 
 interface Message {
   id: string;
@@ -18,6 +20,12 @@ interface Message {
   timestamp: string;
 }
 
+const TUTORIAL_STEPS = [
+  { target: 'chat-header', title: 'Team Chat', text: 'Stay in sync with your team. Messages refresh automatically every 10 seconds — no need to reload.', position: 'bottom' as const },
+  { target: 'chat-messages', title: 'Conversation', text: 'Your messages appear on the right in blue. Team messages appear on the left. Hover to delete your own messages.', position: 'top' as const },
+  { target: 'chat-input', title: 'Send a Message', text: 'Type here and hit Enter or the send button. Keep communication clear and on-topic for faster operations.', position: 'top' as const },
+];
+
 export default function ChatPage() {
   const { user } = useAuth();
   const [messages, setMessages] = useState<Message[]>([]);
@@ -25,6 +33,7 @@ export default function ChatPage() {
   const [loading, setLoading] = useState(true);
   const bottomRef = useRef<HTMLDivElement>(null);
   const lastCountRef = useRef(-1);
+  const { seen, markSeen } = useTutorial('chat');
 
   const fetchMessages = () =>
     api.get('/api/chat/messages').then((msgs: Message[]) => {
@@ -77,14 +86,15 @@ export default function ChatPage() {
 
   return (
     <div className="flex min-h-screen bg-gray-50">
+      {!seen && <TutorialOverlay steps={TUTORIAL_STEPS} onDone={markSeen} />}
       <Sidebar />
       <main className="md:ml-64 flex-1 flex flex-col" style={{ height: '100dvh' }}>
-        <div className="p-8 pb-4 border-b border-gray-100 bg-white">
+        <div data-tutorial="chat-header" className="p-8 pb-4 border-b border-gray-100 bg-white">
           <h1 className="text-2xl font-bold text-gray-900">Team Chat</h1>
           <p className="text-gray-500 text-sm mt-1">Internal company communication</p>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-6 space-y-4">
+        <div data-tutorial="chat-messages" className="flex-1 overflow-y-auto p-6 space-y-4">
           {loading ? (
             <div className="flex justify-center py-16">
               <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
@@ -128,7 +138,7 @@ export default function ChatPage() {
           <div ref={bottomRef} />
         </div>
 
-        <form onSubmit={send} className="p-4 pb-20 md:pb-4 bg-white border-t border-gray-100 flex gap-3">
+        <form data-tutorial="chat-input" onSubmit={send} className="p-4 pb-20 md:pb-4 bg-white border-t border-gray-100 flex gap-3">
           <input
             type="text"
             placeholder="Type a message..."

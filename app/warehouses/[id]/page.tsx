@@ -6,6 +6,8 @@ import { Package, Plus, Search, Trash2, X, Camera, LayoutGrid, List, Pencil, Che
 import Sidebar from '@/components/Sidebar';
 import { api } from '@/lib/api';
 import { useParams } from 'next/navigation';
+import TutorialOverlay from '@/components/TutorialOverlay';
+import { useTutorial } from '@/hooks/useTutorial';
 
 interface Box {
   box_id: string;
@@ -74,12 +76,19 @@ const toBase64 = (file: File): Promise<string> =>
     reader.readAsDataURL(file);
   });
 
+const TUTORIAL_STEPS = [
+  { target: 'wh-header', title: 'Warehouse View', text: 'You\'re inside a specific warehouse. Switch between Map (visual grid) and List (table) views using the toggle.', position: 'bottom' as const },
+  { target: 'wh-map', title: 'Warehouse Map', text: 'Each cell is a vault slot. Colors show status: amber = Pending, green = Ready, blue = Delivered. Tap an empty cell to add a vault there.', position: 'bottom' as const },
+  { target: 'wh-add-btn', title: 'Add Vault', text: 'Register a new vault — client name, job type, location (row/column/level), photos, and status. All in one form.', position: 'bottom' as const },
+];
+
 export default function WarehouseDetailPage() {
   const { id } = useParams();
   const warehouseId = id as string;
   const [warehouseName, setWarehouseName] = useState('');
   const [boxes, setBoxes] = useState<Box[]>([]);
   const [loading, setLoading] = useState(true);
+  const { seen, markSeen } = useTutorial('warehouse-detail');
   const [search, setSearch] = useState('');
   const [selected, setSelected] = useState<Box | null>(null);
   const [showAdd, setShowAdd] = useState(false);
@@ -250,10 +259,11 @@ export default function WarehouseDetailPage() {
 
   return (
     <div className="flex min-h-screen bg-gray-50">
+      {!seen && <TutorialOverlay steps={TUTORIAL_STEPS} onDone={markSeen} />}
       <Sidebar />
       <main className="md:ml-64 flex-1 p-4 md:p-8 pb-20 md:pb-8">
         {/* Header */}
-        <div className="flex flex-wrap items-center justify-between gap-3 mb-8">
+        <div data-tutorial="wh-header" className="flex flex-wrap items-center justify-between gap-3 mb-8">
           <div>
             <h1 className="text-2xl font-bold text-gray-900">{warehouseName || 'Warehouse'}</h1>
             <p className="text-gray-500 text-sm mt-1">{boxes.length} vaults stored</p>
@@ -275,6 +285,7 @@ export default function WarehouseDetailPage() {
               </button>
             </div>
             <button
+              data-tutorial="wh-add-btn"
               onClick={() => { setForm(emptyForm); setShowAdd(true); setSaveError(''); }}
               className="flex items-center gap-2 px-3 py-2 md:px-4 md:py-2.5 bg-blue-600 text-white text-sm font-medium rounded-xl hover:bg-blue-700 transition-colors"
             >
@@ -324,7 +335,7 @@ export default function WarehouseDetailPage() {
             </div>
 
             {/* Grid */}
-            <div className="bg-white rounded-2xl border border-gray-100 p-3 md:p-6 overflow-x-auto">
+            <div data-tutorial="wh-map" className="bg-white rounded-2xl border border-gray-100 p-3 md:p-6 overflow-x-auto">
               {/* Column headers */}
               <div className="flex gap-1 md:gap-2 mb-1 md:mb-2 ml-7 md:ml-10">
                 {COLUMNS.map(col => (

@@ -7,6 +7,8 @@ import Sidebar from '@/components/Sidebar';
 import { api } from '@/lib/api';
 import { useAuth } from '@/lib/auth-context';
 import { notify, requestNotificationPermission } from '@/lib/notifications';
+import TutorialOverlay from '@/components/TutorialOverlay';
+import { useTutorial } from '@/hooks/useTutorial';
 
 const PHASES = ['Assigned', 'In Progress', 'Review', 'Completed'];
 const PHASE_COLORS = [
@@ -76,9 +78,16 @@ const emptyForm = {
   volt_ids: [] as string[],
 };
 
+const TUTORIAL_STEPS = [
+  { target: 'production-header', title: 'Work Orders', text: 'Track all cleaning, restoration, and delivery jobs here. Each card shows the client, type, and current stage.', position: 'bottom' as const },
+  { target: 'production-list', title: 'Order Progress', text: 'Tap any order to open it. You\'ll see a step-by-step stepper: Assigned → In Progress → Review → Completed.', position: 'bottom' as const },
+  { target: 'new-order-btn', title: 'Create Work Order', text: 'Start a new job here. Link it to specific vaults so your team knows exactly what to work on.', position: 'bottom' as const },
+];
+
 export default function ProductionPage() {
   const { user } = useAuth();
   const isOwner = user?.role === 'owner';
+  const { seen, markSeen } = useTutorial('production');
 
   const [orders, setOrders] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -193,14 +202,16 @@ export default function ProductionPage() {
 
   return (
     <div className="flex min-h-screen bg-gray-50">
+      {!seen && <TutorialOverlay steps={TUTORIAL_STEPS} onDone={markSeen} />}
       <Sidebar />
       <main className="md:ml-64 flex-1 p-4 md:p-8 pb-20 md:pb-8">
-        <div className="flex items-center justify-between mb-8">
+        <div data-tutorial="production-header" className="flex items-center justify-between mb-8">
           <div>
             <h1 className="text-2xl font-bold text-gray-900">Production</h1>
             <p className="text-gray-500 text-sm mt-1">{orders.length} work orders</p>
           </div>
           <button
+            data-tutorial="new-order-btn"
             onClick={() => { setShowCreate(true); setSaveError(''); }}
             className="flex items-center gap-2 px-4 py-2.5 bg-blue-600 text-white text-sm font-medium rounded-xl hover:bg-blue-700 transition-colors"
           >
@@ -213,7 +224,7 @@ export default function ProductionPage() {
             <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
           </div>
         ) : (
-          <div className="space-y-3">
+          <div data-tutorial="production-list" className="space-y-3">
             {orders.length === 0 && (
               <div className="text-center py-16 text-gray-400">No work orders found</div>
             )}

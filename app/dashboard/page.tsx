@@ -7,6 +7,8 @@ import { useAuth } from '@/lib/auth-context';
 import { api } from '@/lib/api';
 import Sidebar from '@/components/Sidebar';
 import Link from 'next/link';
+import TutorialOverlay from '@/components/TutorialOverlay';
+import { useTutorial } from '@/hooks/useTutorial';
 
 const fadeUp = {
   hidden: { opacity: 0, y: 20 },
@@ -16,11 +18,19 @@ const fadeUp = {
   }),
 };
 
+const TUTORIAL_STEPS = [
+  { target: 'overview-cards', title: 'Inventory Overview', text: 'These cards show your real-time inventory stats. Tap any card to drill into that category.', position: 'bottom' as const },
+  { target: 'inventory-status', title: 'Inventory Status', text: 'See how vaults are split between Pending, Ready, and Delivered — updated live from your warehouses.', position: 'top' as const },
+  { target: 'production-status', title: 'Production Queue', text: 'Track active work orders by stage: Pending, In Progress, and Completed.', position: 'top' as const },
+  { target: 'quick-actions', title: 'Quick Actions', text: 'Jump to the most common tasks with one tap — add a vault, create a work order, search, or open team chat.', position: 'top' as const },
+];
+
 export default function DashboardPage() {
   const { user } = useAuth();
   const [stats, setStats] = useState<any>(null);
   const [workStats, setWorkStats] = useState({ total: 0, pending: 0, in_progress: 0, completed: 0 });
   const [loading, setLoading] = useState(true);
+  const { seen, markSeen } = useTutorial('dashboard');
 
   useEffect(() => {
     const load = async () => {
@@ -85,6 +95,7 @@ export default function DashboardPage() {
 
   return (
     <div className="flex min-h-screen bg-gray-50">
+      {!seen && <TutorialOverlay steps={TUTORIAL_STEPS} onDone={markSeen} />}
       <Sidebar />
       <main className="md:ml-64 flex-1 p-4 md:p-8 pb-20 md:pb-8">
         {/* Header */}
@@ -97,7 +108,7 @@ export default function DashboardPage() {
         </motion.div>
 
         {/* Overview Cards */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+        <div data-tutorial="overview-cards" className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
           {overviewCards.map((card, i) => {
             const Icon = card.icon;
             return (
@@ -120,7 +131,7 @@ export default function DashboardPage() {
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
           {/* Inventory Status */}
-          <motion.div custom={4} variants={fadeUp} initial="hidden" animate="show" className="col-span-2 bg-white rounded-2xl border border-gray-100 p-6">
+          <motion.div data-tutorial="inventory-status" custom={4} variants={fadeUp} initial="hidden" animate="show" className="col-span-2 bg-white rounded-2xl border border-gray-100 p-6">
             <h2 className="font-semibold text-gray-900 mb-5">Inventory Status</h2>
             <div className="flex gap-6 mb-5">
               {[
@@ -176,7 +187,7 @@ export default function DashboardPage() {
           </motion.div>
 
           {/* Production Status */}
-          <motion.div custom={5} variants={fadeUp} initial="hidden" animate="show" className="bg-white rounded-2xl border border-gray-100 p-6">
+          <motion.div data-tutorial="production-status" custom={5} variants={fadeUp} initial="hidden" animate="show" className="bg-white rounded-2xl border border-gray-100 p-6">
             <h2 className="font-semibold text-gray-900 mb-5">Production</h2>
             <div className="space-y-4">
               {[
@@ -206,7 +217,7 @@ export default function DashboardPage() {
         </div>
 
         {/* Quick Actions */}
-        <motion.div custom={6} variants={fadeUp} initial="hidden" animate="show">
+        <motion.div data-tutorial="quick-actions" custom={6} variants={fadeUp} initial="hidden" animate="show">
           <h2 className="font-semibold text-gray-900 mb-4">Quick Actions</h2>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             {[

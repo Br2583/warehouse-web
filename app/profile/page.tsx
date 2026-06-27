@@ -7,6 +7,14 @@ import { AnimatePresence } from 'framer-motion';
 import Sidebar from '@/components/Sidebar';
 import { api } from '@/lib/api';
 import { useAuth } from '@/lib/auth-context';
+import TutorialOverlay from '@/components/TutorialOverlay';
+import { useTutorial } from '@/hooks/useTutorial';
+
+const TUTORIAL_STEPS = [
+  { target: 'profile-user', title: 'Your Account', text: 'Your Google account details and company role. The role determines what actions you can take across the app.', position: 'bottom' as const },
+  { target: 'profile-company', title: 'Company Settings', text: 'View your company info and manage seats. Owners can generate invitation codes to add new team members.', position: 'bottom' as const },
+  { target: 'profile-members', title: 'Team Members', text: 'Everyone in your company is listed here. Owners see all roles and can manage access.', position: 'top' as const },
+];
 
 export default function ProfilePage() {
   const { user } = useAuth();
@@ -17,6 +25,7 @@ export default function ProfilePage() {
   const [portalLoading, setPortalLoading] = useState(false);
   const [genError, setGenError] = useState('');
   const [loading, setLoading] = useState(true);
+  const { seen, markSeen } = useTutorial('profile');
 
   useEffect(() => {
     Promise.all([
@@ -65,6 +74,7 @@ export default function ProfilePage() {
 
   return (
     <div className="flex min-h-screen bg-gray-50">
+      {!seen && <TutorialOverlay steps={TUTORIAL_STEPS} onDone={markSeen} />}
       <Sidebar />
       <main className="md:ml-64 flex-1 p-4 md:p-8 pb-20 md:pb-8 max-w-3xl">
         <div className="mb-8">
@@ -79,7 +89,7 @@ export default function ProfilePage() {
         ) : (
           <div className="space-y-6">
             {/* User Info */}
-            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="bg-white rounded-2xl border border-gray-100 p-6">
+            <motion.div data-tutorial="profile-user" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="bg-white rounded-2xl border border-gray-100 p-6">
               <div className="flex items-center gap-4">
                 {user?.picture ? (
                   <img src={user.picture} alt={user.name} referrerPolicy="no-referrer" className="w-16 h-16 rounded-2xl object-cover" />
@@ -97,7 +107,7 @@ export default function ProfilePage() {
             </motion.div>
 
             {/* Company */}
-            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="bg-white rounded-2xl border border-gray-100 p-6">
+            <motion.div data-tutorial="profile-company" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="bg-white rounded-2xl border border-gray-100 p-6">
               <h3 className="font-semibold text-gray-900 mb-4">Company</h3>
               <div className="space-y-2">
                 <div className="flex justify-between text-sm">
@@ -142,7 +152,7 @@ export default function ProfilePage() {
             </motion.div>
 
             {/* Members */}
-            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }} className="bg-white rounded-2xl border border-gray-100 p-6">
+            <motion.div data-tutorial="profile-members" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }} className="bg-white rounded-2xl border border-gray-100 p-6">
               <h3 className="font-semibold text-gray-900 mb-4">Team Members</h3>
               <div className="space-y-3">
                 {members.map(m => (
@@ -160,6 +170,30 @@ export default function ProfilePage() {
                     </div>
                     <span className="text-xs capitalize text-gray-400">{m.role}</span>
                   </div>
+                ))}
+              </div>
+            </motion.div>
+
+            {/* Replay Tours */}
+            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="bg-white rounded-2xl border border-gray-100 p-6">
+              <h3 className="font-semibold text-gray-900 mb-1">App Tours</h3>
+              <p className="text-xs text-gray-400 mb-4">Replay the guided tour for any page. Tours show once on first visit — reset them here anytime.</p>
+              <div className="flex flex-wrap gap-2">
+                {[
+                  { key: 'dashboard', label: 'Dashboard' },
+                  { key: 'warehouses', label: 'Warehouses' },
+                  { key: 'warehouse-detail', label: 'Warehouse Map' },
+                  { key: 'production', label: 'Production' },
+                  { key: 'chat', label: 'Chat' },
+                  { key: 'profile', label: 'Profile' },
+                ].map(({ key, label }) => (
+                  <button
+                    key={key}
+                    onClick={() => { localStorage.removeItem(`tutorial_seen_${key}`); if (key === 'profile') window.location.reload(); }}
+                    className="text-xs px-3 py-1.5 bg-gray-50 border border-gray-200 text-gray-600 rounded-lg hover:bg-blue-50 hover:border-blue-200 hover:text-blue-600 transition-colors"
+                  >
+                    {label}
+                  </button>
                 ))}
               </div>
             </motion.div>
