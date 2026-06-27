@@ -51,6 +51,7 @@ export default function OnboardingPage() {
   const [companyName, setCompanyName] = useState('');
   const [industry, setIndustry] = useState('');
   const [description, setDescription] = useState('');
+  const [showIndustryDropdown, setShowIndustryDropdown] = useState(false);
 
   // Sync company name once user loads
   useEffect(() => {
@@ -243,17 +244,30 @@ export default function OnboardingPage() {
 
                 <div>
                   <label className="block text-white/60 text-xs font-medium mb-1.5 uppercase tracking-wide">Industry</label>
-                  <select
-                    value={industry}
-                    onChange={e => setIndustry(e.target.value)}
-                    className="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent appearance-none"
-                    style={{ colorScheme: 'dark' }}
-                  >
-                    <option value="" className="bg-gray-900">Select industry...</option>
-                    {INDUSTRIES.map(ind => (
-                      <option key={ind} value={ind} className="bg-gray-900">{ind}</option>
-                    ))}
-                  </select>
+                  <div className="relative">
+                    <button
+                      type="button"
+                      onClick={() => setShowIndustryDropdown(s => !s)}
+                      className="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-left text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 flex items-center justify-between"
+                    >
+                      <span className={industry ? 'text-white' : 'text-white/30'}>{industry || 'Select industry...'}</span>
+                      <ChevronRight className={`w-4 h-4 text-white/30 transition-transform ${showIndustryDropdown ? 'rotate-90' : ''}`} />
+                    </button>
+                    {showIndustryDropdown && (
+                      <div className="absolute z-10 w-full mt-1 bg-gray-900 border border-white/20 rounded-xl overflow-hidden shadow-xl">
+                        {INDUSTRIES.map(ind => (
+                          <button
+                            key={ind}
+                            type="button"
+                            onClick={() => { setIndustry(ind); setShowIndustryDropdown(false); }}
+                            className={`w-full px-4 py-2.5 text-left text-sm transition-colors hover:bg-blue-600 hover:text-white ${industry === ind ? 'text-blue-400' : 'text-white/70'}`}
+                          >
+                            {ind}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 </div>
 
                 <div>

@@ -46,7 +46,7 @@ function mapMessage(m: any) {
     sender_email:  m.author_id,
     sender_photo:  m.author_avatar,
     text:          m.content,
-    timestamp:     m.created,
+    timestamp:     m.created.replace(' ', 'T'),
   };
 }
 

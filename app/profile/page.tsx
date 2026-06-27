@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
-import { User, Shield, Users, Copy, Trash2, Plus, KeyRound, AlertCircle, X } from 'lucide-react';
+import { User, Copy, Plus, KeyRound, AlertCircle, X } from 'lucide-react';
 import { AnimatePresence } from 'framer-motion';
 import Sidebar from '@/components/Sidebar';
 import { api } from '@/lib/api';
@@ -12,8 +12,6 @@ export default function ProfilePage() {
   const { user } = useAuth();
   const [company, setCompany] = useState<any>(null);
   const [members, setMembers] = useState<any[]>([]);
-  const [pin, setPin] = useState({ current: '', newPin: '', confirm: '' });
-  const [pinMsg, setPinMsg] = useState('');
   const [portalCode, setPortalCode] = useState({ current: '', newCode: '', confirm: '' });
   const [portalMsg, setPortalMsg] = useState('');
   const [portalLoading, setPortalLoading] = useState(false);
@@ -63,17 +61,6 @@ export default function ProfilePage() {
     } finally {
       setPortalLoading(false);
     }
-  };
-
-  const changePin = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (pin.newPin !== pin.confirm) { setPinMsg('PINs do not match'); return; }
-    if (pin.newPin.length !== 4) { setPinMsg('PIN must be 4 digits'); return; }
-    try {
-      await api.post('/api/auth/change-pin', { current_pin: pin.current, new_pin: pin.newPin });
-      setPinMsg('PIN changed successfully!');
-      setPin({ current: '', newPin: '', confirm: '' });
-    } catch { setPinMsg('Incorrect current PIN'); }
   };
 
   return (
@@ -175,30 +162,6 @@ export default function ProfilePage() {
                   </div>
                 ))}
               </div>
-            </motion.div>
-
-            {/* Change PIN */}
-            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="bg-white rounded-2xl border border-gray-100 p-6">
-              <h3 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                <Shield className="w-4 h-4 text-blue-600" /> Change PIN
-              </h3>
-              <form onSubmit={changePin} className="space-y-3">
-                {[
-                  { label: 'Current PIN', key: 'current' },
-                  { label: 'New PIN', key: 'newPin' },
-                  { label: 'Confirm PIN', key: 'confirm' },
-                ].map(f => (
-                  <input key={f.key} type="password" placeholder={f.label} maxLength={4}
-                    value={(pin as any)[f.key]}
-                    onChange={e => setPin(p => ({ ...p, [f.key]: e.target.value.replace(/\D/g, '') }))}
-                    className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                ))}
-                {pinMsg && <p className={`text-sm ${pinMsg.includes('success') ? 'text-green-600' : 'text-red-500'}`}>{pinMsg}</p>}
-                <button type="submit" className="w-full py-2.5 bg-blue-600 text-white text-sm font-medium rounded-xl hover:bg-blue-700 transition-colors">
-                  Change PIN
-                </button>
-              </form>
             </motion.div>
 
             {/* Change Portal Code — owner only */}
