@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
-import { Package, ClipboardList, CheckCircle, Truck, Clock, Play, Check, Plus, Search, MessageSquare } from 'lucide-react';
+import { Package, ClipboardList, CheckCircle, Truck, Clock, Play, Check, Plus, Search, MessageSquare, AlertTriangle } from 'lucide-react';
+import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import { useAuth } from '@/lib/auth-context';
 import { api } from '@/lib/api';
 import Sidebar from '@/components/Sidebar';
@@ -29,14 +30,19 @@ export default function DashboardPage() {
   const { user } = useAuth();
   const [stats, setStats] = useState<any>(null);
   const [workStats, setWorkStats] = useState({ total: 0, pending: 0, in_progress: 0, completed: 0 });
+  const [boxes, setBoxes] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const { seen, markSeen } = useTutorial('dashboard');
 
   useEffect(() => {
     const load = async () => {
       try {
-        const globalStats = await api.get('/api/stats/global');
-        setStats(globalStats);
+        const [globalStats, allBoxes] = await Promise.allSettled([
+          api.get('/api/stats/global'),
+          api.get('/api/boxes'),
+        ]);
+        if (globalStats.status === 'fulfilled') setStats(globalStats.value);
+        if (allBoxes.status === 'fulfilled' && Array.isArray(allBoxes.value)) setBoxes(allBoxes.value);
       } catch { /* stats unavailable, show zeros */ }
 
       // Try multiple possible endpoint names for work orders
@@ -87,6 +93,37 @@ export default function DashboardPage() {
     green: 'bg-green-500',
     purple: 'bg-purple-500',
   };
+
+  // E1: 7-day vault histogram
+  const histogramData = (() => {
+    const days: { label: string; count: number }[] = [];
+    const now = new Date();
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date(now);
+      d.setDate(d.getDate() - i);
+      const key = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+      const dateStr = d.toISOString().split('T')[0];
+      const count = boxes.filter(b => {
+        const created = b.created?.replace(' ', 'T');
+        return created?.startsWith(dateStr);
+      }).length;
+      days.push({ label: key, count });
+    }
+    return days;
+  })();
+
+  // E7: recent activity (last 5 vaults by created date)
+  const recentBoxes = [...boxes]
+    .sort((a, b) => (b.created || '').localeCompare(a.created || ''))
+    .slice(0, 5);
+
+  // E6: SLA — PENDING vaults older than 3 days
+  const slaCount = boxes.filter(b => {
+    if ((b.estado || b.status) !== 'PENDING') return false;
+    const created = b.created ? new Date(b.created.replace(' ', 'T')) : null;
+    if (!created) return false;
+    return (Date.now() - created.getTime()) > 3 * 24 * 60 * 60 * 1000;
+  }).length;
 
   const total = stats?.total_boxes || 0;
   const pending = stats?.statuses?.PENDING || 0;
@@ -217,7 +254,7 @@ export default function DashboardPage() {
         </div>
 
         {/* Quick Actions */}
-        <motion.div data-tutorial="quick-actions" custom={6} variants={fadeUp} initial="hidden" animate="show">
+        <motion.div data-tutorial="quick-actions" custom={6} variants={fadeUp} initial="hidden" animate="show" className="mb-8">
           <h2 className="font-semibold text-gray-900 mb-4">Quick Actions</h2>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             {[
@@ -238,6 +275,85 @@ export default function DashboardPage() {
             })}
           </div>
         </motion.div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+          {/* E1 — 7-day vault histogram */}
+          <motion.div custom={7} variants={fadeUp} initial="hidden" animate="show" className="md:col-span-2 bg-white rounded-2xl border border-gray-100 p-6">
+            <h2 className="font-semibold text-gray-900 mb-5">Vaults Added — Last 7 Days</h2>
+            {boxes.length === 0 && !loading ? (
+              <div className="flex items-center justify-center h-28 text-gray-300 text-sm">No data yet</div>
+            ) : (
+              <ResponsiveContainer width="100%" height={120}>
+                <LineChart data={histogramData} margin={{ top: 4, right: 4, bottom: 0, left: -20 }}>
+                  <XAxis dataKey="label" tick={{ fontSize: 11, fill: '#9ca3af' }} axisLine={false} tickLine={false} />
+                  <YAxis tick={{ fontSize: 11, fill: '#9ca3af' }} axisLine={false} tickLine={false} allowDecimals={false} />
+                  <Tooltip
+                    contentStyle={{ background: '#fff', border: '1px solid #f3f4f6', borderRadius: 12, fontSize: 12, padding: '6px 12px' }}
+                    itemStyle={{ color: '#2563eb' }}
+                  />
+                  <Line type="monotone" dataKey="count" stroke="#2563eb" strokeWidth={2} dot={{ r: 3, fill: '#2563eb' }} activeDot={{ r: 5 }} />
+                </LineChart>
+              </ResponsiveContainer>
+            )}
+          </motion.div>
+
+          {/* E6 — SLA widget */}
+          <motion.div custom={8} variants={fadeUp} initial="hidden" animate="show" className="bg-white rounded-2xl border border-gray-100 p-6 flex flex-col">
+            <h2 className="font-semibold text-gray-900 mb-2">SLA Alert</h2>
+            <p className="text-xs text-gray-400 mb-5">PENDING vaults over 3 days</p>
+            <div className="flex-1 flex flex-col items-center justify-center">
+              <div className={`w-20 h-20 rounded-2xl flex items-center justify-center mb-3 ${slaCount > 0 ? 'bg-red-50' : 'bg-green-50'}`}>
+                <AlertTriangle className={`w-8 h-8 ${slaCount > 0 ? 'text-red-500' : 'text-green-400'}`} />
+              </div>
+              <p className={`text-4xl font-bold mb-1 ${slaCount > 0 ? 'text-red-600' : 'text-green-600'}`}>{slaCount}</p>
+              <p className="text-xs text-gray-400 text-center">
+                {slaCount === 0 ? 'All vaults on time' : `vault${slaCount !== 1 ? 's' : ''} need attention`}
+              </p>
+            </div>
+            {slaCount > 0 && (
+              <Link href="/search?status=PENDING" className="mt-4 w-full text-center text-xs text-red-600 font-medium py-2 rounded-xl bg-red-50 hover:bg-red-100 transition-colors">
+                View pending vaults →
+              </Link>
+            )}
+          </motion.div>
+        </div>
+
+        {/* E7 — Recent Activity */}
+        {recentBoxes.length > 0 && (
+          <motion.div custom={9} variants={fadeUp} initial="hidden" animate="show" className="bg-white rounded-2xl border border-gray-100 p-6">
+            <h2 className="font-semibold text-gray-900 mb-5">Recent Activity</h2>
+            <div className="space-y-3">
+              {recentBoxes.map((box) => {
+                const created = box.created ? new Date(box.created.replace(' ', 'T')) : null;
+                const diffMs = created ? Date.now() - created.getTime() : 0;
+                const diffH = Math.floor(diffMs / 3600000);
+                const diffD = Math.floor(diffMs / 86400000);
+                const ago = diffD > 0 ? `${diffD}d ago` : diffH > 0 ? `${diffH}h ago` : 'just now';
+                const statusColors: Record<string, string> = {
+                  PENDING: 'bg-amber-50 text-amber-700',
+                  READY: 'bg-green-50 text-green-700',
+                  DELIVERED: 'bg-blue-50 text-blue-700',
+                };
+                const st = (box.estado || box.status || 'PENDING').toUpperCase();
+                return (
+                  <div key={box.box_id || box.id} className="flex items-center gap-3 py-2 border-b border-gray-50 last:border-0">
+                    <div className="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                      <Package className="w-4 h-4 text-gray-400" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-gray-900 truncate">{box.client_name || '—'}</p>
+                      <p className="text-xs text-gray-400">{box.position || box.box_id}</p>
+                    </div>
+                    <span className={`flex-shrink-0 text-xs font-medium px-2 py-0.5 rounded-full ${statusColors[st] || 'bg-gray-100 text-gray-500'}`}>
+                      {st}
+                    </span>
+                    <span className="flex-shrink-0 text-xs text-gray-300">{ago}</span>
+                  </div>
+                );
+              })}
+            </div>
+          </motion.div>
+        )}
       </main>
     </div>
   );

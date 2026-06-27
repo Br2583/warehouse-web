@@ -106,6 +106,7 @@ export default function WarehouseDetailPage() {
   };
 
   useEffect(() => {
+    if (window.innerWidth < 768) setViewMode('list');
     fetchBoxes();
     import('@/lib/pb').then(({ pb }) =>
       pb.collection('warehouses').getOne(warehouseId).then(w => setWarehouseName(w.name)).catch(() => {})
