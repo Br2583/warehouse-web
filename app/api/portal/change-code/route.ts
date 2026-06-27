@@ -1,24 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { readFileSync, writeFileSync, mkdirSync } from 'fs';
-import { join } from 'path';
 
 const PB_URL = 'https://pocketbase-production-e699.up.railway.app';
-
-function getPortalCode(): string {
-  try {
-    const { code } = JSON.parse(readFileSync(join(process.cwd(), 'data', 'portal-code.json'), 'utf-8'));
-    if (code && typeof code === 'string') return code;
-  } catch {
-    // fall through to env var
-  }
-  return process.env.PORTAL_CODE ?? '';
-}
-
-function setPortalCode(newCode: string) {
-  const dir = join(process.cwd(), 'data');
-  mkdirSync(dir, { recursive: true });
-  writeFileSync(join(dir, 'portal-code.json'), JSON.stringify({ code: newCode }), 'utf-8');
-}
 
 export async function POST(req: NextRequest) {
   // Verify caller is an owner via PocketBase token
@@ -26,13 +8,16 @@ export async function POST(req: NextRequest) {
   if (!authHeader.startsWith('Bearer ')) {
     return NextResponse.json({ error: 'Unauthorized.' }, { status: 401 });
   }
+
   const pbRes = await fetch(`${PB_URL}/api/collections/users/auth-refresh`, {
     method: 'POST',
     headers: { Authorization: authHeader },
   }).catch(() => null);
+
   if (!pbRes?.ok) {
     return NextResponse.json({ error: 'Unauthorized.' }, { status: 401 });
   }
+
   const { record } = await pbRes.json();
   if (record?.role !== 'owner') {
     return NextResponse.json({ error: 'Owner role required.' }, { status: 403 });
@@ -48,20 +33,48 @@ export async function POST(req: NextRequest) {
   if (!current || !newCode) {
     return NextResponse.json({ error: 'Both current and new codes are required.' }, { status: 400 });
   }
-
   if (newCode.length < 4) {
     return NextResponse.json({ error: 'New code must be at least 4 characters.' }, { status: 400 });
   }
 
-  const correctCode = getPortalCode();
-  if (!correctCode) {
+  // Get the company's current portal_code (or fall back to env global code)
+  const companyId = record.company_id;
+  if (!companyId) {
+    return NextResponse.json({ error: 'No company linked to this account.' }, { status: 400 });
+  }
+
+  const companyRes = await fetch(`${PB_URL}/api/collections/companies/records/${companyId}`, {
+    headers: { Authorization: authHeader },
+  }).catch(() => null);
+
+  if (!companyRes?.ok) {
+    return NextResponse.json({ error: 'Could not fetch company data.' }, { status: 500 });
+  }
+
+  const company = await companyRes.json();
+  const currentCode = company.portal_code || process.env.PORTAL_CODE || '';
+
+  if (!currentCode) {
     return NextResponse.json({ error: 'Server misconfigured.' }, { status: 500 });
   }
 
-  if (current !== correctCode) {
+  if (current !== currentCode) {
     return NextResponse.json({ error: 'Current code is incorrect.' }, { status: 401 });
   }
 
-  setPortalCode(newCode);
+  // Update the company's portal_code in PocketBase
+  const updateRes = await fetch(`${PB_URL}/api/collections/companies/records/${companyId}`, {
+    method: 'PATCH',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: authHeader,
+    },
+    body: JSON.stringify({ portal_code: newCode }),
+  }).catch(() => null);
+
+  if (!updateRes?.ok) {
+    return NextResponse.json({ error: 'Failed to update portal code.' }, { status: 500 });
+  }
+
   return NextResponse.json({ success: true });
 }

@@ -1,22 +1,61 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { readFileSync } from 'fs';
-import { join } from 'path';
 
 const MAX_ATTEMPTS = 5;
 const LOCKOUT_MS = 30 * 1000; // 30 seconds
+const PB_URL = 'https://pocketbase-production-e699.up.railway.app';
 
 // In-memory rate limiter per IP (resets on server restart)
 const store = new Map<string, { count: number; resetAt: number }>();
 
-function getPortalCode(): string {
+// Cached admin token — refreshed on 401
+let cachedAdminToken: string | null = null;
+
+async function getPBAdminToken(): Promise<string | null> {
+  if (cachedAdminToken) return cachedAdminToken;
   try {
-    const filePath = join(process.cwd(), 'data', 'portal-code.json');
-    const { code } = JSON.parse(readFileSync(filePath, 'utf-8'));
-    if (code && typeof code === 'string') return code;
-  } catch {
-    // fall through to env var
+    const res = await fetch(`${PB_URL}/api/collections/_superusers/auth-with-password`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        identity: process.env.PB_ADMIN_EMAIL,
+        password: process.env.PB_ADMIN_PASSWORD,
+      }),
+    });
+    if (!res.ok) return null;
+    const { token } = await res.json();
+    cachedAdminToken = token;
+    return token;
+  } catch { return null; }
+}
+
+async function isValidPortalCode(code: string): Promise<boolean> {
+  // 1. Check global env code (always works — admin / first-time entry)
+  const envCode = process.env.PORTAL_CODE ?? '';
+  if (envCode && code === envCode) return true;
+
+  // 2. Check any company's portal_code in PocketBase
+  let adminToken = await getPBAdminToken();
+  if (!adminToken) return false;
+
+  const tryQuery = async (token: string) =>
+    fetch(
+      `${PB_URL}/api/collections/companies/records?filter=(portal_code="${code}")&perPage=1`,
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+
+  let res = await tryQuery(adminToken).catch(() => null);
+
+  // Retry once if token expired
+  if (res?.status === 401) {
+    cachedAdminToken = null;
+    adminToken = await getPBAdminToken();
+    if (!adminToken) return false;
+    res = await tryQuery(adminToken).catch(() => null);
   }
-  return process.env.PORTAL_CODE ?? '';
+
+  if (!res?.ok) return false;
+  const data = await res.json();
+  return (data.items?.length ?? 0) > 0;
 }
 
 export async function POST(req: NextRequest) {
@@ -44,14 +83,10 @@ export async function POST(req: NextRequest) {
   }
 
   const { code } = await req.json().catch(() => ({ code: '' }));
-  const correctCode = getPortalCode();
 
-  if (!correctCode) {
-    return NextResponse.json({ error: 'Server misconfigured.' }, { status: 500 });
-  }
+  const valid = await isValidPortalCode(code);
 
-  if (code !== correctCode) {
-    // Register failed attempt
+  if (!valid) {
     if (!record) {
       record = { count: 1, resetAt: now + LOCKOUT_MS };
     } else {
