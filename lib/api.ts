@@ -1,4 +1,5 @@
 import { pb } from './pb';
+import { genCode } from './utils';
 
 export const BACKEND_URL = 'https://pocketbase-production-e699.up.railway.app';
 
@@ -10,8 +11,6 @@ export const removeToken = () => pb.authStore.clear();
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 const companyId = () => pb.authStore.model?.company_id as string | undefined;
 const userId    = () => pb.authStore.model?.id as string | undefined;
-
-const genCode = () => Math.random().toString(36).substring(2, 10).toUpperCase();
 
 // Map a PocketBase vault record to the shape the pages expect
 function mapVault(v: any) {

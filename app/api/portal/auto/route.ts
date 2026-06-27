@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 const PB_URL = 'https://pocketbase-production-e699.up.railway.app';
-const THIRTY_DAYS = 30 * 24 * 60 * 60;
+const TWO_HOURS = 7200;
 
 export async function POST(request: NextRequest) {
   try {
@@ -22,9 +22,10 @@ export async function POST(request: NextRequest) {
 
     const res = NextResponse.json({ ok: true });
     res.cookies.set('portal_unlocked', 'true', {
+      httpOnly: true,
       sameSite: 'lax',
       secure: process.env.NODE_ENV === 'production',
-      maxAge: THIRTY_DAYS,
+      maxAge: TWO_HOURS,
       path: '/',
     });
     return res;

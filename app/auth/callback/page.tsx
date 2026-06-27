@@ -3,8 +3,7 @@
 import { Suspense, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { pb } from '@/lib/pb';
-
-const genCode = () => Math.random().toString(36).substring(2, 10).toUpperCase();
+import { genCode } from '@/lib/utils';
 
 function Spinner() {
   return (

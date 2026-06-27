@@ -26,7 +26,7 @@ export default function BottomNav() {
                 size={20}
                 className={active ? 'text-blue-600' : 'text-gray-400'}
               />
-              <span className={`text-[10px] font-medium ${active ? 'text-blue-600' : 'text-gray-400'}`}>
+              <span className={`text-[10px] font-medium hidden min-[400px]:block ${active ? 'text-blue-600' : 'text-gray-400'}`}>
                 {label}
               </span>
             </Link>

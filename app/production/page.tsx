@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Wrench, Check, Plus, X, Trash2, ChevronRight, AlertCircle } from 'lucide-react';
+import { Wrench, Check, Plus, X, Trash2, ChevronRight, AlertCircle, User2 } from 'lucide-react';
 import Sidebar from '@/components/Sidebar';
 import { api } from '@/lib/api';
 import { useAuth } from '@/lib/auth-context';
@@ -246,6 +246,12 @@ export default function ProductionPage() {
                     <div className="flex-1 min-w-0">
                       <p className="font-semibold text-gray-900 truncate">{order.client_name}</p>
                       <p className="text-sm text-gray-500">{order.work_type} · {formatDate(order.date)}</p>
+                      {order.assigned_to && (
+                        <p className="flex items-center gap-1 text-xs text-gray-400 mt-0.5">
+                          <User2 className="w-3 h-3 flex-shrink-0" />
+                          <span className="truncate">{order.assigned_to}</span>
+                        </p>
+                      )}
                     </div>
                     <span className={`flex-shrink-0 text-xs font-medium px-2.5 py-1 rounded-full ${PHASE_COLORS[phase - 1]}`}>
                       {PHASES[phase - 1]}
@@ -305,6 +311,12 @@ export default function ProductionPage() {
                     <span className="text-gray-500">Date</span>
                     <span className="font-medium text-gray-900">{formatDate(detailOrder?.date)}</span>
                   </div>
+                  {detailOrder?.assigned_to && (
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-500">Assigned to</span>
+                      <span className="font-medium text-gray-900">{detailOrder.assigned_to}</span>
+                    </div>
+                  )}
                   {detailOrder?.notes && (
                     <div className="flex justify-between text-sm gap-4">
                       <span className="text-gray-500 flex-shrink-0">Notes</span>

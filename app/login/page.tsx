@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Building2, Ticket, ArrowLeft, ArrowRight, Package, Loader2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { pb } from '@/lib/pb';
+import { genCode } from '@/lib/utils';
 
 type Screen = 'main' | 'create' | 'join';
 
@@ -16,8 +17,6 @@ const GoogleIcon = () => (
     <path d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 00.957 4.958L3.964 7.29C4.672 5.163 6.656 3.58 9 3.58z" fill="#EA4335"/>
   </svg>
 );
-
-const genCode = () => Math.random().toString(36).substring(2, 10).toUpperCase();
 
 export default function LoginPage() {
   const router = useRouter();

@@ -1,11 +1,28 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { Suspense, useEffect, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { getToken } from '@/lib/api';
 import { pb } from '@/lib/pb';
-import { Lock, ArrowRight } from 'lucide-react';
+import { Lock, ArrowRight, Clock } from 'lucide-react';
+
+function ExpiredBanner() {
+  const params = useSearchParams();
+  if (params.get('expired') !== '1') return null;
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: 1.5, duration: 0.5 }}
+      className="mt-5 flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs text-amber-300"
+      style={{ background: 'rgba(251,191,36,0.1)', border: '1px solid rgba(251,191,36,0.2)' }}
+    >
+      <Clock size={13} className="flex-shrink-0" />
+      <span>Your session expired — enter the portal code to continue</span>
+    </motion.div>
+  );
+}
 
 const PHRASES = [
   'Content & Records Management.',
@@ -182,6 +199,11 @@ export default function Home() {
           <span>Portal Access</span>
           <ArrowRight size={14} className="text-white/40 group-hover:text-white/70 group-hover:translate-x-0.5 transition-all" />
         </motion.button>
+
+        {/* Session expired banner */}
+        <Suspense fallback={null}>
+          <ExpiredBanner />
+        </Suspense>
 
         {/* Subtext */}
         <motion.p
