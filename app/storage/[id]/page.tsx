@@ -8,6 +8,7 @@ import { api } from '@/lib/api';
 import { useAuth } from '@/lib/auth-context';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { compressImage } from '@/lib/compress-image';
 
 const STATUS_CONFIG: Record<string, { color: string; label: string }> = {
   AVAILABLE:   { color: 'bg-green-100 text-green-700',  label: 'Available' },
@@ -17,16 +18,6 @@ const STATUS_CONFIG: Record<string, { color: string; label: string }> = {
 const STATUSES = ['AVAILABLE', 'OCCUPIED', 'MAINTENANCE'];
 
 const MAX_PHOTOS = 6;
-const MAX_SIZE   = 5 * 1024 * 1024;
-
-const toBase64 = (file: File): Promise<string> =>
-  new Promise((resolve, reject) => {
-    if (file.size > MAX_SIZE) { reject(new Error(`"${file.name}" exceeds 5MB`)); return; }
-    const r = new FileReader();
-    r.onload = () => resolve(r.result as string);
-    r.onerror = reject;
-    r.readAsDataURL(file);
-  });
 
 async function geocode(address: string, city: string, state: string): Promise<string | null> {
   const q = [address, city, state].filter(Boolean).join(', ');
@@ -114,7 +105,7 @@ export default function StorageDetailPage() {
       setPhotoError(`Max ${MAX_PHOTOS} photos`); return;
     }
     try {
-      const b64s = await Promise.all(files.map(toBase64));
+      const b64s = await Promise.all(files.map(compressImage));
       setForm((f: any) => ({ ...f, photos: [...(f.photos || []), ...b64s] }));
     } catch (e: any) { setPhotoError(e.message); }
     e.target.value = '';

@@ -8,6 +8,7 @@ import { api } from '@/lib/api';
 import { useParams } from 'next/navigation';
 import TutorialOverlay from '@/components/TutorialOverlay';
 import { useTutorial } from '@/hooks/useTutorial';
+import { compressImage } from '@/lib/compress-image';
 
 interface Box {
   box_id: string;
@@ -62,19 +63,6 @@ const emptyForm = {
   photos: [] as string[],
 };
 
-const MAX_PHOTO_SIZE = 5 * 1024 * 1024; // 5MB
-
-const toBase64 = (file: File): Promise<string> =>
-  new Promise((resolve, reject) => {
-    if (file.size > MAX_PHOTO_SIZE) {
-      reject(new Error(`"${file.name}" exceeds 5MB limit`));
-      return;
-    }
-    const reader = new FileReader();
-    reader.onload = () => resolve(reader.result as string);
-    reader.onerror = reject;
-    reader.readAsDataURL(file);
-  });
 
 const TUTORIAL_STEPS = [
   { target: 'wh-header', title: 'Warehouse View', text: 'You\'re inside a specific warehouse. Switch between Map (visual grid) and List (table) views using the toggle.', position: 'bottom' as const },
@@ -149,7 +137,7 @@ export default function WarehouseDetailPage() {
   const handleEditPhotos = async (files: FileList | null) => {
     if (!files) return;
     try {
-      const converted = await Promise.all(Array.from(files).slice(0, 6).map(f => toBase64(f)));
+      const converted = await Promise.all(Array.from(files).slice(0, 6).map(f => compressImage(f)));
       setEditForm((f: any) => ({ ...f, photos: [...f.photos, ...converted].slice(0, 6) }));
     } catch (err: any) {
       setEditError(err?.message || 'Photo too large');
@@ -201,7 +189,7 @@ export default function WarehouseDetailPage() {
     if (!files) return;
     try {
       const converted = await Promise.all(
-        Array.from(files).slice(0, 6).map(f => toBase64(f))
+        Array.from(files).slice(0, 6).map(f => compressImage(f))
       );
       setForm(f => ({ ...f, photos: [...f.photos, ...converted].slice(0, 6) }));
     } catch (err: any) {
