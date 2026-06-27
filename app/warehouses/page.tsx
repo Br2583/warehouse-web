@@ -30,7 +30,7 @@ export default function WarehousesPage() {
     if (!cid) { setLoading(false); return; }
     try {
       const [whs, vaults] = await Promise.all([
-        pb.collection('warehouses').getFullList({ filter: `company_id="${cid}"`, sort: 'created' }),
+        pb.collection('warehouses').getFullList({ filter: `company_id="${cid}"` }),
         pb.collection('vaults').getFullList({ filter: `company_id="${cid}"`, fields: 'id,warehouse_id' }),
       ]);
       const counts: Record<string, number> = {};

@@ -44,7 +44,7 @@ export default function SnapshotsPage() {
   useEffect(() => {
     if (!user?.company_id) return;
     pb.collection('warehouses')
-      .getFullList({ filter: `company_id="${user.company_id}"`, sort: 'created' })
+      .getFullList({ filter: `company_id="${user.company_id}"` })
       .then(whs => setWarehouses(whs.map(w => ({ id: w.id, name: w['name'] as string }))))
       .catch(() => {});
   }, [user?.company_id]);

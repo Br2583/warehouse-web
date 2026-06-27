@@ -109,10 +109,9 @@ async function routeGet(path: string): Promise<any> {
   if (p === '/api/boxes') {
     if (!cid) return [];
     const warehouseId = q.get('warehouse_id');
-    let filter = `company_id="${cid}"`;
-    if (warehouseId) filter += ` && warehouse_id="${warehouseId}"`;
-    const items = await pb.collection('vaults').getFullList({ filter, sort: 'created' });
-    return items.map(mapVault);
+    const filter = warehouseId ? `company_id="${cid}" && warehouse_id="${warehouseId}"` : `company_id="${cid}"`;
+    const items = await pb.collection('vaults').getFullList({ filter });
+    return items.map(mapVault).sort((a: any, b: any) => a.created < b.created ? -1 : 1);
   }
 
   // GET /api/boxes/:id
@@ -161,21 +160,22 @@ async function routeGet(path: string): Promise<any> {
     if (!cid) return [];
     const items = await pb.collection('work_orders').getFullList({
       filter:  `company_id="${cid}"`,
-      sort:    '-created',
     });
-    return items.map(o => ({
-      id:          o.id,
-      work_order_id: o.id,
-      client_name: o.notes ? o.notes.split('\n')[0] : 'Work Order',
-      work_type:   o.type,
-      type:        o.type,
-      status:      (o.status || 'PENDING').toLowerCase().replace('_', '_'),
-      date:        o.due_date || o.created?.split(' ')[0],
-      notes:       o.notes,
-      assigned_to: o.assigned_to,
-      vault_id:    o.vault_id,
-      created:     o.created,
-    }));
+    return items
+      .sort((a: any, b: any) => a.created < b.created ? 1 : -1)
+      .map(o => ({
+        id:          o.id,
+        work_order_id: o.id,
+        client_name: o.notes ? o.notes.split('\n')[0] : 'Work Order',
+        work_type:   o.type,
+        type:        o.type,
+        status:      (o.status || 'PENDING').toLowerCase().replace('_', '_'),
+        date:        o.due_date || o.created?.split(' ')[0],
+        notes:       o.notes,
+        assigned_to: o.assigned_to,
+        vault_id:    o.vault_id,
+        created:     o.created,
+      }));
   }
 
   // GET /api/work-orders/search-volts/:q — vault search for work order creation
@@ -212,9 +212,10 @@ async function routeGet(path: string): Promise<any> {
     if (!cid) return [];
     const items = await pb.collection('chat_messages').getFullList({
       filter: `company_id="${cid}"`,
-      sort:   'created',
     });
-    return items.map(mapMessage);
+    return items
+      .sort((a: any, b: any) => a.created < b.created ? -1 : 1)
+      .map(mapMessage);
   }
 
   // ── Search ────────────────────────────────────────────────────────────────
@@ -222,8 +223,10 @@ async function routeGet(path: string): Promise<any> {
     const q2 = q.get('q') || '';
     if (!cid || !q2) return [];
     const filter = `company_id="${cid}" && (client_name~"${q2}" || packer~"${q2}" || position~"${q2}" || comments~"${q2}" || estado="${q2}")`;
-    const items = await pb.collection('vaults').getFullList({ filter, sort: '-created' });
-    return items.map(mapVault);
+    const items = await pb.collection('vaults').getFullList({ filter });
+    return items
+      .sort((a: any, b: any) => a.created < b.created ? 1 : -1)
+      .map(mapVault);
   }
 
   // ── Snapshots ──────────────────────────────────────────────────────────────
@@ -231,15 +234,16 @@ async function routeGet(path: string): Promise<any> {
     if (!cid) return [];
     const items = await pb.collection('snapshots').getFullList({
       filter: `company_id="${cid}"`,
-      sort:   '-date',
     });
-    return items.map(s => ({
-      id:            s.id,
-      date:          s.date,
-      warehouse_name: (s.data as any)?.warehouse_name || 'Snapshot',
-      box_count:     (s.data as any)?.box_count || 0,
-      data:          s.data,
-    }));
+    return items
+      .sort((a: any, b: any) => a.date < b.date ? 1 : -1)
+      .map(s => ({
+        id:            s.id,
+        date:          s.date,
+        warehouse_name: (s.data as any)?.warehouse_name || 'Snapshot',
+        box_count:     (s.data as any)?.box_count || 0,
+        data:          s.data,
+      }));
   }
 
   // ── Deleted Vaults ────────────────────────────────────────────────────────
@@ -247,20 +251,21 @@ async function routeGet(path: string): Promise<any> {
     if (!cid) return [];
     const items = await pb.collection('deleted_vaults').getFullList({
       filter: `company_id="${cid}"`,
-      sort:   '-created',
     });
-    return items.map(d => {
-      const vd = (d.vault_data as any) || {};
-      return {
-        id:          d.id,
-        box_id:      vd.box_id || d.id,
-        client_name: vd.client_name || '—',
-        warehouse_id: vd.warehouse_id,
-        position:    vd.position || '',
-        deleted_at:  d.created,
-        vault_data:  d.vault_data,
-      };
-    });
+    return items
+      .sort((a: any, b: any) => a.created < b.created ? 1 : -1)
+      .map(d => {
+        const vd = (d.vault_data as any) || {};
+        return {
+          id:          d.id,
+          box_id:      vd.box_id || d.id,
+          client_name: vd.client_name || '—',
+          warehouse_id: vd.warehouse_id,
+          position:    vd.position || '',
+          deleted_at:  d.created,
+          vault_data:  d.vault_data,
+        };
+      });
   }
 
   throw new Error(`Unknown GET path: ${p}`);
