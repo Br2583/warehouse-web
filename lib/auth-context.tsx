@@ -56,9 +56,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (pb.authStore.isValid && pb.authStore.model) {
-      buildUser(pb.authStore.model)
+      // Refresh token on load to extend its lifetime
+      pb.collection('users').authRefresh()
+        .then(() => buildUser(pb.authStore.model!))
         .then(setUser)
-        .catch(() => pb.authStore.clear())
+        .catch(() => {
+          pb.authStore.clear();
+          setUser(null);
+        })
         .finally(() => setLoading(false));
     } else {
       setLoading(false);
@@ -73,7 +78,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     });
 
-    return () => unsub();
+    // Auto-refresh every 6 hours to keep session alive
+    const interval = setInterval(() => {
+      if (pb.authStore.isValid) {
+        pb.collection('users').authRefresh().catch(() => {});
+      }
+    }, 6 * 60 * 60 * 1000);
+
+    return () => { unsub(); clearInterval(interval); };
   }, []);
 
   const refreshUser = async () => {

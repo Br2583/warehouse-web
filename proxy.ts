@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
-const SESSION_TIMEOUT = 2 * 60 * 60; // 2 hours in seconds
-const PUBLIC_PATHS = ['/', '/api/portal'];
+const SESSION_TIMEOUT = 30 * 24 * 60 * 60; // 30 days in seconds
+const PUBLIC_PATHS = ['/', '/api/portal', '/api/portal/auto'];
 
 export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;

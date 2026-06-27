@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { getToken } from '@/lib/api';
+import { pb } from '@/lib/pb';
 import { Lock, ArrowRight } from 'lucide-react';
 
 const PHRASES = [
@@ -25,7 +26,17 @@ export default function Home() {
   const [videoLoaded, setVideoLoaded] = useState(false);
 
   useEffect(() => {
-    if (getToken()) router.replace('/dashboard');
+    const token = getToken();
+    if (token && pb.authStore.isValid) {
+      // Already authenticated — unlock portal automatically and skip to dashboard
+      fetch('/api/portal/auto', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token }),
+      })
+        .then(res => { if (res.ok) router.replace('/dashboard'); })
+        .catch(() => {});
+    }
   }, [router]);
 
   useEffect(() => {
