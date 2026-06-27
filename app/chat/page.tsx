@@ -124,7 +124,7 @@ export default function ChatPage() {
                     <div className={`px-4 py-2.5 rounded-2xl text-sm ${isMe ? 'bg-blue-600 text-white rounded-tr-sm' : 'bg-white border border-gray-100 text-gray-800 rounded-tl-sm'}`}>
                       {msg.text}
                     </div>
-                    <span className="text-xs text-gray-300 mt-1">{new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                    <span className="text-xs text-gray-300 mt-1">{new Date(msg.timestamp?.replace(' ', 'T')).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                   </div>
                   {isMe && (
                     <button onClick={() => deleteMsg(msg.id)} className="opacity-0 group-hover:opacity-100 text-gray-300 hover:text-red-400 transition-all mt-2">
