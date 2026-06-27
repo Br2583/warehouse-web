@@ -161,6 +161,7 @@ async function routeGet(path: string): Promise<any> {
     const items = await pb.collection('work_orders').getFullList({
       filter:  `company_id="${cid}"`,
     });
+    const phaseMap: Record<string, number> = { PENDING: 1, IN_PROGRESS: 2, REVIEW: 3, DONE: 4 };
     return items
       .sort((a: any, b: any) => a.created < b.created ? 1 : -1)
       .map(o => ({
@@ -169,7 +170,8 @@ async function routeGet(path: string): Promise<any> {
         client_name: o.notes ? o.notes.split('\n')[0] : 'Work Order',
         work_type:   o.type,
         type:        o.type,
-        status:      (o.status || 'PENDING').toLowerCase().replace('_', '_'),
+        status:      (o.status || 'PENDING').toLowerCase(),
+        phase:       phaseMap[o.status] || 1,
         date:        o.due_date || o.created?.split(' ')[0],
         notes:       o.notes,
         assigned_to: o.assigned_to,
@@ -427,11 +429,21 @@ async function routePut(path: string, body: any): Promise<any> {
     return mapVault(v);
   }
 
+  // PUT /api/work-orders/:id/phase — update phase only
+  const woPhaseMatch = p.match(/^\/api\/work-orders\/([^/]+)\/phase$/);
+  if (woPhaseMatch) {
+    const phaseToStatus: Record<number, string> = { 1: 'PENDING', 2: 'IN_PROGRESS', 3: 'REVIEW', 4: 'DONE' };
+    await pb.collection('work_orders').update(woPhaseMatch[1], {
+      status: phaseToStatus[body.phase as number] || 'PENDING',
+    });
+    return { success: true };
+  }
+
   // PUT /api/work-orders/:id
   const woMatch = p.match(/^\/api\/work-orders\/([^/]+)$/);
   if (woMatch) {
     const statusMap: Record<string, string> = {
-      pending: 'PENDING', in_progress: 'IN_PROGRESS', completed: 'DONE',
+      pending: 'PENDING', in_progress: 'IN_PROGRESS', review: 'REVIEW', completed: 'DONE',
     };
     await pb.collection('work_orders').update(woMatch[1], {
       type:        body.work_type || body.type,
