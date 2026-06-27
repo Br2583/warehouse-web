@@ -56,6 +56,9 @@ function mapStorage(s: any) {
     photos,
     notes:       s.notes || '',
     created:     s.created,
+    slots:       s.slots || {},
+    grid_rows:   s.grid_rows || 4,
+    grid_cols:   s.grid_cols || 6,
   };
 }
 
@@ -511,6 +514,9 @@ async function routePut(path: string, body: any): Promise<any> {
       status:      body.status || 'AVAILABLE',
       photos:      body.photos || [],
       notes:       body.notes || '',
+      slots:       body.slots ?? undefined,
+      grid_rows:   body.grid_rows ?? undefined,
+      grid_cols:   body.grid_cols ?? undefined,
     });
     const s = await pb.collection('storage_units').getOne(storageMatch[1]);
     return mapStorage(s);
