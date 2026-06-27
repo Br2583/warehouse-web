@@ -38,6 +38,27 @@ function mapVault(v: any) {
   };
 }
 
+// Map a PocketBase storage_units record
+function mapStorage(s: any) {
+  const rawPhotos = s.photos;
+  const photos = Array.isArray(rawPhotos)
+    ? rawPhotos
+    : rawPhotos ? (typeof rawPhotos === 'string' ? JSON.parse(rawPhotos) : rawPhotos) : [];
+  return {
+    id:          s.id,
+    unit_name:   s.unit_name,
+    address:     s.address || '',
+    city:        s.city || '',
+    state:       s.state || '',
+    client_name: s.client_id || '',
+    capacity:    s.capacity || '',
+    status:      s.status || 'AVAILABLE',
+    photos,
+    notes:       s.notes || '',
+    created:     s.created,
+  };
+}
+
 // Map a PocketBase chat_messages record to the Message shape
 function mapMessage(m: any) {
   return {
@@ -248,6 +269,20 @@ async function routeGet(path: string): Promise<any> {
       }));
   }
 
+  // ── Storage Units ─────────────────────────────────────────────────────────
+  if (p === '/api/storage') {
+    const items = await pb.collection('storage_units').getFullList({});
+    return items
+      .sort((a: any, b: any) => a.created < b.created ? 1 : -1)
+      .map(mapStorage);
+  }
+
+  const storageOneMatch = p.match(/^\/api\/storage\/([^/]+)$/);
+  if (storageOneMatch) {
+    const s = await pb.collection('storage_units').getOne(storageOneMatch[1]);
+    return mapStorage(s);
+  }
+
   // ── Deleted Vaults ────────────────────────────────────────────────────────
   if (p === '/api/deleted-boxes') {
     if (!cid) return [];
@@ -369,6 +404,25 @@ async function routePost(path: string, body: any): Promise<any> {
     return mapMessage(m);
   }
 
+  // ── Storage Units ─────────────────────────────────────────────────────────
+  if (p === '/api/storage') {
+    if (!cid) throw new Error('No company');
+    const s = await pb.collection('storage_units').create({
+      company_id:  cid,
+      unit_name:   body.unit_name,
+      address:     body.address || '',
+      city:        body.city || '',
+      state:       body.state || '',
+      client_id:   body.client_name || '',
+      capacity:    body.capacity || '',
+      status:      body.status || 'AVAILABLE',
+      photos:      body.photos || [],
+      notes:       body.notes || '',
+      created_by:  uid,
+    });
+    return mapStorage(s);
+  }
+
   // ── Snapshots: create ─────────────────────────────────────────────────────
   const snapCreateMatch = p.match(/^\/api\/snapshots\/create\/([^/]+)$/);
   if (snapCreateMatch) {
@@ -429,6 +483,24 @@ async function routePut(path: string, body: any): Promise<any> {
     return mapVault(v);
   }
 
+  // PUT /api/storage/:id
+  const storageMatch = p.match(/^\/api\/storage\/([^/]+)$/);
+  if (storageMatch) {
+    await pb.collection('storage_units').update(storageMatch[1], {
+      unit_name:  body.unit_name,
+      address:    body.address || '',
+      city:       body.city || '',
+      state:      body.state || '',
+      client_id:  body.client_name || '',
+      capacity:   body.capacity || '',
+      status:     body.status || 'AVAILABLE',
+      photos:     body.photos || [],
+      notes:      body.notes || '',
+    });
+    const s = await pb.collection('storage_units').getOne(storageMatch[1]);
+    return mapStorage(s);
+  }
+
   // PUT /api/work-orders/:id/phase — update phase only
   const woPhaseMatch = p.match(/^\/api\/work-orders\/([^/]+)\/phase$/);
   if (woPhaseMatch) {
@@ -477,6 +549,13 @@ async function routeDelete(path: string): Promise<any> {
       });
     }
     await pb.collection('vaults').delete(vaultId);
+    return null;
+  }
+
+  // DELETE /api/storage/:id
+  const storageDelMatch = p.match(/^\/api\/storage\/([^/]+)$/);
+  if (storageDelMatch) {
+    await pb.collection('storage_units').delete(storageDelMatch[1]);
     return null;
   }
 

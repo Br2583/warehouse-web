@@ -4,7 +4,7 @@ import { useAuth } from '@/lib/auth-context';
 import { motion } from 'framer-motion';
 import {
   LayoutDashboard, Package, Search, BarChart3,
-  Camera, MessageSquare, Wrench, Trash2, User, LogOut, Building2
+  Camera, MessageSquare, Wrench, Trash2, User, LogOut, Building2, Archive
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -12,6 +12,7 @@ import { usePathname } from 'next/navigation';
 const navItems = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/warehouses', label: 'Warehouses', icon: Building2 },
+  { href: '/storage', label: 'Storage', icon: Archive },
   { href: '/search', label: 'Search', icon: Search },
   { href: '/production', label: 'Production', icon: Wrench },
   { href: '/stats', label: 'Statistics', icon: BarChart3 },

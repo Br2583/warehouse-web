@@ -2,12 +2,12 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, Building2, Search, Wrench, User } from 'lucide-react';
+import { LayoutDashboard, Building2, Archive, Wrench, User } from 'lucide-react';
 
 const items = [
   { href: '/dashboard', label: 'Home', icon: LayoutDashboard },
   { href: '/warehouses', label: 'Warehouses', icon: Building2 },
-  { href: '/search', label: 'Search', icon: Search },
+  { href: '/storage', label: 'Storage', icon: Archive },
   { href: '/production', label: 'Production', icon: Wrench },
   { href: '/profile', label: 'Profile', icon: User },
 ];
