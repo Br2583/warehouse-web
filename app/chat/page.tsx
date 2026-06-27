@@ -31,6 +31,8 @@ export default function ChatPage() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [text, setText] = useState('');
   const [loading, setLoading] = useState(true);
+  const [sendError, setSendError] = useState('');
+  const [sending, setSending] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
   const lastCountRef = useRef(-1);
   const { seen, markSeen } = useTutorial('chat');
@@ -60,7 +62,9 @@ export default function ChatPage() {
 
   const send = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!text.trim()) return;
+    if (!text.trim() || sending) return;
+    setSending(true);
+    setSendError('');
     try {
       await api.post('/api/chat/messages', {
         sender_email: user?.email,
@@ -70,8 +74,10 @@ export default function ChatPage() {
       });
       setText('');
       fetchMessages();
-    } catch {
-      // message failed silently — input stays so user can retry
+    } catch (err: any) {
+      setSendError(err?.message || 'Failed to send message');
+    } finally {
+      setSending(false);
     }
   };
 
@@ -138,22 +144,32 @@ export default function ChatPage() {
           <div ref={bottomRef} />
         </div>
 
-        <form data-tutorial="chat-input" onSubmit={send} className="p-4 pb-20 md:pb-4 bg-white border-t border-gray-100 flex gap-3">
-          <input
-            type="text"
-            placeholder="Type a message..."
-            value={text}
-            onChange={e => setText(e.target.value)}
-            className="flex-1 px-4 py-2.5 bg-gray-50 border border-gray-100 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
-          <button
-            type="submit"
-            disabled={!text.trim()}
-            className="px-4 py-2.5 bg-blue-600 text-white rounded-xl hover:bg-blue-700 disabled:opacity-50 transition-colors"
-          >
-            <Send className="w-4 h-4" />
-          </button>
-        </form>
+        <div data-tutorial="chat-input" className="bg-white border-t border-gray-100">
+          {sendError && (
+            <div className="px-4 pt-3 text-xs text-red-500 flex items-center gap-1.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-red-400 flex-shrink-0" />
+              {sendError}
+            </div>
+          )}
+          <form onSubmit={send} className="p-4 pb-20 md:pb-4 flex gap-3">
+            <input
+              type="text"
+              placeholder="Type a message..."
+              value={text}
+              onChange={e => { setText(e.target.value); if (sendError) setSendError(''); }}
+              className="flex-1 px-4 py-2.5 bg-gray-50 border border-gray-100 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+            <button
+              type="submit"
+              disabled={!text.trim() || sending}
+              className="px-4 py-2.5 bg-blue-600 text-white rounded-xl hover:bg-blue-700 disabled:opacity-50 transition-colors flex items-center"
+            >
+              {sending
+                ? <span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+                : <Send className="w-4 h-4" />}
+            </button>
+          </form>
+        </div>
       </main>
     </div>
   );

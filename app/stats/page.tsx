@@ -15,7 +15,6 @@ const STATUS_COLORS: Record<string, string>  = { PENDING: '#f59e0b', READY: '#22
 const STATUS_TEXT: Record<string, string>    = { PENDING: 'text-amber-700 bg-amber-100', READY: 'text-green-700 bg-green-100', DELIVERED: 'text-indigo-700 bg-indigo-100' };
 const JOB_COLORS: Record<string, string>     = { Fire: '#ef4444', Water: '#3b82f6', Moving: '#a855f7', Storage: '#6b7280' };
 const JOB_TEXT: Record<string, string>       = { Fire: 'bg-red-100 text-red-700', Water: 'bg-blue-100 text-blue-700', Moving: 'bg-purple-100 text-purple-700', Storage: 'bg-gray-100 text-gray-600' };
-const WH_COLORS = ['#3b82f6', '#6366f1', '#8b5cf6'];
 
 // ── Count-up number ────────────────────────────────────────────────────────────
 function CountUp({ value, delay = 0 }: { value: number; delay?: number }) {
@@ -80,6 +79,7 @@ function ChartTooltip({ active, payload }: any) {
 export default function StatsPage() {
   const [stats, setStats]               = useState<any>(null);
   const [boxes, setBoxes]               = useState<any[]>([]);
+  const [whNames, setWhNames]           = useState<Record<string, string>>({});
   const [loading, setLoading]           = useState(true);
   const [search, setSearch]             = useState('');
   const [sortBy, setSortBy]             = useState<'count' | 'name'>('count');
@@ -88,19 +88,22 @@ export default function StatsPage() {
   useEffect(() => {
     const load = async () => {
       try {
-        const [globalStats, wh1, wh2, wh3] = await Promise.allSettled([
+        const [globalStats, allBoxes, warehouses] = await Promise.allSettled([
           api.get('/api/stats/global'),
-          api.get('/api/boxes?warehouse_id=1'),
-          api.get('/api/boxes?warehouse_id=2'),
-          api.get('/api/boxes?warehouse_id=3'),
+          api.get('/api/boxes'),
+          api.get('/api/warehouses'),
         ]);
         if (globalStats.status === 'fulfilled') setStats(globalStats.value);
-        const allBoxes = [wh1, wh2, wh3].flatMap(r => {
-          if (r.status !== 'fulfilled') return [];
-          const d = r.value;
-          return Array.isArray(d) ? d : d?.boxes || [];
-        });
-        setBoxes(allBoxes);
+        if (allBoxes.status === 'fulfilled') {
+          const d = allBoxes.value;
+          setBoxes(Array.isArray(d) ? d : d?.boxes || []);
+        }
+        if (warehouses.status === 'fulfilled') {
+          const whs: any[] = Array.isArray(warehouses.value) ? warehouses.value : warehouses.value?.warehouses || [];
+          const map: Record<string, string> = {};
+          whs.forEach((w: any) => { map[w.warehouse_id || w.id] = w.name; });
+          setWhNames(map);
+        }
       } finally { setLoading(false); }
     };
     load();
@@ -121,11 +124,6 @@ export default function StatsPage() {
   // Bar data (job type)
   const jobData = useMemo(() =>
     Object.entries(stats?.job_types || {}).map(([k, v]) => ({ name: k, value: v as number, fill: JOB_COLORS[k] || '#6b7280' })),
-  [stats]);
-
-  // Bar data (warehouse)
-  const warehouseData = useMemo(() =>
-    Object.entries(stats?.by_warehouse || {}).map(([, v], i) => ({ name: `WH${i + 1}`, value: v as number })),
   [stats]);
 
   // Client stats from boxes
@@ -247,39 +245,6 @@ export default function StatsPage() {
                 )}
               </motion.div>
             </div>
-
-            {/* Warehouse comparison */}
-            {warehouseData.length > 0 && (
-              <motion.div
-                initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.46 }}
-                className="bg-white rounded-2xl border border-gray-100 p-6"
-                style={{ boxShadow: '0 1px 4px rgba(0,0,0,0.04)' }}
-              >
-                <h2 className="font-semibold text-gray-900 mb-1">By Warehouse</h2>
-                <p className="text-xs text-gray-400 mb-5">Vault count per location</p>
-                <div className="space-y-4">
-                  {warehouseData.map((wh, i) => {
-                    const pct = total > 0 ? (wh.value / total) * 100 : 0;
-                    return (
-                      <div key={wh.name} className="flex items-center gap-4">
-                        <span className="text-sm font-medium text-gray-500 w-10 flex-shrink-0">{wh.name}</span>
-                        <div className="flex-1 bg-gray-100 rounded-full h-2.5 overflow-hidden">
-                          <motion.div
-                            initial={{ width: 0 }}
-                            animate={{ width: `${pct}%` }}
-                            transition={{ duration: 0.9, delay: 0.5 + i * 0.1, ease: [0.16, 1, 0.3, 1] }}
-                            className="h-full rounded-full"
-                            style={{ backgroundColor: WH_COLORS[i] || '#3b82f6' }}
-                          />
-                        </div>
-                        <span className="text-sm font-semibold text-gray-900 w-8 text-right">{wh.value}</span>
-                        <span className="text-xs text-gray-400 w-10 text-right">{Math.round(pct)}%</span>
-                      </div>
-                    );
-                  })}
-                </div>
-              </motion.div>
-            )}
 
             {/* Client table */}
             <motion.div
@@ -453,7 +418,7 @@ export default function StatsPage() {
                           </td>
                           <td className="px-6 py-3 text-gray-500">
                             <div className="flex items-center gap-1">
-                              <Building2 className="w-3.5 h-3.5" /> WH{box.warehouse_id}
+                              <Building2 className="w-3.5 h-3.5" /> {whNames[box.warehouse_id] || box.warehouse_id || '—'}
                             </div>
                           </td>
                           <td className="px-6 py-3 text-gray-500">{box.packer || '—'}</td>

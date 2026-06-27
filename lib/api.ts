@@ -235,9 +235,14 @@ async function routeGet(path: string): Promise<any> {
 
   // ── Chat ───────────────────────────────────────────────────────────────────
   if (p === '/api/chat/messages') {
-    if (!cid) return [];
+    let chatCid = cid;
+    if (!chatCid && uid) {
+      const freshUser = await pb.collection('users').getOne(uid);
+      chatCid = freshUser.company_id;
+    }
+    if (!chatCid) return [];
     const items = await pb.collection('chat_messages').getFullList({
-      filter: `company_id="${cid}"`,
+      filter: `company_id="${chatCid}"`,
     });
     return items
       .sort((a: any, b: any) => a.created < b.created ? -1 : 1)
@@ -395,9 +400,15 @@ async function routePost(path: string, body: any): Promise<any> {
 
   // ── Chat ───────────────────────────────────────────────────────────────────
   if (p === '/api/chat/messages') {
-    if (!cid) throw new Error('No company');
+    // company_id might be missing from the cached model — fetch fresh if needed
+    let chatCid = cid;
+    if (!chatCid && uid) {
+      const freshUser = await pb.collection('users').getOne(uid);
+      chatCid = freshUser.company_id;
+    }
+    if (!chatCid) throw new Error('No company — please rejoin your company from the Profile page');
     const m = await pb.collection('chat_messages').create({
-      company_id:    cid,
+      company_id:    chatCid,
       author_id:     uid || body.sender_email,
       author_name:   body.sender_name || pb.authStore.model?.name,
       author_avatar: body.sender_photo || '',

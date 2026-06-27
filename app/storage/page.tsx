@@ -2,12 +2,13 @@
 
 import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Archive, Plus, MapPin, User, ChevronRight, Loader2, X, AlertCircle } from 'lucide-react';
+import { Archive, Plus, MapPin, User, ChevronRight, Loader2, X, AlertCircle, Camera } from 'lucide-react';
 import Sidebar from '@/components/Sidebar';
 import { api } from '@/lib/api';
 import { useAuth } from '@/lib/auth-context';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { compressImage } from '@/lib/compress-image';
 
 const STATUS_CONFIG: Record<string, { color: string; label: string }> = {
   AVAILABLE:   { color: 'bg-green-100 text-green-700',  label: 'Available' },
@@ -25,7 +26,16 @@ export default function StoragePage() {
   const [showCreate, setShowCreate] = useState(false);
   const [saving, setSaving] = useState(false);
   const [createError, setCreateError] = useState('');
-  const [form, setForm] = useState({ unit_name: '', address: '', city: '', state: '', client_name: '', capacity: '', access_code: '', status: 'AVAILABLE', notes: '' });
+  const [form, setForm] = useState({ unit_name: '', address: '', city: '', state: '', client_name: '', capacity: '', access_code: '', status: 'AVAILABLE', notes: '', photos: [] as string[] });
+
+  const handleCreatePhotos = async (files: FileList | null) => {
+    if (!files) return;
+    setCreateError('');
+    try {
+      const compressed = await Promise.all(Array.from(files).slice(0, 6).map(f => compressImage(f)));
+      setForm(f => ({ ...f, photos: [...f.photos, ...compressed].slice(0, 6) }));
+    } catch (e: any) { setCreateError(e?.message || 'Photo too large'); }
+  };
 
   const fetchUnits = async () => {
     try {
@@ -45,7 +55,7 @@ export default function StoragePage() {
     try {
       const created = await api.post('/api/storage', form);
       setShowCreate(false);
-      setForm({ unit_name: '', address: '', city: '', state: '', client_name: '', capacity: '', access_code: '', status: 'AVAILABLE', notes: '' });
+      setForm({ unit_name: '', address: '', city: '', state: '', client_name: '', capacity: '', access_code: '', status: 'AVAILABLE', notes: '', photos: [] });
       router.push(`/storage/${created.id}`);
     } catch (e: any) {
       setCreateError(e?.message || 'Failed to create storage unit');
@@ -119,6 +129,31 @@ export default function StoragePage() {
                     onChange={e => setForm(f => ({ ...f, access_code: e.target.value }))}
                     className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
                 </div>
+                {/* Photo upload */}
+                <div className="md:col-span-2">
+                  <label className="block text-xs text-gray-500 mb-2">Photos (optional, max 6)</label>
+                  <div className="flex flex-wrap gap-2">
+                    {form.photos.map((src, i) => (
+                      <div key={i} className="relative w-16 h-16 rounded-xl overflow-hidden border border-gray-200 flex-shrink-0">
+                        <img src={src} alt="" className="w-full h-full object-cover" />
+                        <button
+                          type="button"
+                          onClick={() => setForm(f => ({ ...f, photos: f.photos.filter((_, j) => j !== i) }))}
+                          className="absolute top-0.5 right-0.5 bg-black/50 text-white rounded-full w-4 h-4 flex items-center justify-center text-[10px] hover:bg-black/70"
+                        >×</button>
+                      </div>
+                    ))}
+                    {form.photos.length < 6 && (
+                      <label className="w-16 h-16 rounded-xl border-2 border-dashed border-gray-200 flex flex-col items-center justify-center cursor-pointer hover:border-blue-400 hover:bg-blue-50 transition-colors flex-shrink-0">
+                        <Camera className="w-4 h-4 text-gray-400" />
+                        <span className="text-[10px] text-gray-400 mt-0.5">Add</span>
+                        <input type="file" accept="image/*" multiple className="hidden"
+                          onChange={e => handleCreatePhotos(e.target.files)} />
+                      </label>
+                    )}
+                  </div>
+                </div>
+
                 {createError && (
                   <div className="md:col-span-2 flex items-center gap-2 text-sm text-red-600 bg-red-50 border border-red-100 rounded-xl px-3 py-2">
                     <AlertCircle className="w-4 h-4 flex-shrink-0" />{createError}
