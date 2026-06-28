@@ -16,7 +16,8 @@ export default function PendingPage() {
   useEffect(() => {
     const check = async () => {
       if (redirecting.current) return;
-      if (!pb.authStore.isValid || !pb.authStore.model?.company_id) return;
+      if (!pb.authStore.isValid) { window.location.href = '/login'; return; }
+      if (!pb.authStore.model?.company_id) return;
       try {
         const company = await pb.collection('companies').getOne(pb.authStore.model.company_id);
         if (company.approved && !company.suspended) {

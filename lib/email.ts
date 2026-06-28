@@ -214,6 +214,45 @@ export function clientRejectedEmail(ownerName: string, companyName: string) {
   };
 }
 
+export function clientDeletedEmail(ownerName: string, companyName: string) {
+  return {
+    subject: 'Cuenta eliminada — Warehouse Manager',
+    html: `<!DOCTYPE html>
+<html lang="es">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"></head>
+<body style="margin:0;padding:0;background:#f1f5f9;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#f1f5f9;padding:40px 16px;">
+    <tr><td align="center">
+      <table width="560" cellpadding="0" cellspacing="0" style="max-width:560px;width:100%;">
+        <tr>
+          <td style="background:linear-gradient(135deg,#374151,#1f2937);border-radius:16px 16px 0 0;padding:36px 40px;text-align:center;">
+            <div style="font-size:32px;margin-bottom:8px;">📦</div>
+            <h1 style="margin:0;color:#fff;font-size:22px;font-weight:700;">Warehouse Manager</h1>
+            <p style="margin:8px 0 0;color:#9ca3af;font-size:14px;">Notificación de cuenta</p>
+          </td>
+        </tr>
+        <tr>
+          <td style="background:#fff;padding:36px 40px;text-align:center;">
+            <p style="margin:0 0 8px;font-size:16px;color:#1e293b;">Hola <strong>${ownerName}</strong>,</p>
+            <p style="margin:0 0 24px;font-size:14px;color:#64748b;line-height:1.6;">
+              Tu empresa <strong>${companyName}</strong> y todos sus datos han sido eliminados de Warehouse Manager.<br>
+              Si tenés preguntas, respondé este email.
+            </p>
+          </td>
+        </tr>
+        <tr>
+          <td style="background:#1e293b;border-radius:0 0 16px 16px;padding:20px 40px;text-align:center;">
+            <p style="margin:0;font-size:12px;color:#64748b;">Generado por <strong style="color:#93c5fd;">Warehouse Manager</strong> · Powered by PixelCore</p>
+          </td>
+        </tr>
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>`,
+  };
+}
+
 export function passwordResetEmail(name: string, token: string) {
   const link = `${APP_URL}/reset-password?token=${token}`;
   return {

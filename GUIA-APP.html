@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Warehouse Manager — Guia de Operacion</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: Arial, sans-serif; font-size: 13px; color: #1a1a2e; background: #fff; padding: 30px; max-width: 800px; margin: auto; }
+  h1 { font-size: 22px; color: #1d4ed8; border-bottom: 3px solid #1d4ed8; padding-bottom: 8px; margin-bottom: 20px; }
+  h2 { font-size: 15px; color: #1d4ed8; margin: 22px 0 8px 0; background: #eff6ff; padding: 6px 10px; border-left: 4px solid #1d4ed8; border-radius: 2px; }
+  h3 { font-size: 13px; color: #374151; margin: 12px 0 5px 0; font-weight: bold; }
+  table { width: 100%; border-collapse: collapse; margin: 8px 0; }
+  td, th { border: 1px solid #e5e7eb; padding: 7px 10px; text-align: left; }
+  th { background: #f3f4f6; font-weight: bold; color: #374151; font-size: 12px; }
+  tr:nth-child(even) { background: #f9fafb; }
+  .tag { display: inline-block; background: #dbeafe; color: #1d4ed8; padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: bold; }
+  .warn { background: #fef9c3; border: 1px solid #fde047; padding: 8px 12px; border-radius: 6px; margin: 8px 0; font-size: 12px; }
+  .ok { background: #dcfce7; border: 1px solid #86efac; padding: 8px 12px; border-radius: 6px; margin: 8px 0; font-size: 12px; }
+  .secret { font-family: monospace; background: #f1f5f9; padding: 2px 6px; border-radius: 4px; font-size: 12px; border: 1px solid #cbd5e1; }
+  .url { color: #1d4ed8; font-family: monospace; font-size: 12px; }
+  .step { display: flex; gap: 8px; margin: 5px 0; align-items: flex-start; }
+  .step-num { background: #1d4ed8; color: white; min-width: 20px; height: 20px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: bold; flex-shrink: 0; margin-top: 1px; }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 8px 0; }
+  .card { border: 1px solid #e5e7eb; border-radius: 8px; padding: 12px; }
+  .card-title { font-weight: bold; color: #374151; margin-bottom: 6px; font-size: 13px; }
+  ul { padding-left: 18px; }
+  li { margin: 3px 0; }
+  @media print { body { padding: 15px; } }
+  .footer { margin-top: 30px; border-top: 1px solid #e5e7eb; padding-top: 12px; color: #9ca3af; font-size: 11px; text-align: center; }
+</style>
+</head>
+<body>
+
+<h1>Warehouse Manager — Guia de Operacion</h1>
+<p style="color:#6b7280; margin-bottom:4px;">Propietario: Brayan Romero &nbsp;|&nbsp; Empresa: PixelCore &nbsp;|&nbsp; Fecha: Junio 2026</p>
+
+<!-- URL PUBLICA -->
+<h2>URL Publica de la App</h2>
+<div class="ok">
+  <strong>App en produccion:</strong><br>
+  <span class="url">https://triumphant-growth-production-4f09.up.railway.app</span>
+</div>
+<div class="warn">
+  <strong>Codigo de acceso al portal:</strong> <span class="secret">2019</span> &nbsp;(cambiable desde Perfil sin reiniciar)
+</div>
+
+<!-- CUENTAS -->
+<h2>Cuentas Necesarias</h2>
+<table>
+  <tr><th>Servicio</th><th>Para que sirve</th><th>Cuenta</th><th>URL</th></tr>
+  <tr><td><strong>Railway</strong></td><td>Hosting de la app ($5/mes)</td><td>br2583350@gmail.com</td><td class="url">railway.app</td></tr>
+  <tr><td><strong>GitHub</strong></td><td>Codigo fuente / deploys automaticos</td><td>Br2583</td><td class="url">github.com/Br2583/warehouse-web</td></tr>
+  <tr><td><strong>EmailJS</strong></td><td>Envio de reportes por email</td><td>br2583350@gmail.com</td><td class="url">emailjs.com</td></tr>
+  <tr><td><strong>Google</strong></td><td>Login de usuarios (OAuth)</td><td>br2583350@gmail.com</td><td class="url">console.cloud.google.com</td></tr>
+</table>
+
+<!-- CLAVES -->
+<h2>Claves y Variables de Entorno</h2>
+<div class="warn">Estas claves estan en Railway → Variables y en el archivo .env.local de tu PC. Guardelas en un lugar seguro.</div>
+<table>
+  <tr><th>Variable</th><th>Valor</th><th>Donde se usa</th></tr>
+  <tr><td>PORTAL_CODE</td><td><span class="secret">2019</span></td><td>Codigo de acceso al portal</td></tr>
+  <tr><td>NEXT_PUBLIC_EMAILJS_SERVICE_ID</td><td><span class="secret">service_gxur23h</span></td><td>EmailJS</td></tr>
+  <tr><td>NEXT_PUBLIC_EMAILJS_TEMPLATE_ID</td><td><span class="secret">template_aw3zfcj</span></td><td>EmailJS</td></tr>
+  <tr><td>NEXT_PUBLIC_EMAILJS_PUBLIC_KEY</td><td><span class="secret">I_NflBogOJ5lZnKiG</span></td><td>EmailJS</td></tr>
+</table>
+
+<!-- SERVICIOS EXTERNOS -->
+<h2>Servicios Externos de los que Depende la App</h2>
+<div class="grid">
+  <div class="card">
+    <div class="card-title">Backend / API</div>
+    <span class="url">storagemap-3.emergent.host</span><br>
+    <span style="color:#6b7280; font-size:12px; margin-top:4px; display:block;">Gestiona todos los datos: volts, warehouses, usuarios, chat. NO esta en tu codigo — es un servicio externo.</span>
+  </div>
+  <div class="card">
+    <div class="card-title">Autenticacion Google OAuth</div>
+    <span class="url">auth.emergentagent.com</span><br>
+    <span style="color:#6b7280; font-size:12px; margin-top:4px; display:block;">Maneja el login con Google. Tambien servicio externo.</span>
+  </div>
+  <div class="card">
+    <div class="card-title">Railway (Hosting)</div>
+    <span class="url">railway.app</span><br>
+    <span style="color:#6b7280; font-size:12px; margin-top:4px; display:block;">Corre tu app Next.js. $5/mes. Build automatico al hacer push a GitHub.</span>
+  </div>
+  <div class="card">
+    <div class="card-title">EmailJS</div>
+    <span class="url">emailjs.com</span><br>
+    <span style="color:#6b7280; font-size:12px; margin-top:4px; display:block;">Envia reportes por email desde el navegador. 200 emails/mes gratis.</span>
+  </div>
+</div>
+
+<!-- COMO HACER UN DEPLOY -->
+<h2>Como Actualizar la App (Deploy)</h2>
+<p style="margin-bottom:8px;">Cada vez que cambies codigo, Railway redeploya automaticamente al hacer push a GitHub:</p>
+<div class="step"><div class="step-num">1</div><span>Abre terminal en <span class="secret">C:\Users\PC\warehouse-web</span></span></div>
+<div class="step"><div class="step-num">2</div><span>Ejecuta: <span class="secret">git add -A && git commit -m "descripcion del cambio"</span></span></div>
+<div class="step"><div class="step-num">3</div><span>Ejecuta: <span class="secret">git push origin main</span></span></div>
+<div class="step"><div class="step-num">4</div><span>Railway detecta el push y redeploya automaticamente en ~3 minutos</span></div>
+<div class="ok" style="margin-top:8px;">O desde terminal: <span class="secret">railway up --service triumphant-growth</span></div>
+
+<!-- CAMBIAR PORTAL CODE -->
+<h2>Cambiar el Codigo de Acceso al Portal</h2>
+<ul>
+  <li>Entra a la app → <strong>Perfil</strong> → seccion "Portal Access Code" (solo visible para el owner)</li>
+  <li>Escribe el codigo actual y el nuevo → Update</li>
+  <li>Toma efecto inmediatamente, sin reiniciar nada</li>
+</ul>
+
+<!-- ESTRUCTURA DEL CODIGO -->
+<h2>Estructura del Codigo (Para Desarrolladores)</h2>
+<table>
+  <tr><th>Archivo / Carpeta</th><th>Para que sirve</th></tr>
+  <tr><td><span class="secret">app/</span></td><td>Todas las paginas de la app (Next.js App Router)</td></tr>
+  <tr><td><span class="secret">components/</span></td><td>Sidebar, BottomNav, componentes reutilizables</td></tr>
+  <tr><td><span class="secret">lib/api.ts</span></td><td>Todas las llamadas al backend (una sola URL base)</td></tr>
+  <tr><td><span class="secret">lib/auth-context.tsx</span></td><td>Sistema de autenticacion global</td></tr>
+  <tr><td><span class="secret">lib/notifications.ts</span></td><td>Notificaciones push del navegador</td></tr>
+  <tr><td><span class="secret">proxy.ts</span></td><td>Middleware: verifica cookie del portal, sesion 2h</td></tr>
+  <tr><td><span class="secret">app/api/portal/</span></td><td>Verificacion del codigo de portal (server-side)</td></tr>
+  <tr><td><span class="secret">data/portal-code.json</span></td><td>Codigo del portal guardado en tiempo de ejecucion</td></tr>
+  <tr><td><span class="secret">.env.local</span></td><td>Variables de entorno locales (NO subir a GitHub)</td></tr>
+</table>
+
+<!-- PAGINAS -->
+<h2>Paginas de la App</h2>
+<table>
+  <tr><th>Ruta</th><th>Descripcion</th></tr>
+  <tr><td>/</td><td>Landing — video de fondo, acceso con codigo de portal</td></tr>
+  <tr><td>/login</td><td>Login con Google, crear empresa, unirse con codigo</td></tr>
+  <tr><td>/dashboard</td><td>Resumen estadisticas, accesos rapidos</td></tr>
+  <tr><td>/warehouses</td><td>Lista de 3 warehouses con conteo de vaults</td></tr>
+  <tr><td>/warehouses/[id]</td><td>Mapa del warehouse, CRUD de vaults, fotos</td></tr>
+  <tr><td>/search</td><td>Busqueda global en todos los warehouses</td></tr>
+  <tr><td>/production</td><td>Ordenes de trabajo (Cleaning / Restoration / Delivery)</td></tr>
+  <tr><td>/stats</td><td>Estadisticas por estado, tipo de trabajo, cliente</td></tr>
+  <tr><td>/snapshots</td><td>Snapshots diarios, reporte imprimible, envio por email</td></tr>
+  <tr><td>/chat</td><td>Chat de equipo, polling cada 10 segundos</td></tr>
+  <tr><td>/deleted</td><td>Vaults eliminados — restaurar o eliminar permanente</td></tr>
+  <tr><td>/profile</td><td>Info usuario, empresa, miembros, PIN, codigo portal</td></tr>
+</table>
+
+<!-- SI ALGO FALLA -->
+<h2>Si Algo Falla</h2>
+<table>
+  <tr><th>Problema</th><th>Solucion</th></tr>
+  <tr><td>App no carga / error 503</td><td>Revisar Railway → logs del servicio triumphant-growth</td></tr>
+  <tr><td>Login con Google no funciona</td><td>El servicio auth.emergentagent.com puede estar caido</td></tr>
+  <tr><td>Datos no aparecen</td><td>El backend storagemap-3.emergent.host puede estar caido</td></tr>
+  <tr><td>Email no llega</td><td>Verificar EmailJS dashboard → Email History, revisar spam</td></tr>
+  <tr><td>Cookie de portal expirada</td><td>Normal — expira en 2h de inactividad, volver a poner codigo</td></tr>
+  <tr><td>Cambio de codigo no aparece</td><td>Hacer push a GitHub, Railway redeploya automatico</td></tr>
+</table>
+
+<!-- CONTACTO / TESTING LOCAL -->
+<h2>Testing Local (Tu PC)</h2>
+<ul>
+  <li>Carpeta del proyecto: <span class="secret">C:\Users\PC\warehouse-web</span></li>
+  <li>Iniciar servidor local: <span class="secret">npx next dev</span> → abre en <span class="url">http://localhost:3000</span></li>
+  <li>Verificar build antes de deploy: <span class="secret">npx next build</span></li>
+  <li>ngrok (para probar en movil): <span class="secret">C:\Users\PC\ngrok\ngrok.exe http 3000</span></li>
+</ul>
+
+<div class="footer">
+  Warehouse Manager &nbsp;|&nbsp; Stack: Next.js 16 + React 19 + TypeScript + Tailwind v4 &nbsp;|&nbsp; Desarrollado por PixelCore<br>
+  Generado: Junio 2026
+</div>
+
+</body>
+</html>

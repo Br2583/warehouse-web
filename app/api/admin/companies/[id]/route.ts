@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { sendEmail, clientApprovedEmail, clientRejectedEmail } from '@/lib/email';
+import { sendEmail, clientApprovedEmail, clientRejectedEmail, clientDeletedEmail } from '@/lib/email';
 
 const PB_URL = process.env.NEXT_PUBLIC_PB_URL || 'https://pocketbase-production-e699.up.railway.app';
 const ADMIN_EMAIL = process.env.ADMIN_USER_EMAIL!;
@@ -38,12 +38,17 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   }
 
   const { id } = await params;
-  const { action } = await req.json();
-  const adminToken = await getPbAdminToken();
+  const body = await req.json().catch(() => ({}));
+  const { action } = body;
+
+  let adminToken: string;
+  try { adminToken = await getPbAdminToken(); }
+  catch { return NextResponse.json({ error: 'Admin auth failed' }, { status: 500 }); }
 
   const companyRes = await fetch(`${PB_URL}/api/collections/companies/records/${id}`, {
     headers: { Authorization: `Bearer ${adminToken}` },
   });
+  if (!companyRes.ok) return NextResponse.json({ error: 'Company not found' }, { status: 404 });
   const company = await companyRes.json();
 
   const ownerRes = company.owner_id
@@ -136,7 +141,7 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
 
   // Notify owner
   if (owner?.email) {
-    const email = clientRejectedEmail(owner.name || 'Cliente', company.name);
+    const email = clientDeletedEmail(owner.name || 'Cliente', company.name);
     await sendEmail({ to: owner.email, toName: owner.name, ...email }).catch(() => {});
   }
 

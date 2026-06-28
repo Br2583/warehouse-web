@@ -47,6 +47,7 @@ export default function AdminPage() {
       const res = await fetch('/api/admin/companies', {
         headers: { Authorization: `Bearer ${token}` },
       });
+      if (!res.ok) throw new Error(`API error ${res.status}`);
       const data = await res.json();
       setCompanies(data.companies || []);
     } catch {

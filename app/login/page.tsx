@@ -28,9 +28,15 @@ function LoginForm() {
   const reset    = params.get('reset')    === '1';
 
   useEffect(() => {
-    if (pb.authStore.isValid && pb.authStore.model?.company_id) {
-      router.replace('/dashboard');
-    }
+    if (!pb.authStore.isValid || !pb.authStore.model?.company_id) return;
+    // Check approval before auto-redirecting
+    pb.collection('companies').getOne(pb.authStore.model.company_id)
+      .then(c => {
+        if (c.suspended) router.replace('/suspended');
+        else if (!c.approved) router.replace('/pending');
+        else router.replace('/dashboard');
+      })
+      .catch(() => router.replace('/dashboard'));
   }, []);
 
   const handleLogin = async () => {
@@ -118,7 +124,7 @@ function LoginForm() {
       // Notify admin of new company request (fire-and-forget)
       fetch('/api/admin/notify', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${pb.authStore.token}` },
         body: JSON.stringify({ companyName: name, ownerName: model?.name || '', ownerEmail: model?.email || '' }),
       }).catch(() => {});
       router.replace('/pending');
