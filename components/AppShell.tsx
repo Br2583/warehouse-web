@@ -20,10 +20,10 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
       router.replace('/login');
       return;
     }
-    // Redirect based on company approval state (only on protected routes)
-    if (user && isProtected && user.company_id) {
+    // Redirect based on company approval state (skip /onboarding — it's the post-approval destination)
+    if (user && isProtected && user.company_id && pathname !== '/onboarding') {
       if (user.company_suspended === true) { router.replace('/suspended'); return; }
-      if (user.company_approved === false && user.company_rejected !== true && user.company_suspended !== true) { router.replace('/pending'); return; }
+      if (user.company_approved === false && user.company_rejected !== true) { router.replace('/pending'); return; }
     }
   }, [loading, user, isProtected, router]);
 

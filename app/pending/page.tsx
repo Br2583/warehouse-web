@@ -21,10 +21,9 @@ export default function PendingPage() {
         const company = await pb.collection('companies').getOne(pb.authStore.model.company_id);
         if (company.approved && !company.suspended) {
           redirecting.current = true;
-          // Refresh auth context so AppShell sees company_approved:true before we navigate
           await pb.collection('users').authRefresh();
           await refreshUser();
-          router.replace('/onboarding');
+          window.location.href = '/onboarding';
         }
       } catch {}
     };

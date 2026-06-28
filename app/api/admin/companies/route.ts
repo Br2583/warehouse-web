@@ -13,20 +13,25 @@ async function getPbAdminToken() {
   return data.token as string;
 }
 
-function getCallerEmail(req: NextRequest): string | null {
+async function getCallerEmail(req: NextRequest): Promise<string | null> {
   const auth = req.headers.get('authorization') || '';
   const token = auth.replace('Bearer ', '');
   if (!token) return null;
   try {
-    const payload = JSON.parse(Buffer.from(token.split('.')[1], 'base64').toString());
-    return payload.email || null;
+    const res = await fetch(`${PB_URL}/api/collections/users/auth-refresh`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!res.ok) return null;
+    const data = await res.json();
+    return data.record?.email || null;
   } catch {
     return null;
   }
 }
 
 export async function GET(req: NextRequest) {
-  const callerEmail = getCallerEmail(req);
+  const callerEmail = await getCallerEmail(req);
   if (callerEmail !== ADMIN_EMAIL) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
