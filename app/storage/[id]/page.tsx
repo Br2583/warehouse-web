@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Archive, MapPin, User, Camera, Pencil, Trash2, X, ChevronLeft, AlertCircle, Check, Loader2, Grid3X3, Settings2 } from 'lucide-react';
+import ConfirmModal from '@/components/ConfirmModal';
 import Sidebar from '@/components/Sidebar';
 import { api } from '@/lib/api';
 import { useAuth } from '@/lib/auth-context';
@@ -61,6 +62,7 @@ export default function StorageDetailPage() {
   const [slotSaving, setSlotSaving] = useState(false);
   const [showGridConfig, setShowGridConfig] = useState(false);
   const [gridConfigForm, setGridConfigForm] = useState({ rows: 4, cols: 6 });
+  const [confirmModal, setConfirmModal] = useState<{ message: string; onConfirm: () => void } | null>(null);
 
   useEffect(() => {
     api.get(`/api/storage/${id}`)
@@ -168,12 +170,16 @@ export default function StorageDetailPage() {
     setShowGridConfig(false);
   };
 
-  const deleteUnit = async () => {
-    if (!confirm('Delete this storage unit? This cannot be undone.')) return;
-    try {
-      await api.delete(`/api/storage/${id}`);
-      router.replace('/storage');
-    } catch (e: any) { setError(e?.message || 'Failed to delete'); }
+  const deleteUnit = () => {
+    setConfirmModal({
+      message: 'Delete this storage unit? This cannot be undone.',
+      onConfirm: async () => {
+        try {
+          await api.delete(`/api/storage/${id}`);
+          router.replace('/storage');
+        } catch (e: any) { setError(e?.message || 'Failed to delete'); }
+      },
+    });
   };
 
   if (loading) {
@@ -535,6 +541,14 @@ export default function StorageDetailPage() {
           )}
         </AnimatePresence>
       </main>
+
+      {confirmModal && (
+        <ConfirmModal
+          message={confirmModal.message}
+          onConfirm={confirmModal.onConfirm}
+          onCancel={() => setConfirmModal(null)}
+        />
+      )}
     </div>
   );
 }

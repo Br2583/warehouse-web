@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Package, Plus, Search, Trash2, X, Camera, LayoutGrid, List, Pencil, ChevronLeft, ChevronRight } from 'lucide-react';
+import ConfirmModal from '@/components/ConfirmModal';
 import Sidebar from '@/components/Sidebar';
 import { api } from '@/lib/api';
 import { useParams } from 'next/navigation';
@@ -91,6 +92,7 @@ export default function WarehouseDetailPage() {
   const [editSaving, setEditSaving] = useState(false);
   const [editError, setEditError] = useState('');
   const [lightbox, setLightbox] = useState<{ photos: string[]; index: number } | null>(null);
+  const [confirmModal, setConfirmModal] = useState<{ message: string; onConfirm: () => void } | null>(null);
 
   const fetchBoxes = () => {
     setApiError('');
@@ -172,15 +174,19 @@ export default function WarehouseDetailPage() {
     }
   };
 
-  const deleteBox = async (boxId: string) => {
-    if (!confirm('Delete this vault?')) return;
-    try {
-      await api.delete(`/api/boxes/${boxId}`);
-      setSelected(null);
-      fetchBoxes();
-    } catch (err: any) {
-      alert(err?.message || 'Failed to delete vault');
-    }
+  const deleteBox = (boxId: string) => {
+    setConfirmModal({
+      message: 'Delete this vault? This cannot be undone.',
+      onConfirm: async () => {
+        try {
+          await api.delete(`/api/boxes/${boxId}`);
+          setSelected(null);
+          fetchBoxes();
+        } catch (err: any) {
+          setApiError(err?.message || 'Failed to delete vault');
+        }
+      },
+    });
   };
 
   const toggleMulti = (arr: string[], val: string) =>
@@ -883,6 +889,14 @@ export default function WarehouseDetailPage() {
           )}
         </AnimatePresence>
       </main>
+
+      {confirmModal && (
+        <ConfirmModal
+          message={confirmModal.message}
+          onConfirm={confirmModal.onConfirm}
+          onCancel={() => setConfirmModal(null)}
+        />
+      )}
     </div>
   );
 }

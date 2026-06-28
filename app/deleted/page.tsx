@@ -5,11 +5,13 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Trash2, RotateCcw, X, AlertCircle } from 'lucide-react';
 import Sidebar from '@/components/Sidebar';
 import { api } from '@/lib/api';
+import ConfirmModal from '@/components/ConfirmModal';
 
 export default function DeletedPage() {
   const [deleted, setDeleted] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [confirmModal, setConfirmModal] = useState<{ message: string; onConfirm: () => void } | null>(null);
 
   const fetchDeleted = () =>
     api.get('/api/deleted-boxes')
@@ -28,14 +30,18 @@ export default function DeletedPage() {
     }
   };
 
-  const permDelete = async (id: string) => {
-    if (!confirm('Permanently delete this vault?')) return;
-    try {
-      await api.delete(`/api/deleted-boxes/${id}`);
-      fetchDeleted();
-    } catch (e: any) {
-      setError(e.message || 'Could not delete vault');
-    }
+  const permDelete = (id: string) => {
+    setConfirmModal({
+      message: 'Permanently delete this vault? This cannot be undone.',
+      onConfirm: async () => {
+        try {
+          await api.delete(`/api/deleted-boxes/${id}`);
+          fetchDeleted();
+        } catch (e: any) {
+          setError(e.message || 'Could not delete vault');
+        }
+      },
+    });
   };
 
   return (
@@ -110,6 +116,14 @@ export default function DeletedPage() {
           </div>
         )}
       </main>
+
+      {confirmModal && (
+        <ConfirmModal
+          message={confirmModal.message}
+          onConfirm={confirmModal.onConfirm}
+          onCancel={() => setConfirmModal(null)}
+        />
+      )}
     </div>
   );
 }

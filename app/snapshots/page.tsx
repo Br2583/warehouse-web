@@ -3,6 +3,7 @@
 import { useEffect, useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Camera, Trash2, Plus, Printer, X, Package, CheckCircle, Truck, Clock, Mail, AlertCircle } from 'lucide-react';
+import ConfirmModal from '@/components/ConfirmModal';
 import Sidebar from '@/components/Sidebar';
 import { api } from '@/lib/api';
 import { pb } from '@/lib/pb';
@@ -31,6 +32,7 @@ export default function SnapshotsPage() {
   const [sending, setSending] = useState(false);
   const [sendResult, setSendResult] = useState<'ok' | 'err' | null>(null);
   const [actionError, setActionError] = useState('');
+  const [confirmModal, setConfirmModal] = useState<{ message: string; onConfirm: () => void } | null>(null);
   const printRef = useRef<HTMLDivElement>(null);
 
   const fetchSnapshots = () =>
@@ -59,15 +61,19 @@ export default function SnapshotsPage() {
     }
   };
 
-  const deleteSnapshot = async (id: string) => {
-    if (!confirm('Delete this snapshot?')) return;
-    setActionError('');
-    try {
-      await api.delete(`/api/snapshots/${id}`);
-      fetchSnapshots();
-    } catch (e: any) {
-      setActionError(e.message || 'Failed to delete snapshot');
-    }
+  const deleteSnapshot = (id: string) => {
+    setConfirmModal({
+      message: 'Delete this snapshot? This cannot be undone.',
+      onConfirm: async () => {
+        setActionError('');
+        try {
+          await api.delete(`/api/snapshots/${id}`);
+          fetchSnapshots();
+        } catch (e: any) {
+          setActionError(e.message || 'Failed to delete snapshot');
+        }
+      },
+    });
   };
 
   const openReport = async (snap: any) => {
@@ -405,6 +411,14 @@ export default function SnapshotsPage() {
           </div>
         )}
       </AnimatePresence>
+
+      {confirmModal && (
+        <ConfirmModal
+          message={confirmModal.message}
+          onConfirm={confirmModal.onConfirm}
+          onCancel={() => setConfirmModal(null)}
+        />
+      )}
     </>
   );
 }

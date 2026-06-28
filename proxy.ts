@@ -7,6 +7,16 @@ const PUBLIC_PATHS = ['/', '/api/portal', '/api/portal/auto'];
 export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
+  // Redirect HTTP → HTTPS in production (Railway sets x-forwarded-proto)
+  if (
+    process.env.NODE_ENV === 'production' &&
+    request.headers.get('x-forwarded-proto') === 'http'
+  ) {
+    const url = new URL(request.url);
+    url.protocol = 'https:';
+    return NextResponse.redirect(url.toString(), { status: 301 });
+  }
+
   // Always allow public paths and static assets
   if (PUBLIC_PATHS.some(p => pathname === p)) return NextResponse.next();
 

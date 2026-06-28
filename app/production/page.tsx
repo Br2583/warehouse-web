@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Wrench, Check, Plus, X, Trash2, ChevronRight, AlertCircle, User2 } from 'lucide-react';
+import ConfirmModal from '@/components/ConfirmModal';
 import Sidebar from '@/components/Sidebar';
 import { api } from '@/lib/api';
 import { useAuth } from '@/lib/auth-context';
@@ -101,6 +102,7 @@ export default function ProductionPage() {
   const [voltSearch, setVoltSearch] = useState('');
   const [voltResults, setVoltResults] = useState<any[]>([]);
   const [voltSearching, setVoltSearching] = useState(false);
+  const [confirmModal, setConfirmModal] = useState<{ message: string; onConfirm: () => void } | null>(null);
 
   const fetchOrders = async () => {
     try {
@@ -139,17 +141,21 @@ export default function ProductionPage() {
     }
   };
 
-  const deleteOrder = async (id: string) => {
-    if (!confirm('Delete this work order?')) return;
-    setDetailError('');
-    try {
-      await api.delete(`/api/work-orders/${id}`);
-      setSelected(null);
-      setSelectedDetail(null);
-      fetchOrders();
-    } catch (e: any) {
-      setDetailError(e.message || 'Failed to delete');
-    }
+  const deleteOrder = (id: string) => {
+    setConfirmModal({
+      message: 'Delete this work order? This cannot be undone.',
+      onConfirm: async () => {
+        setDetailError('');
+        try {
+          await api.delete(`/api/work-orders/${id}`);
+          setSelected(null);
+          setSelectedDetail(null);
+          fetchOrders();
+        } catch (e: any) {
+          setDetailError(e.message || 'Failed to delete');
+        }
+      },
+    });
   };
 
   const searchVolts = async (q: string) => {
@@ -473,6 +479,14 @@ export default function ProductionPage() {
           )}
         </AnimatePresence>
       </main>
+
+      {confirmModal && (
+        <ConfirmModal
+          message={confirmModal.message}
+          onConfirm={confirmModal.onConfirm}
+          onCancel={() => setConfirmModal(null)}
+        />
+      )}
     </div>
   );
 }
