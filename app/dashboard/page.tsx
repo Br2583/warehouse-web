@@ -35,6 +35,7 @@ export default function DashboardPage() {
   const { seen, markSeen } = useTutorial('dashboard');
 
   useEffect(() => {
+    if (!user?.company_id) return;
     const load = async () => {
       try {
         const [globalStats, allBoxes] = await Promise.allSettled([
@@ -45,26 +46,22 @@ export default function DashboardPage() {
         if (allBoxes.status === 'fulfilled' && Array.isArray(allBoxes.value)) setBoxes(allBoxes.value);
       } catch { /* stats unavailable, show zeros */ }
 
-      // Try multiple possible endpoint names for work orders
-      for (const path of ['/api/work-orders', '/api/production/orders', '/api/orders']) {
-        try {
-          const workOrders = await api.get(path);
-          if (Array.isArray(workOrders)) {
-            setWorkStats({
-              total: workOrders.length,
-              pending: workOrders.filter((w: any) => w.status === 'pending').length,
-              in_progress: workOrders.filter((w: any) => w.status === 'in_progress').length,
-              completed: workOrders.filter((w: any) => w.status === 'completed').length,
-            });
-            break;
-          }
-        } catch { /* try next */ }
-      }
+      try {
+        const workOrders = await api.get('/api/work-orders');
+        if (Array.isArray(workOrders)) {
+          setWorkStats({
+            total: workOrders.length,
+            pending: workOrders.filter((w: any) => w.status === 'pending').length,
+            in_progress: workOrders.filter((w: any) => w.status === 'in_progress').length,
+            completed: workOrders.filter((w: any) => w.status === 'completed' || w.status === 'done').length,
+          });
+        }
+      } catch { /* no work orders yet */ }
 
       setLoading(false);
     };
     load();
-  }, []);
+  }, [user?.company_id]);
 
   const greeting = () => {
     const h = new Date().getHours();

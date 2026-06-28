@@ -253,9 +253,12 @@ async function routeGet(path: string): Promise<any> {
 
   // ── Search ────────────────────────────────────────────────────────────────
   if (p === '/api/search/global') {
-    const q2 = q.get('q') || '';
-    if (!cid || !q2) return [];
-    const filter = `company_id="${cid}" && (client_name~"${q2}" || packer~"${q2}" || position~"${q2}" || comments~"${q2}" || estado="${q2}")`;
+    const q2     = q.get('q') || '';
+    const status = q.get('status') || '';
+    if (!cid || (!q2 && !status)) return [];
+    let filter = `company_id="${cid}"`;
+    if (status) filter += ` && estado="${status}"`;
+    if (q2)     filter += ` && (client_name~"${q2}" || packer~"${q2}" || position~"${q2}" || comments~"${q2}" || job_type~"${q2}")`;
     const items = await pb.collection('vaults').getFullList({ filter });
     return items
       .sort((a: any, b: any) => a.created < b.created ? 1 : -1)

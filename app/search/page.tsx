@@ -28,13 +28,8 @@ function SearchContent() {
       setLoading(true);
       setSearched(true);
       setLabel(`Status: ${statusFilter}`);
-      api.get(`/api/search/global?q=${statusFilter}`)
-        .then(data => {
-          const filtered = Array.isArray(data)
-            ? data.filter((b: any) => (b.estado || b.status) === statusFilter)
-            : [];
-          setResults(filtered);
-        })
+      api.get(`/api/search/global?status=${encodeURIComponent(statusFilter)}`)
+        .then(data => { setResults(Array.isArray(data) ? data : []); })
         .catch(() => setResults([]))
         .finally(() => setLoading(false));
     }
