@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { sendEmail, clientApprovedEmail, clientRejectedEmail, clientDeletedEmail } from '@/lib/email';
 
 const PB_URL = process.env.NEXT_PUBLIC_PB_URL || 'https://pocketbase-production-e699.up.railway.app';
-const ADMIN_EMAIL = process.env.ADMIN_USER_EMAIL!;
+const ADMIN_USER_ID = process.env.ADMIN_USER_ID!;
 
 async function getPbAdminToken() {
   const res = await fetch(`${PB_URL}/api/collections/_superusers/auth-with-password`, {
@@ -14,26 +14,20 @@ async function getPbAdminToken() {
   return data.token as string;
 }
 
-async function getCallerEmail(req: NextRequest): Promise<string | null> {
-  const auth = req.headers.get('authorization') || '';
-  const token = auth.replace('Bearer ', '');
+function getCallerId(req: NextRequest): string | null {
+  const token = (req.headers.get('authorization') || '').replace('Bearer ', '');
   if (!token) return null;
   try {
-    const res = await fetch(`${PB_URL}/api/collections/users/auth-refresh`, {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    if (!res.ok) return null;
-    const data = await res.json();
-    return data.record?.email || null;
+    const payload = JSON.parse(Buffer.from(token.split('.')[1], 'base64url').toString());
+    return payload.id || null;
   } catch {
     return null;
   }
 }
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const callerEmail = await getCallerEmail(req);
-  if (callerEmail !== ADMIN_EMAIL) {
+  const callerEmail = getCallerId(req);
+  if (callerEmail !== ADMIN_USER_ID) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
 
@@ -106,8 +100,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 }
 
 export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const callerEmail = await getCallerEmail(req);
-  if (callerEmail !== ADMIN_EMAIL) {
+  const callerEmail = getCallerId(req);
+  if (callerEmail !== ADMIN_USER_ID) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
 
