@@ -70,7 +70,7 @@ function mapMessage(m: any) {
     sender_email:  m.author_id,
     sender_photo:  m.author_avatar,
     text:          m.content,
-    timestamp:     m.created.replace(' ', 'T'),
+    timestamp:     m.created?.replace(' ', 'T') ?? new Date().toISOString(),
   };
 }
 

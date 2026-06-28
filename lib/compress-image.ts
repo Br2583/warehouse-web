@@ -1,6 +1,6 @@
-const MAX_DIMENSION = 1200;
-const JPEG_QUALITY = 0.80;
-const MAX_OUTPUT_BYTES = 800 * 1024; // 800 KB after compression
+const MAX_DIMENSION = 1000;
+const JPEG_QUALITY = 0.75;
+const MAX_OUTPUT_BYTES = 600 * 1024; // 600 KB after compression
 
 export function compressImage(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -35,7 +35,7 @@ export function compressImage(file: File): Promise<string> {
 
         // Guard: if still too large after compression, reject with a clear message
         const byteLen = Math.round((dataUrl.length * 3) / 4);
-        if (byteLen > MAX_OUTPUT_BYTES * 5) {
+        if (byteLen > MAX_OUTPUT_BYTES * 2) {
           reject(new Error(`"${file.name}" is too large to upload even after compression`));
           return;
         }

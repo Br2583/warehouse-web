@@ -13,6 +13,7 @@ async function getPbAdminToken() {
     }),
   });
   const data = await res.json();
+  if (!res.ok) throw new Error(`PB admin auth failed: ${data?.message ?? res.status}`);
   return data.token as string;
 }
 
@@ -27,7 +28,7 @@ export async function POST(req: NextRequest) {
     if (payload.purpose !== 'reset') throw new Error('Wrong token type');
 
     const adminToken = await getPbAdminToken();
-    await fetch(`${PB_URL}/api/collections/users/records/${payload.userId}`, {
+    const pbRes = await fetch(`${PB_URL}/api/collections/users/records/${payload.userId}`, {
       method: 'PATCH',
       headers: {
         'Content-Type': 'application/json',
@@ -35,6 +36,7 @@ export async function POST(req: NextRequest) {
       },
       body: JSON.stringify({ password, passwordConfirm }),
     });
+    if (!pbRes.ok) throw new Error('Failed to update password. Try again.');
 
     return NextResponse.json({ ok: true });
   } catch (e: any) {

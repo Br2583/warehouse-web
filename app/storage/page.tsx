@@ -32,8 +32,8 @@ export default function StoragePage() {
     if (!files) return;
     setCreateError('');
     try {
-      const compressed = await Promise.all(Array.from(files).slice(0, 6).map(f => compressImage(f)));
-      setForm(f => ({ ...f, photos: [...f.photos, ...compressed].slice(0, 6) }));
+      const compressed = await Promise.all(Array.from(files).slice(0, 4).map(f => compressImage(f)));
+      setForm(f => ({ ...f, photos: [...f.photos, ...compressed].slice(0, 4) }));
     } catch (e: any) { setCreateError(e?.message || 'Photo too large'); }
   };
 
@@ -131,7 +131,7 @@ export default function StoragePage() {
                 </div>
                 {/* Photo upload */}
                 <div className="md:col-span-2">
-                  <label className="block text-xs text-gray-500 mb-2">Photos (optional, max 6)</label>
+                  <label className="block text-xs text-gray-500 mb-2">Photos (optional, max 4)</label>
                   <div className="flex flex-wrap gap-2">
                     {form.photos.map((src, i) => (
                       <div key={i} className="relative w-16 h-16 rounded-xl overflow-hidden border border-gray-200 flex-shrink-0">
@@ -143,7 +143,7 @@ export default function StoragePage() {
                         >×</button>
                       </div>
                     ))}
-                    {form.photos.length < 6 && (
+                    {form.photos.length < 4 && (
                       <label className="w-16 h-16 rounded-xl border-2 border-dashed border-gray-200 flex flex-col items-center justify-center cursor-pointer hover:border-blue-400 hover:bg-blue-50 transition-colors flex-shrink-0">
                         <Camera className="w-4 h-4 text-gray-400" />
                         <span className="text-[10px] text-gray-400 mt-0.5">Add</span>

@@ -140,8 +140,8 @@ export default function WarehouseDetailPage() {
   const handleEditPhotos = async (files: FileList | null) => {
     if (!files) return;
     try {
-      const converted = await Promise.all(Array.from(files).slice(0, 6).map(f => compressImage(f)));
-      setEditForm((f: any) => ({ ...f, photos: [...f.photos, ...converted].slice(0, 6) }));
+      const converted = await Promise.all(Array.from(files).slice(0, 4).map(f => compressImage(f)));
+      setEditForm((f: any) => ({ ...f, photos: [...f.photos, ...converted].slice(0, 4) }));
     } catch (err: any) {
       setEditError(err?.message || 'Photo too large');
     }
@@ -196,9 +196,9 @@ export default function WarehouseDetailPage() {
     if (!files) return;
     try {
       const converted = await Promise.all(
-        Array.from(files).slice(0, 6).map(f => compressImage(f))
+        Array.from(files).slice(0, 4).map(f => compressImage(f))
       );
-      setForm(f => ({ ...f, photos: [...f.photos, ...converted].slice(0, 6) }));
+      setForm(f => ({ ...f, photos: [...f.photos, ...converted].slice(0, 4) }));
     } catch (err: any) {
       setSaveError(err?.message || 'Photo too large');
     }
@@ -629,7 +629,7 @@ export default function WarehouseDetailPage() {
                         ))}
                       </div>
                     )}
-                    {editForm.photos.length < 6 && (
+                    {editForm.photos.length < 4 && (
                       <label className="flex items-center justify-center gap-2 w-full h-16 border-2 border-dashed border-gray-200 rounded-xl cursor-pointer hover:border-blue-400 hover:bg-blue-50 transition-colors">
                         <Camera className="w-4 h-4 text-gray-300" />
                         <span className="text-xs text-gray-400">Add more photos</span>
@@ -788,7 +788,7 @@ export default function WarehouseDetailPage() {
 
                   {/* Photos */}
                   <div>
-                    <label className="block text-xs text-gray-500 mb-2">Photos (max 6)</label>
+                    <label className="block text-xs text-gray-500 mb-2">Photos (max 4)</label>
                     <label className="flex flex-col items-center justify-center w-full h-24 border-2 border-dashed border-gray-200 rounded-xl cursor-pointer hover:border-blue-400 hover:bg-blue-50 transition-colors">
                       <Camera className="w-6 h-6 text-gray-300 mb-1" />
                       <span className="text-xs text-gray-400">Click to add photos</span>

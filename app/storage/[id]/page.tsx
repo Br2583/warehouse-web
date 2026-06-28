@@ -18,7 +18,7 @@ const STATUS_CONFIG: Record<string, { color: string; label: string }> = {
 };
 const STATUSES = ['AVAILABLE', 'OCCUPIED', 'MAINTENANCE'];
 
-const MAX_PHOTOS = 6;
+const MAX_PHOTOS = 4;
 
 async function geocode(address: string, city: string, state: string): Promise<string | null> {
   const q = [address, city, state].filter(Boolean).join(', ');

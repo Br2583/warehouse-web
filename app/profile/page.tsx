@@ -145,7 +145,6 @@ export default function ProfilePage() {
                     <div className={`w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0${m.picture ? ' hidden' : ''}`}>
                       <span className="text-sm font-bold text-gray-500">{m.name?.[0]}</span>
                     </div>
-                    )}
                     <div className="flex-1">
                       <p className="text-sm font-medium text-gray-900">{m.name}</p>
                       <p className="text-xs text-gray-400">{m.email}</p>
@@ -171,7 +170,7 @@ export default function ProfilePage() {
                 ].map(({ key, label }) => (
                   <button
                     key={key}
-                    onClick={() => { localStorage.removeItem(`tutorial_seen_${key}`); if (key === 'profile') window.location.reload(); }}
+                    onClick={() => { localStorage.removeItem(`tutorial_seen_${user?.email}_${key}`); if (key === 'profile') window.location.reload(); }}
                     className="text-xs px-3 py-1.5 bg-gray-50 border border-gray-200 text-gray-600 rounded-lg hover:bg-blue-50 hover:border-blue-200 hover:text-blue-600 transition-colors"
                   >
                     {label}

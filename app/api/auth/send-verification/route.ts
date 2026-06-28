@@ -14,6 +14,7 @@ async function getPbAdminToken() {
     }),
   });
   const data = await res.json();
+  if (!res.ok) throw new Error(`PB admin auth failed: ${data?.message ?? res.status}`);
   return data.token as string;
 }
 

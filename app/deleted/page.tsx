@@ -87,7 +87,7 @@ export default function DeletedPage() {
               <tbody>
                 {deleted.map((box, i) => (
                   <motion.tr
-                    key={box.deleted_id}
+                    key={box.id}
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     transition={{ delay: i * 0.03 }}
@@ -96,14 +96,14 @@ export default function DeletedPage() {
                     <td className="px-6 py-4 text-sm font-medium text-gray-900">{box.position}</td>
                     <td className="px-6 py-4 text-sm text-gray-700">{box.client_name}</td>
                     <td className="px-6 py-4 text-sm text-gray-500">{box.job_type}</td>
-                    <td className="px-6 py-4 text-sm text-gray-400">{new Date(box.deleted_at).toLocaleDateString()}</td>
+                    <td className="px-6 py-4 text-sm text-gray-400">{box.deleted_at ? new Date(box.deleted_at.replace(' ', 'T')).toLocaleDateString() : '—'}</td>
                     <td className="px-6 py-4">
                       <div className="flex gap-2">
-                        <button onClick={() => restore(box.deleted_id)}
+                        <button onClick={() => restore(box.id)}
                           className="flex items-center gap-1 text-xs text-green-600 hover:bg-green-50 px-2.5 py-1.5 rounded-lg transition-colors">
                           <RotateCcw className="w-3 h-3" /> Restore
                         </button>
-                        <button onClick={() => permDelete(box.deleted_id)}
+                        <button onClick={() => permDelete(box.id)}
                           className="flex items-center gap-1 text-xs text-red-500 hover:bg-red-50 px-2.5 py-1.5 rounded-lg transition-colors">
                           <X className="w-3 h-3" /> Delete
                         </button>

@@ -7,9 +7,9 @@ import { pb } from '@/lib/pb';
 import { ArrowRight, LogIn, UserPlus } from 'lucide-react';
 
 const PHRASES = [
-  'Content & Records Management.',
-  'Secure Document Storage.',
-  'Professional Archive Solutions.',
+  'Inventory & Records Management.',
+  'Secure Warehouse Storage.',
+  'Real-Time Vault Tracking.',
   'Trusted Warehouse Services.',
 ];
 
@@ -85,7 +85,7 @@ export default function Home() {
         >
           <div className="h-px w-8 bg-white/20" />
           <span className="text-white/40 text-[11px] tracking-[0.25em] uppercase">
-            Archive Contents Restoration
+            Warehouse Management Platform
           </span>
           <div className="h-px w-8 bg-white/20" />
         </motion.div>
