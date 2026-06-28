@@ -63,12 +63,17 @@ export default function ProfilePage() {
             <motion.div data-tutorial="profile-user" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="bg-white rounded-2xl border border-gray-100 p-6">
               <div className="flex items-center gap-4">
                 {user?.picture ? (
-                  <img src={user.picture} alt={user.name} referrerPolicy="no-referrer" className="w-16 h-16 rounded-2xl object-cover" />
-                ) : (
-                  <div className="w-16 h-16 rounded-2xl bg-blue-100 flex items-center justify-center">
-                    <User className="w-8 h-8 text-blue-600" />
-                  </div>
-                )}
+                  <img
+                    src={user.picture}
+                    alt={user.name}
+                    referrerPolicy="no-referrer"
+                    className="w-16 h-16 rounded-2xl object-cover"
+                    onError={e => { (e.target as HTMLImageElement).style.display = 'none'; (e.target as HTMLImageElement).nextElementSibling?.classList.remove('hidden'); }}
+                  />
+                ) : null}
+                <div className={`w-16 h-16 rounded-2xl bg-blue-100 flex items-center justify-center flex-shrink-0${user?.picture ? ' hidden' : ''}`}>
+                  <User className="w-8 h-8 text-blue-600" />
+                </div>
                 <div>
                   <h2 className="text-lg font-bold text-gray-900">{user?.name}</h2>
                   <p className="text-gray-500 text-sm">{user?.email}</p>
@@ -129,11 +134,17 @@ export default function ProfilePage() {
                 {members.map(m => (
                   <div key={m.user_id} className="flex items-center gap-3">
                     {m.picture ? (
-                      <img src={m.picture} alt={m.name} referrerPolicy="no-referrer" className="w-9 h-9 rounded-full object-cover" />
-                    ) : (
-                      <div className="w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center">
-                        <span className="text-sm font-bold text-gray-500">{m.name?.[0]}</span>
-                      </div>
+                      <img
+                        src={m.picture}
+                        alt={m.name}
+                        referrerPolicy="no-referrer"
+                        className="w-9 h-9 rounded-full object-cover"
+                        onError={e => { (e.target as HTMLImageElement).style.display = 'none'; (e.target as HTMLImageElement).nextElementSibling?.classList.remove('hidden'); }}
+                      />
+                    ) : null}
+                    <div className={`w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0${m.picture ? ' hidden' : ''}`}>
+                      <span className="text-sm font-bold text-gray-500">{m.name?.[0]}</span>
+                    </div>
                     )}
                     <div className="flex-1">
                       <p className="text-sm font-medium text-gray-900">{m.name}</p>
