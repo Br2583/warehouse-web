@@ -398,7 +398,7 @@ export default function SnapshotsPage() {
                 <p className="text-sm text-green-600 font-medium mb-3">✓ Email sent successfully!</p>
               )}
               {sendResult === 'err' && (
-                <p className="text-sm text-red-500 mb-3">Failed to send. Check the Template ID in the code.</p>
+                <p className="text-sm text-red-500 mb-3">Failed to send. Please try again or contact support.</p>
               )}
               <button
                 onClick={sendEmail}

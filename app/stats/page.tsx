@@ -84,6 +84,9 @@ export default function StatsPage() {
   const [search, setSearch]             = useState('');
   const [sortBy, setSortBy]             = useState<'count' | 'name'>('count');
   const [selectedClient, setSelectedClient] = useState<string | null>(null);
+  const [clientPage, setClientPage]     = useState(0);
+
+  const PAGE_SIZE = 50;
 
   useEffect(() => {
     const load = async () => {
@@ -294,7 +297,7 @@ export default function StatsPage() {
                         initial={{ opacity: 0, x: -8 }}
                         animate={{ opacity: 1, x: 0 }}
                         transition={{ delay: i * 0.025 }}
-                        onClick={() => setSelectedClient(client.name)}
+                        onClick={() => { setSelectedClient(client.name); setClientPage(0); }}
                         className="group flex items-center gap-4 px-4 py-3.5 rounded-xl border border-transparent hover:border-blue-100 hover:bg-blue-50/50 cursor-pointer transition-all"
                       >
                         {/* Avatar */}
@@ -404,7 +407,7 @@ export default function StatsPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {clientVolts.map((box, i) => {
+                    {clientVolts.slice(clientPage * PAGE_SIZE, (clientPage + 1) * PAGE_SIZE).map((box, i) => {
                       const status = box.estado || box.status || 'PENDING';
                       const pos = box.row && box.column ? `${box.row}${box.column} L${box.level}` : box.position || '—';
                       return (
@@ -432,6 +435,29 @@ export default function StatsPage() {
                     })}
                   </tbody>
                 </table>
+                {clientVolts.length > PAGE_SIZE && (
+                  <div className="flex items-center justify-between px-6 py-3 border-t border-gray-100 text-sm">
+                    <span className="text-gray-400">
+                      {clientPage * PAGE_SIZE + 1}–{Math.min((clientPage + 1) * PAGE_SIZE, clientVolts.length)} of {clientVolts.length}
+                    </span>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => setClientPage(p => Math.max(0, p - 1))}
+                        disabled={clientPage === 0}
+                        className="px-3 py-1 rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-50 disabled:opacity-40 transition-colors"
+                      >
+                        Previous
+                      </button>
+                      <button
+                        onClick={() => setClientPage(p => p + 1)}
+                        disabled={(clientPage + 1) * PAGE_SIZE >= clientVolts.length}
+                        className="px-3 py-1 rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-50 disabled:opacity-40 transition-colors"
+                      >
+                        Next
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
             </motion.div>
           </div>

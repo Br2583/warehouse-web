@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Package, Plus, Search, Trash2, X, Camera, LayoutGrid, List, Pencil, ChevronLeft, ChevronRight, QrCode } from 'lucide-react';
 import ConfirmModal from '@/components/ConfirmModal';
 import Sidebar from '@/components/Sidebar';
+import VaultForm, { VaultFormData } from '@/components/VaultForm';
 import { api } from '@/lib/api';
 import { useParams } from 'next/navigation';
 import TutorialOverlay from '@/components/TutorialOverlay';
@@ -43,26 +44,22 @@ const STATUS_CELL: Record<string, string> = {
   DELIVERED: 'bg-blue-500',
 };
 
-const JOB_TYPES = ['Fire', 'Water', 'Moving', 'Storage'];
-const CONTENTS_TYPES = ['Boxes', 'Furniture', 'Both'];
-const ROOM_LOCATIONS = ['Kitchen', 'Patio', 'Living Room', 'Family Room', 'Dining Room', 'Bathroom', 'Bedroom 1', 'Bedroom 2', 'Bedroom 3'];
-const VAULT_STATUSES = ['Total Loss', 'Needs Cleaning', 'Ready to Go', 'Storage Only'];
-const ROWS = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J'];
+const ROWS    = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J'];
 const COLUMNS = [1, 2, 3, 4, 5, 6, 7, 8];
 
-const emptyForm = {
-  client_name: '',
-  row: 'A',
-  column: 1,
-  level: 1,
-  job_type: 'Moving',
+const emptyForm: VaultFormData = {
+  client_name:   '',
+  row:           'A',
+  column:        1,
+  level:         1,
+  job_type:      'Moving',
   contents_type: 'Boxes',
-  room_location: [] as string[],
-  vault_status: [] as string[],
-  packer: '',
-  status: 'PENDING',
-  comments: '',
-  photos: [] as string[],
+  room_location: [],
+  vault_status:  [],
+  packer:        '',
+  status:        'PENDING',
+  comments:      '',
+  photos:        [],
 };
 
 
@@ -89,7 +86,7 @@ export default function WarehouseDetailPage() {
   const [viewMode, setViewMode] = useState<'map' | 'list'>('map');
   const [mapLevel, setMapLevel] = useState<1 | 2>(1);
   const [showEdit, setShowEdit] = useState(false);
-  const [editForm, setEditForm] = useState<any>(null);
+  const [editForm, setEditForm] = useState<VaultFormData | null>(null);
   const [editSaving, setEditSaving] = useState(false);
   const [editError, setEditError] = useState('');
   const [lightbox, setLightbox] = useState<{ photos: string[]; index: number } | null>(null);
@@ -125,25 +122,25 @@ export default function WarehouseDetailPage() {
 
   const openEdit = (box: Box) => {
     setEditForm({
-      client_name: box.client_name || '',
-      job_type: box.job_type || 'Moving',
+      client_name:   box.client_name || '',
+      job_type:      box.job_type || 'Moving',
       contents_type: box.content_type || 'Boxes',
       room_location: box.room_location || [],
-      vault_status: box.vault_status || [],
-      packer: box.packer || '',
-      status: box.estado || box.status || 'PENDING',
-      comments: box.comments || '',
-      photos: box.photos || [],
+      vault_status:  box.vault_status || [],
+      packer:        box.packer || '',
+      status:        box.estado || box.status || 'PENDING',
+      comments:      box.comments || '',
+      photos:        box.photos || [],
     });
     setEditError('');
     setShowEdit(true);
   };
 
   const handleEditPhotos = async (files: FileList | null) => {
-    if (!files) return;
+    if (!files || !editForm) return;
     try {
       const converted = await Promise.all(Array.from(files).slice(0, 4).map(f => compressImage(f)));
-      setEditForm((f: any) => ({ ...f, photos: [...f.photos, ...converted].slice(0, 4) }));
+      setEditForm(f => f ? { ...f, photos: [...f.photos, ...converted].slice(0, 4) } : f);
     } catch (err: any) {
       setEditError(err?.message || 'Photo too large');
     }
@@ -151,20 +148,20 @@ export default function WarehouseDetailPage() {
 
   const saveEdit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selected || !editForm.client_name.trim()) { setEditError('Client name is required'); return; }
+    if (!selected || !editForm?.client_name.trim()) { setEditError('Client name is required'); return; }
     setEditSaving(true);
     setEditError('');
     try {
       await api.put(`/api/boxes/${selected.box_id}`, {
-        client_name:  editForm.client_name.trim(),
-        job_type:     editForm.job_type,
-        content_type: editForm.contents_type,
+        client_name:   editForm.client_name.trim(),
+        job_type:      editForm.job_type,
+        content_type:  editForm.contents_type,
         room_location: editForm.room_location,
-        vault_status: editForm.vault_status,
-        packer:       editForm.packer,
-        estado:       editForm.status,
-        comments:     editForm.comments,
-        photos:       editForm.photos,
+        vault_status:  editForm.vault_status,
+        packer:        editForm.packer,
+        estado:        editForm.status,
+        comments:      editForm.comments,
+        photos:        editForm.photos,
       });
       setShowEdit(false);
       setSelected(null);
@@ -191,15 +188,10 @@ export default function WarehouseDetailPage() {
     });
   };
 
-  const toggleMulti = (arr: string[], val: string) =>
-    arr.includes(val) ? arr.filter(x => x !== val) : [...arr, val];
-
   const handlePhotoFiles = async (files: FileList | null) => {
     if (!files) return;
     try {
-      const converted = await Promise.all(
-        Array.from(files).slice(0, 4).map(f => compressImage(f))
-      );
+      const converted = await Promise.all(Array.from(files).slice(0, 4).map(f => compressImage(f)));
       setForm(f => ({ ...f, photos: [...f.photos, ...converted].slice(0, 4) }));
     } catch (err: any) {
       setSaveError(err?.message || 'Photo too large');
@@ -526,7 +518,7 @@ export default function WarehouseDetailPage() {
           )}
         </AnimatePresence>
 
-        {/* Edit Volt Modal */}
+        {/* Edit Vault Modal */}
         <AnimatePresence>
           {showEdit && editForm && selected && (
             <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50 p-4" onClick={() => setShowEdit(false)}>
@@ -543,139 +535,24 @@ export default function WarehouseDetailPage() {
                     <X className="w-5 h-5" />
                   </button>
                 </div>
-
-                <div className="bg-gray-50 rounded-xl p-3 text-sm text-gray-500 mb-4">
-                  WH{warehouseId} · Row {selected.row} · Col {selected.column} · {selected.level === 1 ? 'Lower (L1)' : 'Upper (L2)'}
-                </div>
-
-                <form onSubmit={saveEdit} className="space-y-4">
-                  <div>
-                    <label className="block text-xs text-gray-500 mb-1">Client Name <span className="text-red-500">*</span></label>
-                    <input type="text" value={editForm.client_name}
-                      onChange={e => setEditForm((f: any) => ({ ...f, client_name: e.target.value }))}
-                      className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
-                  </div>
-
-                  <div>
-                    <label className="block text-xs text-gray-500 mb-2">Job Type</label>
-                    <div className="flex flex-wrap gap-2">
-                      {JOB_TYPES.map(t => (
-                        <button type="button" key={t}
-                          onClick={() => setEditForm((f: any) => ({ ...f, job_type: t }))}
-                          className={`px-3 py-1.5 text-sm rounded-lg border transition-colors ${editForm.job_type === t ? 'bg-blue-600 text-white border-blue-600' : 'border-gray-200 text-gray-600 hover:border-blue-300'}`}>
-                          {t}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-xs text-gray-500 mb-2">Contents Type</label>
-                    <div className="flex flex-wrap gap-2">
-                      {CONTENTS_TYPES.map(t => (
-                        <button type="button" key={t}
-                          onClick={() => setEditForm((f: any) => ({ ...f, contents_type: t }))}
-                          className={`px-3 py-1.5 text-sm rounded-lg border transition-colors ${editForm.contents_type === t ? 'bg-blue-600 text-white border-blue-600' : 'border-gray-200 text-gray-600 hover:border-blue-300'}`}>
-                          {t}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-xs text-gray-500 mb-2">Room Location</label>
-                    <div className="flex flex-wrap gap-2">
-                      {ROOM_LOCATIONS.map(r => (
-                        <button type="button" key={r}
-                          onClick={() => setEditForm((f: any) => ({ ...f, room_location: toggleMulti(f.room_location, r) }))}
-                          className={`px-3 py-1.5 text-sm rounded-lg border transition-colors ${editForm.room_location.includes(r) ? 'bg-blue-600 text-white border-blue-600' : 'border-gray-200 text-gray-600 hover:border-blue-300'}`}>
-                          {r}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-xs text-gray-500 mb-2">Vault Status</label>
-                    <div className="flex flex-wrap gap-2">
-                      {VAULT_STATUSES.map(s => (
-                        <button type="button" key={s}
-                          onClick={() => setEditForm((f: any) => ({ ...f, vault_status: toggleMulti(f.vault_status, s) }))}
-                          className={`px-3 py-1.5 text-sm rounded-lg border transition-colors ${editForm.vault_status.includes(s) ? 'bg-blue-600 text-white border-blue-600' : 'border-gray-200 text-gray-600 hover:border-blue-300'}`}>
-                          {s}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-xs text-gray-500 mb-1">Packer</label>
-                    <input type="text" value={editForm.packer}
-                      onChange={e => setEditForm((f: any) => ({ ...f, packer: e.target.value }))}
-                      className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
-                  </div>
-
-                  <div>
-                    <label className="block text-xs text-gray-500 mb-2">Status</label>
-                    <div className="flex gap-2">
-                      {['PENDING', 'READY', 'DELIVERED'].map(s => (
-                        <button type="button" key={s}
-                          onClick={() => setEditForm((f: any) => ({ ...f, status: s }))}
-                          className={`px-3 py-1.5 text-sm rounded-lg border transition-colors ${editForm.status === s ? 'bg-blue-600 text-white border-blue-600' : 'border-gray-200 text-gray-600 hover:border-blue-300'}`}>
-                          {s}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-xs text-gray-500 mb-1">Comments</label>
-                    <textarea value={editForm.comments}
-                      onChange={e => setEditForm((f: any) => ({ ...f, comments: e.target.value }))}
-                      rows={3}
-                      className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none" />
-                  </div>
-
-                  {/* Photos */}
-                  <div>
-                    <label className="block text-xs text-gray-500 mb-2">Photos</label>
-                    {editForm.photos.length > 0 && (
-                      <div className="grid grid-cols-3 gap-2 mb-2">
-                        {editForm.photos.map((src: string, idx: number) => (
-                          <div key={idx} className="relative group">
-                            <img src={src} alt="" className="w-full h-20 object-cover rounded-xl" />
-                            <button type="button"
-                              onClick={() => setEditForm((f: any) => ({ ...f, photos: f.photos.filter((_: any, i: number) => i !== idx) }))}
-                              className="absolute top-1 right-1 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                              <X className="w-3 h-3" />
-                            </button>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                    {editForm.photos.length < 4 && (
-                      <label className="flex items-center justify-center gap-2 w-full h-16 border-2 border-dashed border-gray-200 rounded-xl cursor-pointer hover:border-blue-400 hover:bg-blue-50 transition-colors">
-                        <Camera className="w-4 h-4 text-gray-300" />
-                        <span className="text-xs text-gray-400">Add more photos</span>
-                        <input type="file" accept="image/*" multiple className="hidden"
-                          onChange={e => handleEditPhotos(e.target.files)} />
-                      </label>
-                    )}
-                  </div>
-
-                  {editError && <p className="text-sm text-red-500">{editError}</p>}
-
-                  <button type="submit" disabled={editSaving}
-                    className="w-full py-3 bg-blue-600 text-white text-sm font-medium rounded-xl hover:bg-blue-700 transition-colors disabled:opacity-50">
-                    {editSaving ? 'Saving...' : 'Save Changes'}
-                  </button>
-                </form>
+                <VaultForm
+                  mode="edit"
+                  value={editForm}
+                  onChange={setEditForm}
+                  positionLabel={`WH${warehouseId} · Row ${selected.row} · Col ${selected.column} · ${selected.level === 1 ? 'Lower (L1)' : 'Upper (L2)'}`}
+                  error={editError}
+                  saving={editSaving}
+                  submitLabel="Save Changes"
+                  onSubmit={saveEdit}
+                  onPhotos={handleEditPhotos}
+                  onRemovePhoto={idx => setEditForm(f => f ? { ...f, photos: f.photos.filter((_, i) => i !== idx) } : f)}
+                />
               </motion.div>
             </div>
           )}
         </AnimatePresence>
 
-        {/* Add Volt Modal */}
+        {/* Add Vault Modal */}
         <AnimatePresence>
           {showAdd && (
             <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50 p-4" onClick={() => setShowAdd(false)}>
@@ -692,163 +569,18 @@ export default function WarehouseDetailPage() {
                     <X className="w-5 h-5" />
                   </button>
                 </div>
-
-                <form onSubmit={addVolt} className="space-y-4">
-                  <div className="bg-blue-50 rounded-xl p-3 text-sm font-medium text-blue-700">
-                    WH{warehouseId} · Row {form.row} · Col {form.column} · {form.level === 1 ? 'Lower (L1)' : 'Upper (L2)'}
-                  </div>
-
-                  <div className="grid grid-cols-3 gap-3">
-                    <div>
-                      <label className="block text-xs text-gray-500 mb-1">Row</label>
-                      <select value={form.row} onChange={e => setForm(f => ({ ...f, row: e.target.value }))}
-                        className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
-                        {ROWS.map(r => <option key={r}>{r}</option>)}
-                      </select>
-                    </div>
-                    <div>
-                      <label className="block text-xs text-gray-500 mb-1">Column</label>
-                      <select value={form.column} onChange={e => setForm(f => ({ ...f, column: Number(e.target.value) }))}
-                        className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
-                        {COLUMNS.map(c => <option key={c}>{c}</option>)}
-                      </select>
-                    </div>
-                    <div>
-                      <label className="block text-xs text-gray-500 mb-1">Level</label>
-                      <select value={form.level} onChange={e => setForm(f => ({ ...f, level: Number(e.target.value) }))}
-                        className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
-                        <option value={1}>Lower (L1)</option>
-                        <option value={2}>Upper (L2)</option>
-                      </select>
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-xs text-gray-500 mb-1">Client Name <span className="text-red-500">*</span></label>
-                    <input type="text" placeholder="Client name" value={form.client_name}
-                      onChange={e => setForm(f => ({ ...f, client_name: e.target.value }))}
-                      className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
-                  </div>
-
-                  <div>
-                    <label className="block text-xs text-gray-500 mb-2">Job Type</label>
-                    <div className="flex flex-wrap gap-2">
-                      {JOB_TYPES.map(t => (
-                        <button type="button" key={t}
-                          onClick={() => setForm(f => ({ ...f, job_type: t }))}
-                          className={`px-3 py-1.5 text-sm rounded-lg border transition-colors ${form.job_type === t ? 'bg-blue-600 text-white border-blue-600' : 'border-gray-200 text-gray-600 hover:border-blue-300'}`}>
-                          {t}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-xs text-gray-500 mb-2">Contents Type</label>
-                    <div className="flex flex-wrap gap-2">
-                      {CONTENTS_TYPES.map(t => (
-                        <button type="button" key={t}
-                          onClick={() => setForm(f => ({ ...f, contents_type: t }))}
-                          className={`px-3 py-1.5 text-sm rounded-lg border transition-colors ${form.contents_type === t ? 'bg-blue-600 text-white border-blue-600' : 'border-gray-200 text-gray-600 hover:border-blue-300'}`}>
-                          {t}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-xs text-gray-500 mb-2">Room Location (multi)</label>
-                    <div className="flex flex-wrap gap-2">
-                      {ROOM_LOCATIONS.map(r => (
-                        <button type="button" key={r}
-                          onClick={() => setForm(f => ({ ...f, room_location: toggleMulti(f.room_location, r) }))}
-                          className={`px-3 py-1.5 text-sm rounded-lg border transition-colors ${form.room_location.includes(r) ? 'bg-blue-600 text-white border-blue-600' : 'border-gray-200 text-gray-600 hover:border-blue-300'}`}>
-                          {r}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-xs text-gray-500 mb-2">Vault Status (multi)</label>
-                    <div className="flex flex-wrap gap-2">
-                      {VAULT_STATUSES.map(s => (
-                        <button type="button" key={s}
-                          onClick={() => setForm(f => ({ ...f, vault_status: toggleMulti(f.vault_status, s) }))}
-                          className={`px-3 py-1.5 text-sm rounded-lg border transition-colors ${form.vault_status.includes(s) ? 'bg-blue-600 text-white border-blue-600' : 'border-gray-200 text-gray-600 hover:border-blue-300'}`}>
-                          {s}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-xs text-gray-500 mb-1">Packer</label>
-                    <input type="text" placeholder="Who packed this?" value={form.packer}
-                      onChange={e => setForm(f => ({ ...f, packer: e.target.value }))}
-                      className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
-                  </div>
-
-                  <div>
-                    <label className="block text-xs text-gray-500 mb-2">Status</label>
-                    <div className="flex gap-2">
-                      {['PENDING', 'READY', 'DELIVERED'].map(s => (
-                        <button type="button" key={s}
-                          onClick={() => setForm(f => ({ ...f, status: s }))}
-                          className={`px-3 py-1.5 text-sm rounded-lg border transition-colors ${form.status === s ? 'bg-blue-600 text-white border-blue-600' : 'border-gray-200 text-gray-600 hover:border-blue-300'}`}>
-                          {s}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-xs text-gray-500 mb-1">Comments</label>
-                    <textarea placeholder="Add comments..." value={form.comments}
-                      onChange={e => setForm(f => ({ ...f, comments: e.target.value }))}
-                      rows={3}
-                      className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none" />
-                  </div>
-
-                  {/* Photos */}
-                  <div>
-                    <label className="block text-xs text-gray-500 mb-2">Photos (max 4)</label>
-                    <label className="flex flex-col items-center justify-center w-full h-24 border-2 border-dashed border-gray-200 rounded-xl cursor-pointer hover:border-blue-400 hover:bg-blue-50 transition-colors">
-                      <Camera className="w-6 h-6 text-gray-300 mb-1" />
-                      <span className="text-xs text-gray-400">Click to add photos</span>
-                      <input
-                        type="file"
-                        accept="image/*"
-                        multiple
-                        className="hidden"
-                        onChange={e => handlePhotoFiles(e.target.files)}
-                      />
-                    </label>
-                    {form.photos.length > 0 && (
-                      <div className="grid grid-cols-3 gap-2 mt-2">
-                        {form.photos.map((src, idx) => (
-                          <div key={idx} className="relative group">
-                            <img src={src} alt="" className="w-full h-20 object-cover rounded-xl" />
-                            <button
-                              type="button"
-                              onClick={() => removePhoto(idx)}
-                              className="absolute top-1 right-1 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-                            >
-                              <X className="w-3 h-3" />
-                            </button>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-
-                  {saveError && <p className="text-sm text-red-500">{saveError}</p>}
-
-                  <button type="submit" disabled={saving}
-                    className="w-full py-3 bg-blue-600 text-white text-sm font-medium rounded-xl hover:bg-blue-700 transition-colors disabled:opacity-50">
-                    {saving ? 'Saving...' : 'Create Vault'}
-                  </button>
-                </form>
+                <VaultForm
+                  mode="add"
+                  value={form}
+                  onChange={setForm}
+                  positionLabel={`WH${warehouseId} · Row ${form.row} · Col ${form.column} · ${form.level === 1 ? 'Lower (L1)' : 'Upper (L2)'}`}
+                  error={saveError}
+                  saving={saving}
+                  submitLabel="Create Vault"
+                  onSubmit={addVolt}
+                  onPhotos={handlePhotoFiles}
+                  onRemovePhoto={removePhoto}
+                />
               </motion.div>
             </div>
           )}
