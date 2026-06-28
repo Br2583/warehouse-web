@@ -1,28 +1,10 @@
 'use client';
 
-import { Suspense, useEffect, useState } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
-import { motion, AnimatePresence } from 'framer-motion';
-import { getToken } from '@/lib/api';
+import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { motion } from 'framer-motion';
 import { pb } from '@/lib/pb';
-import { Lock, ArrowRight, Clock } from 'lucide-react';
-
-function ExpiredBanner() {
-  const params = useSearchParams();
-  if (params.get('expired') !== '1') return null;
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 8 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: 1.5, duration: 0.5 }}
-      className="mt-5 flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs text-amber-300"
-      style={{ background: 'rgba(251,191,36,0.1)', border: '1px solid rgba(251,191,36,0.2)' }}
-    >
-      <Clock size={13} className="flex-shrink-0" />
-      <span>Your session expired — enter the portal code to continue</span>
-    </motion.div>
-  );
-}
+import { ArrowRight, LogIn, UserPlus } from 'lucide-react';
 
 const PHRASES = [
   'Content & Records Management.',
@@ -33,26 +15,14 @@ const PHRASES = [
 
 export default function Home() {
   const router = useRouter();
-  const [showCodeInput, setShowCodeInput] = useState(false);
-  const [code, setCode] = useState('');
-  const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
   const [displayed, setDisplayed] = useState('');
   const [phraseIndex, setPhraseIndex] = useState(0);
   const [typing, setTyping] = useState(true);
   const [videoLoaded, setVideoLoaded] = useState(false);
 
   useEffect(() => {
-    const token = getToken();
-    if (token && pb.authStore.isValid) {
-      // Already authenticated — unlock portal automatically and skip to dashboard
-      fetch('/api/portal/auto', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ token }),
-      })
-        .then(res => { if (res.ok) router.replace('/dashboard'); })
-        .catch(() => {});
+    if (pb.authStore.isValid) {
+      router.replace('/dashboard');
     }
   }, [router]);
 
@@ -76,38 +46,6 @@ export default function Home() {
     return () => clearTimeout(timeout);
   }, [displayed, typing, phraseIndex]);
 
-  const handleSubmit = async () => {
-    if (!code.trim() || loading) return;
-    setLoading(true);
-    setError('');
-    try {
-      const res = await fetch('/api/portal', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ code }),
-      });
-      const data = await res.json();
-      if (res.ok) {
-        router.replace('/login');
-      } else {
-        setError(data.error || 'Incorrect code.');
-        setCode('');
-      }
-    } catch {
-      setError('Connection error. Try again.');
-      setCode('');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const closeModal = () => {
-    if (loading) return;
-    setShowCodeInput(false);
-    setCode('');
-    setError('');
-  };
-
   return (
     <div
       className="relative min-h-screen flex items-center justify-center overflow-hidden"
@@ -126,7 +64,6 @@ export default function Home() {
       <div className="absolute inset-0 z-10" style={{
         background: 'linear-gradient(to bottom, rgba(0,0,0,0.3) 0%, rgba(0,0,0,0.5) 60%, rgba(0,0,0,0.75) 100%)'
       }} />
-
 
       {/* Curtain */}
       <motion.div
@@ -167,7 +104,7 @@ export default function Home() {
           initial={{ opacity: 0, y: 20, filter: 'blur(8px)' }}
           animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
           transition={{ delay: 1.1, duration: 1.0, ease: [0.25, 0.1, 0.25, 1] }}
-          className="text-4xl md:text-6xl font-black leading-none tracking-tight mb-10"
+          className="text-4xl md:text-6xl font-black leading-none tracking-tight mb-12"
           style={{
             background: 'linear-gradient(135deg, #60a5fa 0%, #a78bfa 50%, #f472b6 100%)',
             WebkitBackgroundClip: 'text',
@@ -179,41 +116,46 @@ export default function Home() {
           Manager
         </motion.h1>
 
-        {/* Portal button */}
-        <motion.button
+        {/* Action buttons */}
+        <motion.div
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 1.4, duration: 0.7 }}
-          whileHover={{ scale: 1.04, y: -2 }}
-          whileTap={{ scale: 0.97 }}
-          onClick={() => setShowCodeInput(true)}
-          className="group flex items-center gap-3 px-8 py-4 rounded-2xl text-sm font-semibold text-white transition-all"
-          style={{
-            background: 'linear-gradient(135deg, rgba(96,165,250,0.15) 0%, rgba(167,139,250,0.15) 100%)',
-            border: '1px solid rgba(255,255,255,0.2)',
-            backdropFilter: 'blur(20px)',
-            boxShadow: '0 8px 32px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.1)',
-          }}
+          className="flex flex-col sm:flex-row gap-3 w-full max-w-xs"
         >
-          <Lock size={15} className="text-white/70" />
-          <span>Portal Access</span>
-          <ArrowRight size={14} className="text-white/40 group-hover:text-white/70 group-hover:translate-x-0.5 transition-all" />
-        </motion.button>
+          <motion.button
+            whileHover={{ scale: 1.04, y: -2 }}
+            whileTap={{ scale: 0.97 }}
+            onClick={() => router.push('/login')}
+            className="group flex-1 flex items-center justify-center gap-2.5 px-6 py-3.5 rounded-2xl text-sm font-semibold text-white transition-all"
+            style={{
+              background: 'linear-gradient(135deg, rgba(96,165,250,0.25) 0%, rgba(167,139,250,0.25) 100%)',
+              border: '1px solid rgba(255,255,255,0.2)',
+              backdropFilter: 'blur(20px)',
+              boxShadow: '0 8px 32px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.1)',
+            }}
+          >
+            <LogIn size={15} className="text-white/70" />
+            <span>Sign In</span>
+          </motion.button>
 
-        {/* Session expired banner */}
-        <Suspense fallback={null}>
-          <ExpiredBanner />
-        </Suspense>
-
-        {/* Subtext */}
-        <motion.p
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 1.8, duration: 1 }}
-          className="mt-5 text-white/20 text-xs tracking-wide"
-        >
-          Authorized personnel only
-        </motion.p>
+          <motion.button
+            whileHover={{ scale: 1.04, y: -2 }}
+            whileTap={{ scale: 0.97 }}
+            onClick={() => router.push('/signup')}
+            className="group flex-1 flex items-center justify-center gap-2.5 px-6 py-3.5 rounded-2xl text-sm font-semibold transition-all"
+            style={{
+              background: 'linear-gradient(135deg, rgba(96,165,250,0.08) 0%, rgba(167,139,250,0.08) 100%)',
+              border: '1px solid rgba(255,255,255,0.1)',
+              backdropFilter: 'blur(20px)',
+              color: 'rgba(255,255,255,0.65)',
+            }}
+          >
+            <UserPlus size={15} />
+            <span>Get Started</span>
+            <ArrowRight size={13} className="text-white/30 group-hover:translate-x-0.5 transition-transform" />
+          </motion.button>
+        </motion.div>
       </div>
 
       {/* Typewriter */}
@@ -237,103 +179,6 @@ export default function Home() {
       >
         Built by <span style={{ color: 'rgba(255,255,255,0.3)', fontWeight: 600 }}>PixelCore</span>
       </motion.p>
-
-      {/* Code Modal */}
-      <AnimatePresence>
-        {showCodeInput && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 flex items-center justify-center px-4"
-            style={{ background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(20px)' }}
-            onClick={e => { if (e.target === e.currentTarget) closeModal(); }}
-          >
-            <motion.div
-              initial={{ scale: 0.9, opacity: 0, y: 20 }}
-              animate={{ scale: 1, opacity: 1, y: 0 }}
-              exit={{ scale: 0.9, opacity: 0, y: 20 }}
-              transition={{ type: 'spring', stiffness: 320, damping: 28 }}
-              className="w-full max-w-xs rounded-3xl p-8"
-              style={{
-                background: 'linear-gradient(135deg, rgba(15,15,25,0.98) 0%, rgba(20,20,35,0.98) 100%)',
-                border: '1px solid rgba(255,255,255,0.1)',
-                boxShadow: '0 40px 80px rgba(0,0,0,0.7), inset 0 1px 0 rgba(255,255,255,0.07)',
-              }}
-            >
-              {/* Icon */}
-              <div className="flex flex-col items-center mb-7">
-                <div
-                  className="w-14 h-14 rounded-2xl flex items-center justify-center mb-4"
-                  style={{
-                    background: 'linear-gradient(135deg, rgba(96,165,250,0.15) 0%, rgba(167,139,250,0.15) 100%)',
-                    border: '1px solid rgba(255,255,255,0.1)',
-                  }}
-                >
-                  <Lock className="text-white/60" size={20} />
-                </div>
-                <h2 className="text-white font-bold text-lg">Portal Access</h2>
-                <p className="text-white/30 text-xs mt-1">Enter your access code to continue</p>
-              </div>
-
-              <input
-                type="password"
-                value={code}
-                onChange={e => { setCode(e.target.value); setError(''); }}
-                onKeyDown={e => e.key === 'Enter' && handleSubmit()}
-                placeholder="••••"
-                disabled={loading}
-                className="w-full px-4 py-3.5 rounded-xl text-center tracking-[0.5em] outline-none transition-all text-white text-xl font-bold disabled:opacity-50"
-                style={{
-                  background: 'rgba(255,255,255,0.05)',
-                  border: error ? '1px solid rgba(239,68,68,0.6)' : '1px solid rgba(255,255,255,0.1)',
-                  caretColor: 'white',
-                  color: 'white',
-                }}
-                autoFocus
-                inputMode="numeric"
-              />
-
-              <AnimatePresence>
-                {error && (
-                  <motion.p
-                    initial={{ opacity: 0, y: -4 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0 }}
-                    className="text-red-400 text-xs text-center mt-2.5"
-                  >
-                    {error}
-                  </motion.p>
-                )}
-              </AnimatePresence>
-
-              <div className="flex gap-3 mt-6">
-                <button
-                  onClick={closeModal}
-                  disabled={loading}
-                  className="flex-1 py-3 rounded-xl text-white/30 text-sm hover:text-white/50 transition-colors disabled:opacity-40"
-                  style={{ border: '1px solid rgba(255,255,255,0.07)' }}
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleSubmit}
-                  disabled={loading || !code.trim()}
-                  className="flex-1 py-3 rounded-xl text-white font-semibold text-sm transition-all disabled:opacity-40 flex items-center justify-center gap-2"
-                  style={{
-                    background: 'linear-gradient(135deg, rgba(96,165,250,0.25) 0%, rgba(167,139,250,0.25) 100%)',
-                    border: '1px solid rgba(255,255,255,0.15)',
-                  }}
-                >
-                  {loading
-                    ? <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                    : <>Continue <ArrowRight size={13} /></>}
-                </button>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
     </div>
   );
 }

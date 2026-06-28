@@ -1,139 +1,147 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { Suspense, useEffect, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Building2, Ticket, ArrowLeft, ArrowRight, Package, Loader2 } from 'lucide-react';
-import { useRouter } from 'next/navigation';
+import { Package, Eye, EyeOff, Building2, Ticket, ArrowRight } from 'lucide-react';
 import { pb } from '@/lib/pb';
 import { genCode } from '@/lib/utils';
 
-type Screen = 'main' | 'create' | 'join';
-
-const GoogleIcon = () => (
-  <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
-    <path d="M17.64 9.205c0-.639-.057-1.252-.164-1.841H9v3.481h4.844a4.14 4.14 0 01-1.796 2.716v2.259h2.908c1.702-1.567 2.684-3.875 2.684-6.615z" fill="#4285F4"/>
-    <path d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 009 18z" fill="#34A853"/>
-    <path d="M3.964 10.71A5.41 5.41 0 013.682 9c0-.593.102-1.17.282-1.71V4.958H.957A8.996 8.996 0 000 9c0 1.452.348 2.827.957 4.042l3.007-2.332z" fill="#FBBC05"/>
-    <path d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 00.957 4.958L3.964 7.29C4.672 5.163 6.656 3.58 9 3.58z" fill="#EA4335"/>
-  </svg>
-);
-
-export default function LoginPage() {
+function LoginForm() {
   const router = useRouter();
-  const [screen, setScreen] = useState<Screen>('main');
+  const params = useSearchParams();
+
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [showPass, setShowPass] = useState(false);
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  // Post-company-creation: if user has no company after login
+  const [needsCompany, setNeedsCompany] = useState(false);
+  const [companyMode, setCompanyMode] = useState<'create' | 'join'>('create');
   const [companyName, setCompanyName] = useState('');
   const [inviteCode, setInviteCode] = useState('');
-  const [error, setError] = useState('');
-  const [loading, setLoading] = useState(true);
-  const [authLoading, setAuthLoading] = useState(false);
+  const [companyLoading, setCompanyLoading] = useState(false);
+
+  const verified = params.get('verified') === '1';
+  const reset    = params.get('reset')    === '1';
 
   useEffect(() => {
     if (pb.authStore.isValid && pb.authStore.model?.company_id) {
       router.replace('/dashboard');
-    } else {
-      setLoading(false);
     }
   }, []);
 
-  // After Google OAuth completes (PocketBase popup flow), handle company setup
-  const afterOAuth = async (action: 'login' | 'create' | 'join') => {
-    const model = pb.authStore.model;
-    if (!model) { setError('Authentication failed'); setAuthLoading(false); return; }
-
-    // Already has a company → go to dashboard
-    if (model.company_id) { router.replace('/dashboard'); return; }
-
-    if (action === 'login') {
-      // Returning user with no company — ask them to create or join
-      setScreen('main');
-      setError('Your account has no company. Please create or join one.');
-      setAuthLoading(false);
-      return;
-    }
-
-    if (action === 'create') {
-      try {
-        const code = genCode();
-        const company = await pb.collection('companies').create({
-          name:        companyName.trim(),
-          invite_code: code,
-          portal_code: '2019',
-          owner_id:    model.id,
-          plan:        'active',
-        });
-        await pb.collection('users').update(model.id, {
-          company_id: company.id,
-          role:       'owner',
-        });
-        // Refresh auth so model has updated fields
-        await pb.collection('users').authRefresh();
-        router.replace('/dashboard');
-      } catch (e: any) {
-        setError(e.message || 'Failed to create company');
-        setAuthLoading(false);
-      }
-      return;
-    }
-
-    if (action === 'join') {
-      try {
-        const company = await pb.collection('companies').getFirstListItem(`invite_code="${inviteCode.trim().toUpperCase()}"`);
-        await pb.collection('users').update(model.id, {
-          company_id: company.id,
-          role:       'worker',
-        });
-        await pb.collection('users').authRefresh();
-        router.replace('/dashboard');
-      } catch {
-        setError('Invitation code not found or expired');
-        setAuthLoading(false);
-      }
-      return;
-    }
-  };
-
-  const startGoogleAuth = async (action: 'login' | 'create' | 'join') => {
-    if (action === 'create' && !companyName.trim()) { setError('Enter a company name'); return; }
-    if (action === 'join' && inviteCode.length < 6)  { setError('Enter a valid invitation code'); return; }
-
+  const handleLogin = async () => {
     setError('');
-    setAuthLoading(true);
+    if (!email.trim() || !password) { setError('Enter your email and password.'); return; }
+
+    setLoading(true);
     try {
-      // Store context for the callback page
-      sessionStorage.setItem('oauth_action',  action);
-      sessionStorage.setItem('oauth_company', companyName.trim());
-      sessionStorage.setItem('oauth_invite',  inviteCode.trim().toUpperCase());
+      const auth = await pb.collection('users').authWithPassword(email.trim().toLowerCase(), password);
+      const model = auth.record;
 
-      // Fetch raw auth methods (without SDK adding PocketBase's own redirect_uri)
-      const res = await fetch(`${pb.baseURL}/api/collections/users/auth-methods`);
-      const methods = await res.json();
-      const google = methods.oauth2?.providers?.find((p: any) => p.name === 'google');
-      if (!google) throw new Error('Google sign-in is not configured yet. Contact your administrator.');
+      if (!model.verified) {
+        pb.authStore.clear();
+        localStorage.setItem('verify_email', email.trim().toLowerCase());
+        router.push('/verify-email');
+        return;
+      }
 
-      // Store PKCE verifier for the callback exchange
-      sessionStorage.setItem('pkce_verifier', google.codeVerifier);
+      if (!model.company_id) {
+        // Check pending_action stored during signup
+        const pendingAction = model.pending_action as string;
+        const pendingData   = model.pending_company_name as string;
 
-      // Replace the empty redirect_uri PocketBase leaves in the URL
-      const callbackUrl = `${window.location.origin}/auth/callback`;
-      const authUrl = new URL(google.authUrl);
-      authUrl.searchParams.set('redirect_uri', callbackUrl);
-      window.location.href = authUrl.toString();
+        if (pendingAction === 'create' && pendingData) {
+          await createCompany(model.id, pendingData);
+          return;
+        }
+
+        if (pendingAction === 'join' && pendingData) {
+          await joinCompany(model.id, pendingData);
+          return;
+        }
+
+        // No pending data — show inline form
+        setNeedsCompany(true);
+        setLoading(false);
+        return;
+      }
+
+      if (!model.profile_complete) {
+        router.replace('/onboarding');
+        return;
+      }
+
+      router.replace('/dashboard');
     } catch (e: any) {
-      setError(e?.message || 'Authentication error');
-      setAuthLoading(false);
+      if (e?.status === 400) {
+        setError('Incorrect email or password.');
+      } else {
+        setError(e?.message || 'Sign in failed. Try again.');
+      }
+      setLoading(false);
     }
   };
 
-  if (loading || authLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #0a0f1a 0%, #111827 100%)' }}>
-        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center">
-          <div className="w-10 h-10 border-2 border-white/20 border-t-white/60 rounded-full animate-spin mx-auto mb-4" />
-          <p className="text-white/30 text-sm">{authLoading ? 'Authenticating...' : 'Loading...'}</p>
-        </motion.div>
-      </div>
-    );
-  }
+  const createCompany = async (userId: string, name: string) => {
+    try {
+      const code = genCode();
+      const company = await pb.collection('companies').create({
+        name,
+        invite_code: code,
+        owner_id:    userId,
+        plan:        'active',
+      });
+      await pb.collection('users').update(userId, {
+        company_id:           company.id,
+        role:                 'owner',
+        pending_action:       '',
+        pending_company_name: '',
+      });
+      await pb.collection('users').authRefresh();
+      router.replace('/onboarding');
+    } catch {
+      setError('Could not create company. Try again.');
+      setLoading(false);
+    }
+  };
+
+  const joinCompany = async (userId: string, code: string) => {
+    try {
+      const company = await pb.collection('companies').getFirstListItem(`invite_code="${code}"`);
+      await pb.collection('users').update(userId, {
+        company_id:           company.id,
+        role:                 'worker',
+        pending_action:       '',
+        pending_company_name: '',
+      });
+      await pb.collection('users').authRefresh();
+      router.replace('/onboarding');
+    } catch {
+      setError('Invitation code not found or expired.');
+      setLoading(false);
+    }
+  };
+
+  const handleCompanySubmit = async () => {
+    setError('');
+    const model = pb.authStore.model;
+    if (!model) { setError('Session expired. Sign in again.'); return; }
+
+    if (companyMode === 'create' && !companyName.trim()) { setError('Enter a company name.'); return; }
+    if (companyMode === 'join' && inviteCode.trim().length < 6) { setError('Enter a valid invitation code.'); return; }
+
+    setCompanyLoading(true);
+    if (companyMode === 'create') {
+      await createCompany(model.id, companyName.trim());
+    } else {
+      await joinCompany(model.id, inviteCode.trim().toUpperCase());
+    }
+    setCompanyLoading(false);
+  };
 
   return (
     <div
@@ -149,6 +157,7 @@ export default function LoginPage() {
         transition={{ duration: 0.6, ease: [0.25, 0.1, 0.25, 1] }}
         className="w-full max-w-sm relative z-10"
       >
+        {/* Header */}
         <div className="text-center mb-8">
           <motion.div
             initial={{ scale: 0.8, opacity: 0 }}
@@ -163,16 +172,16 @@ export default function LoginPage() {
           >
             <Package className="w-8 h-8 text-white/70" />
           </motion.div>
-          <h1 className="text-2xl font-bold text-white tracking-tight">Warehouse Manager</h1>
+          <h1 className="text-2xl font-bold text-white tracking-tight">
+            {needsCompany ? 'Set Up Your Company' : 'Welcome back'}
+          </h1>
           <p className="text-white/30 text-sm mt-1.5">
-            {screen === 'main'   && 'Access your workspace'}
-            {screen === 'create' && 'Create a new company'}
-            {screen === 'join'   && 'Join with invitation code'}
+            {needsCompany ? 'One last step before you can start' : 'Sign in to your workspace'}
           </p>
         </div>
 
         <div
-          className="rounded-3xl p-7"
+          className="rounded-3xl p-7 space-y-4"
           style={{
             background: 'rgba(255,255,255,0.04)',
             border: '1px solid rgba(255,255,255,0.09)',
@@ -180,13 +189,34 @@ export default function LoginPage() {
             boxShadow: '0 32px 64px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.06)',
           }}
         >
+          {/* Success banners */}
+          {verified && !error && (
+            <motion.div
+              initial={{ opacity: 0, y: -6 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="flex items-center gap-2 bg-green-500/10 border border-green-500/20 text-green-400 text-sm px-4 py-3 rounded-xl"
+            >
+              ✓ Email verified! Sign in to continue.
+            </motion.div>
+          )}
+          {reset && !error && (
+            <motion.div
+              initial={{ opacity: 0, y: -6 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="flex items-center gap-2 bg-green-500/10 border border-green-500/20 text-green-400 text-sm px-4 py-3 rounded-xl"
+            >
+              ✓ Password updated! Sign in with your new password.
+            </motion.div>
+          )}
+
+          {/* Error */}
           <AnimatePresence>
             {error && (
               <motion.div
                 initial={{ opacity: 0, y: -6, height: 0 }}
                 animate={{ opacity: 1, y: 0, height: 'auto' }}
-                exit={{ opacity: 0, y: -6, height: 0 }}
-                className="flex items-center gap-2 bg-red-500/10 border border-red-500/20 text-red-400 text-sm px-4 py-3 rounded-xl mb-5 overflow-hidden"
+                exit={{ opacity: 0, height: 0 }}
+                className="flex items-center gap-2 bg-red-500/10 border border-red-500/20 text-red-400 text-sm px-4 py-3 rounded-xl overflow-hidden"
               >
                 <span className="flex-1">{error}</span>
                 <button onClick={() => setError('')} className="text-red-400/60 hover:text-red-400 text-lg leading-none">✕</button>
@@ -194,141 +224,164 @@ export default function LoginPage() {
             )}
           </AnimatePresence>
 
-          <AnimatePresence mode="wait">
-            {/* MAIN */}
-            {screen === 'main' && (
-              <motion.div key="main" initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 10 }} className="space-y-3">
-                <button
-                  onClick={() => startGoogleAuth('login')}
-                  className="w-full flex items-center gap-3 py-3.5 px-5 rounded-2xl font-semibold text-sm transition-all hover:brightness-110 active:scale-[0.98]"
-                  style={{
-                    background: 'linear-gradient(135deg, rgba(96,165,250,0.18) 0%, rgba(167,139,250,0.18) 100%)',
-                    border: '1px solid rgba(255,255,255,0.15)',
-                    color: 'white',
-                  }}
-                >
-                  <GoogleIcon />
-                  <span className="flex-1 text-left">Continue with Google</span>
-                  <ArrowRight size={15} className="text-white/30" />
-                </button>
-
-                <div className="flex items-center gap-3 py-1">
-                  <div className="flex-1 h-px bg-white/8" />
-                  <span className="text-xs text-white/20">or</span>
-                  <div className="flex-1 h-px bg-white/8" />
-                </div>
-
-                <button
-                  onClick={() => { setError(''); setScreen('create'); }}
-                  className="w-full flex items-center gap-3 py-3.5 px-5 rounded-2xl text-sm font-medium transition-all hover:bg-white/8 active:scale-[0.98]"
-                  style={{ border: '1px solid rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.6)' }}
-                >
-                  <Building2 size={16} className="text-blue-400/60" />
-                  <span className="flex-1 text-left">Create New Company</span>
-                  <ArrowRight size={14} className="text-white/20" />
-                </button>
-
-                <button
-                  onClick={() => { setError(''); setScreen('join'); }}
-                  className="w-full flex items-center gap-3 py-3.5 px-5 rounded-2xl text-sm font-medium transition-all hover:bg-white/8 active:scale-[0.98]"
-                  style={{ border: '1px solid rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.6)' }}
-                >
-                  <Ticket size={16} className="text-purple-400/60" />
-                  <span className="flex-1 text-left">Join with Invitation Code</span>
-                  <ArrowRight size={14} className="text-white/20" />
-                </button>
-
-                <p className="text-white/15 text-xs text-center pt-3">Built by PixelCore</p>
-              </motion.div>
-            )}
-
-            {/* CREATE COMPANY */}
-            {screen === 'create' && (
-              <motion.div key="create" initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -10 }} className="space-y-4">
-                <button onClick={() => { setScreen('main'); setError(''); }}
-                  className="flex items-center gap-2 text-sm text-white/30 hover:text-white/60 transition-colors mb-1">
-                  <ArrowLeft size={14} /> Back
-                </button>
-
-                <div className="text-center py-2">
-                  <div className="w-12 h-12 rounded-2xl flex items-center justify-center mx-auto mb-3"
-                    style={{ background: 'rgba(96,165,250,0.1)', border: '1px solid rgba(96,165,250,0.2)' }}>
-                    <Building2 size={20} className="text-blue-400" />
-                  </div>
-                  <p className="text-white/30 text-xs">You will be the owner and can invite team members</p>
-                </div>
-
+          {/* LOGIN FORM */}
+          {!needsCompany && (
+            <>
+              <div>
+                <label className="text-xs text-white/30 font-medium mb-1.5 block">Email</label>
                 <input
-                  type="text"
-                  placeholder="Company name"
-                  value={companyName}
-                  onChange={(e) => setCompanyName(e.target.value)}
-                  onKeyDown={e => e.key === 'Enter' && startGoogleAuth('create')}
+                  type="email"
+                  value={email}
+                  onChange={e => setEmail(e.target.value)}
+                  placeholder="you@company.com"
                   className="w-full px-4 py-3 rounded-xl text-sm outline-none transition-all text-white placeholder-white/20"
                   style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', caretColor: 'white' }}
                   autoFocus
                 />
+              </div>
 
-                <button
-                  onClick={() => startGoogleAuth('create')}
-                  disabled={!companyName.trim()}
-                  className="w-full flex items-center justify-center gap-2.5 py-3.5 rounded-xl font-semibold text-sm transition-all disabled:opacity-40 hover:brightness-110"
-                  style={{
-                    background: 'linear-gradient(135deg, rgba(96,165,250,0.2) 0%, rgba(167,139,250,0.2) 100%)',
-                    border: '1px solid rgba(255,255,255,0.15)',
-                    color: 'white',
-                  }}
-                >
-                  <GoogleIcon /> Continue with Google
-                </button>
-              </motion.div>
-            )}
-
-            {/* JOIN COMPANY */}
-            {screen === 'join' && (
-              <motion.div key="join" initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -10 }} className="space-y-4">
-                <button onClick={() => { setScreen('main'); setError(''); }}
-                  className="flex items-center gap-2 text-sm text-white/30 hover:text-white/60 transition-colors mb-1">
-                  <ArrowLeft size={14} /> Back
-                </button>
-
-                <div className="text-center py-2">
-                  <div className="w-12 h-12 rounded-2xl flex items-center justify-center mx-auto mb-3"
-                    style={{ background: 'rgba(167,139,250,0.1)', border: '1px solid rgba(167,139,250,0.2)' }}>
-                    <Ticket size={20} className="text-purple-400" />
-                  </div>
-                  <p className="text-white/30 text-xs">Your admin shared an invitation code with you</p>
+              <div>
+                <label className="text-xs text-white/30 font-medium mb-1.5 block">Password</label>
+                <div className="relative">
+                  <input
+                    type={showPass ? 'text' : 'password'}
+                    value={password}
+                    onChange={e => setPassword(e.target.value)}
+                    onKeyDown={e => e.key === 'Enter' && handleLogin()}
+                    placeholder="••••••••"
+                    className="w-full px-4 py-3 pr-11 rounded-xl text-sm outline-none transition-all text-white placeholder-white/20"
+                    style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', caretColor: 'white' }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPass(v => !v)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-white/30 hover:text-white/60 transition-colors"
+                  >
+                    {showPass ? <EyeOff size={16} /> : <Eye size={16} />}
+                  </button>
                 </div>
+              </div>
 
-                <input
-                  type="text"
-                  placeholder="XXXXXXXX"
-                  value={inviteCode}
-                  onChange={(e) => setInviteCode(e.target.value.toUpperCase())}
-                  onKeyDown={e => e.key === 'Enter' && startGoogleAuth('join')}
-                  maxLength={8}
-                  className="w-full px-4 py-3.5 rounded-xl text-center text-2xl tracking-widest font-bold outline-none transition-all text-white placeholder-white/15"
-                  style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', caretColor: 'white' }}
-                  autoFocus
-                />
-
+              <div className="flex justify-end">
                 <button
-                  onClick={() => startGoogleAuth('join')}
-                  disabled={inviteCode.length < 6}
-                  className="w-full flex items-center justify-center gap-2.5 py-3.5 rounded-xl font-semibold text-sm transition-all disabled:opacity-40 hover:brightness-110"
+                  onClick={() => router.push('/reset-password')}
+                  className="text-xs text-white/25 hover:text-white/50 transition-colors"
+                >
+                  Forgot password?
+                </button>
+              </div>
+
+              <button
+                onClick={handleLogin}
+                disabled={loading}
+                className="w-full py-3.5 rounded-xl font-semibold text-sm text-white transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+                style={{
+                  background: 'linear-gradient(135deg, rgba(96,165,250,0.25) 0%, rgba(167,139,250,0.25) 100%)',
+                  border: '1px solid rgba(255,255,255,0.15)',
+                }}
+              >
+                {loading
+                  ? <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  : <>Sign In <ArrowRight size={14} /></>}
+              </button>
+
+              <p className="text-center text-xs text-white/25">
+                No account?{' '}
+                <button onClick={() => router.push('/signup')} className="text-blue-400/70 hover:text-blue-400 transition-colors">
+                  Create one
+                </button>
+              </p>
+            </>
+          )}
+
+          {/* COMPANY SETUP (no pending_action) */}
+          {needsCompany && (
+            <>
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  onClick={() => setCompanyMode('create')}
+                  className="flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm transition-all"
                   style={{
-                    background: 'linear-gradient(135deg, rgba(167,139,250,0.2) 0%, rgba(96,165,250,0.2) 100%)',
-                    border: '1px solid rgba(255,255,255,0.15)',
-                    color: 'white',
+                    background: companyMode === 'create' ? 'rgba(96,165,250,0.15)' : 'rgba(255,255,255,0.03)',
+                    border: companyMode === 'create' ? '1px solid rgba(96,165,250,0.3)' : '1px solid rgba(255,255,255,0.07)',
+                    color: companyMode === 'create' ? 'rgba(147,197,253,1)' : 'rgba(255,255,255,0.35)',
                   }}
                 >
-                  <GoogleIcon /> Verify with Google &amp; Join
+                  <Building2 size={14} />
+                  <span>Create</span>
                 </button>
-              </motion.div>
-            )}
-          </AnimatePresence>
+                <button
+                  onClick={() => setCompanyMode('join')}
+                  className="flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm transition-all"
+                  style={{
+                    background: companyMode === 'join' ? 'rgba(167,139,250,0.15)' : 'rgba(255,255,255,0.03)',
+                    border: companyMode === 'join' ? '1px solid rgba(167,139,250,0.3)' : '1px solid rgba(255,255,255,0.07)',
+                    color: companyMode === 'join' ? 'rgba(196,181,253,1)' : 'rgba(255,255,255,0.35)',
+                  }}
+                >
+                  <Ticket size={14} />
+                  <span>Join</span>
+                </button>
+              </div>
+
+              {companyMode === 'create' ? (
+                <div>
+                  <label className="text-xs text-white/30 font-medium mb-1.5 block">Company name</label>
+                  <input
+                    type="text"
+                    value={companyName}
+                    onChange={e => setCompanyName(e.target.value)}
+                    placeholder="Acme Restoration Co."
+                    autoFocus
+                    className="w-full px-4 py-3 rounded-xl text-sm outline-none transition-all text-white placeholder-white/20"
+                    style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', caretColor: 'white' }}
+                  />
+                </div>
+              ) : (
+                <div>
+                  <label className="text-xs text-white/30 font-medium mb-1.5 block">Invitation code</label>
+                  <input
+                    type="text"
+                    value={inviteCode}
+                    onChange={e => setInviteCode(e.target.value.toUpperCase())}
+                    placeholder="XXXXXXXX"
+                    maxLength={8}
+                    autoFocus
+                    className="w-full px-4 py-3 rounded-xl text-center text-xl tracking-widest font-bold outline-none transition-all text-white placeholder-white/15"
+                    style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', caretColor: 'white' }}
+                  />
+                </div>
+              )}
+
+              <button
+                onClick={handleCompanySubmit}
+                disabled={companyLoading}
+                className="w-full py-3.5 rounded-xl font-semibold text-sm text-white transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+                style={{
+                  background: 'linear-gradient(135deg, rgba(96,165,250,0.25) 0%, rgba(167,139,250,0.25) 100%)',
+                  border: '1px solid rgba(255,255,255,0.15)',
+                }}
+              >
+                {companyLoading
+                  ? <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  : companyMode === 'create' ? 'Create Company' : 'Join Company'}
+              </button>
+            </>
+          )}
         </div>
       </motion.div>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #0a0f1a 0%, #111827 100%)' }}>
+        <div className="w-8 h-8 border-2 border-white/20 border-t-white/60 rounded-full animate-spin" />
+      </div>
+    }>
+      <LoginForm />
+    </Suspense>
   );
 }
