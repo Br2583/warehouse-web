@@ -6,18 +6,24 @@ import { motion } from 'framer-motion';
 import { Clock, LogOut } from 'lucide-react';
 import { pb } from '@/lib/pb';
 import { useAuth } from '@/lib/auth-context';
+import { useRef } from 'react';
 
 export default function PendingPage() {
   const router = useRouter();
-  const { logout } = useAuth();
+  const { logout, refreshUser } = useAuth();
+  const redirecting = useRef(false);
 
   useEffect(() => {
-    // Poll every 30s — if company gets approved, redirect to onboarding/dashboard
     const check = async () => {
+      if (redirecting.current) return;
       if (!pb.authStore.isValid || !pb.authStore.model?.company_id) return;
       try {
         const company = await pb.collection('companies').getOne(pb.authStore.model.company_id);
         if (company.approved && !company.suspended) {
+          redirecting.current = true;
+          // Refresh auth context so AppShell sees company_approved:true before we navigate
+          await pb.collection('users').authRefresh();
+          await refreshUser();
           router.replace('/onboarding');
         }
       } catch {}
