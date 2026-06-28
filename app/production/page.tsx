@@ -7,6 +7,7 @@ import ConfirmModal from '@/components/ConfirmModal';
 import Sidebar from '@/components/Sidebar';
 import { api } from '@/lib/api';
 import { useAuth } from '@/lib/auth-context';
+import { parseDate } from '@/lib/utils';
 import { notify, requestNotificationPermission } from '@/lib/notifications';
 import TutorialOverlay from '@/components/TutorialOverlay';
 import { useTutorial } from '@/hooks/useTutorial';
@@ -24,7 +25,7 @@ function formatDate(d: string) {
   if (!d) return '—';
   try {
     // Normalize PocketBase formats: "2026-06-26 00:00:00.000Z" or "2026-06-26"
-    const clean = d.replace(' ', 'T').split('T')[0];
+    const clean = d.split(/[ T]/)[0];
     return new Date(clean + 'T00:00:00').toLocaleDateString('en-US', {
       month: 'short', day: 'numeric', year: 'numeric',
     });

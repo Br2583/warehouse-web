@@ -9,9 +9,9 @@ import {
   PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend,
   BarChart, Bar, XAxis, YAxis, CartesianGrid,
 } from 'recharts';
+import { STATUS_COLORS_HEX } from '@/lib/constants';
 
 // ── Colours ────────────────────────────────────────────────────────────────────
-const STATUS_COLORS: Record<string, string>  = { PENDING: '#f59e0b', READY: '#22c55e', DELIVERED: '#6366f1' };
 const STATUS_TEXT: Record<string, string>    = { PENDING: 'text-amber-700 bg-amber-100', READY: 'text-green-700 bg-green-100', DELIVERED: 'text-indigo-700 bg-indigo-100' };
 const JOB_COLORS: Record<string, string>     = { Fire: '#ef4444', Water: '#3b82f6', Moving: '#a855f7', Storage: '#6b7280' };
 const JOB_TEXT: Record<string, string>       = { Fire: 'bg-red-100 text-red-700', Water: 'bg-blue-100 text-blue-700', Moving: 'bg-purple-100 text-purple-700', Storage: 'bg-gray-100 text-gray-600' };
@@ -119,9 +119,9 @@ export default function StatsPage() {
 
   // Pie data (status)
   const pieData = useMemo(() => [
-    { name: 'Pending',   value: pending,   color: STATUS_COLORS.PENDING },
-    { name: 'Ready',     value: ready,     color: STATUS_COLORS.READY },
-    { name: 'Delivered', value: delivered, color: STATUS_COLORS.DELIVERED },
+    { name: 'Pending',   value: pending,   color: STATUS_COLORS_HEX.PENDING },
+    { name: 'Ready',     value: ready,     color: STATUS_COLORS_HEX.READY },
+    { name: 'Delivered', value: delivered, color: STATUS_COLORS_HEX.DELIVERED },
   ].filter(d => d.value > 0), [pending, ready, delivered]);
 
   // Bar data (job type)

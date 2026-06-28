@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
-import { User, Copy, Plus, AlertCircle, X, LogOut } from 'lucide-react';
+import { User, Copy, Plus, AlertCircle, X, LogOut, Lock } from 'lucide-react';
 import { AnimatePresence } from 'framer-motion';
 import Sidebar from '@/components/Sidebar';
 import { api } from '@/lib/api';
@@ -21,6 +21,12 @@ export default function ProfilePage() {
   const [company, setCompany] = useState<any>(null);
   const [members, setMembers] = useState<any[]>([]);
   const [genError, setGenError] = useState('');
+  const [pinCurrent, setPinCurrent] = useState('');
+  const [pinNew, setPinNew] = useState('');
+  const [pinConfirm, setPinConfirm] = useState('');
+  const [pinSaving, setPinSaving] = useState(false);
+  const [pinError, setPinError] = useState('');
+  const [pinSuccess, setPinSuccess] = useState(false);
   const [loading, setLoading] = useState(true);
   const { seen, markSeen } = useTutorial('profile');
 
@@ -31,6 +37,25 @@ export default function ProfilePage() {
     ]).then(([c, m]) => { setCompany(c); setMembers(m); })
       .catch(() => {}).finally(() => setLoading(false));
   }, []);
+
+  const changePin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setPinError('');
+    setPinSuccess(false);
+    if (pinNew.length < 4) { setPinError('PIN must be at least 4 characters'); return; }
+    if (pinNew !== pinConfirm) { setPinError('PINs do not match'); return; }
+    setPinSaving(true);
+    try {
+      await api.post('/api/auth/change-pin', { current_pin: pinCurrent, new_pin: pinNew });
+      setPinCurrent(''); setPinNew(''); setPinConfirm('');
+      setPinSuccess(true);
+      setTimeout(() => setPinSuccess(false), 3000);
+    } catch (err: any) {
+      setPinError(err?.message || 'Failed to change PIN');
+    } finally {
+      setPinSaving(false);
+    }
+  };
 
   const generateCode = async () => {
     setGenError('');
@@ -163,8 +188,61 @@ export default function ProfilePage() {
               </div>
             </motion.div>
 
-            {/* Replay Tours */}
+            {/* Change PIN */}
             <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="bg-white rounded-2xl border border-gray-100 p-6">
+              <div className="flex items-center gap-2 mb-1">
+                <Lock className="w-4 h-4 text-gray-400" />
+                <h3 className="font-semibold text-gray-900">Change PIN</h3>
+              </div>
+              <p className="text-xs text-gray-400 mb-4">Update your access PIN. Leave current PIN blank if you don't have one yet.</p>
+              <form onSubmit={changePin} className="space-y-3">
+                <input
+                  type="password"
+                  placeholder="Current PIN"
+                  value={pinCurrent}
+                  onChange={e => setPinCurrent(e.target.value)}
+                  className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+                <input
+                  type="password"
+                  placeholder="New PIN (min 4 characters)"
+                  value={pinNew}
+                  onChange={e => setPinNew(e.target.value)}
+                  className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+                <input
+                  type="password"
+                  placeholder="Confirm new PIN"
+                  value={pinConfirm}
+                  onChange={e => setPinConfirm(e.target.value)}
+                  className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+                <AnimatePresence>
+                  {pinError && (
+                    <motion.div className="flex items-center gap-2 bg-red-50 border border-red-100 text-red-700 text-sm rounded-xl px-3 py-2">
+                      <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                      <span className="flex-1">{pinError}</span>
+                      <button type="button" onClick={() => setPinError('')}><X className="w-4 h-4" /></button>
+                    </motion.div>
+                  )}
+                  {pinSuccess && (
+                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="bg-green-50 border border-green-100 text-green-700 text-sm rounded-xl px-3 py-2">
+                      PIN updated successfully.
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+                <button
+                  type="submit"
+                  disabled={pinSaving}
+                  className="px-4 py-2 text-sm bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors disabled:opacity-50"
+                >
+                  {pinSaving ? 'Saving...' : 'Update PIN'}
+                </button>
+              </form>
+            </motion.div>
+
+            {/* Replay Tours */}
+            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 }} className="bg-white rounded-2xl border border-gray-100 p-6">
               <h3 className="font-semibold text-gray-900 mb-1">App Tours</h3>
               <p className="text-xs text-gray-400 mb-4">Replay the guided tour for any page. Tours show once on first visit — reset them here anytime.</p>
               <div className="flex flex-wrap gap-2">

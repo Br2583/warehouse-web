@@ -6,12 +6,7 @@ import { Search, Building2 } from 'lucide-react';
 import Sidebar from '@/components/Sidebar';
 import { api } from '@/lib/api';
 import { useSearchParams } from 'next/navigation';
-
-const STATUS_COLORS: Record<string, string> = {
-  PENDING: 'bg-amber-100 text-amber-700',
-  READY: 'bg-green-100 text-green-700',
-  DELIVERED: 'bg-blue-100 text-blue-700',
-};
+import { STATUS_COLORS } from '@/lib/constants';
 
 function SearchContent() {
   const searchParams = useSearchParams();

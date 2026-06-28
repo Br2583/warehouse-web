@@ -6,10 +6,17 @@ import { Package, ClipboardList, CheckCircle, Truck, Clock, Play, Check, Plus, S
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import { useAuth } from '@/lib/auth-context';
 import { api } from '@/lib/api';
+import { parseDate, parseDateOpt } from '@/lib/utils';
 import Sidebar from '@/components/Sidebar';
 import Link from 'next/link';
 import TutorialOverlay from '@/components/TutorialOverlay';
 import { useTutorial } from '@/hooks/useTutorial';
+
+const STATUS_COLORS_LIGHT: Record<string, string> = {
+  PENDING:   'bg-amber-50 text-amber-700',
+  READY:     'bg-green-50 text-green-700',
+  DELIVERED: 'bg-blue-50 text-blue-700',
+};
 
 const fadeUp = {
   hidden: { opacity: 0, y: 20 },
@@ -101,8 +108,7 @@ export default function DashboardPage() {
       const key = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
       const dateStr = d.toISOString().split('T')[0];
       const count = boxes.filter(b => {
-        const created = b.created?.replace(' ', 'T');
-        return created?.startsWith(dateStr);
+        return b.created?.split(/[ T]/)[0] === dateStr;
       }).length;
       days.push({ label: key, count });
     }
@@ -117,7 +123,7 @@ export default function DashboardPage() {
   // E6: SLA — PENDING vaults older than 3 days
   const slaCount = boxes.filter(b => {
     if ((b.estado || b.status) !== 'PENDING') return false;
-    const created = b.created ? new Date(b.created.replace(' ', 'T')) : null;
+    const created = parseDateOpt(b.created);
     if (!created) return false;
     return (Date.now() - created.getTime()) > 3 * 24 * 60 * 60 * 1000;
   }).length;
@@ -321,16 +327,11 @@ export default function DashboardPage() {
             <h2 className="font-semibold text-gray-900 mb-5">Recent Activity</h2>
             <div className="space-y-3">
               {recentBoxes.map((box) => {
-                const created = box.created ? new Date(box.created.replace(' ', 'T')) : null;
+                const created = parseDateOpt(box.created);
                 const diffMs = created ? Date.now() - created.getTime() : 0;
                 const diffH = Math.floor(diffMs / 3600000);
                 const diffD = Math.floor(diffMs / 86400000);
                 const ago = diffD > 0 ? `${diffD}d ago` : diffH > 0 ? `${diffH}h ago` : 'just now';
-                const statusColors: Record<string, string> = {
-                  PENDING: 'bg-amber-50 text-amber-700',
-                  READY: 'bg-green-50 text-green-700',
-                  DELIVERED: 'bg-blue-50 text-blue-700',
-                };
                 const st = (box.estado || box.status || 'PENDING').toUpperCase();
                 return (
                   <div key={box.box_id || box.id} className="flex items-center gap-3 py-2 border-b border-gray-50 last:border-0">
@@ -341,7 +342,7 @@ export default function DashboardPage() {
                       <p className="text-sm font-medium text-gray-900 truncate">{box.client_name || '—'}</p>
                       <p className="text-xs text-gray-400">{box.position || box.box_id}</p>
                     </div>
-                    <span className={`flex-shrink-0 text-xs font-medium px-2 py-0.5 rounded-full ${statusColors[st] || 'bg-gray-100 text-gray-500'}`}>
+                    <span className={`flex-shrink-0 text-xs font-medium px-2 py-0.5 rounded-full ${STATUS_COLORS_LIGHT[st] || 'bg-gray-100 text-gray-500'}`}>
                       {st}
                     </span>
                     <span className="flex-shrink-0 text-xs text-gray-300">{ago}</span>

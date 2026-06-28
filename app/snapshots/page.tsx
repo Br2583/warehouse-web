@@ -9,16 +9,11 @@ import { api } from '@/lib/api';
 import { pb } from '@/lib/pb';
 import { useAuth } from '@/lib/auth-context';
 import emailjs from '@emailjs/browser';
+import { STATUS_COLORS } from '@/lib/constants';
 
 const EMAILJS_SERVICE_ID  = process.env.NEXT_PUBLIC_EMAILJS_SERVICE_ID!;
 const EMAILJS_TEMPLATE_ID = process.env.NEXT_PUBLIC_EMAILJS_TEMPLATE_ID!;
 const EMAILJS_PUBLIC_KEY  = process.env.NEXT_PUBLIC_EMAILJS_PUBLIC_KEY!;
-
-const STATUS_COLORS: Record<string, string> = {
-  PENDING:   'bg-amber-100 text-amber-700',
-  READY:     'bg-green-100 text-green-700',
-  DELIVERED: 'bg-blue-100 text-blue-700',
-};
 
 export default function SnapshotsPage() {
   const { user } = useAuth();

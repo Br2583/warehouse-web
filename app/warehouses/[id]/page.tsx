@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Package, Plus, Search, Trash2, X, Camera, LayoutGrid, List, Pencil, ChevronLeft, ChevronRight, QrCode } from 'lucide-react';
+import { Package, Plus, Search, Trash2, X, Camera, LayoutGrid, List, Pencil, ChevronLeft, ChevronRight, QrCode, Settings2 } from 'lucide-react';
 import ConfirmModal from '@/components/ConfirmModal';
 import Sidebar from '@/components/Sidebar';
 import VaultForm, { VaultFormData } from '@/components/VaultForm';
@@ -12,6 +12,7 @@ import TutorialOverlay from '@/components/TutorialOverlay';
 import { useTutorial } from '@/hooks/useTutorial';
 import { compressImage } from '@/lib/compress-image';
 import { QRCodeSVG } from 'qrcode.react';
+import { STATUS_COLORS, STATUS_CELL } from '@/lib/constants';
 
 interface Box {
   box_id: string;
@@ -32,17 +33,6 @@ interface Box {
   status: string;
 }
 
-const STATUS_COLORS: Record<string, string> = {
-  PENDING: 'bg-amber-100 text-amber-700',
-  READY: 'bg-green-100 text-green-700',
-  DELIVERED: 'bg-blue-100 text-blue-700',
-};
-
-const STATUS_CELL: Record<string, string> = {
-  PENDING: 'bg-amber-400',
-  READY: 'bg-green-500',
-  DELIVERED: 'bg-blue-500',
-};
 
 const ROWS    = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J'];
 const COLUMNS = [1, 2, 3, 4, 5, 6, 7, 8];
@@ -92,6 +82,12 @@ export default function WarehouseDetailPage() {
   const [lightbox, setLightbox] = useState<{ photos: string[]; index: number } | null>(null);
   const [confirmModal, setConfirmModal] = useState<{ message: string; onConfirm: () => void } | null>(null);
   const [showQR, setShowQR] = useState(false);
+  const [warehouseRows, setWarehouseRows] = useState(10);
+  const [warehouseCols, setWarehouseCols] = useState(8);
+  const [showGridEdit, setShowGridEdit] = useState(false);
+  const [gridRowsInput, setGridRowsInput] = useState(10);
+  const [gridColsInput, setGridColsInput] = useState(8);
+  const [gridSaving, setGridSaving] = useState(false);
 
   const fetchBoxes = () => {
     setApiError('');
@@ -110,7 +106,13 @@ export default function WarehouseDetailPage() {
     if (window.innerWidth < 768) setViewMode('list');
     fetchBoxes();
     import('@/lib/pb').then(({ pb }) =>
-      pb.collection('warehouses').getOne(warehouseId).then(w => setWarehouseName(w.name)).catch(() => {})
+      pb.collection('warehouses').getOne(warehouseId).then(w => {
+        setWarehouseName(w.name);
+        const r = Number(w.rows) || 10;
+        const c = Number(w.cols) || 8;
+        setWarehouseRows(r); setGridRowsInput(r);
+        setWarehouseCols(c); setGridColsInput(c);
+      }).catch(() => {})
     );
   }, [warehouseId]);
 
@@ -236,6 +238,21 @@ export default function WarehouseDetailPage() {
 
   const boxStatus = (box: Box) => box.estado || box.status || 'PENDING';
 
+  const activeRows = ROWS.slice(0, warehouseRows);
+  const activeCols = COLUMNS.slice(0, warehouseCols);
+
+  const saveGridSize = async () => {
+    setGridSaving(true);
+    try {
+      const { pb } = await import('@/lib/pb');
+      await pb.collection('warehouses').update(warehouseId, { rows: gridRowsInput, cols: gridColsInput });
+      setWarehouseRows(gridRowsInput);
+      setWarehouseCols(gridColsInput);
+      setShowGridEdit(false);
+    } catch { /* silently fail — grid stays as-is */ }
+    setGridSaving(false);
+  };
+
   // Map helpers
   const getBox = (row: string, col: number, level: number) =>
     boxes.find(b => b.row === row && Number(b.column) === col && Number(b.level) === level);
@@ -258,6 +275,15 @@ export default function WarehouseDetailPage() {
             <p className="text-gray-500 text-sm mt-1">{boxes.length} vaults stored</p>
           </div>
           <div className="flex items-center gap-2">
+            {/* Grid size button */}
+            <button
+              onClick={() => { setGridRowsInput(warehouseRows); setGridColsInput(warehouseCols); setShowGridEdit(v => !v); }}
+              className={`flex items-center gap-1.5 px-3 py-2 text-sm border rounded-xl transition-colors ${showGridEdit ? 'bg-gray-100 border-gray-300 text-gray-700' : 'bg-white border-gray-200 text-gray-500 hover:text-gray-700'}`}
+              title="Edit grid dimensions"
+            >
+              <Settings2 className="w-4 h-4" />
+              <span className="hidden sm:inline text-xs">{warehouseRows}×{warehouseCols}</span>
+            </button>
             {/* View toggle */}
             <div className="flex bg-white border border-gray-200 rounded-xl overflow-hidden">
               <button
@@ -282,6 +308,29 @@ export default function WarehouseDetailPage() {
             </button>
           </div>
         </div>
+
+        {/* Grid dimension editor */}
+        <AnimatePresence>
+          {showGridEdit && (
+            <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} className="mb-4 bg-white border border-gray-200 rounded-2xl p-4 flex flex-wrap items-end gap-4">
+              <div>
+                <label className="block text-xs text-gray-500 mb-1">Rows (A–{ROWS[gridRowsInput - 1]})</label>
+                <input type="number" min={1} max={10} value={gridRowsInput} onChange={e => setGridRowsInput(Math.min(10, Math.max(1, Number(e.target.value))))}
+                  className="w-20 border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+              </div>
+              <div>
+                <label className="block text-xs text-gray-500 mb-1">Columns (1–{gridColsInput})</label>
+                <input type="number" min={1} max={8} value={gridColsInput} onChange={e => setGridColsInput(Math.min(8, Math.max(1, Number(e.target.value))))}
+                  className="w-20 border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+              </div>
+              <button onClick={saveGridSize} disabled={gridSaving}
+                className="px-4 py-2 text-sm bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors disabled:opacity-50">
+                {gridSaving ? 'Saving...' : 'Apply'}
+              </button>
+              <button onClick={() => setShowGridEdit(false)} className="px-4 py-2 text-sm text-gray-500 border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors">Cancel</button>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {apiError && (
           <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-xl text-sm text-red-700 font-mono">{apiError}</div>
@@ -328,16 +377,16 @@ export default function WarehouseDetailPage() {
               <div className="min-w-max">
                 {/* Column headers */}
                 <div className="flex gap-1.5 mb-1.5 ml-8">
-                  {COLUMNS.map(col => (
+                  {activeCols.map(col => (
                     <div key={col} className="w-14 md:w-20 text-center text-[11px] md:text-xs font-semibold text-gray-400">{col}</div>
                   ))}
                 </div>
 
-                {ROWS.map(row => (
+                {activeRows.map(row => (
                   <div key={row} className="flex items-center gap-1.5 mb-1.5">
                     <div className="w-6 md:w-8 text-center text-xs font-bold text-gray-500 flex-shrink-0">{row}</div>
 
-                    {COLUMNS.map(col => {
+                    {activeCols.map(col => {
                       const box = getBox(row, col, mapLevel);
                       const status = box ? boxStatus(box) : null;
                       return (
