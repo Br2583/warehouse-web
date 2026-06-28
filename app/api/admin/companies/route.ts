@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 const PB_URL = process.env.NEXT_PUBLIC_PB_URL || 'https://pocketbase-production-e699.up.railway.app';
-const ADMIN_USER_ID = process.env.ADMIN_USER_ID!;
 
 async function getPbAdminToken() {
   const res = await fetch(`${PB_URL}/api/collections/_superusers/auth-with-password`, {
@@ -13,24 +12,25 @@ async function getPbAdminToken() {
   return data.token as string;
 }
 
-function getCallerId(req: NextRequest): string | null {
+const ADMIN_USER_ID = 'ezcrajrmevn36cu';
+
+function getCallerUserId(req: NextRequest): string | null {
   const token = (req.headers.get('authorization') || '').replace('Bearer ', '');
   if (!token) return null;
   try {
     const payload = JSON.parse(Buffer.from(token.split('.')[1], 'base64url').toString());
     return payload.id || null;
-  } catch {
-    return null;
-  }
+  } catch { return null; }
 }
 
 export async function GET(req: NextRequest) {
-  const callerId = getCallerId(req);
-  if (callerId !== ADMIN_USER_ID) {
+  if (getCallerUserId(req) !== ADMIN_USER_ID) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
 
-  const adminToken = await getPbAdminToken();
+  let adminToken: string;
+  try { adminToken = await getPbAdminToken(); }
+  catch { return NextResponse.json({ error: 'Admin auth failed' }, { status: 500 }); }
 
   const [companiesRes, usersRes] = await Promise.all([
     fetch(`${PB_URL}/api/collections/companies/records?perPage=200&sort=-created`, {

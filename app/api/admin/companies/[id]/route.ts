@@ -2,7 +2,16 @@ import { NextRequest, NextResponse } from 'next/server';
 import { sendEmail, clientApprovedEmail, clientRejectedEmail, clientDeletedEmail } from '@/lib/email';
 
 const PB_URL = process.env.NEXT_PUBLIC_PB_URL || 'https://pocketbase-production-e699.up.railway.app';
-const ADMIN_USER_ID = process.env.ADMIN_USER_ID!;
+const ADMIN_USER_ID = 'ezcrajrmevn36cu';
+
+function getCallerUserId(req: NextRequest): string | null {
+  const token = (req.headers.get('authorization') || '').replace('Bearer ', '');
+  if (!token) return null;
+  try {
+    const payload = JSON.parse(Buffer.from(token.split('.')[1], 'base64url').toString());
+    return payload.id || null;
+  } catch { return null; }
+}
 
 async function getPbAdminToken() {
   const res = await fetch(`${PB_URL}/api/collections/_superusers/auth-with-password`, {
@@ -14,20 +23,8 @@ async function getPbAdminToken() {
   return data.token as string;
 }
 
-function getCallerId(req: NextRequest): string | null {
-  const token = (req.headers.get('authorization') || '').replace('Bearer ', '');
-  if (!token) return null;
-  try {
-    const payload = JSON.parse(Buffer.from(token.split('.')[1], 'base64url').toString());
-    return payload.id || null;
-  } catch {
-    return null;
-  }
-}
-
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const callerEmail = getCallerId(req);
-  if (callerEmail !== ADMIN_USER_ID) {
+  if (getCallerUserId(req) !== ADMIN_USER_ID) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
 
@@ -100,17 +97,20 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 }
 
 export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const callerEmail = getCallerId(req);
-  if (callerEmail !== ADMIN_USER_ID) {
+  if (getCallerUserId(req) !== ADMIN_USER_ID) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
 
   const { id } = await params;
-  const adminToken = await getPbAdminToken();
+
+  let adminToken: string;
+  try { adminToken = await getPbAdminToken(); }
+  catch { return NextResponse.json({ error: 'Admin auth failed' }, { status: 500 }); }
 
   const companyRes = await fetch(`${PB_URL}/api/collections/companies/records/${id}`, {
     headers: { Authorization: `Bearer ${adminToken}` },
   });
+  if (!companyRes.ok) return NextResponse.json({ error: 'Company not found' }, { status: 404 });
   const company = await companyRes.json();
 
   const usersRes = await fetch(`${PB_URL}/api/collections/users/records?filter=(company_id="${id}")&perPage=200`, {
@@ -119,7 +119,6 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
   const usersData = await usersRes.json();
   const owner = (usersData.items || []).find((u: any) => u.id === company.owner_id);
 
-  // Delete all users in company
   for (const u of usersData.items || []) {
     await fetch(`${PB_URL}/api/collections/users/records/${u.id}`, {
       method: 'DELETE',
@@ -127,13 +126,11 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
     });
   }
 
-  // Delete company record
   await fetch(`${PB_URL}/api/collections/companies/records/${id}`, {
     method: 'DELETE',
     headers: { Authorization: `Bearer ${adminToken}` },
   });
 
-  // Notify owner
   if (owner?.email) {
     const email = clientDeletedEmail(owner.name || 'Cliente', company.name);
     await sendEmail({ to: owner.email, toName: owner.name, ...email }).catch(() => {});
