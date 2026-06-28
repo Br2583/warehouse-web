@@ -2,13 +2,14 @@
 
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
-import { Building2, Package, Plus, ChevronRight, Loader2 } from 'lucide-react';
+import { Building2, Package, Plus, ChevronRight, Loader2, Trash2 } from 'lucide-react';
 import Sidebar from '@/components/Sidebar';
 import { pb } from '@/lib/pb';
 import { useAuth } from '@/lib/auth-context';
 import Link from 'next/link';
 import TutorialOverlay from '@/components/TutorialOverlay';
 import { useTutorial } from '@/hooks/useTutorial';
+import ConfirmModal from '@/components/ConfirmModal';
 
 interface Warehouse {
   id: string;
@@ -32,6 +33,7 @@ export default function WarehousesPage() {
   const [newName, setNewName] = useState('');
   const [showCreate, setShowCreate] = useState(false);
   const [createError, setCreateError] = useState('');
+  const [confirmModal, setConfirmModal] = useState<{ message: string; onConfirm: () => void } | null>(null);
   const { seen, markSeen } = useTutorial('warehouses');
 
   const fetchWarehouses = async () => {
@@ -76,6 +78,20 @@ export default function WarehousesPage() {
     } catch (err: any) {
       setCreateError(err?.message || 'Failed to create warehouse. Please try again.');
     } finally { setCreating(false); }
+  };
+
+  const deleteWarehouse = (id: string, name: string) => {
+    setConfirmModal({
+      message: `Delete "${name}"? All vaults in this warehouse will also be deleted. This cannot be undone.`,
+      onConfirm: async () => {
+        try {
+          const vaults = await pb.collection('vaults').getFullList({ filter: `warehouse_id="${id}"`, fields: 'id' });
+          await Promise.all(vaults.map((v: any) => pb.collection('vaults').delete(v.id)));
+          await pb.collection('warehouses').delete(id);
+          await fetchWarehouses();
+        } catch {}
+      },
+    });
   };
 
   return (
@@ -147,31 +163,48 @@ export default function WarehousesPage() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: i * 0.1 }}
               >
-                <Link href={`/warehouses/${wh.id}`}>
-                  <div className="bg-white rounded-2xl border border-gray-100 p-6 hover:shadow-md transition-all cursor-pointer group">
-                    <div className="flex items-center justify-between mb-4">
-                      <div className="w-12 h-12 bg-blue-50 rounded-xl flex items-center justify-center group-hover:bg-blue-100 transition-colors">
-                        <Building2 className="w-6 h-6 text-blue-600" />
+                <div className="relative group">
+                  {user?.role === 'owner' && (
+                    <button
+                      onClick={e => { e.preventDefault(); deleteWarehouse(wh.id, wh.name); }}
+                      className="absolute top-3 right-3 z-10 p-1.5 rounded-lg text-gray-300 hover:text-red-500 hover:bg-red-50 opacity-0 group-hover:opacity-100 transition-all"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  )}
+                  <Link href={`/warehouses/${wh.id}`}>
+                    <div className="bg-white rounded-2xl border border-gray-100 p-6 hover:shadow-md transition-all cursor-pointer">
+                      <div className="flex items-center justify-between mb-4">
+                        <div className="w-12 h-12 bg-blue-50 rounded-xl flex items-center justify-center group-hover:bg-blue-100 transition-colors">
+                          <Building2 className="w-6 h-6 text-blue-600" />
+                        </div>
+                        <ChevronRight className="w-5 h-5 text-gray-300 group-hover:text-blue-500 transition-colors" />
                       </div>
-                      <ChevronRight className="w-5 h-5 text-gray-300 group-hover:text-blue-500 transition-colors" />
+                      <h2 className="text-lg font-semibold text-gray-900">{wh.name}</h2>
+                      {wh.address && <p className="text-xs text-gray-400 mt-0.5">{wh.address}</p>}
+                      <div className="flex items-center gap-2 mt-2">
+                        <Package className="w-4 h-4 text-gray-400" />
+                        <span className="text-2xl font-bold text-gray-900">{wh.vault_count}</span>
+                        <span className="text-sm text-gray-400">vaults stored</span>
+                      </div>
+                      <div className="mt-4 pt-4 border-t border-gray-50">
+                        <span className="text-xs text-blue-600 font-medium">View inventory →</span>
+                      </div>
                     </div>
-                    <h2 className="text-lg font-semibold text-gray-900">{wh.name}</h2>
-                    {wh.address && <p className="text-xs text-gray-400 mt-0.5">{wh.address}</p>}
-                    <div className="flex items-center gap-2 mt-2">
-                      <Package className="w-4 h-4 text-gray-400" />
-                      <span className="text-2xl font-bold text-gray-900">{wh.vault_count}</span>
-                      <span className="text-sm text-gray-400">vaults stored</span>
-                    </div>
-                    <div className="mt-4 pt-4 border-t border-gray-50">
-                      <span className="text-xs text-blue-600 font-medium">View inventory →</span>
-                    </div>
-                  </div>
-                </Link>
+                  </Link>
+                </div>
               </motion.div>
             ))}
           </div>
         )}
       </main>
+      {confirmModal && (
+        <ConfirmModal
+          message={confirmModal.message}
+          onConfirm={confirmModal.onConfirm}
+          onCancel={() => setConfirmModal(null)}
+        />
+      )}
     </div>
   );
 }

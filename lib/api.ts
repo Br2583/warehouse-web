@@ -469,7 +469,26 @@ async function routePost(path: string, body: any): Promise<any> {
     if (!cid) throw new Error('No company');
     const dv = await pb.collection('deleted_vaults').getOne(restoreMatch[1]);
     const vd = (dv.vault_data as any) || {};
-    await pb.collection('vaults').create({ ...vd, company_id: cid, estado: vd.estado || 'PENDING' });
+    // vault_data was saved with mapped field names (mapVault renames col→column, id→box_id)
+    // so we explicitly remap back to PocketBase field names
+    await pb.collection('vaults').create({
+      warehouse_id:  vd.warehouse_id,
+      row:           vd.row,
+      col:           vd.column ?? vd.col,
+      level:         vd.level,
+      position:      vd.position,
+      client_name:   vd.client_name,
+      client_id:     vd.client_id,
+      job_type:      vd.job_type,
+      content_type:  vd.content_type,
+      room_location: vd.room_location || [],
+      vault_status:  vd.vault_status || [],
+      packer:        vd.packer,
+      photos:        vd.photos || [],
+      comments:      vd.comments,
+      estado:        vd.estado || 'PENDING',
+      company_id:    cid,
+    });
     await pb.collection('deleted_vaults').delete(restoreMatch[1]);
     return { success: true };
   }

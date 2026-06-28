@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Package, Plus, Search, Trash2, X, Camera, LayoutGrid, List, Pencil, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Package, Plus, Search, Trash2, X, Camera, LayoutGrid, List, Pencil, ChevronLeft, ChevronRight, QrCode } from 'lucide-react';
 import ConfirmModal from '@/components/ConfirmModal';
 import Sidebar from '@/components/Sidebar';
 import { api } from '@/lib/api';
@@ -10,6 +10,7 @@ import { useParams } from 'next/navigation';
 import TutorialOverlay from '@/components/TutorialOverlay';
 import { useTutorial } from '@/hooks/useTutorial';
 import { compressImage } from '@/lib/compress-image';
+import { QRCodeSVG } from 'qrcode.react';
 
 interface Box {
   box_id: string;
@@ -93,6 +94,7 @@ export default function WarehouseDetailPage() {
   const [editError, setEditError] = useState('');
   const [lightbox, setLightbox] = useState<{ photos: string[]; index: number } | null>(null);
   const [confirmModal, setConfirmModal] = useState<{ message: string; onConfirm: () => void } | null>(null);
+  const [showQR, setShowQR] = useState(false);
 
   const fetchBoxes = () => {
     setApiError('');
@@ -350,7 +352,7 @@ export default function WarehouseDetailPage() {
                       <motion.button
                         key={col}
                         whileHover={{ scale: 1.03 }}
-                        onClick={() => box ? setSelected(box) : openAddAtPosition(row, col, mapLevel)}
+                        onClick={() => { setShowQR(false); box ? setSelected(box) : openAddAtPosition(row, col, mapLevel); }}
                         className={`w-9 h-9 md:w-20 md:h-14 rounded-lg md:rounded-xl border-2 flex flex-col items-center justify-center transition-all text-center
                           ${box
                             ? `${STATUS_CELL[status!] || 'bg-gray-300'} border-transparent text-white cursor-pointer`
@@ -483,7 +485,28 @@ export default function WarehouseDetailPage() {
                     </div>
                   </div>
                 )}
-                <div className="flex gap-3 mt-6">
+                {/* QR Code */}
+                <div className="mt-4">
+                  <button
+                    onClick={() => setShowQR(v => !v)}
+                    className="flex items-center gap-2 text-sm text-gray-500 hover:text-blue-600 transition-colors"
+                  >
+                    <QrCode className="w-4 h-4" />
+                    {showQR ? 'Hide QR Code' : 'Show QR Code'}
+                  </button>
+                  {showQR && (
+                    <div className="mt-3 flex flex-col items-center gap-2 p-4 bg-gray-50 rounded-xl">
+                      <QRCodeSVG
+                        value={`${typeof window !== 'undefined' ? window.location.origin : ''}/warehouses/${warehouseId}?vault=${selected.box_id}`}
+                        size={160}
+                        level="M"
+                      />
+                      <p className="text-xs text-gray-400 text-center">Scan to open this vault</p>
+                    </div>
+                  )}
+                </div>
+
+                <div className="flex gap-3 mt-4">
                   <button
                     onClick={() => openEdit(selected)}
                     className="flex items-center gap-2 px-4 py-2 text-sm text-blue-600 hover:bg-blue-50 rounded-xl transition-colors font-medium"

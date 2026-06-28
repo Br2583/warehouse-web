@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
-import { User, Copy, Plus, AlertCircle, X } from 'lucide-react';
+import { User, Copy, Plus, AlertCircle, X, LogOut } from 'lucide-react';
 import { AnimatePresence } from 'framer-motion';
 import Sidebar from '@/components/Sidebar';
 import { api } from '@/lib/api';
@@ -17,7 +17,7 @@ const TUTORIAL_STEPS = [
 ];
 
 export default function ProfilePage() {
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
   const [company, setCompany] = useState<any>(null);
   const [members, setMembers] = useState<any[]>([]);
   const [genError, setGenError] = useState('');
@@ -48,9 +48,17 @@ export default function ProfilePage() {
       {!seen && <TutorialOverlay steps={TUTORIAL_STEPS} onDone={markSeen} />}
       <Sidebar />
       <main className="md:ml-64 flex-1 p-4 md:p-8 pb-20 md:pb-8 max-w-3xl">
-        <div className="mb-8">
-          <h1 className="text-2xl font-bold text-gray-900">Profile</h1>
-          <p className="text-gray-500 text-sm mt-1">Account and company settings</p>
+        <div className="flex items-center justify-between mb-8">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">Profile</h1>
+            <p className="text-gray-500 text-sm mt-1">Account and company settings</p>
+          </div>
+          <button
+            onClick={logout}
+            className="flex items-center gap-2 px-4 py-2 text-sm text-red-600 border border-red-100 bg-red-50 rounded-xl hover:bg-red-100 transition-colors"
+          >
+            <LogOut className="w-4 h-4" /> Sign Out
+          </button>
         </div>
 
         {loading ? (
