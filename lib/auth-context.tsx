@@ -12,6 +12,9 @@ export interface User {
   pin_changed?: boolean;
   company_id?: string;
   company_name?: string;
+  company_approved?: boolean;
+  company_suspended?: boolean;
+  company_rejected?: boolean;
   role?: string;
   job_title?: string;
   profile_complete?: boolean;
@@ -29,24 +32,33 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 async function buildUser(model: any): Promise<User> {
   let company_name = '';
+  let company_approved: boolean | undefined;
+  let company_suspended: boolean | undefined;
+  let company_rejected: boolean | undefined;
   if (model.company_id) {
     try {
       const c = await pb.collection('companies').getOne(model.company_id);
       company_name = c.name;
+      company_approved  = c.approved  ?? false;
+      company_suspended = c.suspended ?? false;
+      company_rejected  = c.rejected  ?? false;
     } catch {}
   }
   return {
-    user_id:          model.id,
-    id:               model.id,
-    email:            model.email,
-    name:             model.name,
-    picture:          model.avatar ? pb.files.getURL(model, model.avatar) : undefined,
-    company_id:       model.company_id,
+    user_id:           model.id,
+    id:                model.id,
+    email:             model.email,
+    name:              model.name,
+    picture:           model.avatar ? pb.files.getURL(model, model.avatar) : undefined,
+    company_id:        model.company_id,
     company_name,
-    role:             model.role,
-    pin_changed:      !!model.pin,
-    job_title:        model.job_title,
-    profile_complete: !!model.profile_complete,
+    company_approved,
+    company_suspended,
+    company_rejected,
+    role:              model.role,
+    pin_changed:       !!model.pin,
+    job_title:         model.job_title,
+    profile_complete:  !!model.profile_complete,
   };
 }
 

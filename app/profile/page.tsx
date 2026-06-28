@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
-import { User, Copy, Plus, AlertCircle, X, LogOut, Lock } from 'lucide-react';
+import { User, Copy, Plus, AlertCircle, X, LogOut, Lock, Shield } from 'lucide-react';
 import { AnimatePresence } from 'framer-motion';
 import Sidebar from '@/components/Sidebar';
 import { api } from '@/lib/api';
@@ -240,6 +240,21 @@ export default function ProfilePage() {
                 </button>
               </form>
             </motion.div>
+
+            {/* Admin panel link — only visible to admin */}
+            {user?.email === (process.env.NEXT_PUBLIC_ADMIN_EMAIL || 'admin@warehousemanager.app') && (
+              <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.22 }} className="bg-white rounded-2xl border border-gray-100 p-6">
+                <div className="flex items-center gap-2 mb-1">
+                  <Shield className="w-4 h-4 text-purple-500" />
+                  <h3 className="font-semibold text-gray-900">Administración</h3>
+                </div>
+                <p className="text-xs text-gray-400 mb-4">Gestión de empresas y solicitudes de acceso.</p>
+                <a href="/admin-k9x2m7" className="inline-flex items-center gap-2 px-4 py-2 text-sm bg-purple-600 text-white rounded-xl hover:bg-purple-700 transition-colors">
+                  <Shield className="w-4 h-4" />
+                  Panel de Admin
+                </a>
+              </motion.div>
+            )}
 
             {/* Replay Tours */}
             <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 }} className="bg-white rounded-2xl border border-gray-100 p-6">

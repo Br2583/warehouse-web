@@ -80,6 +80,140 @@ export function verificationEmail(name: string, token: string) {
   };
 }
 
+export function adminNewRequestEmail(companyName: string, ownerName: string, ownerEmail: string) {
+  const adminUrl = `${APP_URL}/admin-k9x2m7`;
+  return {
+    subject: `Nueva solicitud — ${companyName}`,
+    html: `<!DOCTYPE html>
+<html lang="es">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"></head>
+<body style="margin:0;padding:0;background:#f1f5f9;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#f1f5f9;padding:40px 16px;">
+    <tr><td align="center">
+      <table width="560" cellpadding="0" cellspacing="0" style="max-width:560px;width:100%;">
+        <tr>
+          <td style="background:linear-gradient(135deg,#1d4ed8,#2563eb);border-radius:16px 16px 0 0;padding:36px 40px;text-align:center;">
+            <div style="font-size:32px;margin-bottom:8px;">🏢</div>
+            <h1 style="margin:0;color:#fff;font-size:22px;font-weight:700;">Warehouse Manager</h1>
+            <p style="margin:8px 0 0;color:#93c5fd;font-size:14px;">Nueva solicitud de acceso</p>
+          </td>
+        </tr>
+        <tr>
+          <td style="background:#fff;padding:36px 40px;">
+            <p style="margin:0 0 16px;font-size:16px;color:#1e293b;font-weight:600;">Nueva empresa solicitando acceso</p>
+            <table width="100%" style="border-collapse:collapse;font-size:14px;color:#374151;">
+              <tr><td style="padding:8px 0;border-bottom:1px solid #f1f5f9;color:#6b7280;width:120px;">Empresa</td><td style="padding:8px 0;border-bottom:1px solid #f1f5f9;font-weight:600;">${companyName}</td></tr>
+              <tr><td style="padding:8px 0;border-bottom:1px solid #f1f5f9;color:#6b7280;">Dueño</td><td style="padding:8px 0;border-bottom:1px solid #f1f5f9;">${ownerName}</td></tr>
+              <tr><td style="padding:8px 0;color:#6b7280;">Email</td><td style="padding:8px 0;">${ownerEmail}</td></tr>
+            </table>
+            <div style="margin-top:28px;text-align:center;">
+              <a href="${adminUrl}" style="display:inline-block;background:linear-gradient(135deg,#2563eb,#7c3aed);color:#fff;font-size:15px;font-weight:600;text-decoration:none;padding:14px 36px;border-radius:12px;">
+                Ver panel de administración
+              </a>
+            </div>
+          </td>
+        </tr>
+        <tr>
+          <td style="background:#1e293b;border-radius:0 0 16px 16px;padding:20px 40px;text-align:center;">
+            <p style="margin:0;font-size:12px;color:#64748b;">
+              Generado por <strong style="color:#93c5fd;">Warehouse Manager</strong> · Powered by PixelCore
+            </p>
+          </td>
+        </tr>
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>`,
+  };
+}
+
+export function clientApprovedEmail(ownerName: string, companyName: string) {
+  const loginUrl = `${APP_URL}/login`;
+  return {
+    subject: '¡Cuenta aprobada! — Warehouse Manager',
+    html: `<!DOCTYPE html>
+<html lang="es">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"></head>
+<body style="margin:0;padding:0;background:#f1f5f9;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#f1f5f9;padding:40px 16px;">
+    <tr><td align="center">
+      <table width="560" cellpadding="0" cellspacing="0" style="max-width:560px;width:100%;">
+        <tr>
+          <td style="background:linear-gradient(135deg,#059669,#10b981);border-radius:16px 16px 0 0;padding:36px 40px;text-align:center;">
+            <div style="font-size:32px;margin-bottom:8px;">✅</div>
+            <h1 style="margin:0;color:#fff;font-size:22px;font-weight:700;">Warehouse Manager</h1>
+            <p style="margin:8px 0 0;color:#a7f3d0;font-size:14px;">Tu cuenta fue aprobada</p>
+          </td>
+        </tr>
+        <tr>
+          <td style="background:#fff;padding:36px 40px;text-align:center;">
+            <p style="margin:0 0 8px;font-size:16px;color:#1e293b;">Hola <strong>${ownerName}</strong>,</p>
+            <p style="margin:0 0 24px;font-size:14px;color:#64748b;line-height:1.6;">
+              Tu empresa <strong>${companyName}</strong> ha sido aprobada.<br>
+              Ya podés iniciar sesión y comenzar a usar Warehouse Manager.
+            </p>
+            <a href="${loginUrl}" style="display:inline-block;background:linear-gradient(135deg,#059669,#10b981);color:#fff;font-size:15px;font-weight:600;text-decoration:none;padding:14px 36px;border-radius:12px;">
+              Iniciar sesión
+            </a>
+          </td>
+        </tr>
+        <tr>
+          <td style="background:#1e293b;border-radius:0 0 16px 16px;padding:20px 40px;text-align:center;">
+            <p style="margin:0;font-size:12px;color:#64748b;">
+              Generado por <strong style="color:#93c5fd;">Warehouse Manager</strong> · Powered by PixelCore
+            </p>
+          </td>
+        </tr>
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>`,
+  };
+}
+
+export function clientRejectedEmail(ownerName: string, companyName: string) {
+  return {
+    subject: 'Solicitud no aprobada — Warehouse Manager',
+    html: `<!DOCTYPE html>
+<html lang="es">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"></head>
+<body style="margin:0;padding:0;background:#f1f5f9;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#f1f5f9;padding:40px 16px;">
+    <tr><td align="center">
+      <table width="560" cellpadding="0" cellspacing="0" style="max-width:560px;width:100%;">
+        <tr>
+          <td style="background:linear-gradient(135deg,#dc2626,#ef4444);border-radius:16px 16px 0 0;padding:36px 40px;text-align:center;">
+            <div style="font-size:32px;margin-bottom:8px;">📦</div>
+            <h1 style="margin:0;color:#fff;font-size:22px;font-weight:700;">Warehouse Manager</h1>
+            <p style="margin:8px 0 0;color:#fca5a5;font-size:14px;">Solicitud de acceso</p>
+          </td>
+        </tr>
+        <tr>
+          <td style="background:#fff;padding:36px 40px;text-align:center;">
+            <p style="margin:0 0 8px;font-size:16px;color:#1e293b;">Hola <strong>${ownerName}</strong>,</p>
+            <p style="margin:0 0 24px;font-size:14px;color:#64748b;line-height:1.6;">
+              Lamentablemente tu solicitud para la empresa <strong>${companyName}</strong> no fue aprobada en este momento.<br>
+              Si creés que es un error, respondé este email para que podamos revisarlo.
+            </p>
+          </td>
+        </tr>
+        <tr>
+          <td style="background:#1e293b;border-radius:0 0 16px 16px;padding:20px 40px;text-align:center;">
+            <p style="margin:0;font-size:12px;color:#64748b;">
+              Generado por <strong style="color:#93c5fd;">Warehouse Manager</strong> · Powered by PixelCore
+            </p>
+          </td>
+        </tr>
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>`,
+  };
+}
+
 export function passwordResetEmail(name: string, token: string) {
   const link = `${APP_URL}/reset-password?token=${token}`;
   return {

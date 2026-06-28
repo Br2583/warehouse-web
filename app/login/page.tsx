@@ -70,6 +70,15 @@ function LoginForm() {
         return;
       }
 
+      // Check company approval status
+      if (model.company_id) {
+        try {
+          const company = await pb.collection('companies').getOne(model.company_id);
+          if (company.suspended) { router.replace('/suspended'); return; }
+          if (!company.approved) { router.replace('/pending'); return; }
+        } catch {}
+      }
+
       if (!model.profile_complete) {
         router.replace('/onboarding');
         return;
@@ -94,7 +103,11 @@ function LoginForm() {
         invite_code: code,
         owner_id:    userId,
         plan:        'active',
+        approved:    false,
+        suspended:   false,
+        rejected:    false,
       });
+      const model = pb.authStore.model;
       await pb.collection('users').update(userId, {
         company_id:           company.id,
         role:                 'owner',
@@ -102,7 +115,13 @@ function LoginForm() {
         pending_company_name: '',
       });
       await pb.collection('users').authRefresh();
-      router.replace('/onboarding');
+      // Notify admin of new company request (fire-and-forget)
+      fetch('/api/admin/notify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ companyName: name, ownerName: model?.name || '', ownerEmail: model?.email || '' }),
+      }).catch(() => {});
+      router.replace('/pending');
     } catch {
       setError('Could not create company. Try again.');
       setLoading(false);

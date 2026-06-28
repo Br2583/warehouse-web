@@ -15,8 +15,15 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   const showNav = isProtected;
 
   useEffect(() => {
-    if (!loading && !user && isProtected) {
+    if (loading) return;
+    if (!user && isProtected) {
       router.replace('/login');
+      return;
+    }
+    // Redirect based on company approval state (only on protected routes)
+    if (user && isProtected && user.company_id) {
+      if (user.company_suspended) { router.replace('/suspended'); return; }
+      if (user.company_approved === false && !user.company_rejected) { router.replace('/pending'); return; }
     }
   }, [loading, user, isProtected, router]);
 
