@@ -4,7 +4,6 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { Mail, RefreshCw, ArrowLeft } from 'lucide-react';
-import { pb } from '@/lib/pb';
 
 export default function VerifyEmailPage() {
   const router = useRouter();
@@ -23,7 +22,11 @@ export default function VerifyEmailPage() {
     setLoading(true);
     setError('');
     try {
-      await pb.collection('users').requestVerification(email);
+      await fetch('/api/auth/send-verification', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
+      });
       setResent(true);
       setTimeout(() => setResent(false), 5000);
     } catch {

@@ -4,7 +4,6 @@ import { Suspense, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { KeyRound, Mail, Eye, EyeOff, ArrowLeft } from 'lucide-react';
-import { pb } from '@/lib/pb';
 
 function ResetPasswordForm() {
   const router = useRouter();
@@ -29,11 +28,14 @@ function ResetPasswordForm() {
     setReqLoading(true);
     setReqError('');
     try {
-      await pb.collection('users').requestPasswordReset(email.trim().toLowerCase());
+      await fetch('/api/auth/send-password-reset', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: email.trim().toLowerCase() }),
+      });
       setSent(true);
     } catch {
-      // Don't leak whether account exists — always show success
-      setSent(true);
+      setSent(true); // Don't leak whether account exists
     } finally {
       setReqLoading(false);
     }
@@ -45,10 +47,19 @@ function ResetPasswordForm() {
     setConfirmLoading(true);
     setConfirmError('');
     try {
-      await pb.collection('users').confirmPasswordReset(token!, password, passwordConfirm);
-      router.replace('/login?reset=1');
+      const res = await fetch('/api/auth/confirm-password-reset', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token, password, passwordConfirm }),
+      });
+      const data = await res.json();
+      if (data.ok) {
+        router.replace('/login?reset=1');
+      } else {
+        setConfirmError(data.error || 'Reset link is invalid or expired. Request a new one.');
+      }
     } catch {
-      setConfirmError('Reset link is invalid or expired. Request a new one.');
+      setConfirmError('Connection error. Try again.');
     } finally {
       setConfirmLoading(false);
     }

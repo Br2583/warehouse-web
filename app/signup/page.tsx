@@ -43,9 +43,13 @@ export default function SignupPage() {
         notifications_enabled: false,
       });
 
-      await pb.collection('users').requestVerification(email.trim().toLowerCase());
+      // Send verification email via our server route (Brevo REST API)
+      await fetch('/api/auth/send-verification', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: email.trim().toLowerCase() }),
+      });
 
-      // Save email for the verify-email page resend button
       localStorage.setItem('verify_email', email.trim().toLowerCase());
       router.push('/verify-email');
     } catch (e: any) {

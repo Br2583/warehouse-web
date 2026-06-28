@@ -2,7 +2,6 @@
 
 import { Suspense, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { pb } from '@/lib/pb';
 
 function Spinner({ text }: { text: string }) {
   return (
@@ -28,13 +27,20 @@ function CallbackHandler() {
       return;
     }
 
-    pb.collection('users').confirmVerification(token)
-      .then(() => {
-        router.replace('/login?verified=1');
+    fetch('/api/auth/verify-email', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token }),
+    })
+      .then(res => res.json())
+      .then(data => {
+        if (data.ok) {
+          router.replace('/login?verified=1');
+        } else {
+          setError(data.error || 'Verification failed.');
+        }
       })
-      .catch(() => {
-        setError('Verification link is invalid or has expired. Please request a new one.');
-      });
+      .catch(() => setError('Connection error. Please try again.'));
   }, []);
 
   if (error) {
@@ -44,7 +50,7 @@ function CallbackHandler() {
         <div className="text-center px-6 max-w-sm">
           <p className="text-red-400 mb-6 text-sm leading-relaxed">{error}</p>
           <button
-            onClick={() => router.replace('/verify-email')}
+            onClick={() => { window.location.href = '/verify-email'; }}
             className="text-blue-400/70 text-sm hover:text-blue-400 transition-colors"
           >
             Request a new link
