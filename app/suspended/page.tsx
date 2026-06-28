@@ -38,7 +38,7 @@ export default function SuspendedPage() {
         </p>
 
         <a
-          href="mailto:admin@warehousemanager.app"
+          href="mailto:nreply.warehousemanager529@gmail.com"
           className="flex items-center justify-center gap-2 w-full py-3 rounded-xl text-sm font-medium transition-all mb-3"
           style={{
             background: 'rgba(239,68,68,0.1)',
