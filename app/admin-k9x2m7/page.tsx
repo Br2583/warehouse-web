@@ -7,7 +7,7 @@ import { Check, X, Pause, Play, Trash2, Users, Clock, ShieldOff, ShieldCheck } f
 import { useAuth } from '@/lib/auth-context';
 import { pb } from '@/lib/pb';
 
-const ADMIN_EMAIL = process.env.NEXT_PUBLIC_ADMIN_EMAIL || 'nreply.warehousemanager529@gmail.com';
+const ADMIN_EMAIL = process.env.NEXT_PUBLIC_ADMIN_USER_EMAIL || 'br2583350@gmail.com';
 
 interface CompanyRecord {
   id: string;

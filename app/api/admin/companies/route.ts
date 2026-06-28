@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 const PB_URL = process.env.NEXT_PUBLIC_PB_URL || 'https://pocketbase-production-e699.up.railway.app';
-const ADMIN_EMAIL = process.env.ADMIN_EMAIL!;
+const ADMIN_EMAIL = process.env.ADMIN_USER_EMAIL!;
 
 async function getPbAdminToken() {
   const res = await fetch(`${PB_URL}/api/collections/_superusers/auth-with-password`, {
