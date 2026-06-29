@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useEffect, useState, useRef } from 'react';
 import { motion } from 'framer-motion';
@@ -18,7 +18,6 @@ interface Message {
   timestamp: string;
 }
 
-
 export default function ChatPage() {
   const { user } = useAuth();
   const [messages, setMessages] = useState<Message[]>([]);
@@ -26,8 +25,8 @@ export default function ChatPage() {
   const [loading, setLoading] = useState(true);
   const [sendError, setSendError] = useState('');
   const [sending, setSending] = useState(false);
-  const bottomRef = useRef<HTMLDivElement>(null);
   const lastCountRef = useRef(-1);
+
   const fetchMessages = () =>
     api.get('/api/chat/messages').then((msgs: Message[]) => {
       if (lastCountRef.current >= 0 && msgs.length > lastCountRef.current) {
@@ -37,7 +36,7 @@ export default function ChatPage() {
         }
       }
       lastCountRef.current = msgs.length;
-      setMessages(msgs);
+      setMessages([...msgs].reverse());
     }).catch(() => {}).finally(() => setLoading(false));
 
   useEffect(() => {
@@ -46,10 +45,6 @@ export default function ChatPage() {
     const interval = setInterval(fetchMessages, 10000);
     return () => clearInterval(interval);
   }, []);
-
-  useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
 
   const send = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -85,12 +80,12 @@ export default function ChatPage() {
     <div className="flex min-h-screen bg-gray-50">
       <Sidebar />
       <main className="md:ml-64 flex-1 flex flex-col" style={{ height: '100dvh' }}>
-        <div data-tutorial="chat-header" className="p-8 pb-4 border-b border-gray-100 bg-white">
+        <div className="p-6 md:p-8 pb-4 border-b border-gray-100 bg-white flex-shrink-0">
           <h1 className="text-2xl font-bold text-gray-900">Team Chat</h1>
           <p className="text-gray-500 text-sm mt-1">Internal company communication</p>
         </div>
 
-        <div data-tutorial="chat-messages" className="flex-1 overflow-y-auto p-6 space-y-4">
+        <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-4">
           {loading ? (
             <div className="flex justify-center py-16">
               <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
@@ -103,9 +98,9 @@ export default function ChatPage() {
               return (
                 <motion.div
                   key={msg.id}
-                  initial={{ opacity: 0, y: 10 }}
+                  initial={{ opacity: 0, y: 8 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: i * 0.02 }}
+                  transition={{ delay: Math.min(i * 0.015, 0.3) }}
                   className={`flex gap-3 group ${isMe ? 'flex-row-reverse' : ''}`}
                 >
                   {msg.sender_photo ? (
@@ -115,15 +110,15 @@ export default function ChatPage() {
                       <span className="text-blue-600 text-xs font-bold">{msg.sender_name?.[0]}</span>
                     </div>
                   )}
-                  <div className={`max-w-md ${isMe ? 'items-end' : 'items-start'} flex flex-col`}>
+                  <div className={`max-w-[75%] md:max-w-md ${isMe ? 'items-end' : 'items-start'} flex flex-col`}>
                     <span className="text-xs text-gray-400 mb-1">{isMe ? 'You' : msg.sender_name}</span>
-                    <div className={`px-4 py-2.5 rounded-2xl text-sm ${isMe ? 'bg-blue-600 text-white rounded-tr-sm' : 'bg-white border border-gray-100 text-gray-800 rounded-tl-sm'}`}>
+                    <div className={`px-4 py-2.5 rounded-2xl text-sm break-words ${isMe ? 'bg-blue-600 text-white rounded-tr-sm' : 'bg-white border border-gray-100 text-gray-800 rounded-tl-sm'}`}>
                       {msg.text}
                     </div>
                     <span className="text-xs text-gray-300 mt-1">{parseDate(msg.timestamp || '').toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                   </div>
                   {isMe && (
-                    <button onClick={() => deleteMsg(msg.id)} className="opacity-0 group-hover:opacity-100 text-gray-300 hover:text-red-400 transition-all mt-2">
+                    <button onClick={() => deleteMsg(msg.id)} className="opacity-0 group-hover:opacity-100 text-gray-300 hover:text-red-400 transition-all mt-2 flex-shrink-0">
                       <Trash2 className="w-3.5 h-3.5" />
                     </button>
                   )}
@@ -131,17 +126,16 @@ export default function ChatPage() {
               );
             })
           )}
-          <div ref={bottomRef} />
         </div>
 
-        <div data-tutorial="chat-input" className="bg-white border-t border-gray-100">
+        <div className="bg-white border-t border-gray-100 flex-shrink-0">
           {sendError && (
             <div className="px-4 pt-3 text-xs text-red-500 flex items-center gap-1.5">
               <span className="w-1.5 h-1.5 rounded-full bg-red-400 flex-shrink-0" />
               {sendError}
             </div>
           )}
-          <form onSubmit={send} className="p-4 pb-20 md:pb-4 flex gap-3">
+          <form onSubmit={send} className="p-4 pb-24 md:pb-4 flex gap-3">
             <input
               type="text"
               placeholder="Type a message..."
@@ -152,7 +146,7 @@ export default function ChatPage() {
             <button
               type="submit"
               disabled={!text.trim() || sending}
-              className="px-4 py-2.5 bg-blue-600 text-white rounded-xl hover:bg-blue-700 disabled:opacity-50 transition-colors flex items-center"
+              className="px-4 py-2.5 bg-blue-600 text-white rounded-xl hover:bg-blue-700 disabled:opacity-50 transition-colors flex items-center flex-shrink-0"
             >
               {sending
                 ? <span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
@@ -164,4 +158,3 @@ export default function ChatPage() {
     </div>
   );
 }
-

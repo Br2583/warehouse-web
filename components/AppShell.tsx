@@ -2,10 +2,10 @@
 
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect } from 'react';
-import BottomNav from './BottomNav';
+import MobileNav from './MobileNav';
 import { useAuth } from '@/lib/auth-context';
 
-const AUTH_ROUTES = ['/dashboard', '/warehouses', '/search', '/production', '/stats', '/snapshots', '/chat', '/deleted', '/profile', '/storage', '/onboarding'];
+const AUTH_ROUTES = ['/dashboard', '/warehouses', '/search', '/production', '/stats', '/snapshots', '/chat', '/profile', '/storage', '/onboarding'];
 
 export default function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -30,7 +30,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   return (
     <>
       {children}
-      {showNav && <BottomNav />}
+      {showNav && <MobileNav />}
     </>
   );
 }

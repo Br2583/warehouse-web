@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -20,7 +20,7 @@ const PHASE_COLORS = [
 const WORK_TYPES = ['Cleaning', 'Restoration', 'Delivery'];
 
 function formatDate(d: string) {
-  if (!d) return '—';
+  if (!d) return 'â€”';
   try {
     // Normalize PocketBase formats: "2026-06-26 00:00:00.000Z" or "2026-06-26"
     const clean = d.split(/[ T]/)[0];
@@ -203,13 +203,13 @@ export default function ProductionPage() {
     <div className="flex min-h-screen bg-gray-50">
       <Sidebar />
       <main className="md:ml-64 flex-1 p-4 md:p-8 pb-20 md:pb-8">
-        <div data-tutorial="production-header" className="flex items-center justify-between mb-8">
+        <div className="flex items-center justify-between mb-8">
           <div>
             <h1 className="text-2xl font-bold text-gray-900">Production</h1>
             <p className="text-gray-500 text-sm mt-1">{orders.length} work orders</p>
           </div>
           <button
-            data-tutorial="new-order-btn"
+           
             onClick={() => { setShowCreate(true); setSaveError(''); }}
             className="flex items-center gap-2 px-4 py-2.5 bg-blue-600 text-white text-sm font-medium rounded-xl hover:bg-blue-700 transition-colors"
           >
@@ -222,7 +222,7 @@ export default function ProductionPage() {
             <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
           </div>
         ) : (
-          <div data-tutorial="production-list" className="space-y-3">
+          <div className="space-y-3">
             {orders.length === 0 && (
               <div className="text-center py-16 text-gray-400">No work orders found</div>
             )}
@@ -243,7 +243,7 @@ export default function ProductionPage() {
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="font-semibold text-gray-900 truncate">{order.client_name}</p>
-                      <p className="text-sm text-gray-500">{order.work_type} · {formatDate(order.date)}</p>
+                      <p className="text-sm text-gray-500">{order.work_type} Â· {formatDate(order.date)}</p>
                       {order.assigned_to && (
                         <p className="flex items-center gap-1 text-xs text-gray-400 mt-0.5">
                           <User2 className="w-3 h-3 flex-shrink-0" />
@@ -339,7 +339,7 @@ export default function ProductionPage() {
                                 {volt.position && <p className="text-xs text-gray-400">{volt.position}</p>}
                               </div>
                               <span className="text-xs px-2 py-0.5 rounded-full bg-gray-100 text-gray-500">
-                                {volt.estado || volt.status || '—'}
+                                {volt.estado || volt.status || 'â€”'}
                               </span>
                             </div>
                           );
@@ -436,10 +436,10 @@ export default function ProductionPage() {
                               onClick={() => toggleVolt(box)}
                               className={`w-full flex items-center justify-between px-4 py-2.5 text-sm border-b border-gray-50 last:border-0 transition-colors ${sel ? 'bg-blue-50' : 'hover:bg-gray-50'}`}>
                               <span className={sel ? 'text-blue-700 font-medium' : 'text-gray-700'}>
-                                {box.client_name} · {box.position}
+                                {box.client_name} Â· {box.position}
                               </span>
                               <span className={`text-xs w-5 h-5 flex items-center justify-center rounded-full ${sel ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-400'}`}>
-                                {sel ? '✓' : '+'}
+                                {sel ? 'âœ“' : '+'}
                               </span>
                             </button>
                           );

@@ -3,8 +3,8 @@
 import { useAuth } from '@/lib/auth-context';
 import { motion } from 'framer-motion';
 import {
-  LayoutDashboard, Package, Search, BarChart3,
-  Camera, MessageSquare, Wrench, Trash2, User, LogOut, Building2, Archive
+  LayoutDashboard, Search, BarChart3,
+  Camera, MessageSquare, Wrench, User, LogOut, Building2, Archive
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -18,7 +18,6 @@ const navItems = [
   { href: '/stats', label: 'Statistics', icon: BarChart3 },
   { href: '/snapshots', label: 'Snapshots', icon: Camera },
   { href: '/chat', label: 'Chat', icon: MessageSquare },
-  { href: '/deleted', label: 'Deleted', icon: Trash2 },
   { href: '/profile', label: 'Profile', icon: User },
 ];
 
@@ -32,7 +31,10 @@ export default function Sidebar() {
       <div className="p-6 border-b border-gray-100">
         <div className="flex items-center gap-3">
           <div className="w-9 h-9 bg-blue-600 rounded-xl flex items-center justify-center">
-            <Package className="w-5 h-5 text-white" />
+            <svg viewBox="0 0 24 24" fill="none" className="w-5 h-5" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+              <polyline points="9 22 9 12 15 12 15 22" />
+            </svg>
           </div>
           <div>
             <p className="font-bold text-gray-900 text-sm leading-tight">Warehouse</p>

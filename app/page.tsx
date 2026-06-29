@@ -2,9 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { motion } from 'framer-motion';
 import { pb } from '@/lib/pb';
-import { ArrowRight, LogIn, UserPlus } from 'lucide-react';
+import { ArrowRight, LogIn, Building2, BarChart3, MessageSquare, Users } from 'lucide-react';
 
 const PHRASES = [
   'Inventory & Records Management.',
@@ -13,12 +12,18 @@ const PHRASES = [
   'Trusted Warehouse Services.',
 ];
 
+const FEATURES = [
+  { icon: Building2,     title: 'Multi-Warehouse',    desc: 'Manage multiple warehouse locations from one centralized dashboard.' },
+  { icon: BarChart3,     title: 'Live Analytics',      desc: 'Track inventory, production and delivery status in real time.' },
+  { icon: MessageSquare, title: 'Team Chat',           desc: 'Built-in messaging to keep your team aligned and connected.' },
+  { icon: Users,         title: 'Role-Based Access',   desc: 'Invite your team with owner and worker permission levels.' },
+];
+
 export default function Home() {
   const router = useRouter();
   const [displayed, setDisplayed] = useState('');
   const [phraseIndex, setPhraseIndex] = useState(0);
   const [typing, setTyping] = useState(true);
-  const [videoLoaded, setVideoLoaded] = useState(false);
 
   useEffect(() => {
     if (pb.authStore.isValid) {
@@ -47,138 +52,97 @@ export default function Home() {
   }, [displayed, typing, phraseIndex]);
 
   return (
-    <div
-      className="relative min-h-screen flex items-center justify-center overflow-hidden"
-      style={{ background: 'linear-gradient(135deg, #0a0f1a 0%, #111827 50%, #0d1117 100%)' }}
-    >
-      {/* Video background */}
-      <video
-        autoPlay muted loop playsInline
-        onCanPlay={() => setVideoLoaded(true)}
-        className="absolute inset-0 w-full h-full object-cover z-0 transition-opacity duration-1000"
-        style={{ opacity: videoLoaded ? 0.55 : 0 }}
-        src="/bg.mp4"
-      />
-
-      {/* Gradient overlay */}
-      <div className="absolute inset-0 z-10" style={{
-        background: 'linear-gradient(to bottom, rgba(0,0,0,0.3) 0%, rgba(0,0,0,0.5) 60%, rgba(0,0,0,0.75) 100%)'
-      }} />
-
-      {/* Curtain */}
-      <motion.div
-        initial={{ opacity: 1 }}
-        animate={{ opacity: 0 }}
-        transition={{ duration: 1.8, ease: [0.43, 0.13, 0.23, 0.96] }}
-        className="absolute inset-0 z-40 bg-black pointer-events-none"
-      />
-
-      {/* Content */}
-      <div className="relative z-20 flex flex-col items-center text-center px-6 w-full max-w-lg">
-
-        {/* Badge */}
-        <motion.div
-          initial={{ opacity: 0, y: -12 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.9, duration: 0.8 }}
-          className="flex items-center gap-3 mb-8"
-        >
-          <div className="h-px w-8 bg-white/20" />
-          <span className="text-white/40 text-[11px] tracking-[0.25em] uppercase">
-            Warehouse Management Platform
-          </span>
-          <div className="h-px w-8 bg-white/20" />
-        </motion.div>
-
-        {/* Main title */}
-        <motion.h1
-          initial={{ opacity: 0, y: 20, filter: 'blur(8px)' }}
-          animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
-          transition={{ delay: 1.0, duration: 1.0, ease: [0.25, 0.1, 0.25, 1] }}
-          className="text-4xl md:text-6xl font-black text-white leading-none tracking-tight mb-3"
-          style={{ textShadow: '0 2px 40px rgba(0,0,0,0.5)' }}
-        >
-          Warehouse
-        </motion.h1>
-        <motion.h1
-          initial={{ opacity: 0, y: 20, filter: 'blur(8px)' }}
-          animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
-          transition={{ delay: 1.1, duration: 1.0, ease: [0.25, 0.1, 0.25, 1] }}
-          className="text-4xl md:text-6xl font-black leading-none tracking-tight mb-12"
-          style={{
-            background: 'linear-gradient(135deg, #60a5fa 0%, #a78bfa 50%, #f472b6 100%)',
-            WebkitBackgroundClip: 'text',
-            WebkitTextFillColor: 'transparent',
-            backgroundClip: 'text',
-            textShadow: 'none',
-          }}
-        >
-          Manager
-        </motion.h1>
-
-        {/* Action buttons */}
-        <motion.div
-          initial={{ opacity: 0, y: 16 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 1.4, duration: 0.7 }}
-          className="flex flex-col sm:flex-row gap-3 w-full max-w-xs"
-        >
-          <motion.button
-            whileHover={{ scale: 1.04, y: -2 }}
-            whileTap={{ scale: 0.97 }}
+    <div className="min-h-screen bg-gray-50 flex flex-col">
+      {/* Top header */}
+      <header className="bg-white border-b border-gray-100 px-6 py-4">
+        <div className="max-w-5xl mx-auto flex items-center justify-between">
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
+              <svg viewBox="0 0 24 24" fill="none" className="w-4 h-4" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+                <polyline points="9 22 9 12 15 12 15 22" />
+              </svg>
+            </div>
+            <span className="font-bold text-gray-900 text-sm">Warehouse Manager</span>
+          </div>
+          <button
             onClick={() => router.push('/login')}
-            className="group flex-1 flex items-center justify-center gap-2.5 px-6 py-3.5 rounded-2xl text-sm font-semibold text-white transition-all"
+            className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-blue-600 border border-blue-200 bg-blue-50 rounded-xl hover:bg-blue-100 transition-colors"
+          >
+            <LogIn className="w-4 h-4" />
+            Sign In
+          </button>
+        </div>
+      </header>
+
+      {/* Hero */}
+      <main className="flex-1 flex flex-col items-center justify-center px-6 py-16 md:py-24 text-center">
+        <div className="max-w-2xl mx-auto">
+          <div className="inline-flex items-center gap-2 bg-blue-50 border border-blue-100 text-blue-600 text-xs font-medium px-3 py-1.5 rounded-full mb-8">
+            <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse" />
+            Warehouse Management Platform
+          </div>
+
+          <h1 className="text-5xl md:text-7xl font-black text-gray-900 leading-none tracking-tight mb-2">
+            Warehouse
+          </h1>
+          <h1
+            className="text-5xl md:text-7xl font-black leading-none tracking-tight mb-8"
             style={{
-              background: 'linear-gradient(135deg, rgba(96,165,250,0.25) 0%, rgba(167,139,250,0.25) 100%)',
-              border: '1px solid rgba(255,255,255,0.2)',
-              backdropFilter: 'blur(20px)',
-              boxShadow: '0 8px 32px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.1)',
+              background: 'linear-gradient(135deg, #2563eb 0%, #7c3aed 100%)',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+              backgroundClip: 'text',
             }}
           >
-            <LogIn size={15} className="text-white/70" />
-            <span>Sign In</span>
-          </motion.button>
+            Manager
+          </h1>
 
-          <motion.button
-            whileHover={{ scale: 1.04, y: -2 }}
-            whileTap={{ scale: 0.97 }}
-            onClick={() => router.push('/signup')}
-            className="group flex-1 flex items-center justify-center gap-2.5 px-6 py-3.5 rounded-2xl text-sm font-semibold transition-all"
-            style={{
-              background: 'linear-gradient(135deg, rgba(96,165,250,0.08) 0%, rgba(167,139,250,0.08) 100%)',
-              border: '1px solid rgba(255,255,255,0.1)',
-              backdropFilter: 'blur(20px)',
-              color: 'rgba(255,255,255,0.65)',
-            }}
-          >
-            <UserPlus size={15} />
-            <span>Get Started</span>
-            <ArrowRight size={13} className="text-white/30 group-hover:translate-x-0.5 transition-transform" />
-          </motion.button>
-        </motion.div>
-      </div>
+          <div className="h-6 flex items-center justify-center gap-1 mb-10">
+            <span className="text-gray-400 text-sm">{displayed}</span>
+            <span className="inline-block w-0.5 h-4 bg-blue-400 animate-pulse" />
+          </div>
 
-      {/* Typewriter */}
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 2.2, duration: 1 }}
-        className="absolute bottom-6 left-6 md:left-8 z-20 flex items-center gap-1"
-      >
-        <span className="text-xs" style={{ color: 'rgba(255,255,255,0.22)' }}>{displayed}</span>
-        <span className="inline-block w-px h-3 bg-white/20 animate-pulse" />
-      </motion.div>
+          <div className="flex flex-col sm:flex-row gap-3 justify-center">
+            <button
+              onClick={() => router.push('/login')}
+              className="flex items-center justify-center gap-2 px-6 py-3.5 bg-blue-600 text-white rounded-2xl text-sm font-semibold hover:bg-blue-700 transition-colors shadow-sm"
+            >
+              <LogIn className="w-4 h-4" />
+              Sign In
+            </button>
+            <button
+              onClick={() => router.push('/login')}
+              className="flex items-center justify-center gap-2 px-6 py-3.5 bg-white text-gray-700 border border-gray-200 rounded-2xl text-sm font-semibold hover:bg-gray-50 transition-colors"
+            >
+              Get Started
+              <ArrowRight className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+      </main>
 
-      {/* PixelCore */}
-      <motion.p
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 2.4, duration: 1 }}
-        className="absolute bottom-6 right-6 md:right-8 z-20 text-xs"
-        style={{ color: 'rgba(255,255,255,0.15)' }}
-      >
-        Built by <span style={{ color: 'rgba(255,255,255,0.3)', fontWeight: 600 }}>PixelCore</span>
-      </motion.p>
+      {/* Features */}
+      <section className="px-6 pb-16">
+        <div className="max-w-4xl mx-auto grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+          {FEATURES.map(({ icon: Icon, title, desc }) => (
+            <div key={title} className="bg-white border border-gray-100 rounded-2xl p-5 shadow-sm">
+              <div className="w-10 h-10 bg-blue-50 rounded-xl flex items-center justify-center mb-3">
+                <Icon className="w-5 h-5 text-blue-600" />
+              </div>
+              <h3 className="font-semibold text-gray-900 text-sm mb-1">{title}</h3>
+              <p className="text-xs text-gray-500 leading-relaxed">{desc}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* Footer */}
+      <footer className="text-center py-6 border-t border-gray-100 bg-white">
+        <p className="text-xs text-gray-400">
+          Built by <span className="font-semibold text-gray-600">PixelCore</span>
+        </p>
+      </footer>
     </div>
   );
 }

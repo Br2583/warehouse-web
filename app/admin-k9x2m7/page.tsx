@@ -41,10 +41,10 @@ export default function AdminPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ password }),
       });
-      if (!res.ok) { setLoginError('Contraseña incorrecta.'); return; }
+      if (!res.ok) { setLoginError('Incorrect password.'); return; }
       setAuthed(true);
     } catch {
-      setLoginError('Error de red.');
+      setLoginError('Network error.');
     } finally {
       setLoginLoading(false);
     }
@@ -67,7 +67,7 @@ export default function AdminPage() {
       const data = await res.json();
       setCompanies(data.companies || []);
     } catch {
-      setError('No se pudieron cargar las empresas.');
+      setError('Failed to load companies.');
     } finally {
       setFetching(false);
     }
@@ -97,7 +97,7 @@ export default function AdminPage() {
       if (action === 'send_code') setSuccessId(id);
       await fetchCompanies();
     } catch {
-      setError(action === 'send_code' ? 'No se pudo enviar el código.' : 'No se pudo ejecutar la acción.');
+      setError(action === 'send_code' ? 'Failed to send code.' : 'Failed to perform action.');
     } finally {
       setActionId(null);
     }
@@ -112,7 +112,7 @@ export default function AdminPage() {
       if (!res.ok) throw new Error();
       await fetchCompanies();
     } catch {
-      setError('No se pudo eliminar la empresa.');
+      setError('Failed to delete company.');
     } finally {
       setActionId(null);
     }
@@ -146,7 +146,7 @@ export default function AdminPage() {
               type="password"
               value={password}
               onChange={e => setPassword(e.target.value)}
-              placeholder="Contraseña"
+              placeholder="Password"
               className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
               autoFocus
             />
@@ -156,7 +156,7 @@ export default function AdminPage() {
               disabled={loginLoading || !password}
               className="w-full py-3 bg-blue-600 text-white rounded-xl text-sm font-medium hover:bg-blue-700 transition-colors disabled:opacity-50"
             >
-              {loginLoading ? 'Entrando...' : 'Entrar'}
+              {loginLoading ? 'Signing in...' : 'Sign In'}
             </button>
           </form>
         </div>
@@ -169,9 +169,9 @@ export default function AdminPage() {
   const suspended = companies.filter(c => c.suspended);
 
   const tabs: { id: Tab; label: string; count: number; color: string }[] = [
-    { id: 'pending',   label: 'Pendientes', count: pending.length,   color: 'bg-amber-100 text-amber-700' },
-    { id: 'active',    label: 'Activos',    count: active.length,    color: 'bg-green-100 text-green-700' },
-    { id: 'suspended', label: 'Suspendidos', count: suspended.length, color: 'bg-red-100 text-red-700' },
+    { id: 'pending',   label: 'Pending',   count: pending.length,   color: 'bg-amber-100 text-amber-700' },
+    { id: 'active',    label: 'Active',    count: active.length,    color: 'bg-green-100 text-green-700' },
+    { id: 'suspended', label: 'Suspended', count: suspended.length, color: 'bg-red-100 text-red-700' },
   ];
 
   const list = tab === 'pending' ? pending : tab === 'active' ? active : suspended;
@@ -181,15 +181,15 @@ export default function AdminPage() {
       <div className="max-w-4xl mx-auto">
         <div className="flex items-center justify-between mb-8">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">Panel de Admin</h1>
-            <p className="text-sm text-gray-500 mt-1">Gestión de empresas</p>
+            <h1 className="text-2xl font-bold text-gray-900">Admin Panel</h1>
+            <p className="text-sm text-gray-500 mt-1">Company Management</p>
           </div>
           <div className="flex items-center gap-2">
             <button
               onClick={fetchCompanies}
               disabled={fetching}
               className="p-2 rounded-xl text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
-              title="Recargar"
+              title="Refresh"
             >
               <RefreshCw className={`w-4 h-4 ${fetching ? 'animate-spin' : ''}`} />
             </button>
@@ -198,7 +198,7 @@ export default function AdminPage() {
               className="flex items-center gap-1.5 px-3 py-2 text-xs text-gray-500 border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors"
             >
               <LogOut className="w-3.5 h-3.5" />
-              Salir
+              Sign Out
             </button>
           </div>
         </div>
@@ -238,7 +238,7 @@ export default function AdminPage() {
           </div>
         ) : list.length === 0 ? (
           <div className="text-center py-16 text-gray-400">
-            <p className="text-sm">No hay empresas en esta categoría</p>
+            <p className="text-sm">No companies in this category</p>
           </div>
         ) : (
           <div className="space-y-3">
@@ -253,7 +253,7 @@ export default function AdminPage() {
                     <div className="text-sm text-gray-500 space-y-0.5">
                       {company.owner && (
                         <p>
-                          <span className="text-gray-400">Dueño:</span>{' '}
+                          <span className="text-gray-400">Owner:</span>{' '}
                           <span className="font-medium text-gray-700">{company.owner.name}</span>
                           {' · '}
                           <a href={`mailto:${company.owner.email}`} className="text-blue-600 hover:underline">
@@ -264,7 +264,7 @@ export default function AdminPage() {
                       <p className="flex items-center gap-3 text-xs text-gray-400">
                         <span className="flex items-center gap-1">
                           <Users className="w-3.5 h-3.5" />
-                          {company.members.length} miembro{company.members.length !== 1 ? 's' : ''}
+                          {company.members.length} member{company.members.length !== 1 ? 's' : ''}
                         </span>
                         <span className="flex items-center gap-1">
                           <Clock className="w-3.5 h-3.5" />
@@ -275,7 +275,7 @@ export default function AdminPage() {
 
                     {successId === company.id && (
                       <p className="text-xs text-green-600 mt-2 font-medium">
-                        Código enviado a {company.owner?.email}
+                        Code sent to {company.owner?.email}
                       </p>
                     )}
                   </div>
@@ -289,7 +289,7 @@ export default function AdminPage() {
                         className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-blue-50 text-blue-700 border border-blue-100 rounded-lg hover:bg-blue-100 transition-colors disabled:opacity-50"
                       >
                         <Send className="w-3.5 h-3.5" />
-                        Enviar código
+                        Send Code
                       </button>
                     )}
                     {tab === 'active' && (
@@ -299,7 +299,7 @@ export default function AdminPage() {
                         className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-amber-50 text-amber-700 border border-amber-100 rounded-lg hover:bg-amber-100 transition-colors disabled:opacity-50"
                       >
                         <Pause className="w-3.5 h-3.5" />
-                        Suspender
+                        Suspend
                       </button>
                     )}
                     {tab === 'suspended' && (
@@ -309,7 +309,7 @@ export default function AdminPage() {
                         className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-green-50 text-green-700 border border-green-100 rounded-lg hover:bg-green-100 transition-colors disabled:opacity-50"
                       >
                         <Play className="w-3.5 h-3.5" />
-                        Reactivar
+                        Reactivate
                       </button>
                     )}
                     <button
@@ -318,7 +318,7 @@ export default function AdminPage() {
                       className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-red-50 text-red-600 border border-red-100 rounded-lg hover:bg-red-100 transition-colors disabled:opacity-50"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
-                      Eliminar
+                      Delete
                     </button>
                     {actionId === company.id && (
                       <div className="w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
@@ -346,26 +346,26 @@ export default function AdminPage() {
                 <Trash2 className="w-5 h-5 text-red-500" />
               </div>
               <div>
-                <h3 className="font-semibold text-gray-900">Eliminar empresa</h3>
-                <p className="text-xs text-gray-400">Esta acción no se puede deshacer</p>
+                <h3 className="font-semibold text-gray-900">Delete company</h3>
+                <p className="text-xs text-gray-400">This action cannot be undone</p>
               </div>
             </div>
             <p className="text-sm text-gray-600 mb-6">
-              Se eliminará <strong>{confirmDelete.name}</strong> y todos sus usuarios ({confirmDelete.members.length} miembro{confirmDelete.members.length !== 1 ? 's' : ''}).
-              {confirmDelete.owner?.email && ' El dueño recibirá un email.'}
+              This will delete <strong>{confirmDelete.name}</strong> and all its users ({confirmDelete.members.length} member{confirmDelete.members.length !== 1 ? 's' : ''}).
+              {confirmDelete.owner?.email && ' The owner will receive an email.'}
             </p>
             <div className="flex gap-3">
               <button
                 onClick={() => setConfirmDelete(null)}
                 className="flex-1 py-2 text-sm text-gray-600 border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors"
               >
-                Cancelar
+                Cancel
               </button>
               <button
                 onClick={() => doDelete(confirmDelete)}
                 className="flex-1 py-2 text-sm text-white bg-red-500 rounded-xl hover:bg-red-600 transition-colors font-medium"
               >
-                Eliminar
+                Delete
               </button>
             </div>
           </div>

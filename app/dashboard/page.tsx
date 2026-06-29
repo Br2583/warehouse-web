@@ -136,7 +136,7 @@ export default function DashboardPage() {
         </motion.div>
 
         {/* Overview Cards */}
-        <div data-tutorial="overview-cards" className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
           {overviewCards.map((card, i) => {
             const Icon = card.icon;
             return (
@@ -159,7 +159,7 @@ export default function DashboardPage() {
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
           {/* Inventory Status */}
-          <motion.div data-tutorial="inventory-status" custom={4} variants={fadeUp} initial="hidden" animate="show" className="col-span-2 bg-white rounded-2xl border border-gray-100 p-6">
+          <motion.div custom={4} variants={fadeUp} initial="hidden" animate="show" className="col-span-2 bg-white rounded-2xl border border-gray-100 p-6">
             <h2 className="font-semibold text-gray-900 mb-5">Inventory Status</h2>
             <div className="flex gap-6 mb-5">
               {[
@@ -215,7 +215,7 @@ export default function DashboardPage() {
           </motion.div>
 
           {/* Production Status */}
-          <motion.div data-tutorial="production-status" custom={5} variants={fadeUp} initial="hidden" animate="show" className="bg-white rounded-2xl border border-gray-100 p-6">
+          <motion.div custom={5} variants={fadeUp} initial="hidden" animate="show" className="bg-white rounded-2xl border border-gray-100 p-6">
             <h2 className="font-semibold text-gray-900 mb-5">Production</h2>
             <div className="space-y-4">
               {[
@@ -245,7 +245,7 @@ export default function DashboardPage() {
         </div>
 
         {/* Quick Actions */}
-        <motion.div data-tutorial="quick-actions" custom={6} variants={fadeUp} initial="hidden" animate="show" className="mb-8">
+        <motion.div custom={6} variants={fadeUp} initial="hidden" animate="show" className="mb-8">
           <h2 className="font-semibold text-gray-900 mb-4">Quick Actions</h2>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             {[

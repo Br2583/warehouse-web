@@ -260,7 +260,7 @@ export default function WarehouseDetailPage() {
       <Sidebar />
       <main className="md:ml-64 flex-1 p-4 md:p-8 pb-20 md:pb-8">
         {/* Header */}
-        <div data-tutorial="wh-header" className="flex flex-wrap items-center justify-between gap-3 mb-8">
+        <div className="flex flex-wrap items-center justify-between gap-3 mb-8">
           <div>
             <h1 className="text-2xl font-bold text-gray-900">{warehouseName || 'Warehouse'}</h1>
             <p className="text-gray-500 text-sm mt-1">{boxes.length} vaults stored</p>
@@ -291,7 +291,7 @@ export default function WarehouseDetailPage() {
               </button>
             </div>
             <button
-              data-tutorial="wh-add-btn"
+             
               onClick={() => { setForm(emptyForm); setShowAdd(true); setSaveError(''); }}
               className="flex items-center gap-2 px-3 py-2 md:px-4 md:py-2.5 bg-blue-600 text-white text-sm font-medium rounded-xl hover:bg-blue-700 transition-colors"
             >
@@ -364,7 +364,7 @@ export default function WarehouseDetailPage() {
             </div>
 
             {/* Grid */}
-            <div data-tutorial="wh-map" className="bg-white rounded-2xl border border-gray-100 p-3 md:p-6 overflow-x-auto">
+            <div className="bg-white rounded-2xl border border-gray-100 p-3 md:p-6 overflow-x-auto">
               <div className="min-w-max">
                 {/* Column headers */}
                 <div className="flex gap-1.5 mb-1.5 ml-8">

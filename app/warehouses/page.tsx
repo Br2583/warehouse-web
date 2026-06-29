@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
@@ -89,14 +89,14 @@ export default function WarehousesPage() {
     <div className="flex min-h-screen bg-gray-50">
       <Sidebar />
       <main className="md:ml-64 flex-1 p-4 md:p-8 pb-20 md:pb-8">
-        <div data-tutorial="warehouses-header" className="flex items-center justify-between mb-8">
+        <div className="flex items-center justify-between mb-8">
           <div>
             <h1 className="text-2xl font-bold text-gray-900">Warehouses</h1>
             <p className="text-gray-500 text-sm mt-1">Select a warehouse to manage its inventory</p>
           </div>
           {user?.role === 'owner' && (
             <button
-              data-tutorial="new-warehouse-btn"
+             
               onClick={() => setShowCreate(s => !s)}
               className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-xl hover:bg-blue-700 transition-colors"
             >
@@ -145,7 +145,7 @@ export default function WarehousesPage() {
             <p className="text-sm mt-1">Create your first warehouse to get started</p>
           </div>
         ) : (
-          <div data-tutorial="warehouses-list" className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {warehouses.map((wh, i) => (
               <motion.div
                 key={wh.id}
@@ -178,7 +178,7 @@ export default function WarehousesPage() {
                         <span className="text-sm text-gray-400">vaults stored</span>
                       </div>
                       <div className="mt-4 pt-4 border-t border-gray-50">
-                        <span className="text-xs text-blue-600 font-medium">View inventory →</span>
+                        <span className="text-xs text-blue-600 font-medium">View inventory â†’</span>
                       </div>
                     </div>
                   </Link>
