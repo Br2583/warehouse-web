@@ -2,7 +2,11 @@
 
 import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Package, Plus, Search, Trash2, X, Camera, LayoutGrid, List, Pencil, ChevronLeft, ChevronRight, QrCode, Settings2 } from 'lucide-react';
+import {
+  ArchiveBoxIcon, PlusIcon, MagnifyingGlassIcon, TrashIcon, XMarkIcon, CameraIcon,
+  Squares2X2Icon, ListBulletIcon, PencilIcon, ChevronLeftIcon, ChevronRightIcon,
+  QrCodeIcon, Cog6ToothIcon,
+} from '@heroicons/react/24/outline';
 import ConfirmModal from '@/components/ConfirmModal';
 import Sidebar from '@/components/Sidebar';
 import VaultForm, { VaultFormData } from '@/components/VaultForm';
@@ -272,7 +276,7 @@ export default function WarehouseDetailPage() {
               className={`flex items-center gap-1.5 px-3 py-2 text-sm border rounded-xl transition-colors ${showGridEdit ? 'bg-gray-100 border-gray-300 text-gray-700' : 'bg-white border-gray-200 text-gray-500 hover:text-gray-700'}`}
               title="Edit grid dimensions"
             >
-              <Settings2 className="w-4 h-4" />
+              <Cog6ToothIcon className="w-4 h-4" />
               <span className="hidden sm:inline text-xs">{warehouseRows}×{warehouseCols}</span>
             </button>
             {/* View toggle */}
@@ -281,13 +285,13 @@ export default function WarehouseDetailPage() {
                 onClick={() => setViewMode('map')}
                 className={`flex items-center gap-1.5 px-3 py-2 text-sm font-medium transition-colors ${viewMode === 'map' ? 'bg-blue-600 text-white' : 'text-gray-500 hover:text-gray-700'}`}
               >
-                <LayoutGrid className="w-4 h-4" /><span className="hidden sm:inline ml-1">Map</span>
+                <Squares2X2Icon className="w-4 h-4" /><span className="hidden sm:inline ml-1">Map</span>
               </button>
               <button
                 onClick={() => setViewMode('list')}
                 className={`flex items-center gap-1.5 px-3 py-2 text-sm font-medium transition-colors ${viewMode === 'list' ? 'bg-blue-600 text-white' : 'text-gray-500 hover:text-gray-700'}`}
               >
-                <List className="w-4 h-4" /><span className="hidden sm:inline ml-1">List</span>
+                <ListBulletIcon className="w-4 h-4" /><span className="hidden sm:inline ml-1">List</span>
               </button>
             </div>
             <button
@@ -295,7 +299,7 @@ export default function WarehouseDetailPage() {
               onClick={() => { setForm(emptyForm); setShowAdd(true); setSaveError(''); }}
               className="flex items-center gap-2 px-3 py-2 md:px-4 md:py-2.5 bg-blue-600 text-white text-sm font-medium rounded-xl hover:bg-blue-700 transition-colors"
             >
-              <Plus className="w-4 h-4" /><span className="hidden sm:inline">Add Vault</span><span className="sm:hidden">Add</span>
+              <PlusIcon className="w-4 h-4" /><span className="hidden sm:inline">Add Vault</span><span className="sm:hidden">Add</span>
             </button>
           </div>
         </div>
@@ -397,7 +401,7 @@ export default function WarehouseDetailPage() {
                               <span className="text-[9px] md:text-[10px] opacity-80 mt-0.5">{box.job_type}</span>
                             </>
                           ) : (
-                            <Plus className="w-4 h-4 text-gray-300" />
+                            <PlusIcon className="w-4 h-4 text-gray-300" />
                           )}
                         </motion.button>
                       );
@@ -411,7 +415,7 @@ export default function WarehouseDetailPage() {
           /* ── LIST VIEW ── */
           <div>
             <div className="relative mb-6">
-              <Search className="absolute left-4 top-3.5 w-4 h-4 text-gray-400" />
+              <MagnifyingGlassIcon className="absolute left-4 top-3.5 w-4 h-4 text-gray-400" />
               <input
                 type="text"
                 placeholder="Search by client, position, packer..."
@@ -453,7 +457,7 @@ export default function WarehouseDetailPage() {
                       </td>
                       <td className="px-6 py-4 text-sm text-gray-500">
                         {box.photos?.length > 0 ? (
-                          <span className="flex items-center gap-1"><Camera className="w-3.5 h-3.5" />{box.photos.length}</span>
+                          <span className="flex items-center gap-1"><CameraIcon className="w-3.5 h-3.5" />{box.photos.length}</span>
                         ) : '—'}
                       </td>
                     </motion.tr>
@@ -481,7 +485,7 @@ export default function WarehouseDetailPage() {
                 <div className="flex items-center justify-between mb-5">
                   <h2 className="text-lg font-bold text-gray-900">Vault Detail</h2>
                   <button onClick={() => setSelected(null)} className="p-2 -mr-2 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-50">
-                    <X className="w-5 h-5" />
+                    <XMarkIcon className="w-5 h-5" />
                   </button>
                 </div>
                 <div className="space-y-3">
@@ -524,7 +528,7 @@ export default function WarehouseDetailPage() {
                     onClick={() => setShowQR(v => !v)}
                     className="flex items-center gap-2 text-sm text-gray-500 hover:text-blue-600 transition-colors"
                   >
-                    <QrCode className="w-4 h-4" />
+                    <QrCodeIcon className="w-4 h-4" />
                     {showQR ? 'Hide QR Code' : 'Show QR Code'}
                   </button>
                   {showQR && (
@@ -544,13 +548,13 @@ export default function WarehouseDetailPage() {
                     onClick={() => openEdit(selected)}
                     className="flex items-center gap-2 px-4 py-2 text-sm text-blue-600 hover:bg-blue-50 rounded-xl transition-colors font-medium"
                   >
-                    <Pencil className="w-4 h-4" /> Edit
+                    <PencilIcon className="w-4 h-4" /> Edit
                   </button>
                   <button
                     onClick={() => deleteBox(selected.box_id)}
                     className="flex items-center gap-2 px-4 py-2 text-sm text-red-600 hover:bg-red-50 rounded-xl transition-colors"
                   >
-                    <Trash2 className="w-4 h-4" /> Delete
+                    <TrashIcon className="w-4 h-4" /> Delete
                   </button>
                 </div>
               </motion.div>
@@ -572,7 +576,7 @@ export default function WarehouseDetailPage() {
                 <div className="flex items-center justify-between mb-5">
                   <h2 className="text-lg font-bold text-gray-900">Edit Vault</h2>
                   <button onClick={() => setShowEdit(false)} className="p-2 -mr-2 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-50">
-                    <X className="w-5 h-5" />
+                    <XMarkIcon className="w-5 h-5" />
                   </button>
                 </div>
                 <VaultForm
@@ -606,7 +610,7 @@ export default function WarehouseDetailPage() {
                 <div className="flex items-center justify-between mb-5">
                   <h2 className="text-lg font-bold text-gray-900">New Vault</h2>
                   <button onClick={() => setShowAdd(false)} className="p-2 -mr-2 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-50">
-                    <X className="w-5 h-5" />
+                    <XMarkIcon className="w-5 h-5" />
                   </button>
                 </div>
                 <VaultForm
@@ -641,7 +645,7 @@ export default function WarehouseDetailPage() {
                 onClick={() => setLightbox(null)}
                 className="absolute top-4 right-4 text-white/60 hover:text-white transition-colors z-10"
               >
-                <X className="w-7 h-7" />
+                <XMarkIcon className="w-7 h-7" />
               </button>
 
               {/* Counter */}
@@ -655,7 +659,7 @@ export default function WarehouseDetailPage() {
                   onClick={e => { e.stopPropagation(); setLightbox(l => l ? { ...l, index: (l.index - 1 + l.photos.length) % l.photos.length } : null); }}
                   className="absolute left-4 text-white/60 hover:text-white transition-colors z-10"
                 >
-                  <ChevronLeft className="w-9 h-9" />
+                  <ChevronLeftIcon className="w-9 h-9" />
                 </button>
               )}
 
@@ -678,7 +682,7 @@ export default function WarehouseDetailPage() {
                   onClick={e => { e.stopPropagation(); setLightbox(l => l ? { ...l, index: (l.index + 1) % l.photos.length } : null); }}
                   className="absolute right-4 text-white/60 hover:text-white transition-colors z-10"
                 >
-                  <ChevronRight className="w-9 h-9" />
+                  <ChevronRightIcon className="w-9 h-9" />
                 </button>
               )}
             </motion.div>

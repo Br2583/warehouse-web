@@ -1,7 +1,7 @@
 'use client';
 
 import { motion, AnimatePresence } from 'framer-motion';
-import { AlertTriangle } from 'lucide-react';
+import { ExclamationTriangleIcon } from '@heroicons/react/24/outline';
 
 interface Props {
   message: string;
@@ -30,7 +30,7 @@ export default function ConfirmModal({ message, onConfirm, onCancel, confirmLabe
         >
           <div className="flex items-start gap-3 mb-5">
             <div className="w-10 h-10 rounded-full bg-red-50 flex items-center justify-center flex-shrink-0">
-              <AlertTriangle className="w-5 h-5 text-red-500" />
+              <ExclamationTriangleIcon className="w-5 h-5 text-red-500" />
             </div>
             <p className="text-gray-800 text-sm leading-relaxed pt-2">{message}</p>
           </div>

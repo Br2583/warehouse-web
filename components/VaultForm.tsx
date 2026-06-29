@@ -1,6 +1,6 @@
 'use client';
 
-import { Camera, X } from 'lucide-react';
+import { CameraIcon, XMarkIcon } from '@heroicons/react/24/outline';
 
 const JOB_TYPES       = ['Fire', 'Water', 'Moving', 'Storage'];
 const CONTENTS_TYPES  = ['Boxes', 'Furniture', 'Both'];
@@ -186,7 +186,7 @@ export default function VaultForm({
                   onClick={() => onRemovePhoto(idx)}
                   className="absolute top-1 right-1 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
                 >
-                  <X className="w-3 h-3" />
+                  <XMarkIcon className="w-3 h-3" />
                 </button>
               </div>
             ))}
@@ -194,7 +194,7 @@ export default function VaultForm({
         )}
         {value.photos.length < 4 && (
           <label className="flex flex-col items-center justify-center w-full h-20 border-2 border-dashed border-gray-200 rounded-xl cursor-pointer hover:border-blue-400 hover:bg-blue-50 transition-colors">
-            <Camera className="w-5 h-5 text-gray-300 mb-1" />
+            <CameraIcon className="w-5 h-5 text-gray-300 mb-1" />
             <span className="text-xs text-gray-400">Click to add photos</span>
             <input type="file" accept="image/*" multiple className="hidden" onChange={e => onPhotos(e.target.files)} />
           </label>
