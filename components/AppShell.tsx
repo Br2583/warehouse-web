@@ -12,7 +12,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const { user, loading } = useAuth();
   const isProtected = AUTH_ROUTES.some(r => pathname === r || pathname.startsWith(r + '/'));
-  const showNav = isProtected;
+  const showNav = isProtected && pathname !== '/onboarding';
 
   useEffect(() => {
     if (loading) return;
