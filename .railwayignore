@@ -1,0 +1,8 @@
+node_modules
+.next
+.git
+.claude
+GUIA-APP.html
+coverage
+.pnpm-debug.log*
+npm-debug.log*
