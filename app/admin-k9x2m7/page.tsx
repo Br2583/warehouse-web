@@ -7,7 +7,7 @@ import { Check, X, Pause, Play, Trash2, Users, Clock, ShieldOff, ShieldCheck } f
 import { useAuth } from '@/lib/auth-context';
 import { pb } from '@/lib/pb';
 
-const ADMIN_EMAIL = process.env.NEXT_PUBLIC_ADMIN_USER_EMAIL || 'br2583350@gmail.com';
+const ADMIN_USER_ID = 'ezcrajrmevn36cu';
 
 interface CompanyRecord {
   id: string;
@@ -34,7 +34,7 @@ export default function AdminPage() {
   const [error, setError] = useState('');
 
   useEffect(() => {
-    if (!loading && user?.email !== ADMIN_EMAIL) {
+    if (!loading && user?.id !== ADMIN_USER_ID) {
       router.replace('/dashboard');
     }
   }, [user, loading]);
@@ -58,7 +58,7 @@ export default function AdminPage() {
   };
 
   useEffect(() => {
-    if (user?.email === ADMIN_EMAIL) fetchCompanies();
+    if (user?.id === ADMIN_USER_ID) fetchCompanies();
   }, [user]);
 
   const doAction = async (id: string, action: string) => {
@@ -100,7 +100,7 @@ export default function AdminPage() {
   };
 
   if (loading || !user) return null;
-  if (user.email !== ADMIN_EMAIL) return null;
+  if (user.id !== ADMIN_USER_ID) return null;
 
   const pending  = companies.filter(c => !c.approved && !c.rejected);
   const active   = companies.filter(c => c.approved && !c.suspended);

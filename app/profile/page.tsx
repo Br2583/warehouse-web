@@ -242,7 +242,7 @@ export default function ProfilePage() {
             </motion.div>
 
             {/* Admin panel link — only visible to admin */}
-            {user?.email === (process.env.NEXT_PUBLIC_ADMIN_USER_EMAIL || 'br2583350@gmail.com') && (
+            {user?.id === 'ezcrajrmevn36cu' && (
               <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.22 }} className="bg-white rounded-2xl border border-gray-100 p-6">
                 <div className="flex items-center gap-2 mb-1">
                   <Shield className="w-4 h-4 text-purple-500" />
