@@ -420,16 +420,16 @@ export default function WarehouseDetailPage() {
                 className="w-full pl-11 pr-4 py-3 bg-white border border-gray-100 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
-            <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
-              <table className="w-full">
+            <div className="bg-white rounded-2xl border border-gray-100 overflow-x-auto">
+              <table className="w-full min-w-[620px]">
                 <thead>
                   <tr className="border-b border-gray-50">
-                    <th className="text-left text-xs font-medium text-gray-400 uppercase tracking-wide px-6 py-4">Position</th>
-                    <th className="text-left text-xs font-medium text-gray-400 uppercase tracking-wide px-6 py-4">Client</th>
-                    <th className="text-left text-xs font-medium text-gray-400 uppercase tracking-wide px-6 py-4">Job Type</th>
-                    <th className="text-left text-xs font-medium text-gray-400 uppercase tracking-wide px-6 py-4">Packer</th>
-                    <th className="text-left text-xs font-medium text-gray-400 uppercase tracking-wide px-6 py-4">Status</th>
-                    <th className="text-left text-xs font-medium text-gray-400 uppercase tracking-wide px-6 py-4">Photos</th>
+                    <th className="text-left text-xs font-medium text-gray-400 uppercase tracking-wide px-4 py-4">Position</th>
+                    <th className="text-left text-xs font-medium text-gray-400 uppercase tracking-wide px-4 py-4">Client</th>
+                    <th className="text-left text-xs font-medium text-gray-400 uppercase tracking-wide px-4 py-4">Job Type</th>
+                    <th className="text-left text-xs font-medium text-gray-400 uppercase tracking-wide px-4 py-4">Packer</th>
+                    <th className="text-left text-xs font-medium text-gray-400 uppercase tracking-wide px-4 py-4">Status</th>
+                    <th className="text-left text-xs font-medium text-gray-400 uppercase tracking-wide px-4 py-4">Photos</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -480,7 +480,7 @@ export default function WarehouseDetailPage() {
               >
                 <div className="flex items-center justify-between mb-5">
                   <h2 className="text-lg font-bold text-gray-900">Vault Detail</h2>
-                  <button onClick={() => setSelected(null)} className="text-gray-400 hover:text-gray-600">
+                  <button onClick={() => setSelected(null)} className="p-2 -mr-2 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-50">
                     <X className="w-5 h-5" />
                   </button>
                 </div>
@@ -571,7 +571,7 @@ export default function WarehouseDetailPage() {
               >
                 <div className="flex items-center justify-between mb-5">
                   <h2 className="text-lg font-bold text-gray-900">Edit Vault</h2>
-                  <button onClick={() => setShowEdit(false)} className="text-gray-400 hover:text-gray-600">
+                  <button onClick={() => setShowEdit(false)} className="p-2 -mr-2 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-50">
                     <X className="w-5 h-5" />
                   </button>
                 </div>
@@ -605,7 +605,7 @@ export default function WarehouseDetailPage() {
               >
                 <div className="flex items-center justify-between mb-5">
                   <h2 className="text-lg font-bold text-gray-900">New Vault</h2>
-                  <button onClick={() => setShowAdd(false)} className="text-gray-400 hover:text-gray-600">
+                  <button onClick={() => setShowAdd(false)} className="p-2 -mr-2 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-50">
                     <X className="w-5 h-5" />
                   </button>
                 </div>

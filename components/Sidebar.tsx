@@ -3,22 +3,29 @@
 import { useAuth } from '@/lib/auth-context';
 import { motion } from 'framer-motion';
 import {
-  LayoutDashboard, Search, BarChart3,
-  Camera, MessageSquare, Wrench, User, LogOut, Building2, Archive
-} from 'lucide-react';
+  HomeIcon, BuildingOffice2Icon, ArchiveBoxIcon, WrenchScrewdriverIcon,
+  MagnifyingGlassIcon, ChartBarSquareIcon, CameraIcon, ChatBubbleLeftRightIcon,
+  UserCircleIcon, ArrowRightOnRectangleIcon,
+} from '@heroicons/react/24/outline';
+import {
+  HomeIcon as HomeSolid, BuildingOffice2Icon as BuildingSolid, ArchiveBoxIcon as ArchiveSolid,
+  WrenchScrewdriverIcon as WrenchSolid, MagnifyingGlassIcon as SearchSolid,
+  ChartBarSquareIcon as ChartSolid, CameraIcon as CameraSolid,
+  ChatBubbleLeftRightIcon as ChatSolid, UserCircleIcon as UserSolid,
+} from '@heroicons/react/24/solid';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
 const navItems = [
-  { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { href: '/warehouses', label: 'Warehouses', icon: Building2 },
-  { href: '/storage', label: 'Storage', icon: Archive },
-  { href: '/search', label: 'Search', icon: Search },
-  { href: '/production', label: 'Production', icon: Wrench },
-  { href: '/stats', label: 'Statistics', icon: BarChart3 },
-  { href: '/snapshots', label: 'Snapshots', icon: Camera },
-  { href: '/chat', label: 'Chat', icon: MessageSquare },
-  { href: '/profile', label: 'Profile', icon: User },
+  { href: '/dashboard',  label: 'Dashboard',  icon: HomeIcon,                iconActive: HomeSolid },
+  { href: '/warehouses', label: 'Warehouses', icon: BuildingOffice2Icon,     iconActive: BuildingSolid },
+  { href: '/storage',    label: 'Storage',    icon: ArchiveBoxIcon,          iconActive: ArchiveSolid },
+  { href: '/production', label: 'Production', icon: WrenchScrewdriverIcon,   iconActive: WrenchSolid },
+  { href: '/search',     label: 'Search',     icon: MagnifyingGlassIcon,     iconActive: SearchSolid },
+  { href: '/stats',      label: 'Statistics', icon: ChartBarSquareIcon,      iconActive: ChartSolid },
+  { href: '/snapshots',  label: 'Snapshots',  icon: CameraIcon,              iconActive: CameraSolid },
+  { href: '/chat',       label: 'Chat',       icon: ChatBubbleLeftRightIcon, iconActive: ChatSolid },
+  { href: '/profile',    label: 'Profile',    icon: UserCircleIcon,          iconActive: UserSolid },
 ];
 
 export default function Sidebar() {
@@ -44,10 +51,10 @@ export default function Sidebar() {
       </div>
 
       {/* Nav */}
-      <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
+      <nav className="flex-1 p-4 space-y-0.5 overflow-y-auto">
         {navItems.map((item) => {
-          const active = pathname === item.href;
-          const Icon = item.icon;
+          const active = pathname === item.href || pathname.startsWith(item.href + '/');
+          const Icon = active ? item.iconActive : item.icon;
           return (
             <Link key={item.href} href={item.href}>
               <motion.div
@@ -56,7 +63,7 @@ export default function Sidebar() {
                   active ? 'bg-blue-50 text-blue-600' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-700'
                 }`}
               >
-                <Icon className="w-4 h-4 flex-shrink-0" />
+                <Icon className="w-5 h-5 flex-shrink-0" />
                 <span className="text-sm font-medium">{item.label}</span>
                 {active && (
                   <motion.div layoutId="activeIndicator" className="ml-auto w-1.5 h-1.5 rounded-full bg-blue-600" />
@@ -71,7 +78,7 @@ export default function Sidebar() {
       <div className="p-4 border-t border-gray-100">
         <div className="flex items-center gap-3 mb-3">
           {user?.picture ? (
-            <img src={user.picture} alt={user.name} referrerPolicy="no-referrer" className="w-8 h-8 rounded-full object-cover" />
+            <img src={user.picture} alt={user.name || ''} referrerPolicy="no-referrer" className="w-8 h-8 rounded-full object-cover" />
           ) : (
             <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center">
               <span className="text-blue-600 text-xs font-bold">{user?.name?.[0]}</span>
@@ -86,7 +93,7 @@ export default function Sidebar() {
           onClick={logout}
           className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-500 hover:bg-red-50 rounded-xl transition-colors"
         >
-          <LogOut className="w-4 h-4" />
+          <ArrowRightOnRectangleIcon className="w-5 h-5" />
           Sign out
         </button>
       </div>

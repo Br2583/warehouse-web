@@ -86,8 +86,8 @@ function SearchContent() {
             {results.length === 0 ? (
               <div className="text-center py-16 text-gray-400">No results found</div>
             ) : (
-              <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
-                <table className="w-full">
+              <div className="bg-white rounded-2xl border border-gray-100 overflow-x-auto">
+                <table className="w-full min-w-[560px]">
                   <thead>
                     <tr className="border-b border-gray-50">
                       <th className="text-left text-xs font-medium text-gray-400 uppercase tracking-wide px-6 py-4">Position</th>

@@ -146,15 +146,15 @@ export default function SnapshotsPage() {
         <Sidebar />
         <main className="md:ml-64 flex-1 p-4 md:p-8 pb-20 md:pb-8">
           {/* Header */}
-          <div className="flex items-center justify-between mb-8">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
             <div>
               <h1 className="text-2xl font-bold text-gray-900">Snapshots</h1>
               <p className="text-gray-500 text-sm mt-1">Daily inventory records — click to view & print</p>
             </div>
-            <div className="flex gap-2 flex-wrap justify-end">
+            <div className="flex gap-2 flex-wrap">
               {warehouses.map(wh => (
                 <button key={wh.id} onClick={() => createSnapshot(wh.id)}
-                  className="flex items-center gap-2 px-4 py-2 text-sm bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors">
+                  className="flex items-center gap-2 px-4 py-2.5 text-sm bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors">
                   <Plus className="w-4 h-4" /> {wh.name}
                 </button>
               ))}
@@ -189,7 +189,7 @@ export default function SnapshotsPage() {
                     <div className="w-9 h-9 bg-blue-50 rounded-xl flex items-center justify-center">
                       <Camera className="w-4 h-4 text-blue-600" />
                     </div>
-                    <button onClick={() => deleteSnapshot(snap.id)} className="text-gray-300 hover:text-red-400 transition-colors">
+                    <button onClick={() => deleteSnapshot(snap.id)} className="p-1.5 -mr-1 text-gray-300 hover:text-red-400 transition-colors rounded-lg">
                       <Trash2 className="w-4 h-4" />
                     </button>
                   </div>
@@ -300,8 +300,8 @@ export default function SnapshotsPage() {
                                 <span className="text-xs text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">{levelBoxes.length} vaults</span>
                               </div>
 
-                              <div className="border border-gray-200 rounded-xl overflow-hidden">
-                                <table className="w-full text-xs">
+                              <div className="border border-gray-200 rounded-xl overflow-x-auto">
+                                <table className="w-full min-w-[480px] text-xs">
                                   <thead>
                                     <tr className="bg-gray-50 border-b border-gray-200">
                                       <th className="px-3 py-2 text-gray-400 font-semibold w-8">Row</th>

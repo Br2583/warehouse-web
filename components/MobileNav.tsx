@@ -5,20 +5,27 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
 import {
-  Menu, X, LayoutDashboard, Building2, Search, Wrench,
-  BarChart3, Camera, MessageSquare, User, LogOut, Archive,
-} from 'lucide-react';
+  HomeIcon, BuildingOffice2Icon, ArchiveBoxIcon, WrenchScrewdriverIcon,
+  MagnifyingGlassIcon, ChartBarSquareIcon, CameraIcon, ChatBubbleLeftRightIcon,
+  UserCircleIcon, ArrowRightOnRectangleIcon, Bars3Icon, XMarkIcon,
+} from '@heroicons/react/24/outline';
+import {
+  HomeIcon as HomeSolid, BuildingOffice2Icon as BuildingSolid, ArchiveBoxIcon as ArchiveSolid,
+  WrenchScrewdriverIcon as WrenchSolid, MagnifyingGlassIcon as SearchSolid,
+  ChartBarSquareIcon as ChartSolid, CameraIcon as CameraSolid,
+  ChatBubbleLeftRightIcon as ChatSolid, UserCircleIcon as UserSolid,
+} from '@heroicons/react/24/solid';
 
 const NAV_ITEMS = [
-  { href: '/dashboard',  label: 'Dashboard',   icon: LayoutDashboard },
-  { href: '/warehouses', label: 'Warehouses',  icon: Building2 },
-  { href: '/storage',    label: 'Storage',     icon: Archive },
-  { href: '/production', label: 'Production',  icon: Wrench },
-  { href: '/search',     label: 'Search',      icon: Search },
-  { href: '/stats',      label: 'Statistics',  icon: BarChart3 },
-  { href: '/snapshots',  label: 'Snapshots',   icon: Camera },
-  { href: '/chat',       label: 'Chat',        icon: MessageSquare },
-  { href: '/profile',    label: 'Profile',     icon: User },
+  { href: '/dashboard',  label: 'Dashboard',   icon: HomeIcon,                 iconActive: HomeSolid },
+  { href: '/warehouses', label: 'Warehouses',  icon: BuildingOffice2Icon,      iconActive: BuildingSolid },
+  { href: '/storage',    label: 'Storage',     icon: ArchiveBoxIcon,           iconActive: ArchiveSolid },
+  { href: '/production', label: 'Production',  icon: WrenchScrewdriverIcon,    iconActive: WrenchSolid },
+  { href: '/search',     label: 'Search',      icon: MagnifyingGlassIcon,      iconActive: SearchSolid },
+  { href: '/stats',      label: 'Statistics',  icon: ChartBarSquareIcon,       iconActive: ChartSolid },
+  { href: '/snapshots',  label: 'Snapshots',   icon: CameraIcon,               iconActive: CameraSolid },
+  { href: '/chat',       label: 'Chat',        icon: ChatBubbleLeftRightIcon,  iconActive: ChatSolid },
+  { href: '/profile',    label: 'Profile',     icon: UserCircleIcon,           iconActive: UserSolid },
 ];
 
 export default function MobileNav() {
@@ -34,7 +41,7 @@ export default function MobileNav() {
         aria-label="Open navigation"
         className="md:hidden fixed bottom-6 right-4 z-40 w-12 h-12 bg-white border border-gray-200 rounded-2xl shadow-lg flex items-center justify-center active:scale-95 transition-transform"
       >
-        <Menu className="w-5 h-5 text-gray-700" />
+        <Bars3Icon className="w-5 h-5 text-gray-700" />
       </button>
 
       {/* Backdrop */}
@@ -67,22 +74,27 @@ export default function MobileNav() {
           </div>
           <button
             onClick={() => setOpen(false)}
-            className="w-8 h-8 rounded-lg hover:bg-gray-50 flex items-center justify-center"
+            className="w-9 h-9 rounded-xl hover:bg-gray-50 flex items-center justify-center"
           >
-            <X className="w-4 h-4 text-gray-400" />
+            <XMarkIcon className="w-5 h-5 text-gray-400" />
           </button>
         </div>
 
         {/* Nav items */}
         <nav className="flex-1 p-4 space-y-0.5 overflow-y-auto">
-          {NAV_ITEMS.map(({ href, label, icon: Icon }) => {
+          {NAV_ITEMS.map(({ href, label, icon: Icon, iconActive: IconActive }) => {
             const active = pathname === href || pathname.startsWith(href + '/');
+            const ActiveIcon = IconActive;
+            const InactiveIcon = Icon;
             return (
               <Link key={href} href={href} onClick={() => setOpen(false)}>
-                <div className={`flex items-center gap-3 px-3 py-2.5 rounded-xl transition-colors ${
+                <div className={`flex items-center gap-3 px-3 py-3 rounded-xl transition-colors ${
                   active ? 'bg-blue-50 text-blue-600' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-700'
                 }`}>
-                  <Icon className={`w-5 h-5 flex-shrink-0 ${active ? 'text-blue-600' : ''}`} />
+                  {active
+                    ? <ActiveIcon className="w-5 h-5 flex-shrink-0 text-blue-600" />
+                    : <InactiveIcon className="w-5 h-5 flex-shrink-0" />
+                  }
                   <span className="text-sm font-medium">{label}</span>
                   {active && <div className="ml-auto w-1.5 h-1.5 rounded-full bg-blue-600" />}
                 </div>
@@ -115,7 +127,7 @@ export default function MobileNav() {
             onClick={() => { setOpen(false); logout(); }}
             className="w-full flex items-center gap-2 px-3 py-2.5 text-sm text-red-500 hover:bg-red-50 rounded-xl transition-colors"
           >
-            <LogOut className="w-4 h-4" />
+            <ArrowRightOnRectangleIcon className="w-5 h-5" />
             Sign out
           </button>
         </div>

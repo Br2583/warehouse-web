@@ -49,7 +49,7 @@ function Stepper({ phase, onPhase, isOwner }: {
                 onClick={(e) => { e.stopPropagation(); if (clickable) onPhase(p); }}
                 disabled={!clickable}
                 whileTap={clickable ? { scale: 0.85 } : {}}
-                className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold transition-all
+                className={`w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold transition-all
                   ${done ? 'bg-blue-600 text-white' : curr ? 'bg-blue-600 text-white ring-2 ring-blue-200' : 'bg-gray-100 text-gray-400'}
                   ${clickable ? 'cursor-pointer hover:ring-2 hover:ring-blue-300' : 'cursor-default'}`}
               >

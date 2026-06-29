@@ -395,8 +395,8 @@ export default function StatsPage() {
               </div>
 
               {/* Vaults table */}
-              <div className="overflow-y-auto flex-1">
-                <table className="w-full text-sm">
+              <div className="overflow-y-auto overflow-x-auto flex-1">
+                <table className="w-full min-w-[560px] text-sm">
                   <thead className="sticky top-0 bg-white">
                     <tr className="border-b border-gray-100">
                       <th className="text-left text-xs font-semibold text-gray-400 uppercase tracking-wide px-6 py-3">Position</th>
