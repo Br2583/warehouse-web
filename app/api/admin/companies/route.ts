@@ -24,7 +24,7 @@ export async function GET(req: NextRequest) {
   catch { return NextResponse.json({ error: 'Admin auth failed' }, { status: 500 }); }
 
   const [companiesRes, usersRes] = await Promise.all([
-    fetch(`${PB_URL}/api/collections/companies/records?perPage=200&sort=-created`, {
+    fetch(`${PB_URL}/api/collections/companies/records?perPage=200`, {
       headers: { Authorization: `Bearer ${adminToken}` },
     }),
     fetch(`${PB_URL}/api/collections/users/records?perPage=500&fields=id,name,email,role,company_id`, {
