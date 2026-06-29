@@ -4,7 +4,9 @@ import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { pb } from '@/lib/pb';
 import { useAuth } from '@/lib/auth-context';
-import { Building2, User, Camera, ChevronRight, Loader2, Briefcase } from 'lucide-react';
+import {
+  BuildingOffice2Icon, UserCircleIcon, CameraIcon, ChevronRightIcon, ArrowPathIcon, BriefcaseIcon,
+} from '@heroicons/react/24/outline';
 
 const INDUSTRIES = [
   'Warehouse & Logistics',
@@ -151,7 +153,7 @@ export default function OnboardingPage() {
             <>
               <div className="flex items-center gap-3 mb-6">
                 <div className="w-10 h-10 bg-blue-500/20 rounded-xl flex items-center justify-center">
-                  <User className="w-5 h-5 text-blue-400" />
+                  <UserCircleIcon className="w-5 h-5 text-blue-400" />
                 </div>
                 <div>
                   <h1 className="text-white font-semibold text-lg">Set up your profile</h1>
@@ -167,11 +169,11 @@ export default function OnboardingPage() {
                     <img src={avatarPreview} alt="Avatar preview" className="w-full h-full object-cover" />
                   ) : (
                     <div className="w-full h-full bg-white/10 flex items-center justify-center">
-                      <User className="w-8 h-8 text-white/30" />
+                      <UserCircleIcon className="w-8 h-8 text-white/30" />
                     </div>
                   )}
                   <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                    <Camera className="w-5 h-5 text-white" />
+                    <CameraIcon className="w-5 h-5 text-white" />
                   </div>
                 </button>
                 <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleAvatar} />
@@ -192,7 +194,7 @@ export default function OnboardingPage() {
                 <div>
                   <label className="block text-white/60 text-xs font-medium mb-1.5 uppercase tracking-wide">Job title</label>
                   <div className="relative">
-                    <Briefcase className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30" />
+                    <BriefcaseIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30" />
                     <input
                       type="text"
                       value={jobTitle}
@@ -211,9 +213,9 @@ export default function OnboardingPage() {
                 disabled={saving || !displayName.trim()}
                 className="mt-6 w-full flex items-center justify-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-medium rounded-xl transition-colors"
               >
-                {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
+                {saving ? <ArrowPathIcon className="w-4 h-4 animate-spin" /> : null}
                 {isOwner ? 'Continue' : 'Get Started'}
-                {!saving && <ChevronRight className="w-4 h-4" />}
+                {!saving && <ChevronRightIcon className="w-4 h-4" />}
               </button>
             </>
           )}
@@ -222,7 +224,7 @@ export default function OnboardingPage() {
             <>
               <div className="flex items-center gap-3 mb-6">
                 <div className="w-10 h-10 bg-blue-500/20 rounded-xl flex items-center justify-center">
-                  <Building2 className="w-5 h-5 text-blue-400" />
+                  <BuildingOffice2Icon className="w-5 h-5 text-blue-400" />
                 </div>
                 <div>
                   <h1 className="text-white font-semibold text-lg">Your company</h1>
@@ -251,7 +253,7 @@ export default function OnboardingPage() {
                       className="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-left text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 flex items-center justify-between"
                     >
                       <span className={industry ? 'text-white' : 'text-white/30'}>{industry || 'Select industry...'}</span>
-                      <ChevronRight className={`w-4 h-4 text-white/30 transition-transform ${showIndustryDropdown ? 'rotate-90' : ''}`} />
+                      <ChevronRightIcon className={`w-4 h-4 text-white/30 transition-transform ${showIndustryDropdown ? 'rotate-90' : ''}`} />
                     </button>
                     {showIndustryDropdown && (
                       <div className="absolute z-10 w-full mt-1 bg-gray-900 border border-white/20 rounded-xl overflow-y-auto max-h-48 shadow-xl">
@@ -296,7 +298,7 @@ export default function OnboardingPage() {
                   disabled={saving || !companyName.trim()}
                   className="flex-1 flex items-center justify-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-medium rounded-xl transition-colors"
                 >
-                  {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
+                  {saving ? <ArrowPathIcon className="w-4 h-4 animate-spin" /> : null}
                   Finish Setup
                 </button>
               </div>

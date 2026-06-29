@@ -3,7 +3,9 @@
 import { Suspense, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Package, Eye, EyeOff, Building2, Ticket, ArrowRight } from 'lucide-react';
+import {
+  ArchiveBoxIcon, EyeIcon, EyeSlashIcon, BuildingOffice2Icon, TicketIcon, ArrowRightIcon,
+} from '@heroicons/react/24/outline';
 import { pb } from '@/lib/pb';
 import { genCode } from '@/lib/utils';
 
@@ -195,7 +197,7 @@ function LoginForm() {
               boxShadow: '0 8px 32px rgba(96,165,250,0.15)',
             }}
           >
-            <Package className="w-8 h-8 text-white/70" />
+            <ArchiveBoxIcon className="w-8 h-8 text-white/70" />
           </motion.div>
           <h1 className="text-2xl font-bold text-white tracking-tight">
             {needsCompany ? 'Set Up Your Company' : 'Welcome back'}
@@ -282,7 +284,7 @@ function LoginForm() {
                     onClick={() => setShowPass(v => !v)}
                     className="absolute right-3 top-1/2 -translate-y-1/2 text-white/30 hover:text-white/60 transition-colors"
                   >
-                    {showPass ? <EyeOff size={16} /> : <Eye size={16} />}
+                    {showPass ? <EyeSlashIcon className="w-4 h-4" /> : <EyeIcon className="w-4 h-4" />}
                   </button>
                 </div>
               </div>
@@ -307,7 +309,7 @@ function LoginForm() {
               >
                 {loading
                   ? <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                  : <>Sign In <ArrowRight size={14} /></>}
+                  : <>Sign In <ArrowRightIcon className="w-3.5 h-3.5" /></>}
               </button>
 
               <p className="text-center text-xs text-white/25">
@@ -332,7 +334,7 @@ function LoginForm() {
                     color: companyMode === 'create' ? 'rgba(147,197,253,1)' : 'rgba(255,255,255,0.35)',
                   }}
                 >
-                  <Building2 size={14} />
+                  <BuildingOffice2Icon className="w-3.5 h-3.5" />
                   <span>Create</span>
                 </button>
                 <button
@@ -344,7 +346,7 @@ function LoginForm() {
                     color: companyMode === 'join' ? 'rgba(196,181,253,1)' : 'rgba(255,255,255,0.35)',
                   }}
                 >
-                  <Ticket size={14} />
+                  <TicketIcon className="w-3.5 h-3.5" />
                   <span>Join</span>
                 </button>
               </div>

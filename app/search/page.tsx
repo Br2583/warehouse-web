@@ -2,7 +2,7 @@
 
 import { useState, useEffect, Suspense } from 'react';
 import { motion } from 'framer-motion';
-import { Search, Building2 } from 'lucide-react';
+import { MagnifyingGlassIcon, BuildingOffice2Icon } from '@heroicons/react/24/outline';
 import Sidebar from '@/components/Sidebar';
 import { api } from '@/lib/api';
 import { useSearchParams } from 'next/navigation';
@@ -56,7 +56,7 @@ function SearchContent() {
 
         <form onSubmit={handleSearch} className="flex gap-3 mb-8">
           <div className="relative flex-1">
-            <Search className="absolute left-4 top-3.5 w-4 h-4 text-gray-400" />
+            <MagnifyingGlassIcon className="absolute left-4 top-3.5 w-4 h-4 text-gray-400" />
             <input
               type="text"
               placeholder="Client name, packer, job type..."
@@ -111,7 +111,7 @@ function SearchContent() {
                         <td className="px-6 py-4 text-sm text-gray-500">{box.job_type}</td>
                         <td className="px-6 py-4">
                           <span className="flex items-center gap-1 text-sm text-gray-500">
-                            <Building2 className="w-3.5 h-3.5" /> {box.warehouse_id}
+                            <BuildingOffice2Icon className="w-3.5 h-3.5" /> {box.warehouse_id}
                           </span>
                         </td>
                         <td className="px-6 py-4">

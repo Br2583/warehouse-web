@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useRef } from 'react';
 import { motion } from 'framer-motion';
-import { Send, Trash2 } from 'lucide-react';
+import { PaperAirplaneIcon, TrashIcon } from '@heroicons/react/24/outline';
 import Sidebar from '@/components/Sidebar';
 import { api } from '@/lib/api';
 import { useAuth } from '@/lib/auth-context';
@@ -119,7 +119,7 @@ export default function ChatPage() {
                   </div>
                   {isMe && (
                     <button onClick={() => deleteMsg(msg.id)} className="opacity-0 group-hover:opacity-100 text-gray-300 hover:text-red-400 transition-all mt-2 flex-shrink-0">
-                      <Trash2 className="w-3.5 h-3.5" />
+                      <TrashIcon className="w-3.5 h-3.5" />
                     </button>
                   )}
                 </motion.div>
@@ -150,7 +150,7 @@ export default function ChatPage() {
             >
               {sending
                 ? <span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
-                : <Send className="w-4 h-4" />}
+                : <PaperAirplaneIcon className="w-4 h-4" />}
             </button>
           </form>
         </div>

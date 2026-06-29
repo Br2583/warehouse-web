@@ -2,7 +2,10 @@
 
 import { useEffect, useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Camera, Trash2, Plus, Printer, X, Package, CheckCircle, Truck, Clock, Mail, AlertCircle } from 'lucide-react';
+import {
+  CameraIcon, TrashIcon, PlusIcon, PrinterIcon, XMarkIcon,
+  ArchiveBoxIcon, CheckCircleIcon, TruckIcon, ClockIcon, EnvelopeIcon, ExclamationCircleIcon,
+} from '@heroicons/react/24/outline';
 import ConfirmModal from '@/components/ConfirmModal';
 import Sidebar from '@/components/Sidebar';
 import { api } from '@/lib/api';
@@ -155,7 +158,7 @@ export default function SnapshotsPage() {
               {warehouses.map(wh => (
                 <button key={wh.id} onClick={() => createSnapshot(wh.id)}
                   className="flex items-center gap-2 px-4 py-2.5 text-sm bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors">
-                  <Plus className="w-4 h-4" /> {wh.name}
+                  <PlusIcon className="w-4 h-4" /> {wh.name}
                 </button>
               ))}
             </div>
@@ -163,9 +166,9 @@ export default function SnapshotsPage() {
 
           {actionError && (
             <div className="flex items-center gap-3 bg-red-50 border border-red-100 text-red-700 text-sm px-4 py-3 rounded-xl mb-4">
-              <AlertCircle className="w-4 h-4 flex-shrink-0" />
+              <ExclamationCircleIcon className="w-4 h-4 flex-shrink-0" />
               <span className="flex-1">{actionError}</span>
-              <button onClick={() => setActionError('')} className="text-red-400 hover:text-red-600"><X className="w-4 h-4" /></button>
+              <button onClick={() => setActionError('')} className="text-red-400 hover:text-red-600"><XMarkIcon className="w-4 h-4" /></button>
             </div>
           )}
 
@@ -187,10 +190,10 @@ export default function SnapshotsPage() {
                 >
                   <div className="flex items-center justify-between mb-3">
                     <div className="w-9 h-9 bg-blue-50 rounded-xl flex items-center justify-center">
-                      <Camera className="w-4 h-4 text-blue-600" />
+                      <CameraIcon className="w-4 h-4 text-blue-600" />
                     </div>
                     <button onClick={() => deleteSnapshot(snap.id)} className="p-1.5 -mr-1 text-gray-300 hover:text-red-400 transition-colors rounded-lg">
-                      <Trash2 className="w-4 h-4" />
+                      <TrashIcon className="w-4 h-4" />
                     </button>
                   </div>
                   <p className="font-semibold text-gray-900">{snap.warehouse_name}</p>
@@ -201,7 +204,7 @@ export default function SnapshotsPage() {
                     onClick={() => openReport(snap)}
                     className="w-full flex items-center justify-center gap-2 py-2 text-sm text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-xl transition-colors font-medium"
                   >
-                    <Printer className="w-4 h-4" /> View & Print Report
+                    <PrinterIcon className="w-4 h-4" /> View & Print Report
                   </button>
                 </motion.div>
               ))}
@@ -230,16 +233,16 @@ export default function SnapshotsPage() {
                     onClick={() => { setEmailModal(true); setSendResult(null); }}
                     className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-xl hover:bg-green-700 transition-colors"
                   >
-                    <Mail className="w-4 h-4" /> Send Email
+                    <EnvelopeIcon className="w-4 h-4" /> Send Email
                   </button>
                   <button
                     onClick={handlePrint}
                     className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-xl hover:bg-blue-700 transition-colors"
                   >
-                    <Printer className="w-4 h-4" /> Print
+                    <PrinterIcon className="w-4 h-4" /> Print
                   </button>
                   <button onClick={() => setReport(null)} className="text-gray-400 hover:text-gray-600">
-                    <X className="w-5 h-5" />
+                    <XMarkIcon className="w-5 h-5" />
                   </button>
                 </div>
               </div>
@@ -269,10 +272,10 @@ export default function SnapshotsPage() {
                   <>
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
                       {[
-                        { label: 'Total Vaults', value: report.boxes.length || report.snap.box_count, icon: Package, color: 'bg-gray-50 text-gray-700' },
-                        { label: 'Pending',     value: pending,   icon: Clock,        color: 'bg-amber-50 text-amber-700' },
-                        { label: 'Ready',       value: ready,     icon: CheckCircle,  color: 'bg-green-50 text-green-700' },
-                        { label: 'Delivered',   value: delivered, icon: Truck,        color: 'bg-blue-50 text-blue-700' },
+                        { label: 'Total Vaults', value: report.boxes.length || report.snap.box_count, icon: ArchiveBoxIcon, color: 'bg-gray-50 text-gray-700' },
+                        { label: 'Pending',     value: pending,   icon: ClockIcon,        color: 'bg-amber-50 text-amber-700' },
+                        { label: 'Ready',       value: ready,     icon: CheckCircleIcon,  color: 'bg-green-50 text-green-700' },
+                        { label: 'Delivered',   value: delivered, icon: TruckIcon,        color: 'bg-blue-50 text-blue-700' },
                       ].map(({ label, value, icon: Icon, color }) => (
                         <div key={label} className={`rounded-xl p-4 ${color}`}>
                           <Icon className="w-5 h-5 mb-2 opacity-70" />
@@ -376,7 +379,7 @@ export default function SnapshotsPage() {
               <div className="flex items-center justify-between mb-4">
                 <h3 className="font-bold text-gray-900">Send Report by Email</h3>
                 <button onClick={() => setEmailModal(false)} className="text-gray-400 hover:text-gray-600">
-                  <X className="w-5 h-5" />
+                  <XMarkIcon className="w-5 h-5" />
                 </button>
               </div>
               <p className="text-sm text-gray-500 mb-4">

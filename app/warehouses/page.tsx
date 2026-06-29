@@ -2,7 +2,9 @@
 
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
-import { Building2, Package, Plus, ChevronRight, Loader2, Trash2 } from 'lucide-react';
+import {
+  BuildingOffice2Icon, ArchiveBoxIcon, PlusIcon, ChevronRightIcon, ArrowPathIcon, TrashIcon,
+} from '@heroicons/react/24/outline';
 import Sidebar from '@/components/Sidebar';
 import { pb } from '@/lib/pb';
 import { useAuth } from '@/lib/auth-context';
@@ -100,7 +102,7 @@ export default function WarehousesPage() {
               onClick={() => setShowCreate(s => !s)}
               className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-xl hover:bg-blue-700 transition-colors"
             >
-              <Plus className="w-4 h-4" /> New Warehouse
+              <PlusIcon className="w-4 h-4" /> New Warehouse
             </button>
           )}
         </div>
@@ -124,7 +126,7 @@ export default function WarehousesPage() {
               disabled={creating || !newName.trim()}
               className="px-5 py-2.5 bg-blue-600 text-white text-sm font-medium rounded-xl hover:bg-blue-700 disabled:opacity-50 transition-colors flex items-center gap-2"
             >
-              {creating && <Loader2 className="w-4 h-4 animate-spin" />}
+              {creating && <ArrowPathIcon className="w-4 h-4 animate-spin" />}
               Create
             </button>
             <button type="button" onClick={() => { setShowCreate(false); setCreateError(''); }} className="px-4 py-2.5 text-gray-400 hover:text-gray-600 text-sm">Cancel</button>
@@ -140,7 +142,7 @@ export default function WarehousesPage() {
           </div>
         ) : warehouses.length === 0 ? (
           <div className="text-center py-16 text-gray-400">
-            <Building2 className="w-12 h-12 mx-auto mb-3 opacity-30" />
+            <BuildingOffice2Icon className="w-12 h-12 mx-auto mb-3 opacity-30" />
             <p className="font-medium">No warehouses yet</p>
             <p className="text-sm mt-1">Create your first warehouse to get started</p>
           </div>
@@ -157,23 +159,23 @@ export default function WarehousesPage() {
                   {user?.role === 'owner' && (
                     <button
                       onClick={e => { e.preventDefault(); deleteWarehouse(wh.id, wh.name); }}
-                      className="absolute top-3 right-3 z-10 p-1.5 rounded-lg text-gray-300 hover:text-red-500 hover:bg-red-50 opacity-0 group-hover:opacity-100 transition-all"
+                      className="absolute top-3 right-3 z-10 p-1.5 rounded-lg text-gray-300 hover:text-red-500 hover:bg-red-50 md:opacity-0 md:group-hover:opacity-100 transition-all"
                     >
-                      <Trash2 className="w-4 h-4" />
+                      <TrashIcon className="w-4 h-4" />
                     </button>
                   )}
                   <Link href={`/warehouses/${wh.id}`}>
                     <div className="bg-white rounded-2xl border border-gray-100 p-6 hover:shadow-md transition-all cursor-pointer">
                       <div className="flex items-center justify-between mb-4">
                         <div className="w-12 h-12 bg-blue-50 rounded-xl flex items-center justify-center group-hover:bg-blue-100 transition-colors">
-                          <Building2 className="w-6 h-6 text-blue-600" />
+                          <BuildingOffice2Icon className="w-6 h-6 text-blue-600" />
                         </div>
-                        <ChevronRight className="w-5 h-5 text-gray-300 group-hover:text-blue-500 transition-colors" />
+                        <ChevronRightIcon className="w-5 h-5 text-gray-300 group-hover:text-blue-500 transition-colors" />
                       </div>
                       <h2 className="text-lg font-semibold text-gray-900">{wh.name}</h2>
                       {wh.address && <p className="text-xs text-gray-400 mt-0.5">{wh.address}</p>}
                       <div className="flex items-center gap-2 mt-2">
-                        <Package className="w-4 h-4 text-gray-400" />
+                        <ArchiveBoxIcon className="w-4 h-4 text-gray-400" />
                         <span className="text-2xl font-bold text-gray-900">{wh.vault_count}</span>
                         <span className="text-sm text-gray-400">vaults stored</span>
                       </div>

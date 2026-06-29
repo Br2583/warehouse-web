@@ -2,7 +2,10 @@
 
 import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Wrench, Check, Plus, X, Trash2, ChevronRight, AlertCircle, User2 } from 'lucide-react';
+import {
+  WrenchScrewdriverIcon, CheckIcon, PlusIcon, XMarkIcon, TrashIcon,
+  ChevronRightIcon, ExclamationCircleIcon, UserCircleIcon,
+} from '@heroicons/react/24/outline';
 import ConfirmModal from '@/components/ConfirmModal';
 import Sidebar from '@/components/Sidebar';
 import { api } from '@/lib/api';
@@ -53,7 +56,7 @@ function Stepper({ phase, onPhase, isOwner }: {
                   ${done ? 'bg-blue-600 text-white' : curr ? 'bg-blue-600 text-white ring-2 ring-blue-200' : 'bg-gray-100 text-gray-400'}
                   ${clickable ? 'cursor-pointer hover:ring-2 hover:ring-blue-300' : 'cursor-default'}`}
               >
-                {done ? <Check className="w-3 h-3" /> : <span>{p}</span>}
+                {done ? <CheckIcon className="w-3 h-3" /> : <span>{p}</span>}
               </motion.button>
               <span className={`text-xs text-center leading-tight w-14 whitespace-normal
                 ${curr ? 'text-blue-600 font-medium' : done ? 'text-gray-500' : 'text-gray-300'}`}>
@@ -213,7 +216,7 @@ export default function ProductionPage() {
             onClick={() => { setShowCreate(true); setSaveError(''); }}
             className="flex items-center gap-2 px-4 py-2.5 bg-blue-600 text-white text-sm font-medium rounded-xl hover:bg-blue-700 transition-colors"
           >
-            <Plus className="w-4 h-4" /> New Work Order
+            <PlusIcon className="w-4 h-4" /> New Work Order
           </button>
         </div>
 
@@ -239,14 +242,14 @@ export default function ProductionPage() {
                 >
                   <div className="flex items-center gap-4 mb-4">
                     <div className="w-10 h-10 bg-blue-50 rounded-xl flex items-center justify-center flex-shrink-0">
-                      <Wrench className="w-5 h-5 text-blue-600" />
+                      <WrenchScrewdriverIcon className="w-5 h-5 text-blue-600" />
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="font-semibold text-gray-900 truncate">{order.client_name}</p>
                       <p className="text-sm text-gray-500">{order.work_type} Â· {formatDate(order.date)}</p>
                       {order.assigned_to && (
                         <p className="flex items-center gap-1 text-xs text-gray-400 mt-0.5">
-                          <User2 className="w-3 h-3 flex-shrink-0" />
+                          <UserCircleIcon className="w-3 h-3 flex-shrink-0" />
                           <span className="truncate">{order.assigned_to}</span>
                         </p>
                       )}
@@ -254,7 +257,7 @@ export default function ProductionPage() {
                     <span className={`flex-shrink-0 text-xs font-medium px-2.5 py-1 rounded-full ${PHASE_COLORS[phase - 1]}`}>
                       {PHASES[phase - 1]}
                     </span>
-                    <ChevronRight className="w-4 h-4 text-gray-300 flex-shrink-0" />
+                    <ChevronRightIcon className="w-4 h-4 text-gray-300 flex-shrink-0" />
                   </div>
                   <Stepper
                     phase={phase}
@@ -281,7 +284,7 @@ export default function ProductionPage() {
                 <div className="flex items-center justify-between mb-5">
                   <h2 className="text-lg font-bold text-gray-900">Work Order</h2>
                   <button onClick={() => { setSelected(null); setSelectedDetail(null); }} className="text-gray-400 hover:text-gray-600">
-                    <X className="w-5 h-5" />
+                    <XMarkIcon className="w-5 h-5" />
                   </button>
                 </div>
 
@@ -351,9 +354,9 @@ export default function ProductionPage() {
 
                 {detailError && (
                   <div className="flex items-center gap-2 text-sm text-red-600 bg-red-50 border border-red-100 rounded-xl px-4 py-2.5 mb-2">
-                    <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                    <ExclamationCircleIcon className="w-4 h-4 flex-shrink-0" />
                     <span className="flex-1">{detailError}</span>
-                    <button onClick={() => setDetailError('')}><X className="w-4 h-4" /></button>
+                    <button onClick={() => setDetailError('')}><XMarkIcon className="w-4 h-4" /></button>
                   </div>
                 )}
 
@@ -362,7 +365,7 @@ export default function ProductionPage() {
                     onClick={() => deleteOrder(detailId)}
                     className="flex items-center gap-2 px-4 py-2 text-sm text-red-600 hover:bg-red-50 rounded-xl transition-colors"
                   >
-                    <Trash2 className="w-4 h-4" /> Delete Order
+                    <TrashIcon className="w-4 h-4" /> Delete Order
                   </button>
                 </div>
               </motion.div>
@@ -384,7 +387,7 @@ export default function ProductionPage() {
                 <div className="flex items-center justify-between mb-5">
                   <h2 className="text-lg font-bold text-gray-900">New Work Order</h2>
                   <button onClick={() => setShowCreate(false)} className="text-gray-400 hover:text-gray-600">
-                    <X className="w-5 h-5" />
+                    <XMarkIcon className="w-5 h-5" />
                   </button>
                 </div>
 

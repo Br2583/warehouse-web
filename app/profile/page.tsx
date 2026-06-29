@@ -2,7 +2,10 @@
 
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
-import { User, Copy, Plus, AlertCircle, X, LogOut, Shield } from 'lucide-react';
+import {
+  UserCircleIcon, DocumentDuplicateIcon, PlusIcon, ExclamationCircleIcon,
+  XMarkIcon, ArrowRightOnRectangleIcon, ShieldCheckIcon,
+} from '@heroicons/react/24/outline';
 import { AnimatePresence } from 'framer-motion';
 import Sidebar from '@/components/Sidebar';
 import { api } from '@/lib/api';
@@ -47,7 +50,7 @@ export default function ProfilePage() {
             onClick={logout}
             className="flex items-center gap-2 px-4 py-2 text-sm text-red-600 border border-red-100 bg-red-50 rounded-xl hover:bg-red-100 transition-colors"
           >
-            <LogOut className="w-4 h-4" /> Sign Out
+            <ArrowRightOnRectangleIcon className="w-4 h-4" /> Sign Out
           </button>
         </div>
 
@@ -70,7 +73,7 @@ export default function ProfilePage() {
                   />
                 ) : null}
                 <div className={`w-16 h-16 rounded-2xl bg-blue-100 flex items-center justify-center flex-shrink-0${user?.picture ? ' hidden' : ''}`}>
-                  <User className="w-8 h-8 text-blue-600" />
+                  <UserCircleIcon className="w-8 h-8 text-blue-600" />
                 </div>
                 <div>
                   <h2 className="text-lg font-bold text-gray-900">{user?.name}</h2>
@@ -96,15 +99,15 @@ export default function ProfilePage() {
               {company?.is_owner && (
                 <button onClick={generateCode}
                   className="mt-4 flex items-center gap-2 px-4 py-2 text-sm bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors">
-                  <Plus className="w-4 h-4" /> Generate Invitation Code
+                  <PlusIcon className="w-4 h-4" /> Generate Invitation Code
                 </button>
               )}
               <AnimatePresence>
                 {genError && (
                   <motion.div className="mt-3 flex items-center gap-2 bg-red-50 border border-red-100 text-red-700 text-sm rounded-xl px-3 py-2">
-                    <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                    <ExclamationCircleIcon className="w-4 h-4 flex-shrink-0" />
                     <span className="flex-1">{genError}</span>
-                    <button onClick={() => setGenError('')}><X className="w-4 h-4" /></button>
+                    <button onClick={() => setGenError('')}><XMarkIcon className="w-4 h-4" /></button>
                   </motion.div>
                 )}
               </AnimatePresence>
@@ -116,7 +119,7 @@ export default function ProfilePage() {
                       <div key={code} className="flex items-center gap-1.5 bg-gray-50 border border-gray-100 rounded-lg px-3 py-1.5">
                         <span className="text-sm font-mono font-medium text-gray-700">{code}</span>
                         <button onClick={() => navigator.clipboard.writeText(code)} className="text-gray-400 hover:text-blue-500">
-                          <Copy className="w-3 h-3" />
+                          <DocumentDuplicateIcon className="w-3 h-3" />
                         </button>
                       </div>
                     ))}
@@ -157,12 +160,12 @@ export default function ProfilePage() {
             {user?.id === 'ezcrajrmevn36cu' && (
               <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="bg-white rounded-2xl border border-gray-100 p-6">
                 <div className="flex items-center gap-2 mb-1">
-                  <Shield className="w-4 h-4 text-purple-500" />
+                  <ShieldCheckIcon className="w-4 h-4 text-purple-500" />
                   <h3 className="font-semibold text-gray-900">Administration</h3>
                 </div>
                 <p className="text-xs text-gray-400 mb-4">Company and access request management.</p>
                 <a href="/admin-k9x2m7" className="inline-flex items-center gap-2 px-4 py-2 text-sm bg-purple-600 text-white rounded-xl hover:bg-purple-700 transition-colors">
-                  <Shield className="w-4 h-4" />
+                  <ShieldCheckIcon className="w-4 h-4" />
                   Admin Panel
                 </a>
               </motion.div>

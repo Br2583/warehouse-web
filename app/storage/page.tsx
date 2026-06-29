@@ -2,7 +2,10 @@
 
 import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Archive, Plus, MapPin, User, ChevronRight, Loader2, X, AlertCircle, Camera } from 'lucide-react';
+import {
+  ArchiveBoxIcon, PlusIcon, MapPinIcon, UserCircleIcon, ChevronRightIcon,
+  ArrowPathIcon, XMarkIcon, ExclamationCircleIcon, CameraIcon,
+} from '@heroicons/react/24/outline';
 import Sidebar from '@/components/Sidebar';
 import { api } from '@/lib/api';
 import { useAuth } from '@/lib/auth-context';
@@ -76,7 +79,7 @@ export default function StoragePage() {
               onClick={() => { setShowCreate(s => !s); setCreateError(''); }}
               className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-xl hover:bg-blue-700 transition-colors"
             >
-              <Plus className="w-4 h-4" /> New Storage Unit
+              <PlusIcon className="w-4 h-4" /> New Storage Unit
             </button>
           )}
         </div>
@@ -90,7 +93,7 @@ export default function StoragePage() {
             >
               <div className="flex items-center justify-between mb-4">
                 <h2 className="font-semibold text-gray-900">New Storage Unit</h2>
-                <button onClick={() => setShowCreate(false)} className="text-gray-400 hover:text-gray-600"><X className="w-4 h-4" /></button>
+                <button onClick={() => setShowCreate(false)} className="text-gray-400 hover:text-gray-600"><XMarkIcon className="w-4 h-4" /></button>
               </div>
               <form onSubmit={createUnit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="md:col-span-2">
@@ -145,7 +148,7 @@ export default function StoragePage() {
                     ))}
                     {form.photos.length < 4 && (
                       <label className="w-16 h-16 rounded-xl border-2 border-dashed border-gray-200 flex flex-col items-center justify-center cursor-pointer hover:border-blue-400 hover:bg-blue-50 transition-colors flex-shrink-0">
-                        <Camera className="w-4 h-4 text-gray-400" />
+                        <CameraIcon className="w-4 h-4 text-gray-400" />
                         <span className="text-[10px] text-gray-400 mt-0.5">Add</span>
                         <input type="file" accept="image/*" multiple className="hidden"
                           onChange={e => handleCreatePhotos(e.target.files)} />
@@ -156,14 +159,14 @@ export default function StoragePage() {
 
                 {createError && (
                   <div className="md:col-span-2 flex items-center gap-2 text-sm text-red-600 bg-red-50 border border-red-100 rounded-xl px-3 py-2">
-                    <AlertCircle className="w-4 h-4 flex-shrink-0" />{createError}
+                    <ExclamationCircleIcon className="w-4 h-4 flex-shrink-0" />{createError}
                   </div>
                 )}
                 <div className="md:col-span-2 flex gap-3 justify-end">
                   <button type="button" onClick={() => setShowCreate(false)} className="px-4 py-2 text-gray-400 hover:text-gray-600 text-sm">Cancel</button>
                   <button type="submit" disabled={saving || !form.unit_name.trim()}
                     className="flex items-center gap-2 px-5 py-2 bg-blue-600 text-white text-sm font-medium rounded-xl hover:bg-blue-700 disabled:opacity-50 transition-colors">
-                    {saving && <Loader2 className="w-4 h-4 animate-spin" />}
+                    {saving && <ArrowPathIcon className="w-4 h-4 animate-spin" />}
                     Create & Open
                   </button>
                 </div>
@@ -178,7 +181,7 @@ export default function StoragePage() {
           </div>
         ) : units.length === 0 ? (
           <div className="text-center py-16 text-gray-400">
-            <Archive className="w-12 h-12 mx-auto mb-3 opacity-30" />
+            <ArchiveBoxIcon className="w-12 h-12 mx-auto mb-3 opacity-30" />
             <p className="font-medium">No storage units yet</p>
             {isOwner && <p className="text-sm mt-1">Create your first storage unit to get started</p>}
           </div>
@@ -202,7 +205,7 @@ export default function StoragePage() {
                         </div>
                       ) : (
                         <div className="h-36 bg-gradient-to-br from-blue-50 to-indigo-50 flex items-center justify-center">
-                          <Archive className="w-10 h-10 text-blue-200" />
+                          <ArchiveBoxIcon className="w-10 h-10 text-blue-200" />
                         </div>
                       )}
                       <div className="p-5">
@@ -212,13 +215,13 @@ export default function StoragePage() {
                         </div>
                         {(unit.address || unit.city) && (
                           <div className="flex items-center gap-1.5 text-xs text-gray-400 mb-1">
-                            <MapPin className="w-3 h-3 flex-shrink-0" />
+                            <MapPinIcon className="w-3 h-3 flex-shrink-0" />
                             <span className="truncate">{[unit.address, unit.city, unit.state].filter(Boolean).join(', ')}</span>
                           </div>
                         )}
                         {unit.client_name && (
                           <div className="flex items-center gap-1.5 text-xs text-gray-400 mb-1">
-                            <User className="w-3 h-3 flex-shrink-0" />
+                            <UserCircleIcon className="w-3 h-3 flex-shrink-0" />
                             <span className="truncate">{unit.client_name}</span>
                           </div>
                         )}
@@ -227,7 +230,7 @@ export default function StoragePage() {
                         )}
                         <div className="flex items-center justify-between mt-3 pt-3 border-t border-gray-50">
                           <span className="text-xs text-blue-600 font-medium">View details</span>
-                          <ChevronRight className="w-4 h-4 text-gray-300 group-hover:text-blue-500 transition-colors" />
+                          <ChevronRightIcon className="w-4 h-4 text-gray-300 group-hover:text-blue-500 transition-colors" />
                         </div>
                       </div>
                     </div>

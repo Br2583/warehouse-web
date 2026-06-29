@@ -2,7 +2,10 @@
 
 import { useEffect, useState, useMemo } from 'react';
 import { motion, AnimatePresence, useMotionValue, useTransform, animate } from 'framer-motion';
-import { User, Search, X, Building2, ChevronRight, Package, Clock, CheckCircle, Truck } from 'lucide-react';
+import {
+  MagnifyingGlassIcon, XMarkIcon, BuildingOffice2Icon, ChevronRightIcon,
+  ArchiveBoxIcon, ClockIcon, CheckCircleIcon, TruckIcon,
+} from '@heroicons/react/24/outline';
 import Sidebar from '@/components/Sidebar';
 import { api } from '@/lib/api';
 import {
@@ -174,10 +177,10 @@ export default function StatsPage() {
 
             {/* KPI row */}
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-              <KpiCard label="Total Vaults"  value={total}     icon={Package}      accent="bg-blue-100 text-blue-600"   delay={0} />
-              <KpiCard label="Pending"       value={pending}   icon={Clock}        accent="bg-amber-100 text-amber-600" delay={0.08} />
-              <KpiCard label="Ready"         value={ready}     icon={CheckCircle}  accent="bg-green-100 text-green-600" delay={0.16} />
-              <KpiCard label="Delivered"     value={delivered} icon={Truck}        accent="bg-indigo-100 text-indigo-600" delay={0.24} />
+              <KpiCard label="Total Vaults"  value={total}     icon={ArchiveBoxIcon}   accent="bg-blue-100 text-blue-600"   delay={0} />
+              <KpiCard label="Pending"       value={pending}   icon={ClockIcon}        accent="bg-amber-100 text-amber-600" delay={0.08} />
+              <KpiCard label="Ready"         value={ready}     icon={CheckCircleIcon}  accent="bg-green-100 text-green-600" delay={0.16} />
+              <KpiCard label="Delivered"     value={delivered} icon={TruckIcon}        accent="bg-indigo-100 text-indigo-600" delay={0.24} />
             </div>
 
             {/* Charts row: Donut + Job type bars */}
@@ -264,16 +267,16 @@ export default function StatsPage() {
                 <div className="flex items-center gap-2 flex-wrap">
                   <div className="flex bg-gray-100 rounded-xl overflow-hidden text-xs">
                     <button onClick={() => setSortBy('count')}
-                      className={`px-3 py-1.5 font-medium transition-colors ${sortBy === 'count' ? 'bg-blue-600 text-white' : 'text-gray-500 hover:text-gray-700'}`}>
+                      className={`px-3 py-2 font-medium transition-colors ${sortBy === 'count' ? 'bg-blue-600 text-white' : 'text-gray-500 hover:text-gray-700'}`}>
                       Most vaults
                     </button>
                     <button onClick={() => setSortBy('name')}
-                      className={`px-3 py-1.5 font-medium transition-colors ${sortBy === 'name' ? 'bg-blue-600 text-white' : 'text-gray-500 hover:text-gray-700'}`}>
+                      className={`px-3 py-2 font-medium transition-colors ${sortBy === 'name' ? 'bg-blue-600 text-white' : 'text-gray-500 hover:text-gray-700'}`}>
                       A–Z
                     </button>
                   </div>
                   <div className="relative">
-                    <Search className="absolute left-3 top-2 w-3.5 h-3.5 text-gray-400" />
+                    <MagnifyingGlassIcon className="absolute left-3 top-2 w-3.5 h-3.5 text-gray-400" />
                     <input
                       placeholder="Search client..."
                       value={search}
@@ -328,7 +331,7 @@ export default function StatsPage() {
                           ))}
                         </div>
 
-                        <ChevronRight className="w-4 h-4 text-gray-300 group-hover:text-blue-500 transition-colors flex-shrink-0" />
+                        <ChevronRightIcon className="w-4 h-4 text-gray-300 group-hover:text-blue-500 transition-colors flex-shrink-0" />
                       </motion.div>
                     );
                   })}
@@ -364,7 +367,7 @@ export default function StatsPage() {
                   </div>
                 </div>
                 <button onClick={() => setSelectedClient(null)} className="text-gray-400 hover:text-gray-600 transition-colors">
-                  <X className="w-5 h-5" />
+                  <XMarkIcon className="w-5 h-5" />
                 </button>
               </div>
 
@@ -421,7 +424,7 @@ export default function StatsPage() {
                           </td>
                           <td className="px-6 py-3 text-gray-500">
                             <div className="flex items-center gap-1">
-                              <Building2 className="w-3.5 h-3.5" /> {whNames[box.warehouse_id] || box.warehouse_id || '—'}
+                              <BuildingOffice2Icon className="w-3.5 h-3.5" /> {whNames[box.warehouse_id] || box.warehouse_id || '—'}
                             </div>
                           </td>
                           <td className="px-6 py-3 text-gray-500">{box.packer || '—'}</td>

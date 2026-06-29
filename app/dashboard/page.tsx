@@ -2,7 +2,11 @@
 
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
-import { Package, ClipboardList, CheckCircle, Truck, Clock, Play, Check, Plus, Search, MessageSquare, AlertTriangle } from 'lucide-react';
+import {
+  ArchiveBoxIcon, ClipboardDocumentListIcon, CheckCircleIcon, TruckIcon,
+  ClockIcon, PlayIcon, CheckIcon, PlusIcon, MagnifyingGlassIcon,
+  ChatBubbleLeftRightIcon, ExclamationTriangleIcon,
+} from '@heroicons/react/24/outline';
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import { useAuth } from '@/lib/auth-context';
 import { api } from '@/lib/api';
@@ -67,10 +71,10 @@ export default function DashboardPage() {
   };
 
   const overviewCards = [
-    { label: 'Total Vaults', value: stats?.total_boxes ?? 0, icon: Package, color: 'blue', href: '/warehouses' },
-    { label: 'Work Orders', value: workStats.total, icon: ClipboardList, color: 'amber', href: '/production' },
-    { label: 'Ready', value: stats?.statuses?.READY ?? 0, icon: CheckCircle, color: 'green', href: '/search?status=READY' },
-    { label: 'Delivered', value: stats?.statuses?.DELIVERED ?? 0, icon: Truck, color: 'purple', href: '/search?status=DELIVERED' },
+    { label: 'Total Vaults', value: stats?.total_boxes ?? 0, icon: ArchiveBoxIcon, color: 'blue', href: '/warehouses' },
+    { label: 'Work Orders', value: workStats.total, icon: ClipboardDocumentListIcon, color: 'amber', href: '/production' },
+    { label: 'Ready', value: stats?.statuses?.READY ?? 0, icon: CheckCircleIcon, color: 'green', href: '/search?status=READY' },
+    { label: 'Delivered', value: stats?.statuses?.DELIVERED ?? 0, icon: TruckIcon, color: 'purple', href: '/search?status=DELIVERED' },
   ];
 
   const colorMap: Record<string, string> = {
@@ -219,9 +223,9 @@ export default function DashboardPage() {
             <h2 className="font-semibold text-gray-900 mb-5">Production</h2>
             <div className="space-y-4">
               {[
-                { label: 'Pending', value: workStats.pending, icon: Clock, color: 'text-gray-400 bg-gray-50' },
-                { label: 'In Progress', value: workStats.in_progress, icon: Play, color: 'text-amber-500 bg-amber-50' },
-                { label: 'Completed', value: workStats.completed, icon: Check, color: 'text-green-500 bg-green-50' },
+                { label: 'Pending', value: workStats.pending, icon: ClockIcon, color: 'text-gray-400 bg-gray-50' },
+                { label: 'In Progress', value: workStats.in_progress, icon: PlayIcon, color: 'text-amber-500 bg-amber-50' },
+                { label: 'Completed', value: workStats.completed, icon: CheckIcon, color: 'text-green-500 bg-green-50' },
               ].map((item) => {
                 const Icon = item.icon;
                 return (
@@ -249,10 +253,10 @@ export default function DashboardPage() {
           <h2 className="font-semibold text-gray-900 mb-4">Quick Actions</h2>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             {[
-              { label: 'Add Vault', icon: Plus, href: '/warehouses', color: 'bg-blue-50 text-blue-600 hover:bg-blue-100' },
-              { label: 'New Order', icon: ClipboardList, href: '/production', color: 'bg-amber-50 text-amber-600 hover:bg-amber-100' },
-              { label: 'Search', icon: Search, href: '/search', color: 'bg-green-50 text-green-600 hover:bg-green-100' },
-              { label: 'Chat', icon: MessageSquare, href: '/chat', color: 'bg-purple-50 text-purple-600 hover:bg-purple-100' },
+              { label: 'Add Vault', icon: PlusIcon, href: '/warehouses', color: 'bg-blue-50 text-blue-600 hover:bg-blue-100' },
+              { label: 'New Order', icon: ClipboardDocumentListIcon, href: '/production', color: 'bg-amber-50 text-amber-600 hover:bg-amber-100' },
+              { label: 'Search', icon: MagnifyingGlassIcon, href: '/search', color: 'bg-green-50 text-green-600 hover:bg-green-100' },
+              { label: 'Chat', icon: ChatBubbleLeftRightIcon, href: '/chat', color: 'bg-purple-50 text-purple-600 hover:bg-purple-100' },
             ].map((action) => {
               const Icon = action.icon;
               return (
@@ -294,7 +298,7 @@ export default function DashboardPage() {
             <p className="text-xs text-gray-400 mb-5">PENDING vaults over 3 days</p>
             <div className="flex-1 flex flex-col items-center justify-center">
               <div className={`w-20 h-20 rounded-2xl flex items-center justify-center mb-3 ${slaCount > 0 ? 'bg-red-50' : 'bg-green-50'}`}>
-                <AlertTriangle className={`w-8 h-8 ${slaCount > 0 ? 'text-red-500' : 'text-green-400'}`} />
+                <ExclamationTriangleIcon className={`w-8 h-8 ${slaCount > 0 ? 'text-red-500' : 'text-green-400'}`} />
               </div>
               <p className={`text-4xl font-bold mb-1 ${slaCount > 0 ? 'text-red-600' : 'text-green-600'}`}>{slaCount}</p>
               <p className="text-xs text-gray-400 text-center">
@@ -324,7 +328,7 @@ export default function DashboardPage() {
                 return (
                   <div key={box.box_id || box.id} className="flex items-center gap-3 py-2 border-b border-gray-50 last:border-0">
                     <div className="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                      <Package className="w-4 h-4 text-gray-400" />
+                      <ArchiveBoxIcon className="w-4 h-4 text-gray-400" />
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium text-gray-900 truncate">{box.client_name || '—'}</p>
