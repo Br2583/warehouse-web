@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
 import { Send, Pause, Play, Trash2, Users, Clock, LogOut, RefreshCw, X, Lock } from 'lucide-react';
 
 interface CompanyRecord {
@@ -78,7 +77,6 @@ export default function AdminPage() {
     if (authed) fetchCompanies();
   }, [authed]);
 
-  // Check if already have a valid session cookie
   useEffect(() => {
     fetch('/api/admin/companies').then(r => {
       if (r.ok) { setAuthed(true); }
@@ -99,7 +97,7 @@ export default function AdminPage() {
       if (action === 'send_code') setSuccessId(id);
       await fetchCompanies();
     } catch {
-      setError(action === 'send_code' ? 'No se pudo enviar el código.' : `No se pudo ejecutar la acción.`);
+      setError(action === 'send_code' ? 'No se pudo enviar el código.' : 'No se pudo ejecutar la acción.');
     } finally {
       setActionId(null);
     }
@@ -120,14 +118,20 @@ export default function AdminPage() {
     }
   };
 
+  const fmt = (d: string) => {
+    try {
+      return new Date((d || '').replace(' ', 'T')).toLocaleDateString('es-AR', {
+        day: '2-digit', month: 'short', year: 'numeric',
+      });
+    } catch {
+      return d || '-';
+    }
+  };
+
   if (!authed) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-        <motion.div
-          initial={{ opacity: 0, y: 16 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="bg-white rounded-2xl border border-gray-100 p-8 w-full max-w-sm shadow-sm"
-        >
+        <div className="bg-white rounded-2xl border border-gray-100 p-8 w-full max-w-sm shadow-sm">
           <div className="flex items-center gap-3 mb-6">
             <div className="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center">
               <Lock className="w-5 h-5 text-blue-600" />
@@ -155,7 +159,7 @@ export default function AdminPage() {
               {loginLoading ? 'Entrando...' : 'Entrar'}
             </button>
           </form>
-        </motion.div>
+        </div>
       </div>
     );
   }
@@ -171,10 +175,6 @@ export default function AdminPage() {
   ];
 
   const list = tab === 'pending' ? pending : tab === 'active' ? active : suspended;
-
-  const fmt = (d: string) => new Date(d.replace(' ', 'T')).toLocaleDateString('es-AR', {
-    day: '2-digit', month: 'short', year: 'numeric',
-  });
 
   return (
     <div className="min-h-screen bg-gray-50 p-4 md:p-8">
@@ -224,17 +224,12 @@ export default function AdminPage() {
         </div>
 
         {/* Error */}
-        <AnimatePresence>
-          {error && (
-            <motion.div
-              initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
-              className="flex items-center gap-2 bg-red-50 border border-red-100 text-red-700 text-sm rounded-xl px-4 py-3 mb-4"
-            >
-              <span className="flex-1">{error}</span>
-              <button onClick={() => setError('')}><X className="w-4 h-4" /></button>
-            </motion.div>
-          )}
-        </AnimatePresence>
+        {error && (
+          <div className="flex items-center gap-2 bg-red-50 border border-red-100 text-red-700 text-sm rounded-xl px-4 py-3 mb-4">
+            <span className="flex-1">{error}</span>
+            <button onClick={() => setError('')}><X className="w-4 h-4" /></button>
+          </div>
+        )}
 
         {/* List */}
         {fetching ? (
@@ -248,11 +243,8 @@ export default function AdminPage() {
         ) : (
           <div className="space-y-3">
             {list.map(company => (
-              <motion.div
+              <div
                 key={company.id}
-                layout
-                initial={{ opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
                 className="bg-white rounded-2xl border border-gray-100 p-5"
               >
                 <div className="flex items-start gap-4">
@@ -333,56 +325,52 @@ export default function AdminPage() {
                     )}
                   </div>
                 </div>
-              </motion.div>
+              </div>
             ))}
           </div>
         )}
       </div>
 
-      {/* Delete confirm */}
-      <AnimatePresence>
-        {confirmDelete && (
-          <motion.div
-            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
-            onClick={() => setConfirmDelete(null)}
+      {/* Delete confirm modal */}
+      {confirmDelete && (
+        <div
+          className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+          onClick={() => setConfirmDelete(null)}
+        >
+          <div
+            onClick={e => e.stopPropagation()}
+            className="bg-white rounded-2xl p-6 max-w-sm w-full shadow-xl"
           >
-            <motion.div
-              initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }}
-              onClick={e => e.stopPropagation()}
-              className="bg-white rounded-2xl p-6 max-w-sm w-full shadow-xl"
-            >
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-10 h-10 rounded-xl bg-red-50 flex items-center justify-center">
-                  <Trash2 className="w-5 h-5 text-red-500" />
-                </div>
-                <div>
-                  <h3 className="font-semibold text-gray-900">Eliminar empresa</h3>
-                  <p className="text-xs text-gray-400">Esta acción no se puede deshacer</p>
-                </div>
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 rounded-xl bg-red-50 flex items-center justify-center">
+                <Trash2 className="w-5 h-5 text-red-500" />
               </div>
-              <p className="text-sm text-gray-600 mb-6">
-                Se eliminará <strong>{confirmDelete.name}</strong> y todos sus usuarios ({confirmDelete.members.length} miembro{confirmDelete.members.length !== 1 ? 's' : ''}).
-                {confirmDelete.owner?.email && ' El dueño recibirá un email.'}
-              </p>
-              <div className="flex gap-3">
-                <button
-                  onClick={() => setConfirmDelete(null)}
-                  className="flex-1 py-2 text-sm text-gray-600 border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors"
-                >
-                  Cancelar
-                </button>
-                <button
-                  onClick={() => doDelete(confirmDelete)}
-                  className="flex-1 py-2 text-sm text-white bg-red-500 rounded-xl hover:bg-red-600 transition-colors font-medium"
-                >
-                  Eliminar
-                </button>
+              <div>
+                <h3 className="font-semibold text-gray-900">Eliminar empresa</h3>
+                <p className="text-xs text-gray-400">Esta acción no se puede deshacer</p>
               </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+            </div>
+            <p className="text-sm text-gray-600 mb-6">
+              Se eliminará <strong>{confirmDelete.name}</strong> y todos sus usuarios ({confirmDelete.members.length} miembro{confirmDelete.members.length !== 1 ? 's' : ''}).
+              {confirmDelete.owner?.email && ' El dueño recibirá un email.'}
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setConfirmDelete(null)}
+                className="flex-1 py-2 text-sm text-gray-600 border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={() => doDelete(confirmDelete)}
+                className="flex-1 py-2 text-sm text-white bg-red-500 rounded-xl hover:bg-red-600 transition-colors font-medium"
+              >
+                Eliminar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
