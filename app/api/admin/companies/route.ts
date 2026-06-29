@@ -14,22 +14,18 @@ async function getPbAdminToken() {
 
 const ADMIN_USER_ID = 'ezcrajrmevn36cu';
 
-async function getCallerUserId(req: NextRequest): Promise<string | null> {
+function getCallerUserId(req: NextRequest): string | null {
   const token = (req.headers.get('authorization') || '').replace('Bearer ', '');
   if (!token) return null;
   try {
-    const res = await fetch(`${PB_URL}/api/collections/users/auth-refresh`, {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    if (!res.ok) return null;
-    const data = await res.json();
-    return data.record?.id || null;
+    const b64 = token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
+    const payload = JSON.parse(Buffer.from(b64, 'base64').toString('utf8'));
+    return payload.id || null;
   } catch { return null; }
 }
 
 export async function GET(req: NextRequest) {
-  if (await getCallerUserId(req) !== ADMIN_USER_ID) {
+  if (getCallerUserId(req) !== ADMIN_USER_ID) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
 
