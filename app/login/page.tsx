@@ -61,7 +61,7 @@ function LoginForm() {
         const pendingData   = model.pending_company_name as string;
 
         if (pendingAction === 'create' && pendingData) {
-          await createCompany(model.id, pendingData);
+          await createCompany(model.id, pendingData, email.trim().toLowerCase());
           return;
         }
 
@@ -101,7 +101,7 @@ function LoginForm() {
     }
   };
 
-  const createCompany = async (userId: string, name: string) => {
+  const createCompany = async (userId: string, name: string, ownerEmail: string) => {
     try {
       const code = genCode();
       const company = await pb.collection('companies').create({
@@ -125,7 +125,7 @@ function LoginForm() {
       fetch('/api/admin/notify', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${pb.authStore.token}` },
-        body: JSON.stringify({ companyName: name, ownerName: model?.name || '', ownerEmail: model?.email || '' }),
+        body: JSON.stringify({ companyName: name, ownerName: model?.name || '', ownerEmail }),
       }).catch(() => {});
       router.replace('/pending');
     } catch {
@@ -161,7 +161,7 @@ function LoginForm() {
 
     setCompanyLoading(true);
     if (companyMode === 'create') {
-      await createCompany(model.id, companyName.trim());
+      await createCompany(model.id, companyName.trim(), model.email || email.trim().toLowerCase());
     } else {
       await joinCompany(model.id, inviteCode.trim().toUpperCase());
     }
