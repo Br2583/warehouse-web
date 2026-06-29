@@ -8,8 +8,6 @@ import Sidebar from '@/components/Sidebar';
 import VaultForm, { VaultFormData } from '@/components/VaultForm';
 import { api } from '@/lib/api';
 import { useParams } from 'next/navigation';
-import TutorialOverlay from '@/components/TutorialOverlay';
-import { useTutorial } from '@/hooks/useTutorial';
 import { compressImage } from '@/lib/compress-image';
 import { QRCodeSVG } from 'qrcode.react';
 import { STATUS_COLORS, STATUS_CELL } from '@/lib/constants';
@@ -53,11 +51,6 @@ const emptyForm: VaultFormData = {
 };
 
 
-const TUTORIAL_STEPS = [
-  { target: 'wh-header', title: 'Warehouse View', text: 'You\'re inside a specific warehouse. Switch between Map (visual grid) and List (table) views using the toggle.', position: 'bottom' as const },
-  { target: 'wh-map', title: 'Warehouse Map', text: 'Each cell is a vault slot. Colors show status: amber = Pending, green = Ready, blue = Delivered. Tap an empty cell to add a vault there.', position: 'bottom' as const },
-  { target: 'wh-add-btn', title: 'Add Vault', text: 'Register a new vault — client name, job type, location (row/column/level), photos, and status. All in one form.', position: 'bottom' as const },
-];
 
 export default function WarehouseDetailPage() {
   const { id } = useParams();
@@ -65,7 +58,6 @@ export default function WarehouseDetailPage() {
   const [warehouseName, setWarehouseName] = useState('');
   const [boxes, setBoxes] = useState<Box[]>([]);
   const [loading, setLoading] = useState(true);
-  const { seen, markSeen } = useTutorial('warehouse-detail');
   const [search, setSearch] = useState('');
   const [selected, setSelected] = useState<Box | null>(null);
   const [showAdd, setShowAdd] = useState(false);
@@ -265,7 +257,6 @@ export default function WarehouseDetailPage() {
 
   return (
     <div className="flex min-h-screen bg-gray-50">
-      {!seen && <TutorialOverlay steps={TUTORIAL_STEPS} onDone={markSeen} />}
       <Sidebar />
       <main className="md:ml-64 flex-1 p-4 md:p-8 pb-20 md:pb-8">
         {/* Header */}

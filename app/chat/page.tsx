@@ -8,8 +8,6 @@ import { api } from '@/lib/api';
 import { useAuth } from '@/lib/auth-context';
 import { notify, requestNotificationPermission } from '@/lib/notifications';
 import { parseDate } from '@/lib/utils';
-import TutorialOverlay from '@/components/TutorialOverlay';
-import { useTutorial } from '@/hooks/useTutorial';
 
 interface Message {
   id: string;
@@ -20,11 +18,6 @@ interface Message {
   timestamp: string;
 }
 
-const TUTORIAL_STEPS = [
-  { target: 'chat-header', title: 'Team Chat', text: 'Stay in sync with your team. Messages refresh automatically every 10 seconds — no need to reload.', position: 'bottom' as const },
-  { target: 'chat-messages', title: 'Conversation', text: 'Your messages appear on the right in blue. Team messages appear on the left. Hover to delete your own messages.', position: 'top' as const },
-  { target: 'chat-input', title: 'Send a Message', text: 'Type here and hit Enter or the send button. Keep communication clear and on-topic for faster operations.', position: 'top' as const },
-];
 
 export default function ChatPage() {
   const { user } = useAuth();
@@ -35,8 +28,6 @@ export default function ChatPage() {
   const [sending, setSending] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
   const lastCountRef = useRef(-1);
-  const { seen, markSeen } = useTutorial('chat');
-
   const fetchMessages = () =>
     api.get('/api/chat/messages').then((msgs: Message[]) => {
       if (lastCountRef.current >= 0 && msgs.length > lastCountRef.current) {
@@ -92,7 +83,6 @@ export default function ChatPage() {
 
   return (
     <div className="flex min-h-screen bg-gray-50">
-      {!seen && <TutorialOverlay steps={TUTORIAL_STEPS} onDone={markSeen} />}
       <Sidebar />
       <main className="md:ml-64 flex-1 flex flex-col" style={{ height: '100dvh' }}>
         <div data-tutorial="chat-header" className="p-8 pb-4 border-b border-gray-100 bg-white">

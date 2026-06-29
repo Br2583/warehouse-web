@@ -7,8 +7,6 @@ import Sidebar from '@/components/Sidebar';
 import { pb } from '@/lib/pb';
 import { useAuth } from '@/lib/auth-context';
 import Link from 'next/link';
-import TutorialOverlay from '@/components/TutorialOverlay';
-import { useTutorial } from '@/hooks/useTutorial';
 import ConfirmModal from '@/components/ConfirmModal';
 
 interface Warehouse {
@@ -19,11 +17,6 @@ interface Warehouse {
   vault_count: number;
 }
 
-const TUTORIAL_STEPS = [
-  { target: 'warehouses-header', title: 'Your Warehouses', text: 'Each card represents a physical warehouse. Tap one to manage its vaults — location grid, photos, and client info.', position: 'bottom' as const },
-  { target: 'warehouses-list', title: 'Vault Count', text: 'The number shows how many vaults are currently stored in that warehouse. Click to browse them.', position: 'bottom' as const },
-  { target: 'new-warehouse-btn', title: 'Add Warehouse', text: 'Owners can create new warehouse locations here. Give it a name and it\'s ready to use.', position: 'bottom' as const },
-];
 
 export default function WarehousesPage() {
   const { user } = useAuth();
@@ -34,8 +27,6 @@ export default function WarehousesPage() {
   const [showCreate, setShowCreate] = useState(false);
   const [createError, setCreateError] = useState('');
   const [confirmModal, setConfirmModal] = useState<{ message: string; onConfirm: () => void } | null>(null);
-  const { seen, markSeen } = useTutorial('warehouses');
-
   const fetchWarehouses = async () => {
     const cid = user?.company_id;
     if (!cid) { setLoading(false); return; }
@@ -96,7 +87,6 @@ export default function WarehousesPage() {
 
   return (
     <div className="flex min-h-screen bg-gray-50">
-      {!seen && <TutorialOverlay steps={TUTORIAL_STEPS} onDone={markSeen} />}
       <Sidebar />
       <main className="md:ml-64 flex-1 p-4 md:p-8 pb-20 md:pb-8">
         <div data-tutorial="warehouses-header" className="flex items-center justify-between mb-8">

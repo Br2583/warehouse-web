@@ -9,8 +9,6 @@ import { api } from '@/lib/api';
 import { useAuth } from '@/lib/auth-context';
 import { parseDate } from '@/lib/utils';
 import { notify, requestNotificationPermission } from '@/lib/notifications';
-import TutorialOverlay from '@/components/TutorialOverlay';
-import { useTutorial } from '@/hooks/useTutorial';
 
 const PHASES = ['Assigned', 'In Progress', 'Review', 'Completed'];
 const PHASE_COLORS = [
@@ -80,16 +78,10 @@ const emptyForm = {
   volt_ids: [] as string[],
 };
 
-const TUTORIAL_STEPS = [
-  { target: 'production-header', title: 'Work Orders', text: 'Track all cleaning, restoration, and delivery jobs here. Each card shows the client, type, and current stage.', position: 'bottom' as const },
-  { target: 'production-list', title: 'Order Progress', text: 'Tap any order to open it. You\'ll see a step-by-step stepper: Assigned → In Progress → Review → Completed.', position: 'bottom' as const },
-  { target: 'new-order-btn', title: 'Create Work Order', text: 'Start a new job here. Link it to specific vaults so your team knows exactly what to work on.', position: 'bottom' as const },
-];
 
 export default function ProductionPage() {
   const { user } = useAuth();
   const isOwner = user?.role === 'owner';
-  const { seen, markSeen } = useTutorial('production');
 
   const [orders, setOrders] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -209,7 +201,6 @@ export default function ProductionPage() {
 
   return (
     <div className="flex min-h-screen bg-gray-50">
-      {!seen && <TutorialOverlay steps={TUTORIAL_STEPS} onDone={markSeen} />}
       <Sidebar />
       <main className="md:ml-64 flex-1 p-4 md:p-8 pb-20 md:pb-8">
         <div data-tutorial="production-header" className="flex items-center justify-between mb-8">

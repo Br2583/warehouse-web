@@ -9,9 +9,6 @@ import { api } from '@/lib/api';
 import { parseDate, parseDateOpt } from '@/lib/utils';
 import Sidebar from '@/components/Sidebar';
 import Link from 'next/link';
-import TutorialOverlay from '@/components/TutorialOverlay';
-import { useTutorial } from '@/hooks/useTutorial';
-
 const STATUS_COLORS_LIGHT: Record<string, string> = {
   PENDING:   'bg-amber-50 text-amber-700',
   READY:     'bg-green-50 text-green-700',
@@ -26,12 +23,6 @@ const fadeUp = {
   }),
 };
 
-const TUTORIAL_STEPS = [
-  { target: 'overview-cards', title: 'Inventory Overview', text: 'These cards show your real-time inventory stats. Tap any card to drill into that category.', position: 'bottom' as const },
-  { target: 'inventory-status', title: 'Inventory Status', text: 'See how vaults are split between Pending, Ready, and Delivered — updated live from your warehouses.', position: 'top' as const },
-  { target: 'production-status', title: 'Production Queue', text: 'Track active work orders by stage: Pending, In Progress, and Completed.', position: 'top' as const },
-  { target: 'quick-actions', title: 'Quick Actions', text: 'Jump to the most common tasks with one tap — add a vault, create a work order, search, or open team chat.', position: 'top' as const },
-];
 
 export default function DashboardPage() {
   const { user } = useAuth();
@@ -39,8 +30,6 @@ export default function DashboardPage() {
   const [workStats, setWorkStats] = useState({ total: 0, pending: 0, in_progress: 0, completed: 0 });
   const [boxes, setBoxes] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const { seen, markSeen } = useTutorial('dashboard');
-
   useEffect(() => {
     if (!user?.company_id) return;
     const load = async () => {
@@ -135,7 +124,6 @@ export default function DashboardPage() {
 
   return (
     <div className="flex min-h-screen bg-gray-50">
-      {!seen && <TutorialOverlay steps={TUTORIAL_STEPS} onDone={markSeen} />}
       <Sidebar />
       <main className="md:ml-64 flex-1 p-4 md:p-8 pb-20 md:pb-8">
         {/* Header */}
