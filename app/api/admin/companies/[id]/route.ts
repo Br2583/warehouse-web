@@ -1,17 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { sendEmail, clientApprovedEmail, clientRejectedEmail, clientDeletedEmail } from '@/lib/email';
+import { signToken } from '@/lib/tokens';
+import { sendEmail, clientApprovedEmail, clientRejectedEmail, clientDeletedEmail, activationEmail } from '@/lib/email';
 
 const PB_URL = process.env.NEXT_PUBLIC_PB_URL || 'https://pocketbase-production-e699.up.railway.app';
-const ADMIN_USER_ID = 'ezcrajrmevn36cu';
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://managerwarehouse.cc';
 
-function getCallerUserId(req: NextRequest): string | null {
-  const token = (req.headers.get('authorization') || '').replace('Bearer ', '');
-  if (!token) return null;
-  try {
-    const b64 = token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
-    const payload = JSON.parse(Buffer.from(b64, 'base64').toString('utf8'));
-    return payload.id || null;
-  } catch { return null; }
+function isAdmin(req: NextRequest) {
+  return req.cookies.get('admin_session')?.value === process.env.ADMIN_SECRET;
 }
 
 async function getPbAdminToken() {
@@ -25,9 +20,7 @@ async function getPbAdminToken() {
 }
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  if (getCallerUserId(req) !== ADMIN_USER_ID) {
-    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-  }
+  if (!isAdmin(req)) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
   const { id } = await params;
   const body = await req.json().catch(() => ({}));
@@ -50,29 +43,12 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     : null;
   const owner = ownerRes ? await ownerRes.json() : null;
 
-  if (action === 'approve') {
-    await fetch(`${PB_URL}/api/collections/companies/records/${id}`, {
-      method: 'PATCH',
-      headers: { Authorization: `Bearer ${adminToken}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ approved: true, rejected: false, suspended: false }),
-    });
-    if (owner?.email) {
-      const email = clientApprovedEmail(owner.name || 'Cliente', company.name);
-      await sendEmail({ to: owner.email, toName: owner.name, ...email }).catch(() => {});
-    }
-    return NextResponse.json({ ok: true });
-  }
-
-  if (action === 'reject') {
-    await fetch(`${PB_URL}/api/collections/companies/records/${id}`, {
-      method: 'PATCH',
-      headers: { Authorization: `Bearer ${adminToken}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ rejected: true, approved: false }),
-    });
-    if (owner?.email) {
-      const email = clientRejectedEmail(owner.name || 'Cliente', company.name);
-      await sendEmail({ to: owner.email, toName: owner.name, ...email }).catch(() => {});
-    }
+  if (action === 'send_code') {
+    if (!owner?.email) return NextResponse.json({ error: 'Owner email not found' }, { status: 400 });
+    const token = signToken({ purpose: 'activate', companyId: id }, 3600);
+    const link = `${APP_URL}/activate?token=${token}`;
+    const email = activationEmail(owner.name || 'Cliente', company.name, link);
+    await sendEmail({ to: owner.email, toName: owner.name, ...email });
     return NextResponse.json({ ok: true });
   }
 
@@ -98,9 +74,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 }
 
 export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  if (getCallerUserId(req) !== ADMIN_USER_ID) {
-    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-  }
+  if (!isAdmin(req)) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
   const { id } = await params;
 

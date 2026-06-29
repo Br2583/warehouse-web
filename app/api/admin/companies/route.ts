@@ -2,6 +2,10 @@ import { NextRequest, NextResponse } from 'next/server';
 
 const PB_URL = process.env.NEXT_PUBLIC_PB_URL || 'https://pocketbase-production-e699.up.railway.app';
 
+function isAdmin(req: NextRequest) {
+  return req.cookies.get('admin_session')?.value === process.env.ADMIN_SECRET;
+}
+
 async function getPbAdminToken() {
   const res = await fetch(`${PB_URL}/api/collections/_superusers/auth-with-password`, {
     method: 'POST',
@@ -12,22 +16,8 @@ async function getPbAdminToken() {
   return data.token as string;
 }
 
-const ADMIN_USER_ID = 'ezcrajrmevn36cu';
-
-function getCallerUserId(req: NextRequest): string | null {
-  const token = (req.headers.get('authorization') || '').replace('Bearer ', '');
-  if (!token) return null;
-  try {
-    const b64 = token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
-    const payload = JSON.parse(Buffer.from(b64, 'base64').toString('utf8'));
-    return payload.id || null;
-  } catch { return null; }
-}
-
 export async function GET(req: NextRequest) {
-  if (getCallerUserId(req) !== ADMIN_USER_ID) {
-    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-  }
+  if (!isAdmin(req)) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
   let adminToken: string;
   try { adminToken = await getPbAdminToken(); }
