@@ -7,13 +7,14 @@ import { useAuth } from '@/lib/auth-context';
 import {
   HomeIcon, BuildingOffice2Icon, ArchiveBoxIcon, WrenchScrewdriverIcon,
   MagnifyingGlassIcon, ChartBarSquareIcon, CameraIcon, ChatBubbleLeftRightIcon,
-  UserCircleIcon, ArrowRightOnRectangleIcon, Bars3Icon, XMarkIcon,
+  UserCircleIcon, ArrowRightOnRectangleIcon, Bars3Icon, XMarkIcon, LifebuoyIcon,
 } from '@heroicons/react/24/outline';
 import {
   HomeIcon as HomeSolid, BuildingOffice2Icon as BuildingSolid, ArchiveBoxIcon as ArchiveSolid,
   WrenchScrewdriverIcon as WrenchSolid, MagnifyingGlassIcon as SearchSolid,
   ChartBarSquareIcon as ChartSolid, CameraIcon as CameraSolid,
   ChatBubbleLeftRightIcon as ChatSolid, UserCircleIcon as UserSolid,
+  LifebuoyIcon as LifebuoySolid,
 } from '@heroicons/react/24/solid';
 
 const NAV_ITEMS = [
@@ -26,6 +27,7 @@ const NAV_ITEMS = [
   { href: '/snapshots',  label: 'Snapshots',   icon: CameraIcon,               iconActive: CameraSolid },
   { href: '/chat',       label: 'Chat',        icon: ChatBubbleLeftRightIcon,  iconActive: ChatSolid },
   { href: '/profile',    label: 'Profile',     icon: UserCircleIcon,           iconActive: UserSolid },
+  { href: '/support',    label: 'Support',     icon: LifebuoyIcon,             iconActive: LifebuoySolid },
 ];
 
 export default function MobileNav() {

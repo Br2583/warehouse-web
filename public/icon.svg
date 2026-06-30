@@ -1,8 +1,14 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-  <rect width="512" height="512" rx="96" fill="#2563eb"/>
-  <polygon points="256,110 100,230 412,230" fill="white"/>
-  <rect x="118" y="226" width="276" height="192" rx="4" fill="white"/>
-  <rect x="196" y="320" width="120" height="98" rx="4" fill="#2563eb"/>
-  <rect x="152" y="264" width="56" height="56" rx="4" fill="#2563eb"/>
-  <rect x="304" y="264" width="56" height="56" rx="4" fill="#2563eb"/>
+  <rect width="512" height="512" rx="100" fill="#0f0f0f"/>
+  <text
+    x="256"
+    y="348"
+    font-family="'Arial Black', 'Impact', 'Helvetica Neue', Arial, sans-serif"
+    font-weight="900"
+    font-size="248"
+    fill="white"
+    text-anchor="middle"
+    transform="skewX(-6)"
+    letter-spacing="-8"
+  >WM</text>
 </svg>
