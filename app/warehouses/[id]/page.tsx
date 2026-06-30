@@ -99,7 +99,6 @@ export default function WarehouseDetailPage() {
   };
 
   useEffect(() => {
-    if (window.innerWidth < 768) setViewMode('list');
     fetchBoxes();
     import('@/lib/pb').then(({ pb }) =>
       pb.collection('warehouses').getOne(warehouseId).then(w => {
@@ -262,7 +261,7 @@ export default function WarehouseDetailPage() {
   return (
     <div className="flex min-h-screen bg-gray-50">
       <Sidebar />
-      <main className="md:ml-64 flex-1 p-4 md:p-8 pb-28 md:pb-8">
+      <main className="md:ml-64 flex-1 min-w-0 p-4 md:p-8 pb-28 md:pb-8">
         {/* Header */}
         <div className="flex flex-wrap items-center justify-between gap-3 mb-8">
           <div>
@@ -368,17 +367,17 @@ export default function WarehouseDetailPage() {
             </div>
 
             {/* Grid */}
-            <div className="bg-white rounded-2xl border border-gray-100 p-3 md:p-6 overflow-x-auto">
-              <div className="min-w-max">
+            <div className="bg-white rounded-2xl border border-gray-100 p-2 md:p-6">
+              <div>
                 {/* Column headers */}
-                <div className="flex gap-1.5 mb-1.5 ml-8">
+                <div className="flex gap-1 md:gap-1.5 mb-1 md:mb-1.5 ml-6 md:ml-8">
                   {activeCols.map(col => (
-                    <div key={col} className="w-14 md:w-20 text-center text-[11px] md:text-xs font-semibold text-gray-400">{col}</div>
+                    <div key={col} className="flex-1 text-center text-[9px] md:text-xs font-semibold text-gray-400">{col}</div>
                   ))}
                 </div>
 
                 {activeRows.map(row => (
-                  <div key={row} className="flex items-center gap-1.5 mb-1.5">
+                  <div key={row} className="flex items-center gap-1 md:gap-1.5 mb-1 md:mb-1.5">
                     <div className="w-6 md:w-8 text-center text-xs font-bold text-gray-500 flex-shrink-0">{row}</div>
 
                     {activeCols.map(col => {
@@ -389,7 +388,7 @@ export default function WarehouseDetailPage() {
                           key={col}
                           whileHover={{ scale: 1.03 }}
                           onClick={() => { setShowQR(false); box ? setSelected(box) : openAddAtPosition(row, col, mapLevel); }}
-                          className={`w-14 h-14 md:w-20 md:h-14 rounded-xl border-2 flex flex-col items-center justify-center transition-all text-center flex-shrink-0
+                          className={`flex-1 h-10 md:h-14 rounded-lg md:rounded-xl border-2 flex flex-col items-center justify-center transition-all text-center
                             ${box
                               ? `${STATUS_CELL[status!] || 'bg-gray-300'} border-transparent text-white cursor-pointer`
                               : 'bg-gray-50 border-dashed border-gray-200 hover:border-blue-400 hover:bg-blue-50 cursor-pointer'
@@ -397,11 +396,11 @@ export default function WarehouseDetailPage() {
                         >
                           {box ? (
                             <>
-                              <span className="text-[10px] md:text-xs font-bold leading-tight truncate w-full px-1 text-center">{box.client_name}</span>
-                              <span className="text-[9px] md:text-[10px] opacity-80 mt-0.5">{box.job_type}</span>
+                              <span className="hidden md:block text-xs font-bold leading-tight truncate w-full px-1 text-center">{box.client_name}</span>
+                              <span className="hidden md:block text-[10px] opacity-80 mt-0.5">{box.job_type}</span>
                             </>
                           ) : (
-                            <PlusIcon className="w-4 h-4 text-gray-300" />
+                            <PlusIcon className="w-3 h-3 md:w-4 md:h-4 text-gray-300" />
                           )}
                         </motion.button>
                       );

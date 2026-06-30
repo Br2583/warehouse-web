@@ -147,7 +147,7 @@ export default function SnapshotsPage() {
 
       <div className="flex min-h-screen bg-gray-50">
         <Sidebar />
-        <main className="md:ml-64 flex-1 p-4 md:p-8 pb-28 md:pb-8">
+        <main className="md:ml-64 flex-1 min-w-0 p-4 md:p-8 pb-28 md:pb-8">
           {/* Header */}
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
             <div>
