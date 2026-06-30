@@ -78,7 +78,7 @@ export default function SupportPage() {
               </a>
 
               <a
-                href="tel:+10000000000"
+                href="tel:+17142178029"
                 className="flex items-center gap-3 p-3.5 rounded-xl hover:bg-slate-50 transition-colors group"
               >
                 <div className="w-10 h-10 bg-green-50 rounded-xl flex items-center justify-center flex-shrink-0 group-hover:bg-green-100 transition-colors">
@@ -86,7 +86,7 @@ export default function SupportPage() {
                 </div>
                 <div>
                   <p className="text-xs text-slate-400 mb-0.5">Phone</p>
-                  <p className="text-sm font-medium text-gray-900">+1 (000) 000-0000</p>
+                  <p className="text-sm font-medium text-gray-900">+1 (714) 217-8029</p>
                 </div>
               </a>
             </div>
