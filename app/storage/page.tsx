@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -68,7 +68,7 @@ export default function StoragePage() {
   return (
     <div className="flex min-h-screen bg-gray-50">
       <Sidebar />
-      <main className="md:ml-64 flex-1 p-4 md:p-8 pb-20 md:pb-8">
+      <main className="md:ml-64 flex-1 p-4 md:p-8 pb-28 md:pb-8">
         <div className="flex items-center justify-between mb-8">
           <div>
             <h1 className="text-2xl font-bold text-gray-900">Storage Units</h1>
@@ -143,7 +143,7 @@ export default function StoragePage() {
                           type="button"
                           onClick={() => setForm(f => ({ ...f, photos: f.photos.filter((_, j) => j !== i) }))}
                           className="absolute top-0.5 right-0.5 bg-black/50 text-white rounded-full w-4 h-4 flex items-center justify-center text-[10px] hover:bg-black/70"
-                        >×</button>
+                        >Ã—</button>
                       </div>
                     ))}
                     {form.photos.length < 4 && (

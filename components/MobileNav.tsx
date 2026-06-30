@@ -39,7 +39,8 @@ export default function MobileNav() {
       <button
         onClick={() => setOpen(true)}
         aria-label="Open navigation"
-        className="md:hidden fixed bottom-6 right-4 z-40 w-12 h-12 bg-white border border-gray-200 rounded-2xl shadow-lg flex items-center justify-center active:scale-95 transition-transform"
+        style={{ bottom: 'calc(1.5rem + var(--safe-area-bottom))' }}
+        className="md:hidden fixed right-4 z-40 w-12 h-12 bg-white border border-gray-200 rounded-2xl shadow-lg flex items-center justify-center active:scale-95 transition-transform"
       >
         <Bars3Icon className="w-5 h-5 text-gray-700" />
       </button>

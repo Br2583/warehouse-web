@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -48,7 +48,7 @@ export default function DeletedPage() {
   return (
     <div className="flex min-h-screen bg-gray-50">
       <Sidebar />
-      <main className="md:ml-64 flex-1 p-4 md:p-8 pb-20 md:pb-8">
+      <main className="md:ml-64 flex-1 p-4 md:p-8 pb-28 md:pb-8">
         <div className="mb-8">
           <h1 className="text-2xl font-bold text-gray-900">Deleted Vaults</h1>
           <p className="text-gray-500 text-sm mt-1">{deleted.length} archived vaults</p>
@@ -97,7 +97,7 @@ export default function DeletedPage() {
                     <td className="px-6 py-4 text-sm font-medium text-gray-900">{box.position}</td>
                     <td className="px-6 py-4 text-sm text-gray-700">{box.client_name}</td>
                     <td className="px-6 py-4 text-sm text-gray-500">{box.job_type}</td>
-                    <td className="px-6 py-4 text-sm text-gray-400">{box.deleted_at ? parseDateOpt(box.deleted_at)?.toLocaleDateString() ?? '—' : '—'}</td>
+                    <td className="px-6 py-4 text-sm text-gray-400">{box.deleted_at ? parseDateOpt(box.deleted_at)?.toLocaleDateString() ?? 'â€”' : 'â€”'}</td>
                     <td className="px-6 py-4">
                       <div className="flex gap-2">
                         <button onClick={() => restore(box.id)}

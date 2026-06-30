@@ -200,7 +200,7 @@ export default function StorageDetailPage() {
   return (
     <div className="flex min-h-screen bg-gray-50">
       <Sidebar />
-      <main className="md:ml-64 flex-1 p-4 md:p-8 pb-20 md:pb-8 max-w-3xl">
+      <main className="md:ml-64 flex-1 p-4 md:p-8 pb-28 md:pb-8 max-w-3xl">
 
         {/* Header */}
         <div className="flex items-center gap-4 mb-6">

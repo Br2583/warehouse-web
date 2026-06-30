@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState, useEffect, Suspense } from 'react';
 import { motion } from 'framer-motion';
@@ -46,7 +46,7 @@ function SearchContent() {
   return (
     <div className="flex min-h-screen bg-gray-50">
       <Sidebar />
-      <main className="md:ml-64 flex-1 p-4 md:p-8 pb-20 md:pb-8">
+      <main className="md:ml-64 flex-1 p-4 md:p-8 pb-28 md:pb-8">
         <div className="mb-8">
           <h1 className="text-2xl font-bold text-gray-900">
             {statusFilter ? `${statusFilter} Vaults` : 'Global Search'}

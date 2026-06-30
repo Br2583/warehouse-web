@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useEffect, useState, useMemo } from 'react';
 import { motion, AnimatePresence, useMotionValue, useTransform, animate } from 'framer-motion';
@@ -14,12 +14,12 @@ import {
 } from 'recharts';
 import { STATUS_COLORS_HEX } from '@/lib/constants';
 
-// ── Colours ────────────────────────────────────────────────────────────────────
+// â”€â”€ Colours â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const STATUS_TEXT: Record<string, string>    = { PENDING: 'text-amber-700 bg-amber-100', READY: 'text-green-700 bg-green-100', DELIVERED: 'text-indigo-700 bg-indigo-100' };
 const JOB_COLORS: Record<string, string>     = { Fire: '#ef4444', Water: '#3b82f6', Moving: '#a855f7', Storage: '#6b7280' };
 const JOB_TEXT: Record<string, string>       = { Fire: 'bg-red-100 text-red-700', Water: 'bg-blue-100 text-blue-700', Moving: 'bg-purple-100 text-purple-700', Storage: 'bg-gray-100 text-gray-600' };
 
-// ── Count-up number ────────────────────────────────────────────────────────────
+// â”€â”€ Count-up number â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function CountUp({ value, delay = 0 }: { value: number; delay?: number }) {
   const mv = useMotionValue(0);
   const display = useTransform(mv, v => Math.round(v).toLocaleString());
@@ -33,7 +33,7 @@ function CountUp({ value, delay = 0 }: { value: number; delay?: number }) {
   return <motion.span>{display}</motion.span>;
 }
 
-// ── KPI Card ───────────────────────────────────────────────────────────────────
+// â”€â”€ KPI Card â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function KpiCard({ label, value, icon: Icon, accent, delay }: {
   label: string; value: number; icon: any; accent: string; delay: number;
 }) {
@@ -58,7 +58,7 @@ function KpiCard({ label, value, icon: Icon, accent, delay }: {
   );
 }
 
-// ── Donut centre label ─────────────────────────────────────────────────────────
+// â”€â”€ Donut centre label â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function DonutCenter({ total }: { total: number }) {
   return (
     <text x="50%" y="50%" textAnchor="middle" dominantBaseline="middle">
@@ -68,7 +68,7 @@ function DonutCenter({ total }: { total: number }) {
   );
 }
 
-// ── Custom tooltip ─────────────────────────────────────────────────────────────
+// â”€â”€ Custom tooltip â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function ChartTooltip({ active, payload }: any) {
   if (!active || !payload?.length) return null;
   return (
@@ -160,7 +160,7 @@ export default function StatsPage() {
   return (
     <div className="flex min-h-screen bg-gray-50">
       <Sidebar />
-      <main className="md:ml-64 flex-1 p-4 md:p-8 pb-20 md:pb-8">
+      <main className="md:ml-64 flex-1 p-4 md:p-8 pb-28 md:pb-8">
 
         {/* Header */}
         <div className="mb-8">
@@ -186,7 +186,7 @@ export default function StatsPage() {
             {/* Charts row: Donut + Job type bars */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
 
-              {/* Donut — Status breakdown */}
+              {/* Donut â€” Status breakdown */}
               <motion.div
                 initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}
                 className="bg-white rounded-2xl border border-gray-100 p-6"
@@ -224,7 +224,7 @@ export default function StatsPage() {
                 )}
               </motion.div>
 
-              {/* Bar chart — Job type */}
+              {/* Bar chart â€” Job type */}
               <motion.div
                 initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.38 }}
                 className="bg-white rounded-2xl border border-gray-100 p-6"
@@ -262,7 +262,7 @@ export default function StatsPage() {
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5">
                 <div>
                   <h2 className="font-semibold text-gray-900">Clients</h2>
-                  <p className="text-xs text-gray-400 mt-0.5">{clientList.length} clients · {boxes.length} vaults</p>
+                  <p className="text-xs text-gray-400 mt-0.5">{clientList.length} clients Â· {boxes.length} vaults</p>
                 </div>
                 <div className="flex items-center gap-2 flex-wrap">
                   <div className="flex bg-gray-100 rounded-xl overflow-hidden text-xs">
@@ -272,7 +272,7 @@ export default function StatsPage() {
                     </button>
                     <button onClick={() => setSortBy('name')}
                       className={`px-3 py-2 font-medium transition-colors ${sortBy === 'name' ? 'bg-blue-600 text-white' : 'text-gray-500 hover:text-gray-700'}`}>
-                      A–Z
+                      Aâ€“Z
                     </button>
                   </div>
                   <div className="relative">
@@ -412,22 +412,22 @@ export default function StatsPage() {
                   <tbody>
                     {clientVolts.slice(clientPage * PAGE_SIZE, (clientPage + 1) * PAGE_SIZE).map((box, i) => {
                       const status = box.estado || box.status || 'PENDING';
-                      const pos = box.row && box.column ? `${box.row}${box.column} L${box.level}` : box.position || '—';
+                      const pos = box.row && box.column ? `${box.row}${box.column} L${box.level}` : box.position || 'â€”';
                       return (
                         <tr key={box.box_id || i} className="border-b border-gray-50 hover:bg-gray-50 transition-colors">
                           <td className="px-6 py-3 font-medium text-gray-900">{pos}</td>
                           <td className="px-6 py-3 text-gray-500">
                             <div className="flex items-center gap-1.5">
                               <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: JOB_COLORS[box.job_type] || '#9ca3af' }} />
-                              {box.job_type || '—'}
+                              {box.job_type || 'â€”'}
                             </div>
                           </td>
                           <td className="px-6 py-3 text-gray-500">
                             <div className="flex items-center gap-1">
-                              <BuildingOffice2Icon className="w-3.5 h-3.5" /> {whNames[box.warehouse_id] || box.warehouse_id || '—'}
+                              <BuildingOffice2Icon className="w-3.5 h-3.5" /> {whNames[box.warehouse_id] || box.warehouse_id || 'â€”'}
                             </div>
                           </td>
-                          <td className="px-6 py-3 text-gray-500">{box.packer || '—'}</td>
+                          <td className="px-6 py-3 text-gray-500">{box.packer || 'â€”'}</td>
                           <td className="px-6 py-3">
                             <span className={`text-xs font-medium px-2.5 py-1 rounded-full ${STATUS_TEXT[status] || 'bg-gray-100 text-gray-600'}`}>
                               {status}
@@ -441,7 +441,7 @@ export default function StatsPage() {
                 {clientVolts.length > PAGE_SIZE && (
                   <div className="flex items-center justify-between px-6 py-3 border-t border-gray-100 text-sm">
                     <span className="text-gray-400">
-                      {clientPage * PAGE_SIZE + 1}–{Math.min((clientPage + 1) * PAGE_SIZE, clientVolts.length)} of {clientVolts.length}
+                      {clientPage * PAGE_SIZE + 1}â€“{Math.min((clientPage + 1) * PAGE_SIZE, clientVolts.length)} of {clientVolts.length}
                     </span>
                     <div className="flex gap-2">
                       <button
