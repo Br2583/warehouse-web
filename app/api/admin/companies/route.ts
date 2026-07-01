@@ -1,10 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { isAdminRequest } from '@/lib/admin-auth';
 
 const PB_URL = process.env.NEXT_PUBLIC_PB_URL || 'https://pocketbase-production-e699.up.railway.app';
-
-function isAdmin(req: NextRequest) {
-  return req.cookies.get('admin_session')?.value === process.env.ADMIN_SECRET;
-}
 
 async function getPbAdminToken() {
   const res = await fetch(`${PB_URL}/api/collections/_superusers/auth-with-password`, {
@@ -17,7 +14,7 @@ async function getPbAdminToken() {
 }
 
 export async function GET(req: NextRequest) {
-  if (!isAdmin(req)) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+  if (!isAdminRequest(req)) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
   let adminToken: string;
   try { adminToken = await getPbAdminToken(); }

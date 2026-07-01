@@ -81,7 +81,6 @@ export function verificationEmail(name: string, token: string) {
 }
 
 export function adminNewRequestEmail(companyName: string, ownerName: string, ownerEmail: string) {
-  const adminUrl = `${APP_URL}/admin-k9x2m7`;
   return {
     subject: `Nueva solicitud — ${companyName}`,
     html: `<!DOCTYPE html>
@@ -106,11 +105,6 @@ export function adminNewRequestEmail(companyName: string, ownerName: string, own
               <tr><td style="padding:8px 0;border-bottom:1px solid #f1f5f9;color:#6b7280;">Dueño</td><td style="padding:8px 0;border-bottom:1px solid #f1f5f9;">${ownerName}</td></tr>
               <tr><td style="padding:8px 0;color:#6b7280;">Email</td><td style="padding:8px 0;">${ownerEmail}</td></tr>
             </table>
-            <div style="margin-top:28px;text-align:center;">
-              <a href="${adminUrl}" style="display:inline-block;background:linear-gradient(135deg,#2563eb,#7c3aed);color:#fff;font-size:15px;font-weight:600;text-decoration:none;padding:14px 36px;border-radius:12px;">
-                Ver panel de administración
-              </a>
-            </div>
           </td>
         </tr>
         <tr>

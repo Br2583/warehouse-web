@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyToken } from '@/lib/tokens';
 
+const usedTokens = new Set<string>();
+
 const PB_URL = process.env.NEXT_PUBLIC_PB_URL || 'https://pocketbase-production-e699.up.railway.app';
 
 async function getPbAdminToken() {
@@ -24,6 +26,7 @@ export async function POST(req: NextRequest) {
     if (password !== passwordConfirm) return NextResponse.json({ error: 'Passwords do not match' }, { status: 400 });
     if (password.length < 8) return NextResponse.json({ error: 'Password too short' }, { status: 400 });
 
+    if (usedTokens.has(token)) throw new Error('This reset link has already been used. Request a new one.');
     const payload = verifyToken(token);
     if (payload.purpose !== 'reset') throw new Error('Wrong token type');
 
@@ -38,6 +41,7 @@ export async function POST(req: NextRequest) {
     });
     if (!pbRes.ok) throw new Error('Failed to update password. Try again.');
 
+    usedTokens.add(token);
     return NextResponse.json({ ok: true });
   } catch (e: any) {
     return NextResponse.json({ error: e.message || 'Reset failed' }, { status: 400 });

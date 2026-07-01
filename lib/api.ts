@@ -12,6 +12,22 @@ export const removeToken = () => pb.authStore.clear();
 const companyId = () => pb.authStore.model?.company_id as string | undefined;
 const userId    = () => pb.authStore.model?.id as string | undefined;
 
+// Escape values interpolated into PocketBase filter strings to prevent injection
+function sf(val: string): string {
+  return val.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+}
+
+// Validate photos array (client-side guard; real enforcement is in PocketBase rules)
+function validatePhotos(photos: unknown): void {
+  if (!Array.isArray(photos)) return;
+  if (photos.length > 6) throw new Error('Maximum 6 photos allowed');
+  for (const p of photos) {
+    if (typeof p === 'string' && p.length > 7 * 1024 * 1024) {
+      throw new Error('Each photo must be under 5MB');
+    }
+  }
+}
+
 // Map a PocketBase vault record to the shape the pages expect
 function mapVault(v: any) {
   return {
@@ -133,7 +149,7 @@ async function routeGet(path: string): Promise<any> {
   if (p === '/api/boxes') {
     if (!cid) return [];
     const warehouseId = q.get('warehouse_id');
-    const filter = warehouseId ? `company_id="${cid}" && warehouse_id="${warehouseId}"` : `company_id="${cid}"`;
+    const filter = warehouseId ? `company_id="${cid}" && warehouse_id="${sf(warehouseId)}"` : `company_id="${cid}"`;
     const items = await pb.collection('vaults').getFullList({ filter });
     return items.map(mapVault).sort((a: any, b: any) => a.created < b.created ? -1 : 1);
   }
@@ -142,6 +158,7 @@ async function routeGet(path: string): Promise<any> {
   const boxMatch = p.match(/^\/api\/boxes\/([^/]+)$/);
   if (boxMatch) {
     const v = await pb.collection('vaults').getOne(boxMatch[1]);
+    if (v.company_id !== cid) throw new Error('Forbidden');
     return mapVault(v);
   }
 
@@ -209,8 +226,9 @@ async function routeGet(path: string): Promise<any> {
   if (svMatch) {
     if (!cid) return [];
     const q = decodeURIComponent(svMatch[1]).toLowerCase();
+    const qSafe = sf(q);
     const vaults = await pb.collection('vaults').getFullList({
-      filter: `company_id="${cid}" && (client_name~"${q}" || position~"${q}" || packer~"${q}")`,
+      filter: `company_id="${cid}" && (client_name~"${qSafe}" || position~"${qSafe}" || packer~"${qSafe}")`,
       sort: 'client_name',
     });
     return vaults.map(mapVault);
@@ -221,6 +239,7 @@ async function routeGet(path: string): Promise<any> {
   if (woMatch) {
     const phaseMap2: Record<string, number> = { PENDING: 1, IN_PROGRESS: 2, REVIEW: 3, DONE: 4 };
     const o = await pb.collection('work_orders').getOne(woMatch[1]);
+    if (o.company_id !== cid) throw new Error('Forbidden');
     return {
       id:            o.id,
       work_order_id: o.id,
@@ -257,8 +276,8 @@ async function routeGet(path: string): Promise<any> {
     const status = q.get('status') || '';
     if (!cid || (!q2 && !status)) return [];
     let filter = `company_id="${cid}"`;
-    if (status) filter += ` && estado="${status}"`;
-    if (q2)     filter += ` && (client_name~"${q2}" || packer~"${q2}" || position~"${q2}" || comments~"${q2}" || job_type~"${q2}")`;
+    if (status) filter += ` && estado="${sf(status)}"`;
+    if (q2)     filter += ` && (client_name~"${sf(q2)}" || packer~"${sf(q2)}" || position~"${sf(q2)}" || comments~"${sf(q2)}" || job_type~"${sf(q2)}")`;
     const items = await pb.collection('vaults').getFullList({ filter });
     return items
       .sort((a: any, b: any) => a.created < b.created ? 1 : -1)
@@ -284,7 +303,8 @@ async function routeGet(path: string): Promise<any> {
 
   // ── Storage Units ─────────────────────────────────────────────────────────
   if (p === '/api/storage') {
-    const items = await pb.collection('storage_units').getFullList({});
+    if (!cid) return [];
+    const items = await pb.collection('storage_units').getFullList({ filter: `company_id="${cid}"` });
     return items
       .sort((a: any, b: any) => a.created < b.created ? 1 : -1)
       .map(mapStorage);
@@ -293,6 +313,7 @@ async function routeGet(path: string): Promise<any> {
   const storageOneMatch = p.match(/^\/api\/storage\/([^/]+)$/);
   if (storageOneMatch) {
     const s = await pb.collection('storage_units').getOne(storageOneMatch[1]);
+    if (s.company_id !== cid) throw new Error('Forbidden');
     return mapStorage(s);
   }
 
@@ -345,6 +366,7 @@ async function routePost(path: string, body: any): Promise<any> {
   // ── Boxes / Vaults ─────────────────────────────────────────────────────────
   if (p === '/api/boxes') {
     if (!cid) throw new Error('No company');
+    validatePhotos(body.photos);
     const qr_token = genCode();
     const v = await pb.collection('vaults').create({
       box_id:       genCode(),
@@ -398,6 +420,7 @@ async function routePost(path: string, body: any): Promise<any> {
   const woVoltMatch = p.match(/^\/api\/work-orders\/([^/]+)\/volt$/);
   if (woVoltMatch) {
     const o = await pb.collection('work_orders').getOne(woVoltMatch[1]);
+    if (o.company_id !== cid) throw new Error('Forbidden');
     const newStatus = body.status === 'completed' ? 'DONE' : body.status.toUpperCase().replace('-', '_');
     await pb.collection('work_orders').update(o.id, { status: newStatus });
     return { success: true };
@@ -426,6 +449,7 @@ async function routePost(path: string, body: any): Promise<any> {
   // ── Storage Units ─────────────────────────────────────────────────────────
   if (p === '/api/storage') {
     if (!cid) throw new Error('No company');
+    validatePhotos(body.photos);
     const s = await pb.collection('storage_units').create({
       company_id:  cid,
       unit_name:   body.unit_name,
@@ -503,10 +527,14 @@ async function routePut(path: string, body: any): Promise<any> {
   const url = new URL(path, 'http://x');
   const p   = url.pathname;
   const uid = userId();
+  const cid = companyId();
 
   // PUT /api/boxes/:id
   const boxMatch = p.match(/^\/api\/boxes\/([^/]+)$/);
   if (boxMatch) {
+    const existing = await pb.collection('vaults').getOne(boxMatch[1]);
+    if (existing.company_id !== cid) throw new Error('Forbidden');
+    validatePhotos(body.photos);
     const v = await pb.collection('vaults').update(boxMatch[1], {
       client_name:  body.client_name,
       client_id:    body.client_id,
@@ -525,6 +553,9 @@ async function routePut(path: string, body: any): Promise<any> {
   // PUT /api/storage/:id
   const storageMatch = p.match(/^\/api\/storage\/([^/]+)$/);
   if (storageMatch) {
+    const existingStorage = await pb.collection('storage_units').getOne(storageMatch[1]);
+    if (existingStorage.company_id !== cid) throw new Error('Forbidden');
+    validatePhotos(body.photos);
     await pb.collection('storage_units').update(storageMatch[1], {
       unit_name:   body.unit_name,
       address:     body.address || '',
@@ -547,6 +578,8 @@ async function routePut(path: string, body: any): Promise<any> {
   // PUT /api/work-orders/:id/phase — update phase only
   const woPhaseMatch = p.match(/^\/api\/work-orders\/([^/]+)\/phase$/);
   if (woPhaseMatch) {
+    const existingPhase = await pb.collection('work_orders').getOne(woPhaseMatch[1]);
+    if (existingPhase.company_id !== cid) throw new Error('Forbidden');
     const phaseToStatus: Record<number, string> = { 1: 'PENDING', 2: 'IN_PROGRESS', 3: 'REVIEW', 4: 'DONE' };
     await pb.collection('work_orders').update(woPhaseMatch[1], {
       status: phaseToStatus[body.phase as number] || 'PENDING',
@@ -557,6 +590,8 @@ async function routePut(path: string, body: any): Promise<any> {
   // PUT /api/work-orders/:id
   const woMatch = p.match(/^\/api\/work-orders\/([^/]+)$/);
   if (woMatch) {
+    const existingWo = await pb.collection('work_orders').getOne(woMatch[1]);
+    if (existingWo.company_id !== cid) throw new Error('Forbidden');
     const statusMap: Record<string, string> = {
       pending: 'PENDING', in_progress: 'IN_PROGRESS', review: 'REVIEW', completed: 'DONE',
     };
@@ -583,6 +618,7 @@ async function routeDelete(path: string): Promise<any> {
   if (boxMatch) {
     const vaultId = boxMatch[1];
     const v = await pb.collection('vaults').getOne(vaultId);
+    if (v.company_id !== cid) throw new Error('Forbidden');
     if (cid) {
       await pb.collection('deleted_vaults').create({
         company_id: cid,
@@ -598,6 +634,8 @@ async function routeDelete(path: string): Promise<any> {
   // DELETE /api/storage/:id
   const storageDelMatch = p.match(/^\/api\/storage\/([^/]+)$/);
   if (storageDelMatch) {
+    const storDel = await pb.collection('storage_units').getOne(storageDelMatch[1]);
+    if (storDel.company_id !== cid) throw new Error('Forbidden');
     await pb.collection('storage_units').delete(storageDelMatch[1]);
     return null;
   }
@@ -605,6 +643,8 @@ async function routeDelete(path: string): Promise<any> {
   // DELETE /api/chat/messages/:id
   const chatMatch = p.match(/^\/api\/chat\/messages\/([^/]+)$/);
   if (chatMatch) {
+    const chatMsg = await pb.collection('chat_messages').getOne(chatMatch[1]);
+    if (chatMsg.company_id !== cid && chatMsg.author_id !== userId()) throw new Error('Forbidden');
     await pb.collection('chat_messages').delete(chatMatch[1]);
     return null;
   }
@@ -612,6 +652,8 @@ async function routeDelete(path: string): Promise<any> {
   // DELETE /api/snapshots/:id
   const snapMatch = p.match(/^\/api\/snapshots\/([^/]+)$/);
   if (snapMatch) {
+    const snap = await pb.collection('snapshots').getOne(snapMatch[1]);
+    if (snap.company_id !== cid) throw new Error('Forbidden');
     await pb.collection('snapshots').delete(snapMatch[1]);
     return null;
   }
@@ -619,6 +661,8 @@ async function routeDelete(path: string): Promise<any> {
   // DELETE /api/deleted-boxes/:id — permanent delete
   const delMatch = p.match(/^\/api\/deleted-boxes\/([^/]+)$/);
   if (delMatch) {
+    const dv = await pb.collection('deleted_vaults').getOne(delMatch[1]);
+    if (dv.company_id !== cid) throw new Error('Forbidden');
     await pb.collection('deleted_vaults').delete(delMatch[1]);
     return null;
   }
@@ -626,6 +670,8 @@ async function routeDelete(path: string): Promise<any> {
   // DELETE /api/work-orders/:id
   const woMatch = p.match(/^\/api\/work-orders\/([^/]+)$/);
   if (woMatch) {
+    const wo = await pb.collection('work_orders').getOne(woMatch[1]);
+    if (wo.company_id !== cid) throw new Error('Forbidden');
     await pb.collection('work_orders').delete(woMatch[1]);
     return null;
   }

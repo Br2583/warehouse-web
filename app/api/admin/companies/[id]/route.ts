@@ -1,13 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { signToken } from '@/lib/tokens';
 import { sendEmail, clientApprovedEmail, clientRejectedEmail, clientDeletedEmail, activationEmail } from '@/lib/email';
+import { isAdminRequest } from '@/lib/admin-auth';
 
 const PB_URL = process.env.NEXT_PUBLIC_PB_URL || 'https://pocketbase-production-e699.up.railway.app';
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://managerwarehouse.cc';
-
-function isAdmin(req: NextRequest) {
-  return req.cookies.get('admin_session')?.value === process.env.ADMIN_SECRET;
-}
 
 async function getPbAdminToken() {
   const res = await fetch(`${PB_URL}/api/collections/_superusers/auth-with-password`, {
@@ -20,7 +17,7 @@ async function getPbAdminToken() {
 }
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  if (!isAdmin(req)) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+  if (!isAdminRequest(req)) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
   const { id } = await params;
   const body = await req.json().catch(() => ({}));
@@ -74,7 +71,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 }
 
 export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  if (!isAdmin(req)) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+  if (!isAdminRequest(req)) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
   const { id } = await params;
 

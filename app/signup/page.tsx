@@ -51,7 +51,7 @@ export default function SignupPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: email.trim().toLowerCase() }),
       });
-      localStorage.setItem('verify_email', email.trim().toLowerCase());
+      sessionStorage.setItem('verify_email', email.trim().toLowerCase());
       router.push('/verify-email');
     } catch (e: any) {
       const msg = e?.response?.data;

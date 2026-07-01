@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { hashAdminSecret } from '@/lib/admin-auth';
 
 export async function POST(req: NextRequest) {
   const { password } = await req.json().catch(() => ({}));
@@ -6,7 +7,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Wrong password' }, { status: 401 });
   }
   const res = NextResponse.json({ ok: true });
-  res.cookies.set('admin_session', process.env.ADMIN_SECRET!, {
+  res.cookies.set('admin_session', hashAdminSecret(), {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
     sameSite: 'lax',
