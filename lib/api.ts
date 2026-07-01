@@ -17,6 +17,13 @@ function sf(val: string): string {
   return val.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
 }
 
+// Sanitize error messages before surfacing them to the UI
+function safeError(e: any): never {
+  const msg: string = e?.message || '';
+  const internal = /collection|filter|record|pocketbase|constraint|unique|field|relation/i.test(msg);
+  throw new Error(internal ? 'Operation failed. Please try again.' : msg || 'An error occurred.');
+}
+
 // Validate photos array (client-side guard; real enforcement is in PocketBase rules)
 function validatePhotos(photos: unknown): void {
   if (!Array.isArray(photos)) return;
@@ -141,7 +148,6 @@ async function routeGet(path: string): Promise<any> {
       company_id:   m.company_id,
       company_name,
       role:         m.role,
-      pin_changed:  !!m.pin,
     };
   }
 
@@ -352,15 +358,6 @@ async function routePost(path: string, body: any): Promise<any> {
   if (p === '/api/auth/logout') {
     pb.authStore.clear();
     return {};
-  }
-
-  // ── Auth: change-pin ──────────────────────────────────────────────────────
-  if (p === '/api/auth/change-pin') {
-    if (!uid) throw new Error('Not authenticated');
-    const current = pb.authStore.model?.pin;
-    if (current && current !== body.current_pin) throw new Error('Incorrect PIN');
-    await pb.collection('users').update(uid, { pin: body.new_pin });
-    return { success: true };
   }
 
   // ── Boxes / Vaults ─────────────────────────────────────────────────────────
@@ -681,8 +678,8 @@ async function routeDelete(path: string): Promise<any> {
 
 // ─── Public API (same interface as before) ────────────────────────────────────
 export const api = {
-  get: (path: string) => routeGet(path),
-  post: (path: string, body: any) => routePost(path, body),
-  put: (path: string, body: any) => routePut(path, body),
-  delete: (path: string) => routeDelete(path),
+  get:    (path: string)            => routeGet(path).catch(safeError),
+  post:   (path: string, body: any) => routePost(path, body).catch(safeError),
+  put:    (path: string, body: any) => routePut(path, body).catch(safeError),
+  delete: (path: string)            => routeDelete(path).catch(safeError),
 };
