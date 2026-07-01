@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Trash2, RotateCcw, X, AlertCircle } from 'lucide-react';
+import { TrashIcon, ArrowPathIcon, XMarkIcon, ExclamationCircleIcon } from '@heroicons/react/24/outline';
 import Sidebar from '@/components/Sidebar';
 import { api } from '@/lib/api';
 import ConfirmModal from '@/components/ConfirmModal';
@@ -60,9 +60,9 @@ export default function DeletedPage() {
               initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
               className="flex items-center gap-3 bg-red-50 border border-red-100 text-red-700 text-sm px-4 py-3 rounded-xl mb-4"
             >
-              <AlertCircle className="w-4 h-4 flex-shrink-0" />
+              <ExclamationCircleIcon className="w-4 h-4 flex-shrink-0" />
               <span className="flex-1">{error}</span>
-              <button onClick={() => setError('')} className="text-red-400 hover:text-red-600"><X className="w-4 h-4" /></button>
+              <button onClick={() => setError('')} className="text-red-400 hover:text-red-600"><XMarkIcon className="w-4 h-4" /></button>
             </motion.div>
           )}
         </AnimatePresence>
@@ -102,11 +102,11 @@ export default function DeletedPage() {
                       <div className="flex gap-2">
                         <button onClick={() => restore(box.id)}
                           className="flex items-center gap-1 text-xs text-green-600 hover:bg-green-50 px-2.5 py-1.5 rounded-lg transition-colors">
-                          <RotateCcw className="w-3 h-3" /> Restore
+                          <ArrowPathIcon className="w-3 h-3" /> Restore
                         </button>
                         <button onClick={() => permDelete(box.id)}
                           className="flex items-center gap-1 text-xs text-red-500 hover:bg-red-50 px-2.5 py-1.5 rounded-lg transition-colors">
-                          <X className="w-3 h-3" /> Delete
+                          <XMarkIcon className="w-3 h-3" /> Delete
                         </button>
                       </div>
                     </td>

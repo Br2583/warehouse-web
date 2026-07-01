@@ -2,7 +2,11 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Archive, MapPin, User, Camera, Pencil, Trash2, X, ChevronLeft, AlertCircle, Check, Loader2, Grid3X3, Settings2 } from 'lucide-react';
+import {
+  ArchiveBoxIcon, MapPinIcon, UserIcon, CameraIcon, PencilIcon, TrashIcon,
+  XMarkIcon, ChevronLeftIcon, ExclamationCircleIcon, CheckIcon,
+  Squares2X2Icon, AdjustmentsHorizontalIcon,
+} from '@heroicons/react/24/outline';
 import ConfirmModal from '@/components/ConfirmModal';
 import Sidebar from '@/components/Sidebar';
 import { api } from '@/lib/api';
@@ -205,7 +209,7 @@ export default function StorageDetailPage() {
         {/* Header */}
         <div className="flex items-center gap-4 mb-6">
           <Link href="/storage" className="text-gray-400 hover:text-gray-600 transition-colors">
-            <ChevronLeft className="w-5 h-5" />
+            <ChevronLeftIcon className="w-5 h-5" />
           </Link>
           <div className="flex-1 min-w-0">
             <h1 className="text-xl font-bold text-gray-900 truncate">{unit?.unit_name}</h1>
@@ -214,13 +218,13 @@ export default function StorageDetailPage() {
           <div className="flex items-center gap-2">
             {success && (
               <motion.span initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex items-center gap-1 text-green-600 text-sm font-medium">
-                <Check className="w-4 h-4" /> Saved
+                <CheckIcon className="w-4 h-4" /> Saved
               </motion.span>
             )}
             {isOwner && !editMode && (
               <button onClick={startEdit}
                 className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-600 bg-white border border-gray-200 rounded-xl hover:border-blue-400 hover:text-blue-600 transition-colors">
-                <Pencil className="w-4 h-4" /> Edit
+                <PencilIcon className="w-4 h-4" /> Edit
               </button>
             )}
           </div>
@@ -231,7 +235,7 @@ export default function StorageDetailPage() {
           <h2 className="text-sm font-semibold text-gray-700 mb-3">Photos {photos.length > 0 && `(${photos.length}/${MAX_PHOTOS})`}</h2>
           {photos.length === 0 && !editMode ? (
             <div className="h-28 flex items-center justify-center bg-gray-50 rounded-xl text-gray-300">
-              <Camera className="w-8 h-8" />
+              <CameraIcon className="w-8 h-8" />
             </div>
           ) : (
             <div className="grid grid-cols-3 gap-2">
@@ -243,7 +247,7 @@ export default function StorageDetailPage() {
                       onClick={(e) => { e.stopPropagation(); removePhoto(i); }}
                       className="absolute top-1 right-1 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
                     >
-                      <X className="w-3 h-3" />
+                      <XMarkIcon className="w-3 h-3" />
                     </button>
                   )}
                 </div>
@@ -253,7 +257,7 @@ export default function StorageDetailPage() {
                   onClick={() => fileRef.current?.click()}
                   className="aspect-square rounded-xl border-2 border-dashed border-gray-200 flex flex-col items-center justify-center text-gray-300 hover:border-blue-400 hover:text-blue-400 transition-colors"
                 >
-                  <Camera className="w-6 h-6" />
+                  <CameraIcon className="w-6 h-6" />
                   <span className="text-xs mt-1">Add</span>
                 </button>
               )}
@@ -268,14 +272,14 @@ export default function StorageDetailPage() {
           <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }} className="bg-white rounded-2xl border border-gray-100 p-5 mb-5">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
-                <Grid3X3 className="w-4 h-4 text-blue-600" />
+                <Squares2X2Icon className="w-4 h-4 text-blue-600" />
                 <h2 className="text-sm font-semibold text-gray-700">Position Map</h2>
                 <span className="text-xs text-gray-400">{gridRows}×{gridCols}</span>
               </div>
               {isOwner && (
                 <button onClick={() => { setGridConfigForm({ rows: gridRows, cols: gridCols }); setShowGridConfig(s => !s); }}
                   className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-blue-600 transition-colors px-2 py-1 rounded-lg hover:bg-blue-50">
-                  <Settings2 className="w-3.5 h-3.5" /> Configure
+                  <AdjustmentsHorizontalIcon className="w-3.5 h-3.5" /> Configure
                 </button>
               )}
             </div>
@@ -357,7 +361,7 @@ export default function StorageDetailPage() {
                 className="bg-white rounded-2xl p-6 w-full max-w-sm shadow-xl" onClick={e => e.stopPropagation()}>
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="font-semibold text-gray-900">Slot {slotModal}</h3>
-                  <button onClick={() => setSlotModal(null)} className="text-gray-400 hover:text-gray-600"><X className="w-4 h-4" /></button>
+                  <button onClick={() => setSlotModal(null)} className="text-gray-400 hover:text-gray-600"><XMarkIcon className="w-4 h-4" /></button>
                 </div>
                 <div className="space-y-3">
                   <div>
@@ -380,7 +384,7 @@ export default function StorageDetailPage() {
                   </button>
                   <button onClick={saveSlot} disabled={slotSaving}
                     className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-blue-600 text-white text-sm font-medium rounded-xl hover:bg-blue-700 disabled:opacity-50 transition-colors">
-                    {slotSaving && <Loader2 className="w-4 h-4 animate-spin" />}
+                    {slotSaving && <div className="w-4 h-4 animate-spin" />}
                     Save
                   </button>
                 </div>
@@ -393,7 +397,7 @@ export default function StorageDetailPage() {
         {mapUrl && !editMode && (
           <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }} className="bg-white rounded-2xl border border-gray-100 overflow-hidden mb-5">
             <div className="px-5 pt-4 pb-2 flex items-center gap-2">
-              <MapPin className="w-4 h-4 text-blue-600" />
+              <MapPinIcon className="w-4 h-4 text-blue-600" />
               <h2 className="text-sm font-semibold text-gray-700">Location</h2>
             </div>
             <iframe
@@ -490,9 +494,9 @@ export default function StorageDetailPage() {
           {error && (
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
               className="flex items-center gap-2 text-sm text-red-600 bg-red-50 border border-red-100 rounded-xl px-4 py-3 mb-4">
-              <AlertCircle className="w-4 h-4 flex-shrink-0" />
+              <ExclamationCircleIcon className="w-4 h-4 flex-shrink-0" />
               <span className="flex-1">{error}</span>
-              <button onClick={() => setError('')}><X className="w-4 h-4" /></button>
+              <button onClick={() => setError('')}><XMarkIcon className="w-4 h-4" /></button>
             </motion.div>
           )}
         </AnimatePresence>
@@ -503,14 +507,14 @@ export default function StorageDetailPage() {
             <button onClick={cancelEdit} className="px-5 py-2.5 text-gray-400 hover:text-gray-600 text-sm transition-colors">Cancel</button>
             <button onClick={save} disabled={saving}
               className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-blue-600 text-white text-sm font-medium rounded-xl hover:bg-blue-700 disabled:opacity-50 transition-colors">
-              {saving && <Loader2 className="w-4 h-4 animate-spin" />}
+              {saving && <div className="w-4 h-4 animate-spin" />}
               Save Changes
             </button>
           </div>
         ) : isOwner && (
           <button onClick={deleteUnit}
             className="flex items-center gap-2 px-4 py-2 text-sm text-red-500 hover:bg-red-50 rounded-xl transition-colors">
-            <Trash2 className="w-4 h-4" /> Delete Storage Unit
+            <TrashIcon className="w-4 h-4" /> Delete Storage Unit
           </button>
         )}
 
@@ -522,7 +526,7 @@ export default function StorageDetailPage() {
                 className="relative max-w-2xl w-full" onClick={e => e.stopPropagation()}>
                 <img src={photos[lightbox]} alt="Photo" className="w-full rounded-2xl object-contain max-h-[80vh]" />
                 <button onClick={() => setLightbox(null)} className="absolute top-3 right-3 w-8 h-8 bg-black/50 rounded-full flex items-center justify-center text-white hover:bg-black/70">
-                  <X className="w-4 h-4" />
+                  <XMarkIcon className="w-4 h-4" />
                 </button>
                 {photos.length > 1 && (
                   <>

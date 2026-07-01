@@ -156,7 +156,10 @@ async function routeGet(path: string): Promise<any> {
     if (!cid) return [];
     const warehouseId = q.get('warehouse_id');
     const filter = warehouseId ? `company_id="${cid}" && warehouse_id="${sf(warehouseId)}"` : `company_id="${cid}"`;
-    const items = await pb.collection('vaults').getFullList({ filter });
+    const items = await pb.collection('vaults').getFullList({
+      filter,
+      fields: 'id,warehouse_id,row,col,level,position,client_name,client_id,job_type,vault_status,content_type,room_location,packer,comments,estado,qr_token,company_id,created',
+    });
     return items.map(mapVault).sort((a: any, b: any) => a.created < b.created ? -1 : 1);
   }
 
@@ -310,7 +313,10 @@ async function routeGet(path: string): Promise<any> {
   // ── Storage Units ─────────────────────────────────────────────────────────
   if (p === '/api/storage') {
     if (!cid) return [];
-    const items = await pb.collection('storage_units').getFullList({ filter: `company_id="${cid}"` });
+    const items = await pb.collection('storage_units').getFullList({
+      filter: `company_id="${cid}"`,
+      fields: 'id,unit_name,address,city,state,client_id,capacity,access_code,status,notes,company_id,created,slots,grid_rows,grid_cols',
+    });
     return items
       .sort((a: any, b: any) => a.created < b.created ? 1 : -1)
       .map(mapStorage);
@@ -328,6 +334,7 @@ async function routeGet(path: string): Promise<any> {
     if (!cid) return [];
     const items = await pb.collection('deleted_vaults').getFullList({
       filter: `company_id="${cid}"`,
+      fields: 'id,company_id,created,vault_data',
     });
     return items
       .sort((a: any, b: any) => a.created < b.created ? 1 : -1)

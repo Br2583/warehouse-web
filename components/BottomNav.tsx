@@ -3,21 +3,21 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
-  LayoutDashboard, Building2, Search, Wrench,
-  BarChart3, Camera, MessageSquare, Trash2, User, Archive,
-} from 'lucide-react';
+  Squares2X2Icon, BuildingOffice2Icon, MagnifyingGlassIcon, WrenchScrewdriverIcon,
+  ChartBarIcon, CameraIcon, ChatBubbleLeftRightIcon, TrashIcon, UserIcon, ArchiveBoxIcon,
+} from '@heroicons/react/24/outline';
 
 const items = [
-  { href: '/dashboard',   label: 'Home',        icon: LayoutDashboard },
-  { href: '/warehouses',  label: 'Warehouses',  icon: Building2 },
-  { href: '/search',      label: 'Search',      icon: Search },
-  { href: '/production',  label: 'Production',  icon: Wrench },
-  { href: '/chat',        label: 'Chat',        icon: MessageSquare },
-  { href: '/stats',       label: 'Stats',       icon: BarChart3 },
-  { href: '/snapshots',   label: 'Snapshots',   icon: Camera },
-  { href: '/storage',     label: 'Storage',     icon: Archive },
-  { href: '/deleted',     label: 'Deleted',     icon: Trash2 },
-  { href: '/profile',     label: 'Profile',     icon: User },
+  { href: '/dashboard',   label: 'Home',        icon: Squares2X2Icon },
+  { href: '/warehouses',  label: 'Warehouses',  icon: BuildingOffice2Icon },
+  { href: '/search',      label: 'Search',      icon: MagnifyingGlassIcon },
+  { href: '/production',  label: 'Production',  icon: WrenchScrewdriverIcon },
+  { href: '/chat',        label: 'Chat',        icon: ChatBubbleLeftRightIcon },
+  { href: '/stats',       label: 'Stats',       icon: ChartBarIcon },
+  { href: '/snapshots',   label: 'Snapshots',   icon: CameraIcon },
+  { href: '/storage',     label: 'Storage',     icon: ArchiveBoxIcon },
+  { href: '/deleted',     label: 'Deleted',     icon: TrashIcon },
+  { href: '/profile',     label: 'Profile',     icon: UserIcon },
 ];
 
 export default function BottomNav() {
@@ -34,7 +34,7 @@ export default function BottomNav() {
               href={href}
               className="flex flex-col items-center gap-0.5 px-3 py-1.5 flex-shrink-0 min-w-[64px]"
             >
-              <Icon size={20} className={active ? 'text-blue-600' : 'text-gray-400'} />
+              <Icon className={`w-5 h-5 ${active ? 'text-blue-600' : 'text-gray-400'}`} />
               <span className={`text-[10px] font-medium ${active ? 'text-blue-600' : 'text-gray-400'}`}>
                 {label}
               </span>
