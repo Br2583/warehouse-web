@@ -1,17 +1,21 @@
-import Link from 'next/link';
+'use client';
+
+import { useRouter } from 'next/navigation';
 import { ArrowLeftIcon } from '@heroicons/react/24/outline';
 
 export default function TermsPage() {
+  const router = useRouter();
+
   return (
     <div className="min-h-screen bg-slate-50 py-10 px-4">
       <div className="max-w-2xl mx-auto">
-        <Link
-          href="/signup"
+        <button
+          onClick={() => router.back()}
           className="inline-flex items-center gap-2 text-sm text-slate-500 hover:text-slate-900 transition-colors mb-8"
         >
           <ArrowLeftIcon className="w-4 h-4" />
           Back
-        </Link>
+        </button>
 
         <div className="flex items-center gap-3 mb-8">
           <div className="w-10 h-10 bg-gray-950 rounded-xl flex items-center justify-center flex-shrink-0">

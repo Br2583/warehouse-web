@@ -51,9 +51,7 @@ export default function VaultPrintPage() {
     <div className="min-h-screen flex items-center justify-center text-gray-500">{error || 'Not found'}</div>
   );
 
-  const qrUrl = typeof window !== 'undefined'
-    ? `${window.location.origin}/vault/${id}`
-    : `/vault/${id}`;
+  const qrUrl = `https://managerwarehouse.cc/vault/${id}`;
 
   const status = vault.estado || vault.status || 'PENDING';
   const pos = vault.position || `${vault.row}${vault.column}-L${vault.level}`;
