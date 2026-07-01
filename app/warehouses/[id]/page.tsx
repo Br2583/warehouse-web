@@ -10,6 +10,7 @@ import {
 import ConfirmModal from '@/components/ConfirmModal';
 import Sidebar from '@/components/Sidebar';
 import VaultForm, { VaultFormData } from '@/components/VaultForm';
+import QRScanner from '@/components/QRScanner';
 import { api } from '@/lib/api';
 import { useParams } from 'next/navigation';
 import { compressImage } from '@/lib/compress-image';
@@ -84,6 +85,7 @@ export default function WarehouseDetailPage() {
   const [gridRowsInput, setGridRowsInput] = useState(10);
   const [gridColsInput, setGridColsInput] = useState(8);
   const [gridSaving, setGridSaving] = useState(false);
+  const [showScanner, setShowScanner] = useState(false);
 
   const fetchBoxes = () => {
     setApiError('');
@@ -231,6 +233,16 @@ export default function WarehouseDetailPage() {
     }
   };
 
+  const handleScanResult = (vaultId: string) => {
+    setShowScanner(false);
+    const found = boxes.find(b => b.box_id === vaultId);
+    if (found) {
+      setSelected(found);
+    } else {
+      setApiError(`Vault not found in this warehouse. It may belong to a different warehouse.`);
+    }
+  };
+
   const boxStatus = (box: Box) => box.estado || box.status || 'PENDING';
 
   const activeRows = ROWS.slice(0, warehouseRows);
@@ -294,7 +306,13 @@ export default function WarehouseDetailPage() {
               </button>
             </div>
             <button
-             
+              onClick={() => setShowScanner(true)}
+              className="flex items-center gap-2 px-3 py-2 md:px-4 md:py-2.5 bg-white border border-gray-200 text-gray-600 text-sm font-medium rounded-xl hover:border-blue-400 hover:text-blue-600 transition-colors"
+              title="Scan QR code"
+            >
+              <QrCodeIcon className="w-4 h-4" /><span className="hidden sm:inline">Scan QR</span>
+            </button>
+            <button
               onClick={() => { setForm(emptyForm); setShowAdd(true); setSaveError(''); }}
               className="flex items-center gap-2 px-3 py-2 md:px-4 md:py-2.5 bg-blue-600 text-white text-sm font-medium rounded-xl hover:bg-blue-700 transition-colors"
             >
@@ -705,6 +723,13 @@ export default function WarehouseDetailPage() {
           message={confirmModal.message}
           onConfirm={confirmModal.onConfirm}
           onCancel={() => setConfirmModal(null)}
+        />
+      )}
+
+      {showScanner && (
+        <QRScanner
+          onClose={() => setShowScanner(false)}
+          onResult={handleScanResult}
         />
       )}
     </div>
