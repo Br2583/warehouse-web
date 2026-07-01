@@ -2,10 +2,12 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { motion, AnimatePresence } from 'framer-motion';
 import { pb } from '@/lib/pb';
 import { useAuth } from '@/lib/auth-context';
 import {
-  BuildingOffice2Icon, UserCircleIcon, CameraIcon, ChevronRightIcon, ArrowPathIcon, BriefcaseIcon,
+  BuildingOffice2Icon, UserCircleIcon, CameraIcon, ChevronRightIcon,
+  ArrowPathIcon, BriefcaseIcon, ArrowLeftIcon, CheckIcon,
 } from '@heroicons/react/24/outline';
 
 const INDUSTRIES = [
@@ -20,9 +22,8 @@ const INDUSTRIES = [
 
 function Spinner() {
   return (
-    <div className="min-h-screen flex items-center justify-center"
-      style={{ background: 'linear-gradient(135deg, #0a0f1a 0%, #111827 100%)' }}>
-      <div className="w-8 h-8 border-2 border-white/20 border-t-white/60 rounded-full animate-spin" />
+    <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+      <div className="w-8 h-8 border-2 border-blue-600/20 border-t-blue-600 rounded-full animate-spin" />
     </div>
   );
 }
@@ -41,7 +42,6 @@ export default function OnboardingPage() {
   const [avatarPreview, setAvatarPreview] = useState<string>('');
   const fileRef = useRef<HTMLInputElement>(null);
 
-  // Sync name/picture once user loads
   useEffect(() => {
     if (user) {
       setDisplayName(prev => prev || user.name || '');
@@ -55,7 +55,6 @@ export default function OnboardingPage() {
   const [description, setDescription] = useState('');
   const [showIndustryDropdown, setShowIndustryDropdown] = useState(false);
 
-  // Sync company name once user loads
   useEffect(() => {
     if (user?.company_name) setCompanyName(prev => prev || user.company_name || '');
   }, [user?.company_name]);
@@ -85,12 +84,8 @@ export default function OnboardingPage() {
       form.append('name', displayName.trim());
       form.append('job_title', jobTitle.trim());
       if (avatarFile) form.append('avatar', avatarFile);
-
-      // Only mark profile_complete if worker (owner needs step 2 first)
       if (!isOwner) form.append('profile_complete', 'true');
-
       await pb.collection('users').update(user.id, form);
-
       if (isOwner) {
         setStep(2);
       } else {
@@ -124,55 +119,79 @@ export default function OnboardingPage() {
     }
   };
 
+  /* shared input styles (same as login/signup) */
+  const inputBase = 'w-full px-4 py-3 rounded-[10px] text-sm text-gray-900 placeholder-gray-300 outline-none transition-all';
+  const inputStyle = { background: '#f8fafc', border: '1.5px solid #cbd5e1' };
+  const onFocus = (e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    e.target.style.borderColor = '#3b82f6'; e.target.style.background = '#fff'; e.target.style.boxShadow = '0 0 0 3px rgba(59,130,246,.15)';
+  };
+  const onBlur = (e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    e.target.style.borderColor = '#cbd5e1'; e.target.style.background = '#f8fafc'; e.target.style.boxShadow = 'none';
+  };
+
   return (
-    <div className="min-h-screen flex items-center justify-center px-4"
-      style={{ background: 'linear-gradient(135deg, #0a0f1a 0%, #111827 100%)' }}>
+    <div className="min-h-screen bg-slate-50 flex items-center justify-center px-4 py-8">
       <div className="w-full max-w-md">
+
+        {/* WM Logo */}
+        <div className="flex items-center justify-center gap-2.5 mb-8">
+          <div className="w-8 h-8 bg-gray-950 rounded-[8px] flex items-center justify-center">
+            <span className="text-white font-black text-[9px] italic leading-none">WM</span>
+          </div>
+          <span className="font-bold text-gray-900 text-sm">Warehouse Manager</span>
+        </div>
 
         {/* Steps indicator */}
         {totalSteps > 1 && (
-          <div className="flex items-center justify-center gap-2 mb-8">
+          <div className="flex items-center justify-center gap-2 mb-6">
             {Array.from({ length: totalSteps }).map((_, i) => (
               <div key={i} className="flex items-center gap-2">
-                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium transition-colors ${
-                  i + 1 < step ? 'bg-blue-500 text-white' :
-                  i + 1 === step ? 'bg-blue-600 text-white ring-2 ring-blue-400/40' :
-                  'bg-white/10 text-white/40'
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold transition-all ${
+                  i + 1 < step ? 'bg-blue-600 text-white' :
+                  i + 1 === step ? 'bg-blue-600 text-white ring-4 ring-blue-100' :
+                  'bg-gray-100 text-gray-400'
                 }`}>
-                  {i + 1}
+                  {i + 1 < step ? <CheckIcon className="w-4 h-4" /> : i + 1}
                 </div>
-                {i < totalSteps - 1 && <div className={`w-8 h-0.5 ${i + 1 < step ? 'bg-blue-500' : 'bg-white/10'}`} />}
+                {i < totalSteps - 1 && (
+                  <div className={`w-10 h-0.5 rounded-full transition-colors ${i + 1 < step ? 'bg-blue-600' : 'bg-gray-200'}`} />
+                )}
               </div>
             ))}
           </div>
         )}
 
-        <div className="bg-white/5 border border-white/10 rounded-2xl p-8">
-
+        <motion.div
+          key={step}
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.35, ease: [0.25, 0.1, 0.25, 1] }}
+          className="bg-white rounded-3xl shadow-[0_20px_80px_rgba(0,0,0,.09)] border border-gray-200 p-8"
+        >
           {step === 1 && (
             <>
               <div className="flex items-center gap-3 mb-6">
-                <div className="w-10 h-10 bg-blue-500/20 rounded-xl flex items-center justify-center">
-                  <UserCircleIcon className="w-5 h-5 text-blue-400" />
+                <div className="w-10 h-10 bg-blue-50 rounded-xl flex items-center justify-center">
+                  <UserCircleIcon className="w-5 h-5 text-blue-600" />
                 </div>
                 <div>
-                  <h1 className="text-white font-semibold text-lg">Set up your profile</h1>
-                  <p className="text-white/40 text-sm">How should teammates see you?</p>
+                  <h1 className="font-extrabold text-gray-900 text-lg tracking-tight">Set up your profile</h1>
+                  <p className="text-slate-400 text-sm">How should teammates see you?</p>
                 </div>
               </div>
 
               {/* Avatar */}
               <div className="flex justify-center mb-6">
                 <button type="button" onClick={() => fileRef.current?.click()}
-                  className="relative w-20 h-20 rounded-full overflow-hidden border-2 border-white/20 hover:border-blue-400 transition-colors group">
+                  className="relative w-20 h-20 rounded-full overflow-hidden border-2 border-gray-200 hover:border-blue-400 transition-colors group">
                   {avatarPreview ? (
                     <img src={avatarPreview} alt="Avatar preview" className="w-full h-full object-cover" />
                   ) : (
-                    <div className="w-full h-full bg-white/10 flex items-center justify-center">
-                      <UserCircleIcon className="w-8 h-8 text-white/30" />
+                    <div className="w-full h-full bg-gray-100 flex items-center justify-center">
+                      <UserCircleIcon className="w-8 h-8 text-gray-300" />
                     </div>
                   )}
-                  <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                  <div className="absolute inset-0 bg-black/30 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                     <CameraIcon className="w-5 h-5 text-white" />
                   </div>
                 </button>
@@ -180,42 +199,55 @@ export default function OnboardingPage() {
               </div>
 
               <div className="space-y-4">
-                <div>
-                  <label className="block text-white/60 text-xs font-medium mb-1.5 uppercase tracking-wide">Full name *</label>
+                <div className="group">
+                  <label className="block text-[12px] font-semibold text-slate-500 mb-1.5 group-focus-within:text-blue-600 transition-colors">Full name *</label>
                   <input
                     type="text"
                     value={displayName}
                     onChange={e => setDisplayName(e.target.value)}
                     placeholder="Your full name"
-                    className="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white placeholder-white/30 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className={inputBase}
+                    style={inputStyle}
+                    onFocus={onFocus}
+                    onBlur={onBlur}
                   />
                 </div>
 
-                <div>
-                  <label className="block text-white/60 text-xs font-medium mb-1.5 uppercase tracking-wide">Job title</label>
+                <div className="group">
+                  <label className="block text-[12px] font-semibold text-slate-500 mb-1.5 group-focus-within:text-blue-600 transition-colors">Job title</label>
                   <div className="relative">
-                    <BriefcaseIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30" />
+                    <BriefcaseIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-300 pointer-events-none" />
                     <input
                       type="text"
                       value={jobTitle}
                       onChange={e => setJobTitle(e.target.value)}
                       placeholder="e.g. Warehouse Manager, Driver..."
-                      className="w-full bg-white/10 border border-white/20 rounded-xl pl-10 pr-4 py-3 text-white placeholder-white/30 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className={`${inputBase} pl-10`}
+                      style={inputStyle}
+                      onFocus={onFocus}
+                      onBlur={onBlur}
                     />
                   </div>
                 </div>
               </div>
 
-              {error && <p className="mt-4 text-red-400 text-sm">{error}</p>}
+              <AnimatePresence>
+                {error && (
+                  <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                    className="mt-3 text-red-500 text-sm">
+                    {error}
+                  </motion.p>
+                )}
+              </AnimatePresence>
 
               <button
                 onClick={saveProfile}
                 disabled={saving || !displayName.trim()}
-                className="mt-6 w-full flex items-center justify-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-medium rounded-xl transition-colors"
+                className="mt-6 w-full flex items-center justify-center gap-2 py-3.5 rounded-[10px] bg-blue-600 text-white font-bold text-sm hover:bg-blue-700 hover:-translate-y-0.5 active:translate-y-0 transition-all shadow-[0_2px_12px_rgba(59,130,246,.3)] disabled:opacity-50"
               >
-                {saving ? <ArrowPathIcon className="w-4 h-4 animate-spin" /> : null}
-                {isOwner ? 'Continue' : 'Get Started'}
-                {!saving && <ChevronRightIcon className="w-4 h-4" />}
+                {saving
+                  ? <span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+                  : <>{isOwner ? 'Continue' : 'Get Started'} <ChevronRightIcon className="w-4 h-4" /></>}
               </button>
             </>
           )}
@@ -223,46 +255,50 @@ export default function OnboardingPage() {
           {step === 2 && (
             <>
               <div className="flex items-center gap-3 mb-6">
-                <div className="w-10 h-10 bg-blue-500/20 rounded-xl flex items-center justify-center">
-                  <BuildingOffice2Icon className="w-5 h-5 text-blue-400" />
+                <div className="w-10 h-10 bg-blue-50 rounded-xl flex items-center justify-center">
+                  <BuildingOffice2Icon className="w-5 h-5 text-blue-600" />
                 </div>
                 <div>
-                  <h1 className="text-white font-semibold text-lg">Your company</h1>
-                  <p className="text-white/40 text-sm">Tell us a bit about the business</p>
+                  <h1 className="font-extrabold text-gray-900 text-lg tracking-tight">Your company</h1>
+                  <p className="text-slate-400 text-sm">Tell us a bit about the business</p>
                 </div>
               </div>
 
               <div className="space-y-4">
-                <div>
-                  <label className="block text-white/60 text-xs font-medium mb-1.5 uppercase tracking-wide">Company name *</label>
+                <div className="group">
+                  <label className="block text-[12px] font-semibold text-slate-500 mb-1.5 group-focus-within:text-blue-600 transition-colors">Company name *</label>
                   <input
                     type="text"
                     value={companyName}
                     onChange={e => setCompanyName(e.target.value)}
                     placeholder="Company name"
-                    className="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white placeholder-white/30 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className={inputBase}
+                    style={inputStyle}
+                    onFocus={onFocus}
+                    onBlur={onBlur}
                   />
                 </div>
 
                 <div>
-                  <label className="block text-white/60 text-xs font-medium mb-1.5 uppercase tracking-wide">Industry</label>
+                  <label className="block text-[12px] font-semibold text-slate-500 mb-1.5">Industry</label>
                   <div className="relative">
                     <button
                       type="button"
                       onClick={() => setShowIndustryDropdown(s => !s)}
-                      className="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-left text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 flex items-center justify-between"
+                      className="w-full text-left text-sm px-4 py-3 rounded-[10px] transition-all flex items-center justify-between"
+                      style={{ background: '#f8fafc', border: '1.5px solid #cbd5e1' }}
                     >
-                      <span className={industry ? 'text-white' : 'text-white/30'}>{industry || 'Select industry...'}</span>
-                      <ChevronRightIcon className={`w-4 h-4 text-white/30 transition-transform ${showIndustryDropdown ? 'rotate-90' : ''}`} />
+                      <span className={industry ? 'text-gray-900' : 'text-gray-300'}>{industry || 'Select industry...'}</span>
+                      <ChevronRightIcon className={`w-4 h-4 text-gray-300 transition-transform ${showIndustryDropdown ? 'rotate-90' : ''}`} />
                     </button>
                     {showIndustryDropdown && (
-                      <div className="absolute z-10 w-full mt-1 bg-gray-900 border border-white/20 rounded-xl overflow-y-auto max-h-48 shadow-xl">
+                      <div className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-2xl overflow-y-auto max-h-48 shadow-xl">
                         {INDUSTRIES.map(ind => (
                           <button
                             key={ind}
                             type="button"
                             onClick={() => { setIndustry(ind); setShowIndustryDropdown(false); }}
-                            className={`w-full px-4 py-2.5 text-left text-sm transition-colors hover:bg-blue-600 hover:text-white ${industry === ind ? 'text-blue-400' : 'text-white/70'}`}
+                            className={`w-full px-4 py-2.5 text-left text-sm transition-colors hover:bg-blue-50 hover:text-blue-600 ${industry === ind ? 'text-blue-600 font-medium' : 'text-gray-600'}`}
                           >
                             {ind}
                           </button>
@@ -272,42 +308,54 @@ export default function OnboardingPage() {
                   </div>
                 </div>
 
-                <div>
-                  <label className="block text-white/60 text-xs font-medium mb-1.5 uppercase tracking-wide">Description <span className="normal-case text-white/30">(optional)</span></label>
+                <div className="group">
+                  <label className="block text-[12px] font-semibold text-slate-500 mb-1.5 group-focus-within:text-blue-600 transition-colors">
+                    Description <span className="font-normal text-slate-300">(optional)</span>
+                  </label>
                   <textarea
                     value={description}
                     onChange={e => setDescription(e.target.value)}
                     placeholder="Brief description of what you do..."
                     rows={3}
-                    className="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white placeholder-white/30 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                    className="w-full px-4 py-3 rounded-[10px] text-sm text-gray-900 placeholder-gray-300 outline-none transition-all resize-none"
+                    style={inputStyle}
+                    onFocus={onFocus}
+                    onBlur={onBlur}
                   />
                 </div>
               </div>
 
-              {error && <p className="mt-4 text-red-400 text-sm">{error}</p>}
+              <AnimatePresence>
+                {error && (
+                  <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                    className="mt-3 text-red-500 text-sm">
+                    {error}
+                  </motion.p>
+                )}
+              </AnimatePresence>
 
               <div className="mt-6 flex gap-3">
                 <button
                   onClick={() => setStep(1)}
-                  className="px-5 py-3 text-white/40 hover:text-white/70 text-sm transition-colors"
+                  className="flex items-center gap-1.5 px-4 py-3 text-slate-400 hover:text-slate-600 text-sm transition-colors"
                 >
-                  ← Back
+                  <ArrowLeftIcon className="w-4 h-4" /> Back
                 </button>
                 <button
                   onClick={saveCompany}
                   disabled={saving || !companyName.trim()}
-                  className="flex-1 flex items-center justify-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-medium rounded-xl transition-colors"
+                  className="flex-1 flex items-center justify-center gap-2 py-3.5 rounded-[10px] bg-blue-600 text-white font-bold text-sm hover:bg-blue-700 hover:-translate-y-0.5 active:translate-y-0 transition-all shadow-[0_2px_12px_rgba(59,130,246,.3)] disabled:opacity-50"
                 >
-                  {saving ? <ArrowPathIcon className="w-4 h-4 animate-spin" /> : null}
-                  Finish Setup
+                  {saving
+                    ? <span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+                    : 'Finish Setup'}
                 </button>
               </div>
             </>
           )}
+        </motion.div>
 
-        </div>
-
-        <p className="text-center text-white/20 text-xs mt-4">
+        <p className="text-center text-slate-400 text-xs mt-4">
           You can always update this later in your profile
         </p>
       </div>
