@@ -7,7 +7,6 @@ import Sidebar from '@/components/Sidebar';
 import { api } from '@/lib/api';
 import { useAuth } from '@/lib/auth-context';
 import { notify, requestNotificationPermission } from '@/lib/notifications';
-import { parseDate } from '@/lib/utils';
 
 interface Message {
   id: string;
@@ -18,6 +17,16 @@ interface Message {
   timestamp: string;
 }
 
+function formatTime(ts: string): string {
+  if (!ts) return '';
+  // PocketBase returns "2024-01-15 14:30:00.000Z" — ensure it's parsed as UTC
+  const iso = ts.includes('T') ? ts : ts.replace(' ', 'T');
+  const withZ = iso.endsWith('Z') || iso.includes('+') ? iso : iso + 'Z';
+  const d = new Date(withZ);
+  if (isNaN(d.getTime())) return '';
+  return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+}
+
 export default function ChatPage() {
   const { user } = useAuth();
   const [messages, setMessages] = useState<Message[]>([]);
@@ -26,13 +35,25 @@ export default function ChatPage() {
   const [sendError, setSendError] = useState('');
   const [sending, setSending] = useState(false);
   const lastCountRef = useRef(-1);
-  const bottomRef = useRef<HTMLDivElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const isAtBottomRef = useRef(true);
 
-  const scrollToBottom = useCallback((behavior: ScrollBehavior = 'smooth') => {
-    bottomRef.current?.scrollIntoView({ behavior });
+  const scrollToBottom = useCallback((instant = false) => {
+    const el = containerRef.current;
+    if (!el) return;
+    el.scrollTop = el.scrollHeight;
+    if (!instant) {
+      requestAnimationFrame(() => { el.scrollTop = el.scrollHeight; });
+    }
   }, []);
 
-  const fetchMessages = () =>
+  const onScroll = useCallback(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    isAtBottomRef.current = el.scrollHeight - el.scrollTop - el.clientHeight < 80;
+  }, []);
+
+  const fetchMessages = useCallback(() =>
     api.get('/api/chat/messages').then((msgs: Message[]) => {
       if (lastCountRef.current >= 0 && msgs.length > lastCountRef.current) {
         const newest = msgs[msgs.length - 1];
@@ -42,18 +63,22 @@ export default function ChatPage() {
       }
       lastCountRef.current = msgs.length;
       setMessages(msgs);
-    }).catch(() => {}).finally(() => setLoading(false));
+    }).catch(() => {}).finally(() => setLoading(false))
+  , [user?.email]);
 
   useEffect(() => {
     requestNotificationPermission();
     fetchMessages();
     const interval = setInterval(fetchMessages, 10000);
     return () => clearInterval(interval);
-  }, []);
+  }, [fetchMessages]);
 
   useEffect(() => {
-    if (messages.length > 0) scrollToBottom(loading ? 'instant' : 'smooth');
-  }, [messages]);
+    if (messages.length === 0) return;
+    if (loading || isAtBottomRef.current) {
+      scrollToBottom(loading);
+    }
+  }, [messages, loading, scrollToBottom]);
 
   const send = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -68,7 +93,9 @@ export default function ChatPage() {
         text: text.trim(),
       });
       setText('');
-      fetchMessages();
+      isAtBottomRef.current = true;
+      await fetchMessages();
+      scrollToBottom();
     } catch (err: any) {
       setSendError(err?.message || 'Failed to send message');
     } finally {
@@ -94,7 +121,7 @@ export default function ChatPage() {
           <p className="text-gray-500 text-sm mt-1">Internal company communication</p>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-4">
+        <div ref={containerRef} onScroll={onScroll} className="flex-1 overflow-y-auto p-4 md:p-6 space-y-4">
           {loading ? (
             <div className="flex justify-center py-16">
               <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
@@ -124,7 +151,7 @@ export default function ChatPage() {
                     <div className={`px-4 py-2.5 rounded-2xl text-sm break-words ${isMe ? 'bg-blue-600 text-white rounded-tr-sm' : 'bg-white border border-gray-100 text-gray-800 rounded-tl-sm'}`}>
                       {msg.text}
                     </div>
-                    <span className="text-xs text-gray-300 mt-1">{parseDate(msg.timestamp || '').toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                    <span className="text-xs text-gray-300 mt-1">{formatTime(msg.timestamp)}</span>
                   </div>
                   {isMe && (
                     <button onClick={() => deleteMsg(msg.id)} className="opacity-0 group-hover:opacity-100 text-gray-300 hover:text-red-400 transition-all mt-2 flex-shrink-0">
@@ -135,7 +162,7 @@ export default function ChatPage() {
               );
             })
           )}
-          <div ref={bottomRef} />
+          <div />
         </div>
 
         <div className="bg-white border-t border-gray-100 flex-shrink-0">

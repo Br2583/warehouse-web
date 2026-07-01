@@ -281,12 +281,19 @@ async function routeGet(path: string): Promise<any> {
 
   // ── Search ────────────────────────────────────────────────────────────────
   if (p === '/api/search/global') {
-    const q2     = q.get('q') || '';
-    const status = q.get('status') || '';
-    if (!cid || (!q2 && !status)) return [];
+    const q2          = q.get('q') || '';
+    const status      = q.get('status') || '';
+    const jobType     = q.get('job_type') || '';
+    const warehouseId = q.get('warehouse_id') || '';
+    const packer      = q.get('packer') || '';
+    const hasFilter   = q2 || status || jobType || warehouseId || packer;
+    if (!cid || !hasFilter) return [];
     let filter = `company_id="${cid}"`;
-    if (status) filter += ` && estado="${sf(status)}"`;
-    if (q2)     filter += ` && (client_name~"${sf(q2)}" || packer~"${sf(q2)}" || position~"${sf(q2)}" || comments~"${sf(q2)}" || job_type~"${sf(q2)}")`;
+    if (status)      filter += ` && estado="${sf(status)}"`;
+    if (jobType)     filter += ` && job_type="${sf(jobType)}"`;
+    if (warehouseId) filter += ` && warehouse_id="${sf(warehouseId)}"`;
+    if (packer)      filter += ` && packer~"${sf(packer)}"`;
+    if (q2)          filter += ` && (client_name~"${sf(q2)}" || packer~"${sf(q2)}" || position~"${sf(q2)}" || comments~"${sf(q2)}" || job_type~"${sf(q2)}")`;
     const items = await pb.collection('vaults').getFullList({ filter });
     return items
       .sort((a: any, b: any) => a.created < b.created ? 1 : -1)

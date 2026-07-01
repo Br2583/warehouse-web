@@ -523,19 +523,30 @@ export default function WarehouseDetailPage() {
                 )}
                 {/* QR Code */}
                 <div className="mt-4">
-                  <button
-                    onClick={() => setShowQR(v => !v)}
-                    className="flex items-center gap-2 text-sm text-gray-500 hover:text-blue-600 transition-colors"
-                  >
-                    <QrCodeIcon className="w-4 h-4" />
-                    {showQR ? 'Hide QR Code' : 'Show QR Code'}
-                  </button>
+                  <div className="flex items-center justify-between">
+                    <button
+                      onClick={() => setShowQR(v => !v)}
+                      className="flex items-center gap-2 text-sm text-gray-500 hover:text-blue-600 transition-colors"
+                    >
+                      <QrCodeIcon className="w-4 h-4" />
+                      {showQR ? 'Hide QR Code' : 'Show QR Code'}
+                    </button>
+                    <a
+                      href={`/vault/${selected.box_id}/print`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-1.5 text-xs text-blue-600 hover:text-blue-800 font-medium transition-colors"
+                    >
+                      <QrCodeIcon className="w-3.5 h-3.5" />
+                      Print QR Label
+                    </a>
+                  </div>
                   {showQR && (
                     <div className="mt-3 flex flex-col items-center gap-2 p-4 bg-gray-50 rounded-xl">
                       <QRCodeSVG
-                        value={`${typeof window !== 'undefined' ? window.location.origin : ''}/warehouses/${warehouseId}?vault=${selected.box_id}`}
+                        value={`${typeof window !== 'undefined' ? window.location.origin : ''}/vault/${selected.box_id}/print`}
                         size={160}
-                        level="M"
+                        level="H"
                       />
                       <p className="text-xs text-gray-400 text-center">Scan to open this vault</p>
                     </div>

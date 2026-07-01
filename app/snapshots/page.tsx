@@ -136,12 +136,16 @@ export default function SnapshotsPage() {
 
   return (
     <>
-      {/* Print styles â€” only affects @media print */}
+      {/* Print / PDF styles */}
       <style>{`
         @media print {
+          @page { size: A4; margin: 1.2cm; }
           body * { visibility: hidden; }
           #print-report, #print-report * { visibility: visible; }
-          #print-report { position: fixed; top: 0; left: 0; width: 100%; background: white; }
+          #print-report {
+            position: fixed; top: 0; left: 0; width: 100%; background: white;
+            -webkit-print-color-adjust: exact; print-color-adjust: exact;
+          }
         }
       `}</style>
 
