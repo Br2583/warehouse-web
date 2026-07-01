@@ -64,14 +64,11 @@ export default function MobileNav() {
         {/* Header */}
         <div className="p-5 border-b border-gray-100 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 bg-blue-600 rounded-xl flex items-center justify-center">
-              <svg viewBox="0 0 24 24" fill="none" className="w-5 h-5" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
-                <polyline points="9 22 9 12 15 12 15 22" />
-              </svg>
+            <div className="w-9 h-9 bg-gray-950 rounded-xl flex items-center justify-center flex-shrink-0">
+              <span className="text-white font-black text-[10px] italic leading-none">WM</span>
             </div>
             <div>
-              <p className="font-bold text-gray-900 text-sm leading-tight">Warehouse</p>
+              <p className="font-bold text-gray-900 text-sm leading-tight">Warehouse Manager</p>
               <p className="text-xs text-gray-400 truncate max-w-[140px]">{user?.company_name || 'Manager'}</p>
             </div>
           </div>

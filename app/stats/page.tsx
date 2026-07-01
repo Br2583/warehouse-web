@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useEffect, useState, useMemo } from 'react';
 import { motion, AnimatePresence, useMotionValue, useTransform, animate } from 'framer-motion';
@@ -262,7 +262,7 @@ export default function StatsPage() {
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5">
                 <div>
                   <h2 className="font-semibold text-gray-900">Clients</h2>
-                  <p className="text-xs text-gray-400 mt-0.5">{clientList.length} clients Â· {boxes.length} vaults</p>
+                  <p className="text-xs text-gray-400 mt-0.5">{clientList.length} clients · {boxes.length} vaults</p>
                 </div>
                 <div className="flex items-center gap-2 flex-wrap">
                   <div className="flex bg-gray-100 rounded-xl overflow-hidden text-xs">

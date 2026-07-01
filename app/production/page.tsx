@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -246,7 +246,7 @@ export default function ProductionPage() {
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="font-semibold text-gray-900 truncate">{order.client_name}</p>
-                      <p className="text-sm text-gray-500">{order.work_type} Â· {formatDate(order.date)}</p>
+                      <p className="text-sm text-gray-500">{order.work_type} · {formatDate(order.date)}</p>
                       {order.assigned_to && (
                         <p className="flex items-center gap-1 text-xs text-gray-400 mt-0.5">
                           <UserCircleIcon className="w-3 h-3 flex-shrink-0" />
@@ -439,7 +439,7 @@ export default function ProductionPage() {
                               onClick={() => toggleVolt(box)}
                               className={`w-full flex items-center justify-between px-4 py-2.5 text-sm border-b border-gray-50 last:border-0 transition-colors ${sel ? 'bg-blue-50' : 'hover:bg-gray-50'}`}>
                               <span className={sel ? 'text-blue-700 font-medium' : 'text-gray-700'}>
-                                {box.client_name} Â· {box.position}
+                                {box.client_name} · {box.position}
                               </span>
                               <span className={`text-xs w-5 h-5 flex items-center justify-center rounded-full ${sel ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-400'}`}>
                                 {sel ? 'âœ“' : '+'}
