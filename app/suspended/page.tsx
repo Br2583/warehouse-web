@@ -1,62 +1,55 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { ShieldOff, LogOut, Mail } from 'lucide-react';
+import { ShieldExclamationIcon, ArrowRightOnRectangleIcon, EnvelopeIcon } from '@heroicons/react/24/outline';
 import { useAuth } from '@/lib/auth-context';
 
 export default function SuspendedPage() {
   const { logout } = useAuth();
 
   return (
-    <div
-      className="min-h-screen flex items-center justify-center p-6"
-      style={{ background: 'linear-gradient(135deg, #0a0f1a 0%, #111827 60%, #0d1117 100%)' }}
-    >
-      <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 rounded-full opacity-[0.06] blur-3xl pointer-events-none"
-        style={{ background: 'radial-gradient(circle, #ef4444 0%, #dc2626 50%, transparent 70%)' }} />
-
+    <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
       <motion.div
-        initial={{ opacity: 0, y: 24 }}
+        initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6 }}
-        className="w-full max-w-sm relative z-10 text-center"
+        transition={{ duration: 0.5, ease: [0.25, 0.1, 0.25, 1] }}
+        className="w-full max-w-sm bg-white rounded-3xl shadow-[0_20px_80px_rgba(0,0,0,.09)] border border-gray-200 p-8 text-center"
       >
-        <div
-          className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-6"
-          style={{
-            background: 'rgba(239,68,68,0.1)',
-            border: '1px solid rgba(239,68,68,0.2)',
-          }}
-        >
-          <ShieldOff className="w-8 h-8 text-red-400" />
+        {/* WM Logo */}
+        <div className="flex items-center justify-center gap-2.5 mb-8">
+          <div className="w-8 h-8 bg-gray-950 rounded-[8px] flex items-center justify-center">
+            <span className="text-white font-black text-[9px] italic leading-none">WM</span>
+          </div>
+          <span className="font-bold text-gray-900 text-sm">Warehouse Manager</span>
         </div>
 
-        <h1 className="text-2xl font-bold text-white mb-3">Cuenta suspendida</h1>
-        <p className="text-white/40 text-sm leading-relaxed mb-8">
-          El acceso a tu empresa fue suspendido temporalmente.<br />
-          Contactá al administrador para más información.
+        {/* Icon */}
+        <div className="w-16 h-16 bg-red-50 rounded-2xl flex items-center justify-center mx-auto mb-5">
+          <ShieldExclamationIcon className="w-8 h-8 text-red-500" />
+        </div>
+
+        <h1 className="text-2xl font-extrabold text-gray-900 tracking-tight mb-2">Account suspended</h1>
+        <p className="text-sm text-slate-500 leading-relaxed mb-6">
+          Access to your company has been temporarily suspended. Contact the administrator for more information.
         </p>
 
-        <a
-          href="mailto:noreply@managerwarehouse.cc"
-          className="flex items-center justify-center gap-2 w-full py-3 rounded-xl text-sm font-medium transition-all mb-3"
-          style={{
-            background: 'rgba(239,68,68,0.1)',
-            border: '1px solid rgba(239,68,68,0.2)',
-            color: 'rgba(252,165,165,0.9)',
-          }}
-        >
-          <Mail className="w-4 h-4" />
-          Contactar administración
-        </a>
+        <div className="space-y-3">
+          <a
+            href="mailto:noreplywarehousemanager@gmail.com"
+            className="w-full flex items-center justify-center gap-2 py-3.5 rounded-[10px] bg-red-600 text-white font-bold text-sm hover:bg-red-700 active:scale-[0.98] transition-all shadow-[0_2px_12px_rgba(239,68,68,.3)]"
+          >
+            <EnvelopeIcon className="w-4 h-4" />
+            Contact support
+          </a>
 
-        <button
-          onClick={logout}
-          className="flex items-center gap-2 mx-auto text-sm text-white/30 hover:text-white/60 transition-colors"
-        >
-          <LogOut className="w-4 h-4" />
-          Cerrar sesión
-        </button>
+          <button
+            onClick={logout}
+            className="w-full flex items-center justify-center gap-2 py-3.5 rounded-[10px] bg-gray-100 text-gray-600 font-semibold text-sm hover:bg-gray-200 active:scale-[0.98] transition-all"
+          >
+            <ArrowRightOnRectangleIcon className="w-4 h-4" />
+            Sign out
+          </button>
+        </div>
       </motion.div>
     </div>
   );

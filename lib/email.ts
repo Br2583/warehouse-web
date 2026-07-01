@@ -44,7 +44,7 @@ export function verificationEmail(name: string, token: string) {
       <table width="560" cellpadding="0" cellspacing="0" style="max-width:560px;width:100%;">
         <tr>
           <td style="background:linear-gradient(135deg,#1d4ed8,#2563eb);border-radius:16px 16px 0 0;padding:36px 40px;text-align:center;">
-            <div style="font-size:32px;margin-bottom:8px;">📦</div>
+            <div style="display:inline-block;background:#0f0f0f;border-radius:12px;width:48px;height:48px;text-align:center;line-height:48px;margin-bottom:14px;"><span style="color:white;font-family:Arial Black,Arial,Helvetica,sans-serif;font-weight:900;font-size:20px;font-style:italic;letter-spacing:-2px;">WM</span></div>
             <h1 style="margin:0;color:#fff;font-size:22px;font-weight:700;">Warehouse Manager</h1>
             <p style="margin:8px 0 0;color:#93c5fd;font-size:14px;">Verify your email address</p>
           </td>
@@ -93,7 +93,7 @@ export function adminNewRequestEmail(companyName: string, ownerName: string, own
       <table width="560" cellpadding="0" cellspacing="0" style="max-width:560px;width:100%;">
         <tr>
           <td style="background:linear-gradient(135deg,#1d4ed8,#2563eb);border-radius:16px 16px 0 0;padding:36px 40px;text-align:center;">
-            <div style="font-size:32px;margin-bottom:8px;">🏢</div>
+            <div style="display:inline-block;background:#0f0f0f;border-radius:12px;width:48px;height:48px;text-align:center;line-height:48px;margin-bottom:14px;"><span style="color:white;font-family:Arial Black,Arial,Helvetica,sans-serif;font-weight:900;font-size:20px;font-style:italic;letter-spacing:-2px;">WM</span></div>
             <h1 style="margin:0;color:#fff;font-size:22px;font-weight:700;">Warehouse Manager</h1>
             <p style="margin:8px 0 0;color:#93c5fd;font-size:14px;">Nueva solicitud de acceso</p>
           </td>
@@ -141,7 +141,7 @@ export function clientApprovedEmail(ownerName: string, companyName: string) {
       <table width="560" cellpadding="0" cellspacing="0" style="max-width:560px;width:100%;">
         <tr>
           <td style="background:linear-gradient(135deg,#059669,#10b981);border-radius:16px 16px 0 0;padding:36px 40px;text-align:center;">
-            <div style="font-size:32px;margin-bottom:8px;">✅</div>
+            <div style="display:inline-block;background:#0f0f0f;border-radius:12px;width:48px;height:48px;text-align:center;line-height:48px;margin-bottom:14px;"><span style="color:white;font-family:Arial Black,Arial,Helvetica,sans-serif;font-weight:900;font-size:20px;font-style:italic;letter-spacing:-2px;">WM</span></div>
             <h1 style="margin:0;color:#fff;font-size:22px;font-weight:700;">Warehouse Manager</h1>
             <p style="margin:8px 0 0;color:#a7f3d0;font-size:14px;">Tu cuenta fue aprobada</p>
           </td>
@@ -185,7 +185,7 @@ export function clientRejectedEmail(ownerName: string, companyName: string) {
       <table width="560" cellpadding="0" cellspacing="0" style="max-width:560px;width:100%;">
         <tr>
           <td style="background:linear-gradient(135deg,#dc2626,#ef4444);border-radius:16px 16px 0 0;padding:36px 40px;text-align:center;">
-            <div style="font-size:32px;margin-bottom:8px;">📦</div>
+            <div style="display:inline-block;background:#0f0f0f;border-radius:12px;width:48px;height:48px;text-align:center;line-height:48px;margin-bottom:14px;"><span style="color:white;font-family:Arial Black,Arial,Helvetica,sans-serif;font-weight:900;font-size:20px;font-style:italic;letter-spacing:-2px;">WM</span></div>
             <h1 style="margin:0;color:#fff;font-size:22px;font-weight:700;">Warehouse Manager</h1>
             <p style="margin:8px 0 0;color:#fca5a5;font-size:14px;">Solicitud de acceso</p>
           </td>
@@ -226,7 +226,7 @@ export function clientDeletedEmail(ownerName: string, companyName: string) {
       <table width="560" cellpadding="0" cellspacing="0" style="max-width:560px;width:100%;">
         <tr>
           <td style="background:linear-gradient(135deg,#374151,#1f2937);border-radius:16px 16px 0 0;padding:36px 40px;text-align:center;">
-            <div style="font-size:32px;margin-bottom:8px;">📦</div>
+            <div style="display:inline-block;background:#0f0f0f;border-radius:12px;width:48px;height:48px;text-align:center;line-height:48px;margin-bottom:14px;"><span style="color:white;font-family:Arial Black,Arial,Helvetica,sans-serif;font-weight:900;font-size:20px;font-style:italic;letter-spacing:-2px;">WM</span></div>
             <h1 style="margin:0;color:#fff;font-size:22px;font-weight:700;">Warehouse Manager</h1>
             <p style="margin:8px 0 0;color:#9ca3af;font-size:14px;">Notificación de cuenta</p>
           </td>
@@ -265,7 +265,7 @@ export function activationEmail(ownerName: string, companyName: string, link: st
       <table width="560" cellpadding="0" cellspacing="0" style="max-width:560px;width:100%;">
         <tr>
           <td style="background:linear-gradient(135deg,#059669,#10b981);border-radius:16px 16px 0 0;padding:36px 40px;text-align:center;">
-            <div style="font-size:32px;margin-bottom:8px;">🔓</div>
+            <div style="display:inline-block;background:#0f0f0f;border-radius:12px;width:48px;height:48px;text-align:center;line-height:48px;margin-bottom:14px;"><span style="color:white;font-family:Arial Black,Arial,Helvetica,sans-serif;font-weight:900;font-size:20px;font-style:italic;letter-spacing:-2px;">WM</span></div>
             <h1 style="margin:0;color:#fff;font-size:22px;font-weight:700;">Warehouse Manager</h1>
             <p style="margin:8px 0 0;color:#a7f3d0;font-size:14px;">Código de activación</p>
           </td>
@@ -314,7 +314,7 @@ export function passwordResetEmail(name: string, token: string) {
       <table width="560" cellpadding="0" cellspacing="0" style="max-width:560px;width:100%;">
         <tr>
           <td style="background:linear-gradient(135deg,#1d4ed8,#2563eb);border-radius:16px 16px 0 0;padding:36px 40px;text-align:center;">
-            <div style="font-size:32px;margin-bottom:8px;">🔑</div>
+            <div style="display:inline-block;background:#0f0f0f;border-radius:12px;width:48px;height:48px;text-align:center;line-height:48px;margin-bottom:14px;"><span style="color:white;font-family:Arial Black,Arial,Helvetica,sans-serif;font-weight:900;font-size:20px;font-style:italic;letter-spacing:-2px;">WM</span></div>
             <h1 style="margin:0;color:#fff;font-size:22px;font-weight:700;">Warehouse Manager</h1>
             <p style="margin:8px 0 0;color:#93c5fd;font-size:14px;">Password reset request</p>
           </td>

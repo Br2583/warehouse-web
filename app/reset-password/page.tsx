@@ -3,20 +3,18 @@
 import { Suspense, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { KeyRound, Mail, Eye, EyeOff, ArrowLeft } from 'lucide-react';
+import { KeyIcon, EnvelopeIcon, EyeIcon, EyeSlashIcon, ArrowLeftIcon, CheckCircleIcon } from '@heroicons/react/24/outline';
 
 function ResetPasswordForm() {
   const router = useRouter();
   const params = useSearchParams();
   const token = params.get('token');
 
-  // No token → request reset link
   const [email, setEmail] = useState('');
   const [sent, setSent] = useState(false);
   const [reqLoading, setReqLoading] = useState(false);
   const [reqError, setReqError] = useState('');
 
-  // With token → set new password
   const [password, setPassword] = useState('');
   const [passwordConfirm, setPasswordConfirm] = useState('');
   const [showPass, setShowPass] = useState(false);
@@ -35,7 +33,7 @@ function ResetPasswordForm() {
       });
       setSent(true);
     } catch {
-      setSent(true); // Don't leak whether account exists
+      setSent(true);
     } finally {
       setReqLoading(false);
     }
@@ -65,133 +63,106 @@ function ResetPasswordForm() {
     }
   };
 
-  return (
-    <div
-      className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden"
-      style={{ background: 'linear-gradient(135deg, #0a0f1a 0%, #111827 60%, #0d1117 100%)' }}
-    >
-      <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 rounded-full opacity-[0.07] blur-3xl pointer-events-none"
-        style={{ background: 'radial-gradient(circle, #60a5fa 0%, #a78bfa 50%, transparent 70%)' }} />
+  const inputBase = 'w-full px-4 py-3 rounded-[10px] text-sm text-gray-900 placeholder-gray-300 outline-none transition-all';
+  const inputStyle = { background: '#f8fafc', border: '1.5px solid #cbd5e1' };
+  const onFocus = (e: React.FocusEvent<HTMLInputElement>) => {
+    e.target.style.borderColor = '#3b82f6'; e.target.style.background = '#fff'; e.target.style.boxShadow = '0 0 0 3px rgba(59,130,246,.15)';
+  };
+  const onBlur = (e: React.FocusEvent<HTMLInputElement>) => {
+    e.target.style.borderColor = '#cbd5e1'; e.target.style.background = '#f8fafc'; e.target.style.boxShadow = 'none';
+  };
 
+  return (
+    <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
       <motion.div
-        initial={{ opacity: 0, y: 24 }}
+        initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6, ease: [0.25, 0.1, 0.25, 1] }}
-        className="w-full max-w-sm relative z-10"
+        transition={{ duration: 0.5, ease: [0.25, 0.1, 0.25, 1] }}
+        className="w-full max-w-sm bg-white rounded-3xl shadow-[0_20px_80px_rgba(0,0,0,.09)] border border-gray-200 p-8"
       >
-        {/* Header */}
-        <div className="text-center mb-8">
-          <motion.div
-            initial={{ scale: 0.8, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            transition={{ type: 'spring', delay: 0.1 }}
-            className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-5"
-            style={{
-              background: 'linear-gradient(135deg, rgba(96,165,250,0.2) 0%, rgba(167,139,250,0.2) 100%)',
-              border: '1px solid rgba(255,255,255,0.12)',
-              boxShadow: '0 8px 32px rgba(96,165,250,0.15)',
-            }}
-          >
-            {token ? <KeyRound className="w-8 h-8 text-white/70" /> : <Mail className="w-8 h-8 text-white/70" />}
-          </motion.div>
-          <h1 className="text-2xl font-bold text-white tracking-tight">
-            {token ? 'Set New Password' : 'Reset Password'}
-          </h1>
-          <p className="text-white/30 text-sm mt-1.5">
-            {token ? 'Choose a strong password' : 'Enter your email and we\'ll send a link'}
-          </p>
+        {/* WM Logo */}
+        <div className="flex items-center gap-2.5 mb-8">
+          <div className="w-8 h-8 bg-gray-950 rounded-[8px] flex items-center justify-center">
+            <span className="text-white font-black text-[9px] italic leading-none">WM</span>
+          </div>
+          <span className="font-bold text-gray-900 text-sm">Warehouse Manager</span>
         </div>
 
-        <div
-          className="rounded-3xl p-7 space-y-4"
-          style={{
-            background: 'rgba(255,255,255,0.04)',
-            border: '1px solid rgba(255,255,255,0.09)',
-            backdropFilter: 'blur(20px)',
-            boxShadow: '0 32px 64px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.06)',
-          }}
-        >
+        {/* Icon */}
+        <div className="w-14 h-14 bg-blue-50 rounded-2xl flex items-center justify-center mb-5">
+          {token ? <KeyIcon className="w-7 h-7 text-blue-600" /> : <EnvelopeIcon className="w-7 h-7 text-blue-600" />}
+        </div>
+
+        <h1 className="text-[26px] font-extrabold text-gray-900 tracking-tight mb-1.5">
+          {token ? 'Set New Password' : 'Reset Password'}
+        </h1>
+        <p className="text-[14px] text-slate-500 mb-6">
+          {token ? 'Choose a strong new password for your account.' : "Enter your email and we'll send you a reset link."}
+        </p>
+
+        <div className="space-y-4">
+          <AnimatePresence>
+            {(reqError || confirmError) && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                exit={{ opacity: 0, height: 0 }}
+                className="flex items-center gap-2 bg-red-50 border border-red-200 text-red-600 text-sm px-4 py-3 rounded-xl overflow-hidden"
+              >
+                <span className="flex-1">{reqError || confirmError}</span>
+                <button onClick={() => { setReqError(''); setConfirmError(''); }} className="text-red-400 hover:text-red-600 text-lg leading-none">✕</button>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
           {/* REQUEST RESET */}
           {!token && (
             <>
-              <AnimatePresence mode="wait">
-                {sent ? (
-                  <motion.div
-                    key="sent"
-                    initial={{ opacity: 0, y: -4 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="text-center py-4"
+              {sent ? (
+                <motion.div
+                  initial={{ opacity: 0, y: -4 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="flex items-center gap-2 bg-green-50 border border-green-200 text-green-700 text-sm px-4 py-3 rounded-xl"
+                >
+                  <CheckCircleIcon className="w-4 h-4 flex-shrink-0" />
+                  Check your email! If an account exists for {email}, we sent a reset link.
+                </motion.div>
+              ) : (
+                <>
+                  <div className="group">
+                    <label className="block text-[12px] font-semibold text-slate-500 mb-1.5 group-focus-within:text-blue-600 transition-colors">Email address</label>
+                    <input
+                      type="email"
+                      value={email}
+                      onChange={e => setEmail(e.target.value)}
+                      onKeyDown={e => e.key === 'Enter' && handleRequestReset()}
+                      placeholder="you@company.com"
+                      autoFocus
+                      className={inputBase}
+                      style={inputStyle}
+                      onFocus={onFocus}
+                      onBlur={onBlur}
+                    />
+                  </div>
+                  <button
+                    onClick={handleRequestReset}
+                    disabled={reqLoading}
+                    className="w-full py-3.5 rounded-[10px] bg-blue-600 text-white font-bold text-sm hover:bg-blue-700 active:translate-y-0 hover:-translate-y-0.5 transition-all shadow-[0_2px_12px_rgba(59,130,246,.3)] disabled:opacity-50 flex items-center justify-center"
                   >
-                    <p className="text-green-400 text-sm mb-1">Check your email!</p>
-                    <p className="text-white/30 text-xs">If an account exists for {email}, we sent a reset link.</p>
-                  </motion.div>
-                ) : (
-                  <motion.div key="form" className="space-y-4">
-                    <AnimatePresence>
-                      {reqError && (
-                        <motion.div
-                          initial={{ opacity: 0, height: 0 }}
-                          animate={{ opacity: 1, height: 'auto' }}
-                          exit={{ opacity: 0, height: 0 }}
-                          className="bg-red-500/10 border border-red-500/20 text-red-400 text-sm px-4 py-3 rounded-xl overflow-hidden"
-                        >
-                          {reqError}
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
-
-                    <div>
-                      <label className="text-xs text-white/30 font-medium mb-1.5 block">Email address</label>
-                      <input
-                        type="email"
-                        value={email}
-                        onChange={e => setEmail(e.target.value)}
-                        onKeyDown={e => e.key === 'Enter' && handleRequestReset()}
-                        placeholder="you@company.com"
-                        autoFocus
-                        className="w-full px-4 py-3 rounded-xl text-sm outline-none transition-all text-white placeholder-white/20"
-                        style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', caretColor: 'white' }}
-                      />
-                    </div>
-
-                    <button
-                      onClick={handleRequestReset}
-                      disabled={reqLoading}
-                      className="w-full py-3.5 rounded-xl font-semibold text-sm text-white transition-all disabled:opacity-50 flex items-center justify-center gap-2"
-                      style={{
-                        background: 'linear-gradient(135deg, rgba(96,165,250,0.25) 0%, rgba(167,139,250,0.25) 100%)',
-                        border: '1px solid rgba(255,255,255,0.15)',
-                      }}
-                    >
-                      {reqLoading
-                        ? <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                        : 'Send Reset Link'}
-                    </button>
-                  </motion.div>
-                )}
-              </AnimatePresence>
+                    {reqLoading
+                      ? <span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+                      : 'Send Reset Link'}
+                  </button>
+                </>
+              )}
             </>
           )}
 
           {/* CONFIRM RESET */}
           {token && (
             <>
-              <AnimatePresence>
-                {confirmError && (
-                  <motion.div
-                    initial={{ opacity: 0, height: 0 }}
-                    animate={{ opacity: 1, height: 'auto' }}
-                    exit={{ opacity: 0, height: 0 }}
-                    className="flex items-center gap-2 bg-red-500/10 border border-red-500/20 text-red-400 text-sm px-4 py-3 rounded-xl overflow-hidden"
-                  >
-                    <span className="flex-1">{confirmError}</span>
-                    <button onClick={() => setConfirmError('')} className="text-red-400/60 hover:text-red-400 text-lg leading-none">✕</button>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-
-              <div>
-                <label className="text-xs text-white/30 font-medium mb-1.5 block">New password</label>
+              <div className="group">
+                <label className="block text-[12px] font-semibold text-slate-500 mb-1.5 group-focus-within:text-blue-600 transition-colors">New password</label>
                 <div className="relative">
                   <input
                     type={showPass ? 'text' : 'password'}
@@ -199,54 +170,47 @@ function ResetPasswordForm() {
                     onChange={e => setPassword(e.target.value)}
                     placeholder="At least 8 characters"
                     autoFocus
-                    className="w-full px-4 py-3 pr-11 rounded-xl text-sm outline-none transition-all text-white placeholder-white/20"
-                    style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', caretColor: 'white' }}
+                    className={`${inputBase} pr-11`}
+                    style={inputStyle}
+                    onFocus={onFocus}
+                    onBlur={onBlur}
                   />
-                  <button
-                    type="button"
-                    onClick={() => setShowPass(v => !v)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-white/30 hover:text-white/60 transition-colors"
-                  >
-                    {showPass ? <EyeOff size={16} /> : <Eye size={16} />}
+                  <button type="button" onClick={() => setShowPass(v => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-blue-600 transition-colors">
+                    {showPass ? <EyeSlashIcon className="w-4 h-4" /> : <EyeIcon className="w-4 h-4" />}
                   </button>
                 </div>
               </div>
-
-              <div>
-                <label className="text-xs text-white/30 font-medium mb-1.5 block">Confirm new password</label>
+              <div className="group">
+                <label className="block text-[12px] font-semibold text-slate-500 mb-1.5 group-focus-within:text-blue-600 transition-colors">Confirm password</label>
                 <input
                   type={showPass ? 'text' : 'password'}
                   value={passwordConfirm}
                   onChange={e => setPasswordConfirm(e.target.value)}
                   onKeyDown={e => e.key === 'Enter' && handleConfirmReset()}
                   placeholder="Repeat password"
-                  className="w-full px-4 py-3 rounded-xl text-sm outline-none transition-all text-white placeholder-white/20"
-                  style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', caretColor: 'white' }}
+                  className={inputBase}
+                  style={inputStyle}
+                  onFocus={onFocus}
+                  onBlur={onBlur}
                 />
               </div>
-
               <button
                 onClick={handleConfirmReset}
                 disabled={confirmLoading}
-                className="w-full py-3.5 rounded-xl font-semibold text-sm text-white transition-all disabled:opacity-50 flex items-center justify-center gap-2"
-                style={{
-                  background: 'linear-gradient(135deg, rgba(96,165,250,0.25) 0%, rgba(167,139,250,0.25) 100%)',
-                  border: '1px solid rgba(255,255,255,0.15)',
-                }}
+                className="w-full py-3.5 rounded-[10px] bg-blue-600 text-white font-bold text-sm hover:bg-blue-700 hover:-translate-y-0.5 active:translate-y-0 transition-all shadow-[0_2px_12px_rgba(59,130,246,.3)] disabled:opacity-50 flex items-center justify-center"
               >
                 {confirmLoading
-                  ? <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  ? <span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
                   : 'Update Password'}
               </button>
             </>
           )}
 
-          {/* Back link */}
           <button
             onClick={() => router.push('/login')}
-            className="w-full flex items-center justify-center gap-2 text-xs text-white/25 hover:text-white/50 transition-colors pt-1"
+            className="w-full flex items-center justify-center gap-2 py-3 text-sm text-slate-400 hover:text-slate-600 transition-colors"
           >
-            <ArrowLeft size={12} />
+            <ArrowLeftIcon className="w-4 h-4" />
             Back to Sign In
           </button>
         </div>
@@ -258,8 +222,8 @@ function ResetPasswordForm() {
 export default function ResetPasswordPage() {
   return (
     <Suspense fallback={
-      <div className="min-h-screen flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #0a0f1a 0%, #111827 100%)' }}>
-        <div className="w-8 h-8 border-2 border-white/20 border-t-white/60 rounded-full animate-spin" />
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+        <div className="w-8 h-8 border-2 border-blue-600/30 border-t-blue-600 rounded-full animate-spin" />
       </div>
     }>
       <ResetPasswordForm />

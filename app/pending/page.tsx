@@ -1,12 +1,11 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
-import { Clock, LogOut } from 'lucide-react';
+import { ClockIcon, ArrowRightOnRectangleIcon } from '@heroicons/react/24/outline';
 import { pb } from '@/lib/pb';
 import { useAuth } from '@/lib/auth-context';
-import { useRef } from 'react';
 
 export default function PendingPage() {
   const router = useRouter();
@@ -35,56 +34,48 @@ export default function PendingPage() {
   }, []);
 
   return (
-    <div
-      className="min-h-screen flex items-center justify-center p-6"
-      style={{ background: 'linear-gradient(135deg, #0a0f1a 0%, #111827 60%, #0d1117 100%)' }}
-    >
-      <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 rounded-full opacity-[0.06] blur-3xl pointer-events-none"
-        style={{ background: 'radial-gradient(circle, #60a5fa 0%, #a78bfa 50%, transparent 70%)' }} />
-
+    <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
       <motion.div
-        initial={{ opacity: 0, y: 24 }}
+        initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6 }}
-        className="w-full max-w-sm relative z-10 text-center"
+        transition={{ duration: 0.5, ease: [0.25, 0.1, 0.25, 1] }}
+        className="w-full max-w-sm bg-white rounded-3xl shadow-[0_20px_80px_rgba(0,0,0,.09)] border border-gray-200 p-8 text-center"
       >
+        {/* WM Logo */}
+        <div className="flex items-center justify-center gap-2.5 mb-8">
+          <div className="w-8 h-8 bg-gray-950 rounded-[8px] flex items-center justify-center">
+            <span className="text-white font-black text-[9px] italic leading-none">WM</span>
+          </div>
+          <span className="font-bold text-gray-900 text-sm">Warehouse Manager</span>
+        </div>
+
+        {/* Animated clock icon */}
         <motion.div
           animate={{ rotate: [0, 360] }}
-          transition={{ repeat: Infinity, duration: 8, ease: 'linear' }}
-          className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-6"
-          style={{
-            background: 'linear-gradient(135deg, rgba(96,165,250,0.2) 0%, rgba(167,139,250,0.2) 100%)',
-            border: '1px solid rgba(255,255,255,0.12)',
-          }}
+          transition={{ repeat: Infinity, duration: 10, ease: 'linear' }}
+          className="w-16 h-16 bg-amber-50 rounded-2xl flex items-center justify-center mx-auto mb-5"
         >
-          <Clock className="w-8 h-8 text-blue-400" />
+          <ClockIcon className="w-8 h-8 text-amber-500" />
         </motion.div>
 
-        <h1 className="text-2xl font-bold text-white mb-3">Solicitud enviada</h1>
-        <p className="text-white/40 text-sm leading-relaxed mb-8">
-          Tu empresa está siendo revisada.<br />
-          Te avisaremos por email cuando sea aprobada.<br />
-          <span className="text-white/25">Este proceso suele tomar 24-48 horas.</span>
+        <h1 className="text-2xl font-extrabold text-gray-900 tracking-tight mb-2">Request submitted</h1>
+        <p className="text-sm text-slate-500 leading-relaxed mb-5">
+          Your company is under review.<br />
+          We'll notify you by email once it's approved.
         </p>
 
-        <div
-          className="rounded-2xl p-4 mb-6 text-left"
-          style={{
-            background: 'rgba(96,165,250,0.06)',
-            border: '1px solid rgba(96,165,250,0.15)',
-          }}
-        >
-          <p className="text-xs text-blue-300/70">
-            Esta página se actualiza automáticamente. No necesitás hacer nada más por ahora.
+        <div className="bg-amber-50 border border-amber-100 rounded-xl px-4 py-3 mb-7">
+          <p className="text-xs text-amber-700 leading-relaxed">
+            This page refreshes automatically. You don't need to do anything else right now. Approval usually takes 24–48 hours.
           </p>
         </div>
 
         <button
           onClick={logout}
-          className="flex items-center gap-2 mx-auto text-sm text-white/30 hover:text-white/60 transition-colors"
+          className="flex items-center gap-2 mx-auto text-sm text-slate-400 hover:text-slate-600 transition-colors"
         >
-          <LogOut className="w-4 h-4" />
-          Cerrar sesión
+          <ArrowRightOnRectangleIcon className="w-4 h-4" />
+          Sign out
         </button>
       </motion.div>
     </div>

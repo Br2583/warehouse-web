@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { PaperAirplaneIcon, TrashIcon } from '@heroicons/react/24/outline';
 import Sidebar from '@/components/Sidebar';
@@ -26,6 +26,11 @@ export default function ChatPage() {
   const [sendError, setSendError] = useState('');
   const [sending, setSending] = useState(false);
   const lastCountRef = useRef(-1);
+  const bottomRef = useRef<HTMLDivElement>(null);
+
+  const scrollToBottom = useCallback((behavior: ScrollBehavior = 'smooth') => {
+    bottomRef.current?.scrollIntoView({ behavior });
+  }, []);
 
   const fetchMessages = () =>
     api.get('/api/chat/messages').then((msgs: Message[]) => {
@@ -36,7 +41,7 @@ export default function ChatPage() {
         }
       }
       lastCountRef.current = msgs.length;
-      setMessages([...msgs].reverse());
+      setMessages(msgs);
     }).catch(() => {}).finally(() => setLoading(false));
 
   useEffect(() => {
@@ -45,6 +50,10 @@ export default function ChatPage() {
     const interval = setInterval(fetchMessages, 10000);
     return () => clearInterval(interval);
   }, []);
+
+  useEffect(() => {
+    if (messages.length > 0) scrollToBottom(loading ? 'instant' : 'smooth');
+  }, [messages]);
 
   const send = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -126,6 +135,7 @@ export default function ChatPage() {
               );
             })
           )}
+          <div ref={bottomRef} />
         </div>
 
         <div className="bg-white border-t border-gray-100 flex-shrink-0">
