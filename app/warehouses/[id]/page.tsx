@@ -38,7 +38,7 @@ interface Box {
 
 
 const ROWS    = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J'];
-const COLUMNS = [1, 2, 3, 4, 5, 6, 7, 8];
+const COLUMNS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11];
 
 const emptyForm: VaultFormData = {
   client_name:   '',
@@ -332,7 +332,7 @@ export default function WarehouseDetailPage() {
               </div>
               <div>
                 <label className="block text-xs text-gray-500 mb-1">Columns (1–{gridColsInput})</label>
-                <input type="number" min={1} max={8} value={gridColsInput} onChange={e => setGridColsInput(Math.min(8, Math.max(1, Number(e.target.value))))}
+                <input type="number" min={1} max={11} value={gridColsInput} onChange={e => setGridColsInput(Math.min(11, Math.max(1, Number(e.target.value))))}
                   className="w-20 border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
               </div>
               <button onClick={saveGridSize} disabled={gridSaving}
@@ -406,7 +406,7 @@ export default function WarehouseDetailPage() {
                           key={col}
                           whileHover={{ scale: 1.03 }}
                           onClick={() => { setShowQR(false); box ? setSelected(box) : openAddAtPosition(row, col, mapLevel); }}
-                          className={`flex-1 h-10 md:h-14 rounded-lg md:rounded-xl border-2 flex flex-col items-center justify-center transition-all text-center
+                          className={`flex-1 min-w-0 overflow-hidden h-10 md:h-14 rounded-lg md:rounded-xl border-2 flex flex-col items-center justify-center transition-all
                             ${box
                               ? `${STATUS_CELL[status!] || 'bg-gray-300'} border-transparent text-white cursor-pointer`
                               : 'bg-gray-50 border-dashed border-gray-200 hover:border-blue-400 hover:bg-blue-50 cursor-pointer'
@@ -414,8 +414,8 @@ export default function WarehouseDetailPage() {
                         >
                           {box ? (
                             <>
-                              <span className="hidden md:block text-xs font-bold leading-tight truncate w-full px-1 text-center">{box.client_name}</span>
-                              <span className="hidden md:block text-[10px] opacity-80 mt-0.5">{box.job_type}</span>
+                              <span className="hidden md:block text-[10px] font-bold leading-tight w-full px-1 text-center overflow-hidden text-ellipsis whitespace-nowrap">{box.client_name}</span>
+                              <span className="hidden md:block text-[9px] opacity-75 mt-0.5 leading-none">{box.job_type}</span>
                             </>
                           ) : (
                             <PlusIcon className="w-3 h-3 md:w-4 md:h-4 text-gray-300" />

@@ -7,7 +7,7 @@ const CONTENTS_TYPES  = ['Boxes', 'Furniture', 'Both'];
 const ROOM_LOCATIONS  = ['Kitchen', 'Patio', 'Living Room', 'Family Room', 'Dining Room', 'Bathroom', 'Bedroom 1', 'Bedroom 2', 'Bedroom 3'];
 const VAULT_STATUSES  = ['Total Loss', 'Needs Cleaning', 'Ready to Go', 'Storage Only'];
 const ROWS            = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J'];
-const COLUMNS         = [1, 2, 3, 4, 5, 6, 7, 8];
+const COLUMNS         = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11];
 
 export interface VaultFormData {
   client_name: string;
