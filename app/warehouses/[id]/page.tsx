@@ -79,6 +79,7 @@ export default function WarehouseDetailPage() {
   const [lightbox, setLightbox] = useState<{ photos: string[]; index: number } | null>(null);
   const [confirmModal, setConfirmModal] = useState<{ message: string; onConfirm: () => void } | null>(null);
   const [showQR, setShowQR] = useState(false);
+  const [loadingPhotos, setLoadingPhotos] = useState(false);
   const [warehouseRows, setWarehouseRows] = useState(10);
   const [warehouseCols, setWarehouseCols] = useState(8);
   const [showGridEdit, setShowGridEdit] = useState(false);
@@ -233,11 +234,23 @@ export default function WarehouseDetailPage() {
     }
   };
 
+  // Open a vault and lazy-load its photos
+  const selectVault = async (box: Box) => {
+    setSelected(box);
+    setShowQR(false);
+    setLoadingPhotos(true);
+    try {
+      const full = await api.get(`/api/boxes/${box.box_id}`);
+      if (full?.photos) setSelected(prev => prev ? { ...prev, photos: full.photos } : prev);
+    } catch {}
+    setLoadingPhotos(false);
+  };
+
   const handleScanResult = (vaultId: string) => {
     setShowScanner(false);
     const found = boxes.find(b => b.box_id === vaultId);
     if (found) {
-      setSelected(found);
+      selectVault(found);
     } else {
       setApiError(`Vault not found in this warehouse. It may belong to a different warehouse.`);
     }
@@ -405,7 +418,7 @@ export default function WarehouseDetailPage() {
                         <motion.button
                           key={col}
                           whileHover={{ scale: 1.03 }}
-                          onClick={() => { setShowQR(false); box ? setSelected(box) : openAddAtPosition(row, col, mapLevel); }}
+                          onClick={() => { box ? selectVault(box) : openAddAtPosition(row, col, mapLevel); }}
                           className={`flex-1 min-w-0 overflow-hidden h-10 md:h-14 rounded-lg md:rounded-xl border-2 flex flex-col items-center justify-center transition-all
                             ${box
                               ? `${STATUS_CELL[status!] || 'bg-gray-300'} border-transparent text-white cursor-pointer`
@@ -460,7 +473,7 @@ export default function WarehouseDetailPage() {
                       initial={{ opacity: 0 }}
                       animate={{ opacity: 1 }}
                       transition={{ delay: i * 0.03 }}
-                      onClick={() => setSelected(box)}
+                      onClick={() => selectVault(box)}
                       className="border-b border-gray-50 hover:bg-gray-50 cursor-pointer transition-colors"
                     >
                       <td className="px-6 py-4 text-sm font-medium text-gray-900">{box.position}</td>
@@ -523,7 +536,13 @@ export default function WarehouseDetailPage() {
                     </div>
                   ))}
                 </div>
-                {selected.photos?.length > 0 && (
+                {loadingPhotos && (
+                  <div className="mt-4 flex items-center gap-2 text-gray-400 text-sm">
+                    <div className="w-4 h-4 border-2 border-blue-400 border-t-transparent rounded-full animate-spin" />
+                    Loading photos...
+                  </div>
+                )}
+                {!loadingPhotos && selected.photos?.length > 0 && (
                   <div className="mt-4">
                     <p className="text-sm text-gray-400 mb-2">Photos</p>
                     <div className="grid grid-cols-2 gap-2">

@@ -143,7 +143,7 @@ export default function StoragePage() {
                           type="button"
                           onClick={() => setForm(f => ({ ...f, photos: f.photos.filter((_, j) => j !== i) }))}
                           className="absolute top-0.5 right-0.5 bg-black/50 text-white rounded-full w-4 h-4 flex items-center justify-center text-[10px] hover:bg-black/70"
-                        >Ã—</button>
+                        >&times;</button>
                       </div>
                     ))}
                     {form.photos.length < 4 && (
