@@ -96,10 +96,16 @@ function LoginForm() {
   const [companyLoading, setCompanyLoading] = useState(false);
   const [termsAccepted, setTermsAccepted] = useState(false);
 
-  const verified = params.get('verified') === '1';
-  const reset    = params.get('reset')    === '1';
+  const verified        = params.get('verified') === '1';
+  const reset           = params.get('reset')    === '1';
+  const sessionExpired  = params.get('session')  === 'expired';
 
   useEffect(() => {
+    // If the middleware detected inactivity, clear PocketBase auth first
+    if (sessionExpired) {
+      pb.authStore.clear();
+      return;
+    }
     if (!pb.authStore.isValid || !pb.authStore.model?.company_id) return;
     pb.collection('companies').getOne(pb.authStore.model.company_id)
       .then(c => {
@@ -108,7 +114,7 @@ function LoginForm() {
         else router.replace('/dashboard');
       })
       .catch(() => router.replace('/dashboard'));
-  }, []);
+  }, [sessionExpired]);
 
   const handleLogin = async () => {
     setError('');
@@ -221,6 +227,11 @@ function LoginForm() {
           </p>
 
           {/* Banners */}
+          {sessionExpired && !error && (
+            <div className="flex items-center gap-2 bg-amber-50 border border-amber-200 text-amber-700 text-sm px-4 py-3 rounded-xl mb-4">
+              ⏱ Your session expired after 2 hours of inactivity. Sign in again.
+            </div>
+          )}
           {verified && !error && (
             <div className="flex items-center gap-2 bg-green-50 border border-green-200 text-green-700 text-sm px-4 py-3 rounded-xl mb-4">
               ✓ Email verified! Sign in to continue.

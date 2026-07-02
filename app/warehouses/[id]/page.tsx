@@ -139,8 +139,8 @@ export default function WarehouseDetailPage() {
   const handleEditPhotos = async (files: FileList | null) => {
     if (!files || !editForm) return;
     try {
-      const converted = await Promise.all(Array.from(files).slice(0, 4).map(f => compressImage(f)));
-      setEditForm(f => f ? { ...f, photos: [...f.photos, ...converted].slice(0, 4) } : f);
+      const converted = await Promise.all(Array.from(files).slice(0, 6).map(f => compressImage(f)));
+      setEditForm(f => f ? { ...f, photos: [...f.photos, ...converted].slice(0, 6) } : f);
     } catch (err: any) {
       setEditError(err?.message || 'Photo too large');
     }
@@ -191,8 +191,8 @@ export default function WarehouseDetailPage() {
   const handlePhotoFiles = async (files: FileList | null) => {
     if (!files) return;
     try {
-      const converted = await Promise.all(Array.from(files).slice(0, 4).map(f => compressImage(f)));
-      setForm(f => ({ ...f, photos: [...f.photos, ...converted].slice(0, 4) }));
+      const converted = await Promise.all(Array.from(files).slice(0, 6).map(f => compressImage(f)));
+      setForm(f => ({ ...f, photos: [...f.photos, ...converted].slice(0, 6) }));
     } catch (err: any) {
       setSaveError(err?.message || 'Photo too large');
     }

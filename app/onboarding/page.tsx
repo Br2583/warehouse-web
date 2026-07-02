@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { pb } from '@/lib/pb';
 import { useAuth } from '@/lib/auth-context';
+import { compressImage } from '@/lib/compress-image';
 import {
   BuildingOffice2Icon, UserCircleIcon, CameraIcon, ChevronRightIcon,
   ArrowPathIcon, BriefcaseIcon, ArrowLeftIcon, CheckIcon,
@@ -38,7 +39,7 @@ export default function OnboardingPage() {
   // Step 1 — profile
   const [displayName, setDisplayName] = useState('');
   const [jobTitle, setJobTitle] = useState('');
-  const [avatarFile, setAvatarFile] = useState<File | null>(null);
+  const [avatarBase64, setAvatarBase64] = useState('');
   const [avatarPreview, setAvatarPreview] = useState<string>('');
   const fileRef = useRef<HTMLInputElement>(null);
 
@@ -65,13 +66,18 @@ export default function OnboardingPage() {
   const isOwner = user?.role === 'owner';
   const totalSteps = isOwner ? 2 : 1;
 
-  const handleAvatar = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleAvatar = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const f = e.target.files?.[0];
     if (!f) return;
-    if (f.size > 5 * 1024 * 1024) { setError('Image must be under 5MB'); return; }
-    setAvatarFile(f);
-    setAvatarPreview(URL.createObjectURL(f));
+    e.target.value = '';
     setError('');
+    try {
+      const base64 = await compressImage(f);
+      setAvatarBase64(base64);
+      setAvatarPreview(base64);
+    } catch (err: any) {
+      setError(err?.message || 'Image too large to upload');
+    }
   };
 
   const saveProfile = async () => {
@@ -80,12 +86,23 @@ export default function OnboardingPage() {
     setSaving(true);
     setError('');
     try {
-      const form = new FormData();
-      form.append('name', displayName.trim());
-      form.append('job_title', jobTitle.trim());
-      if (avatarFile) form.append('avatar', avatarFile);
-      if (!isOwner) form.append('profile_complete', 'true');
-      await pb.collection('users').update(user.id, form);
+      // Update name and job_title (small fields — direct PB call with fresh token)
+      await pb.collection('users').update(user.id, {
+        name:      displayName.trim(),
+        job_title: jobTitle.trim(),
+        ...(isOwner ? {} : { profile_complete: true }),
+      });
+
+      // Upload avatar via server-side admin route (avoids user token permission issues)
+      if (avatarBase64) {
+        const res = await fetch('/api/profile/avatar', {
+          method:  'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body:    JSON.stringify({ userId: user.id, avatar_base64: avatarBase64 }),
+        });
+        if (!res.ok) throw new Error('Failed to upload photo — profile saved without it');
+      }
+
       if (isOwner) {
         setStep(2);
       } else {
