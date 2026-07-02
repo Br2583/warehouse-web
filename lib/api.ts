@@ -194,13 +194,13 @@ async function routeGet(path: string): Promise<any> {
     if (!cid) return [];
     const members = await pb.collection('users').getFullList({
       filter: `company_id="${cid}"`,
-      fields: 'id,name,email,avatar,role',
+      fields: 'id,name,email,avatar_base64,role',
     });
     return members.map(m => ({
       user_id: m.id,
       name:    m.name,
       email:   m.email,
-      picture: m.avatar,
+      picture: m.avatar_base64 || undefined,
       role:    m.role,
     }));
   }

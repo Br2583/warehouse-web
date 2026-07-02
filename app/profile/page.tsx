@@ -1,22 +1,41 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
 import {
   UserCircleIcon, DocumentDuplicateIcon, PlusIcon, ExclamationCircleIcon,
-  XMarkIcon, ArrowRightOnRectangleIcon, ShieldCheckIcon,
+  XMarkIcon, ArrowRightOnRectangleIcon, ShieldCheckIcon, CameraIcon,
 } from '@heroicons/react/24/outline';
 import { AnimatePresence } from 'framer-motion';
 import Sidebar from '@/components/Sidebar';
 import { api } from '@/lib/api';
 import { useAuth } from '@/lib/auth-context';
+import { compressImage } from '@/lib/compress-image';
+import { pb } from '@/lib/pb';
 
 export default function ProfilePage() {
-  const { user, logout } = useAuth();
+  const { user, logout, refreshUser } = useAuth();
   const [company, setCompany] = useState<any>(null);
   const [members, setMembers] = useState<any[]>([]);
   const [genError, setGenError] = useState('');
   const [loading, setLoading] = useState(true);
+  const [avatarUploading, setAvatarUploading] = useState(false);
+  const [avatarError, setAvatarError] = useState('');
+  const avatarInputRef = useRef<HTMLInputElement>(null);
+
+  const handleAvatarChange = async (files: FileList | null) => {
+    if (!files || !files[0] || !user) return;
+    setAvatarUploading(true);
+    setAvatarError('');
+    try {
+      const base64 = await compressImage(files[0]);
+      await pb.collection('users').update(user.id, { avatar_base64: base64 });
+      await refreshUser();
+    } catch (e: any) {
+      setAvatarError(e?.message || 'Failed to upload photo');
+    }
+    setAvatarUploading(false);
+  };
 
   useEffect(() => {
     Promise.all([
@@ -63,18 +82,29 @@ export default function ProfilePage() {
             {/* User Info */}
             <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="bg-white rounded-2xl border border-gray-100 p-6">
               <div className="flex items-center gap-4">
-                {user?.picture ? (
-                  <img
-                    src={user.picture}
-                    alt={user.name}
-                    referrerPolicy="no-referrer"
-                    className="w-16 h-16 rounded-2xl object-cover"
-                    onError={e => { (e.target as HTMLImageElement).style.display = 'none'; (e.target as HTMLImageElement).nextElementSibling?.classList.remove('hidden'); }}
-                  />
-                ) : null}
-                <div className={`w-16 h-16 rounded-2xl bg-blue-100 flex items-center justify-center flex-shrink-0${user?.picture ? ' hidden' : ''}`}>
-                  <UserCircleIcon className="w-8 h-8 text-blue-600" />
+                {/* Avatar with upload */}
+                <div className="relative flex-shrink-0">
+                  {user?.picture ? (
+                    <img src={user.picture} alt={user?.name || ''} className="w-16 h-16 rounded-2xl object-cover" />
+                  ) : (
+                    <div className="w-16 h-16 rounded-2xl bg-blue-100 flex items-center justify-center">
+                      <UserCircleIcon className="w-8 h-8 text-blue-600" />
+                    </div>
+                  )}
+                  <button
+                    onClick={() => avatarInputRef.current?.click()}
+                    disabled={avatarUploading}
+                    className="absolute -bottom-1.5 -right-1.5 w-7 h-7 bg-blue-600 rounded-full flex items-center justify-center shadow-md hover:bg-blue-700 transition-colors disabled:opacity-50"
+                    title="Change photo"
+                  >
+                    {avatarUploading
+                      ? <div className="w-3 h-3 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+                      : <CameraIcon className="w-3.5 h-3.5 text-white" />
+                    }
+                  </button>
+                  <input ref={avatarInputRef} type="file" accept="image/*" className="hidden" onChange={e => handleAvatarChange(e.target.files)} />
                 </div>
+                {avatarError && <p className="text-xs text-red-500">{avatarError}</p>}
                 <div>
                   <h2 className="text-lg font-bold text-gray-900">{user?.name}</h2>
                   <p className="text-gray-500 text-sm">{user?.email}</p>

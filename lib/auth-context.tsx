@@ -49,7 +49,7 @@ async function buildUser(model: any): Promise<User> {
     id:                model.id,
     email:             model.email,
     name:              model.name,
-    picture:           model.avatar ? pb.files.getURL(model, model.avatar) : undefined,
+    picture:           model.avatar_base64 || undefined,
     company_id:        model.company_id,
     company_name,
     company_approved,
