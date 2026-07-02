@@ -1,7 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
-import PocketBase from 'pocketbase';
 
 const PB_URL = process.env.NEXT_PUBLIC_PB_URL || 'https://pocketbase-production-e699.up.railway.app';
+
+async function getAdminToken(): Promise<string> {
+  const res = await fetch(`${PB_URL}/api/collections/_superusers/auth-with-password`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ identity: process.env.PB_ADMIN_EMAIL, password: process.env.PB_ADMIN_PASSWORD }),
+  });
+  const data = await res.json();
+  if (!data.token) throw new Error('Admin auth failed');
+  return data.token as string;
+}
 
 export async function POST(req: NextRequest) {
   try {
@@ -10,15 +20,14 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Missing fields' }, { status: 400 });
     }
 
-    const adminEmail = process.env.PB_ADMIN_EMAIL;
-    const adminPassword = process.env.PB_ADMIN_PASSWORD;
-    if (!adminEmail || !adminPassword) {
-      return NextResponse.json({ error: 'Server misconfigured' }, { status: 500 });
-    }
-
-    const pb = new PocketBase(PB_URL);
-    await pb.collection('_superusers').authWithPassword(adminEmail, adminPassword);
-    await pb.collection('users').update(userId, { avatar_base64 });
+    const token = await getAdminToken();
+    const res = await fetch(`${PB_URL}/api/collections/users/records/${userId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ avatar_base64 }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data?.message || 'Failed to update photo');
 
     return NextResponse.json({ ok: true });
   } catch (e: any) {
