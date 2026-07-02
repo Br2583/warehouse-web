@@ -384,7 +384,7 @@ export default function StorageDetailPage() {
                   </button>
                   <button onClick={saveSlot} disabled={slotSaving}
                     className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-blue-600 text-white text-sm font-medium rounded-xl hover:bg-blue-700 disabled:opacity-50 transition-colors">
-                    {slotSaving && <div className="w-4 h-4 animate-spin" />}
+                    {slotSaving && <div className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />}
                     Save
                   </button>
                 </div>

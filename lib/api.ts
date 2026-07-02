@@ -171,6 +171,13 @@ async function routeGet(path: string): Promise<any> {
     return mapVault(v);
   }
 
+  // ── Warehouses list ────────────────────────────────────────────────────────
+  if (p === '/api/warehouses') {
+    if (!cid) return [];
+    const whs = await pb.collection('warehouses').getFullList({ filter: `company_id="${cid}"`, fields: 'id,name,address' });
+    return whs.map(w => ({ id: w.id, name: w.name, address: w.address }));
+  }
+
   // ── Stats ──────────────────────────────────────────────────────────────────
   if (p === '/api/stats/global') return buildStats();
 

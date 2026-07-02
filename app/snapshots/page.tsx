@@ -96,13 +96,13 @@ export default function SnapshotsPage() {
       const cols = [1,2,3,4,5,6,7,8];
       const formatLevel = (level: number) => {
         const levelName = level === 1 ? 'LOWER' : 'UPPER';
-        let text = `\n=== Level ${level} â€” ${levelName} ===\n`;
+        let text = `\n=== Level ${level} — ${levelName} ===\n`;
         text += `     ` + cols.map(c => `Col${c}`.padEnd(14)).join('') + '\n';
         rows.forEach(row => {
           text += `${row}    `;
           cols.forEach(col => {
             const box = report.boxes.find(b => b.row === row && Number(b.column) === col && Number(b.level) === level);
-            text += box ? `${box.client_name.slice(0,10)}(${(box.estado||box.status||'PND').slice(0,3)})`.padEnd(14) : 'â€”'.padEnd(14);
+            text += box ? `${box.client_name.slice(0,10)}(${(box.estado||box.status||'PND').slice(0,3)})`.padEnd(14) : '—'.padEnd(14);
           });
           text += '\n';
         });
@@ -156,7 +156,7 @@ export default function SnapshotsPage() {
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
             <div>
               <h1 className="text-2xl font-bold text-gray-900">Snapshots</h1>
-              <p className="text-gray-500 text-sm mt-1">Daily inventory records â€” click to view & print</p>
+              <p className=”text-gray-500 text-sm mt-1”>Daily inventory records — click to view & print</p>
             </div>
             <div className="flex gap-2 flex-wrap">
               {warehouses.map(wh => (
@@ -230,7 +230,7 @@ export default function SnapshotsPage() {
               {/* Modal toolbar (hidden on print) */}
               <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 print:hidden">
                 <h2 className="font-bold text-gray-900">
-                  {report.snap.warehouse_name} â€” {report.snap.date}
+                  {report.snap.warehouse_name} — {report.snap.date}
                 </h2>
                 <div className="flex items-center gap-3">
                   <button
@@ -303,7 +303,7 @@ export default function SnapshotsPage() {
                           return (
                             <div key={level}>
                               <div className="flex items-center gap-3 mb-3">
-                                <h2 className="font-bold text-gray-900 text-base">Level {level} â€” {levelName}</h2>
+                                <h2 className=”font-bold text-gray-900 text-base”>Level {level} — {levelName}</h2>
                                 <span className="text-xs text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">{levelBoxes.length} vaults</span>
                               </div>
 
@@ -339,7 +339,7 @@ export default function SnapshotsPage() {
                                                   </span>
                                                 </div>
                                               ) : (
-                                                <div className="text-gray-200 text-[10px]">â€”</div>
+                                                <div className=”text-gray-200 text-[10px]”>—</div>
                                               )}
                                             </td>
                                           );
@@ -397,7 +397,7 @@ export default function SnapshotsPage() {
                 className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 mb-4"
               />
               {sendResult === 'ok' && (
-                <p className="text-sm text-green-600 font-medium mb-3">âœ“ Email sent successfully!</p>
+                <p className=”text-sm text-green-600 font-medium mb-3”>✓ Email sent successfully!</p>
               )}
               {sendResult === 'err' && (
                 <p className="text-sm text-red-500 mb-3">Failed to send. Please try again or contact support.</p>

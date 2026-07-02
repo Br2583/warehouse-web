@@ -23,7 +23,7 @@ const PHASE_COLORS = [
 const WORK_TYPES = ['Cleaning', 'Restoration', 'Delivery'];
 
 function formatDate(d: string) {
-  if (!d) return 'â€”';
+  if (!d) return '—';
   try {
     // Normalize PocketBase formats: "2026-06-26 00:00:00.000Z" or "2026-06-26"
     const clean = d.split(/[ T]/)[0];
@@ -341,8 +341,8 @@ export default function ProductionPage() {
                                 <p className="text-sm font-medium text-gray-900">{volt.client_name || volt.position || voltId}</p>
                                 {volt.position && <p className="text-xs text-gray-400">{volt.position}</p>}
                               </div>
-                              <span className="text-xs px-2 py-0.5 rounded-full bg-gray-100 text-gray-500">
-                                {volt.estado || volt.status || 'â€”'}
+                              <span className=”text-xs px-2 py-0.5 rounded-full bg-gray-100 text-gray-500”>
+                                {volt.estado || volt.status || '—'}
                               </span>
                             </div>
                           );
@@ -442,7 +442,7 @@ export default function ProductionPage() {
                                 {box.client_name} · {box.position}
                               </span>
                               <span className={`text-xs w-5 h-5 flex items-center justify-center rounded-full ${sel ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-400'}`}>
-                                {sel ? 'âœ“' : '+'}
+                                {sel ? '✓' : '+'}
                               </span>
                             </button>
                           );
