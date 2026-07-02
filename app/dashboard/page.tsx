@@ -32,18 +32,14 @@ export default function DashboardPage() {
   const { user } = useAuth();
   const [stats, setStats] = useState<any>(null);
   const [workStats, setWorkStats] = useState({ total: 0, pending: 0, in_progress: 0, completed: 0 });
-  const [boxes, setBoxes] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   useEffect(() => {
     if (!user?.company_id) return;
     const load = async () => {
+      // Single query returns stats + histogram + recent + sla_count
       try {
-        const [globalStats, allBoxes] = await Promise.allSettled([
-          api.get('/api/stats/global'),
-          api.get('/api/boxes'),
-        ]);
-        if (globalStats.status === 'fulfilled') setStats(globalStats.value);
-        if (allBoxes.status === 'fulfilled' && Array.isArray(allBoxes.value)) setBoxes(allBoxes.value);
+        const globalStats = await api.get('/api/stats/global');
+        setStats(globalStats);
       } catch { /* stats unavailable, show zeros */ }
 
       try {
@@ -91,35 +87,10 @@ export default function DashboardPage() {
     purple: 'bg-purple-500',
   };
 
-  // E1: 7-day vault histogram
-  const histogramData = (() => {
-    const days: { label: string; count: number }[] = [];
-    const now = new Date();
-    for (let i = 6; i >= 0; i--) {
-      const d = new Date(now);
-      d.setDate(d.getDate() - i);
-      const key = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-      const dateStr = d.toISOString().split('T')[0];
-      const count = boxes.filter(b => {
-        return b.created?.split(/[ T]/)[0] === dateStr;
-      }).length;
-      days.push({ label: key, count });
-    }
-    return days;
-  })();
-
-  // E7: recent activity (last 5 vaults by created date)
-  const recentBoxes = [...boxes]
-    .sort((a, b) => (b.created || '').localeCompare(a.created || ''))
-    .slice(0, 5);
-
-  // E6: SLA — PENDING vaults older than 3 days
-  const slaCount = boxes.filter(b => {
-    if ((b.estado || b.status) !== 'PENDING') return false;
-    const created = parseDateOpt(b.created);
-    if (!created) return false;
-    return (Date.now() - created.getTime()) > 3 * 24 * 60 * 60 * 1000;
-  }).length;
+  // Stats now includes histogram, recent, sla_count — no separate boxes load needed
+  const histogramData: { label: string; count: number }[] = stats?.histogram || [];
+  const recentBoxes: any[] = stats?.recent || [];
+  const slaCount: number = stats?.sla_count ?? 0;
 
   const total = stats?.total_boxes || 0;
   const pending = stats?.statuses?.PENDING || 0;
@@ -275,7 +246,7 @@ export default function DashboardPage() {
           {/* E1 — 7-day vault histogram */}
           <motion.div custom={7} variants={fadeUp} initial="hidden" animate="show" className="md:col-span-2 bg-white rounded-2xl border border-gray-100 p-6">
             <h2 className="font-semibold text-gray-900 mb-5">Vaults Added — Last 7 Days</h2>
-            {boxes.length === 0 && !loading ? (
+            {!loading && histogramData.every(d => d.count === 0) ? (
               <div className="flex items-center justify-center h-28 text-gray-300 text-sm">No data yet</div>
             ) : (
               <ResponsiveContainer width="100%" height={120}>

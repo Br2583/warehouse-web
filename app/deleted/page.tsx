@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -97,7 +97,7 @@ export default function DeletedPage() {
                     <td className="px-6 py-4 text-sm font-medium text-gray-900">{box.position}</td>
                     <td className="px-6 py-4 text-sm text-gray-700">{box.client_name}</td>
                     <td className="px-6 py-4 text-sm text-gray-500">{box.job_type}</td>
-                    <td className=”px-6 py-4 text-sm text-gray-400”>{box.deleted_at ? parseDateOpt(box.deleted_at)?.toLocaleDateString() ?? '—' : '—'}</td>
+                    <td className="px-6 py-4 text-sm text-gray-400">{box.deleted_at ? parseDateOpt(box.deleted_at)?.toLocaleDateString() ?? '-' : '-'}</td>
                     <td className="px-6 py-4">
                       <div className="flex gap-2">
                         <button onClick={() => restore(box.id)}

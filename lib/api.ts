@@ -88,22 +88,24 @@ function mapStorage(s: any) {
 // Map a PocketBase chat_messages record to the Message shape
 function mapMessage(m: any) {
   return {
-    id:            m.id,
-    sender_name:   m.author_name,
-    sender_email:  m.author_id,
-    sender_photo:  m.author_avatar,
-    text:          m.content,
-    timestamp:     m.created?.replace(' ', 'T') ?? new Date().toISOString(),
+    id:           m.id,
+    sender_name:  m.author_name,
+    sender_email: m.author_id,
+    text:         m.content,
+    timestamp:    m.created?.replace(' ', 'T') ?? new Date().toISOString(),
   };
 }
 
-// Aggregate vaults into stats shape
+// Aggregate vaults into stats shape — single query, returns everything dashboard needs
 async function buildStats() {
   const cid = companyId();
-  if (!cid) return { total_boxes: 0, statuses: {}, by_warehouse: {} };
+  if (!cid) return { total_boxes: 0, statuses: {}, by_warehouse: {}, job_types: {}, recent: [], sla_count: 0, histogram: [] };
 
   const [vaults, warehouses] = await Promise.all([
-    pb.collection('vaults').getFullList({ filter: `company_id="${cid}"`, fields: 'id,estado,warehouse_id,job_type' }),
+    pb.collection('vaults').getFullList({
+      filter: `company_id="${cid}"`,
+      fields: 'id,estado,warehouse_id,job_type,created,client_name,position',
+    }),
     pb.collection('warehouses').getFullList({ filter: `company_id="${cid}"`, fields: 'id,name' }),
   ]);
 
@@ -113,15 +115,36 @@ async function buildStats() {
   const statuses: Record<string, number> = {};
   const by_warehouse: Record<string, number> = {};
   const job_types: Record<string, number> = {};
+  let sla_count = 0;
+  const now = Date.now();
+
   for (const v of vaults) {
     const s = v.estado || 'PENDING';
     statuses[s] = (statuses[s] || 0) + 1;
-    const wName = whMap[v.warehouse_id] || 'Unknown';
-    by_warehouse[wName] = (by_warehouse[wName] || 0) + 1;
-    const jt = v.job_type || 'Other';
-    job_types[jt] = (job_types[jt] || 0) + 1;
+    by_warehouse[whMap[v.warehouse_id] || 'Unknown'] = (by_warehouse[whMap[v.warehouse_id] || 'Unknown'] || 0) + 1;
+    job_types[v.job_type || 'Other'] = (job_types[v.job_type || 'Other'] || 0) + 1;
+    if (s === 'PENDING' && v.created) {
+      const ts = new Date(v.created.includes('T') ? v.created : v.created.replace(' ', 'T') + 'Z').getTime();
+      if (now - ts > 3 * 24 * 60 * 60 * 1000) sla_count++;
+    }
   }
-  return { total_boxes: vaults.length, statuses, by_warehouse, job_types };
+
+  const recent = [...vaults]
+    .sort((a, b) => (b.created || '') > (a.created || '') ? 1 : -1)
+    .slice(0, 5)
+    .map(v => ({ box_id: v.id, client_name: v.client_name, position: v.position, estado: v.estado, status: v.estado, created: v.created }));
+
+  const histogram: { label: string; count: number }[] = [];
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date(now); d.setDate(d.getDate() - i);
+    const dateStr = d.toISOString().split('T')[0];
+    histogram.push({
+      label: d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+      count: vaults.filter(v => (v.created || '').split(/[ T]/)[0] === dateStr).length,
+    });
+  }
+
+  return { total_boxes: vaults.length, statuses, by_warehouse, job_types, recent, sla_count, histogram };
 }
 
 // ─── Path router ──────────────────────────────────────────────────────────────
@@ -278,12 +301,13 @@ async function routeGet(path: string): Promise<any> {
       chatCid = freshUser.company_id;
     }
     if (!chatCid) return [];
-    const items = await pb.collection('chat_messages').getFullList({
+    // Fetch only last 150 messages sorted newest-first, then reverse for display
+    const page = await pb.collection('chat_messages').getList(1, 150, {
       filter: `company_id="${chatCid}"`,
+      sort: '-created',
+      fields: 'id,author_name,author_id,content,created',
     });
-    return items
-      .sort((a: any, b: any) => a.created < b.created ? -1 : 1)
-      .map(mapMessage);
+    return page.items.reverse().map(mapMessage);
   }
 
   // ── Search ────────────────────────────────────────────────────────────────
@@ -333,7 +357,11 @@ async function routeGet(path: string): Promise<any> {
     });
     return items
       .sort((a: any, b: any) => a.created < b.created ? 1 : -1)
-      .map(mapStorage);
+      .map(s => {
+        const mapped = mapStorage(s);
+        // Only first photo for list cards — detail page loads full record
+        return { ...mapped, photos: mapped.photos.slice(0, 1) };
+      });
   }
 
   const storageOneMatch = p.match(/^\/api\/storage\/([^/]+)$/);
@@ -454,12 +482,11 @@ async function routePost(path: string, body: any): Promise<any> {
     }
     if (!chatCid) throw new Error('No company — please rejoin your company from the Profile page');
     const m = await pb.collection('chat_messages').create({
-      company_id:    chatCid,
-      author_id:     uid || body.sender_email,
-      author_name:   body.sender_name || pb.authStore.model?.name,
-      author_avatar: body.sender_photo || '',
-      content:       body.text,
-      type:          'text',
+      company_id:  chatCid,
+      author_id:   uid || body.sender_email,
+      author_name: body.sender_name || pb.authStore.model?.name,
+      content:     body.text,
+      type:        'text',
     });
     return mapMessage(m);
   }
@@ -501,7 +528,8 @@ async function routePost(path: string, body: any): Promise<any> {
       data: {
         warehouse_name: wh?.name || 'All Warehouses',
         box_count: vaults.length,
-        vaults: vaults.map(mapVault),
+        // Exclude photos — snapshots are for reporting, not media storage
+        vaults: vaults.map(v => { const { photos, ...rest } = mapVault(v); return rest; }),
       },
       created_by: uid,
     });
