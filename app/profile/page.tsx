@@ -12,7 +12,7 @@ import { api } from '@/lib/api';
 import { useAuth } from '@/lib/auth-context';
 import { compressImage } from '@/lib/compress-image';
 export default function ProfilePage() {
-  const { user, logout, refreshUser } = useAuth();
+  const { user, logout, refreshUser, updatePicture } = useAuth();
   const [company, setCompany] = useState<any>(null);
   const [members, setMembers] = useState<any[]>([]);
   const [genError, setGenError] = useState('');
@@ -36,7 +36,9 @@ export default function ProfilePage() {
         const data = await res.json().catch(() => ({}));
         throw new Error(data?.error || 'Failed to upload photo');
       }
-      await refreshUser();
+      // Update picture immediately in UI, then sync auth state in background
+      updatePicture(base64);
+      refreshUser().catch(() => {});
     } catch (e: any) {
       setAvatarError(e?.message || 'Failed to upload photo');
     }
@@ -87,7 +89,7 @@ export default function ProfilePage() {
           <div className="space-y-6">
             {/* User Info */}
             <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="bg-white rounded-2xl border border-gray-100 p-6">
-              <div className="flex items-center gap-4">
+              <div className="flex items-start gap-4">
                 {/* Avatar with upload */}
                 <div className="relative flex-shrink-0">
                   {user?.picture ? (
@@ -108,13 +110,18 @@ export default function ProfilePage() {
                       : <CameraIcon className="w-3.5 h-3.5 text-white" />
                     }
                   </button>
-                  <input ref={avatarInputRef} type="file" accept="image/*" className="hidden" onChange={e => handleAvatarChange(e.target.files)} />
+                  <input ref={avatarInputRef} type="file" accept="image/*" className="hidden" onChange={e => { handleAvatarChange(e.target.files); e.target.value = ''; }} />
                 </div>
-                {avatarError && <p className="text-xs text-red-500">{avatarError}</p>}
-                <div>
+                <div className="flex-1 min-w-0">
                   <h2 className="text-lg font-bold text-gray-900">{user?.name}</h2>
                   <p className="text-gray-500 text-sm">{user?.email}</p>
                   <span className="inline-block mt-1 text-xs font-medium px-2.5 py-1 bg-blue-50 text-blue-600 rounded-full capitalize">{user?.role}</span>
+                  {avatarError && (
+                    <p className="text-xs text-red-500 mt-2 flex items-center gap-1">
+                      <ExclamationCircleIcon className="w-3.5 h-3.5 flex-shrink-0" />
+                      {avatarError}
+                    </p>
+                  )}
                 </div>
               </div>
             </motion.div>

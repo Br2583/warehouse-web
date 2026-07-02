@@ -5,6 +5,7 @@ import { motion } from 'framer-motion';
 import { PaperAirplaneIcon, TrashIcon } from '@heroicons/react/24/outline';
 import Sidebar from '@/components/Sidebar';
 import { useAuth } from '@/lib/auth-context';
+import { getToken } from '@/lib/api';
 import { notify, requestNotificationPermission } from '@/lib/notifications';
 
 interface Message {
@@ -54,7 +55,10 @@ export default function ChatPage() {
 
   const fetchMessages = useCallback(() => {
     if (!user?.company_id) { setLoading(false); return Promise.resolve(); }
-    return fetch(`/api/chat/messages?company_id=${encodeURIComponent(user.company_id)}`)
+    const token = getToken();
+    return fetch('/api/chat/messages', {
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    })
       .then(r => r.json())
       .then((msgs: Message[]) => {
         if (!Array.isArray(msgs)) throw new Error((msgs as any)?.error || 'Failed to load messages');
@@ -66,6 +70,7 @@ export default function ChatPage() {
         }
         lastCountRef.current = msgs.length;
         setMessages(msgs);
+        setSendError('');
       }).catch((err: any) => {
         setSendError(err?.message || 'Could not load messages');
       }).finally(() => setLoading(false));
@@ -74,7 +79,7 @@ export default function ChatPage() {
   useEffect(() => {
     requestNotificationPermission();
     fetchMessages();
-    const interval = setInterval(fetchMessages, 10000);
+    const interval = setInterval(fetchMessages, 30000);
     return () => clearInterval(interval);
   }, [fetchMessages]);
 
@@ -91,15 +96,14 @@ export default function ChatPage() {
     setSending(true);
     setSendError('');
     try {
+      const token = getToken();
       const res = await fetch('/api/chat/messages', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          company_id:  user?.company_id,
-          author_id:   user?.email,
-          author_name: user?.name,
-          text:        text.trim(),
-        }),
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({ text: text.trim() }),
       });
       if (!res.ok) {
         const d = await res.json().catch(() => ({}));
@@ -117,8 +121,12 @@ export default function ChatPage() {
   };
 
   const deleteMsg = async (id: string) => {
+    const token = getToken();
     try {
-      await fetch(`/api/chat/messages?id=${encodeURIComponent(id)}`, { method: 'DELETE' });
+      await fetch(`/api/chat/messages?id=${encodeURIComponent(id)}`, {
+        method: 'DELETE',
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
       fetchMessages();
     } catch {
       // deletion failed, list stays unchanged
@@ -190,8 +198,9 @@ export default function ChatPage() {
               type="text"
               placeholder="Type a message..."
               value={text}
+              disabled={sending}
               onChange={e => { setText(e.target.value); if (sendError) setSendError(''); }}
-              className="flex-1 px-4 py-2.5 bg-gray-50 border border-gray-100 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="flex-1 px-4 py-2.5 bg-gray-50 border border-gray-100 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-60"
             />
             <button
               type="submit"

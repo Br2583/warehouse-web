@@ -1,6 +1,6 @@
-const MAX_DIMENSION = 1000;
-const JPEG_QUALITY = 0.75;
-const MAX_OUTPUT_BYTES = 600 * 1024; // 600 KB after compression
+const MAX_DIMENSION = 1200;
+const JPEG_QUALITY = 0.80;
+const MAX_OUTPUT_BYTES = 1200 * 1024; // 1.2 MB after compression
 
 export function compressImage(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
