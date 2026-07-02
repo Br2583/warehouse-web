@@ -45,19 +45,20 @@ export async function GET(req: NextRequest) {
     const companyId = await getUserCompanyId(userToken);
     const adminToken = await getAdminToken();
 
+    // chat_messages has no 'created' field — sort by id (PocketBase IDs are time-ordered)
     const res = await pbFetch(
-      `${PB_URL}/api/collections/chat_messages/records?perPage=150&sort=-created&filter=${encodeURIComponent(`company_id="${companyId}"`)}&fields=id,author_name,author_id,content,created`,
+      `${PB_URL}/api/collections/chat_messages/records?perPage=150&sort=id&filter=${encodeURIComponent(`company_id="${companyId}"`)}&fields=id,author_name,author_id,content`,
       { headers: { Authorization: `Bearer ${adminToken}` } },
     );
     const data = await res.json();
     if (!res.ok) throw new Error(data?.message || 'Failed to load messages');
 
-    const msgs = (data.items as any[]).reverse().map((m: any) => ({
+    const msgs = (data.items as any[]).map((m: any) => ({
       id:           m.id,
       sender_name:  m.author_name,
       sender_email: m.author_id,
       text:         m.content,
-      timestamp:    (m.created || '').replace(' ', 'T'),
+      timestamp:    '',
     }));
 
     return NextResponse.json(msgs);
