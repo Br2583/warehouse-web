@@ -11,12 +11,7 @@ import Sidebar from '@/components/Sidebar';
 import { api } from '@/lib/api';
 import { pb } from '@/lib/pb';
 import { useAuth } from '@/lib/auth-context';
-import emailjs from '@emailjs/browser';
 import { STATUS_COLORS } from '@/lib/constants';
-
-const EMAILJS_SERVICE_ID  = process.env.NEXT_PUBLIC_EMAILJS_SERVICE_ID!;
-const EMAILJS_TEMPLATE_ID = process.env.NEXT_PUBLIC_EMAILJS_TEMPLATE_ID!;
-const EMAILJS_PUBLIC_KEY  = process.env.NEXT_PUBLIC_EMAILJS_PUBLIC_KEY!;
 
 export default function SnapshotsPage() {
   const { user } = useAuth();
@@ -92,34 +87,24 @@ export default function SnapshotsPage() {
     setSending(true);
     setSendResult(null);
     try {
-      const rows = ['A','B','C','D','E','F','G','H','I','J'];
-      const cols = [1,2,3,4,5,6,7,8];
-      const formatLevel = (level: number) => {
-        const levelName = level === 1 ? 'LOWER' : 'UPPER';
-        let text = `\n=== Level ${level} - ${levelName} ===\n`;
-        text += `     ` + cols.map(c => `Col${c}`.padEnd(14)).join('') + '\n';
-        rows.forEach(row => {
-          text += `${row}    `;
-          cols.forEach(col => {
-            const box = report.boxes.find(b => b.row === row && Number(b.column) === col && Number(b.level) === level);
-            text += box ? `${box.client_name.slice(0,10)}(${(box.estado||box.status||'PND').slice(0,3)})`.padEnd(14) : '-'.padEnd(14);
-          });
-          text += '\n';
-        });
-        return text;
-      };
-
-      await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
-        to_email:       toEmail,
-        warehouse_name: report.snap.warehouse_name,
-        snapshot_date:  report.snap.date,
-        total:          report.boxes.length || report.snap.box_count,
-        pending:        report.boxes.filter(b => (b.estado||b.status) === 'PENDING').length,
-        ready:          report.boxes.filter(b => (b.estado||b.status) === 'READY').length,
-        delivered:      report.boxes.filter(b => (b.estado||b.status) === 'DELIVERED').length,
-        report_content: formatLevel(1) + formatLevel(2),
-      }, EMAILJS_PUBLIC_KEY);
-
+      const res = await fetch('/api/snapshots/send-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          to:            toEmail,
+          warehouseName: report.snap.warehouse_name,
+          date:          report.snap.date,
+          total:         report.boxes.length || report.snap.box_count,
+          pending:       report.boxes.filter(b => (b.estado||b.status) === 'PENDING').length,
+          ready:         report.boxes.filter(b => (b.estado||b.status) === 'READY').length,
+          delivered:     report.boxes.filter(b => (b.estado||b.status) === 'DELIVERED').length,
+          vaults:        report.boxes.map(b => ({
+            row: b.row, column: b.column, level: b.level,
+            client_name: b.client_name, estado: b.estado, status: b.status,
+          })),
+        }),
+      });
+      if (!res.ok) throw new Error();
       setSendResult('ok');
       setToEmail('');
       setTimeout(() => { setEmailModal(false); setSendResult(null); }, 2000);

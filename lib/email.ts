@@ -295,6 +295,152 @@ export function activationEmail(ownerName: string, companyName: string, link: st
   };
 }
 
+export function snapshotReportEmail(opts: {
+  warehouseName: string;
+  date: string;
+  total: number;
+  pending: number;
+  ready: number;
+  delivered: number;
+  vaults: { row: string; column: number; level: number; client_name: string; estado?: string; status?: string }[];
+}) {
+  const { warehouseName, date, total, pending, ready, delivered, vaults } = opts;
+  const rows = ['A','B','C','D','E','F','G','H','I','J'];
+  const cols = [1,2,3,4,5,6,7,8];
+
+  const statusColor = (s: string) =>
+    s === 'READY' ? '#dcfce7' : s === 'DELIVERED' ? '#dbeafe' : s === 'PENDING' ? '#fef9c3' : '#f1f5f9';
+  const statusText = (s: string) =>
+    s === 'READY' ? '#15803d' : s === 'DELIVERED' ? '#1d4ed8' : s === 'PENDING' ? '#a16207' : '#6b7280';
+
+  const buildGrid = (level: number) => {
+    const label = level === 1 ? 'LOWER LEVEL' : 'UPPER LEVEL';
+    let rows_html = '';
+    rows.forEach(row => {
+      let cells = '';
+      cols.forEach(col => {
+        const v = vaults.find(b => b.row === row && Number(b.column) === col && Number(b.level) === level);
+        const st = v ? (v.estado || v.status || 'PENDING') : '';
+        cells += v
+          ? `<td style="padding:4px 3px;text-align:center;background:${statusColor(st)};border:1px solid #e2e8f0;border-radius:4px;">
+               <div style="font-size:9px;font-weight:700;color:${statusText(st)};line-height:1.2;">${v.client_name.slice(0,8)}</div>
+               <div style="font-size:8px;color:${statusText(st)};opacity:.8;">${st.slice(0,3)}</div>
+             </td>`
+          : `<td style="padding:4px 3px;text-align:center;background:#f8fafc;border:1px solid #e2e8f0;border-radius:4px;"><span style="color:#cbd5e1;font-size:10px;">-</span></td>`;
+      });
+      rows_html += `<tr><td style="padding:4px 6px;font-size:11px;font-weight:700;color:#475569;text-align:center;">${row}</td>${cells}</tr>`;
+    });
+
+    const header = cols.map(c => `<td style="padding:4px 3px;text-align:center;font-size:10px;font-weight:600;color:#94a3b8;">C${c}</td>`).join('');
+
+    return `
+      <div style="margin-bottom:24px;">
+        <div style="font-size:11px;font-weight:700;color:#64748b;letter-spacing:1px;text-transform:uppercase;margin-bottom:8px;">${label}</div>
+        <table cellpadding="0" cellspacing="3" style="border-collapse:separate;width:100%;">
+          <thead><tr><td style="width:20px;"></td>${header}</tr></thead>
+          <tbody>${rows_html}</tbody>
+        </table>
+      </div>`;
+  };
+
+  return {
+    subject: `Snapshot Report — ${warehouseName} · ${date}`,
+    html: `<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"></head>
+<body style="margin:0;padding:0;background:#f1f5f9;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#f1f5f9;padding:40px 16px;">
+    <tr><td align="center">
+      <table width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;">
+
+        <!-- Header -->
+        <tr>
+          <td style="background:linear-gradient(135deg,#1d4ed8,#2563eb);border-radius:16px 16px 0 0;padding:32px 40px;text-align:center;">
+            <div style="display:inline-block;background:#0f0f0f;border-radius:12px;width:48px;height:48px;text-align:center;line-height:48px;margin-bottom:12px;">
+              <span style="color:white;font-family:Arial Black,Arial,Helvetica,sans-serif;font-weight:900;font-size:20px;font-style:italic;letter-spacing:-2px;">WM</span>
+            </div>
+            <h1 style="margin:0;color:#fff;font-size:20px;font-weight:700;">Warehouse Manager</h1>
+            <p style="margin:6px 0 0;color:#93c5fd;font-size:13px;">Snapshot Report</p>
+          </td>
+        </tr>
+
+        <!-- Warehouse + Date -->
+        <tr>
+          <td style="background:#1e40af;padding:14px 40px;text-align:center;">
+            <span style="color:#bfdbfe;font-size:14px;font-weight:600;">${warehouseName}</span>
+            <span style="color:#60a5fa;margin:0 10px;">·</span>
+            <span style="color:#bfdbfe;font-size:14px;">${date}</span>
+          </td>
+        </tr>
+
+        <!-- Stats -->
+        <tr>
+          <td style="background:#fff;padding:28px 40px 20px;">
+            <table width="100%" cellpadding="0" cellspacing="0">
+              <tr>
+                <td style="width:25%;padding:0 6px 0 0;">
+                  <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:16px;text-align:center;">
+                    <div style="font-size:28px;font-weight:800;color:#0f172a;line-height:1;">${total}</div>
+                    <div style="font-size:11px;color:#64748b;margin-top:4px;font-weight:500;">Total Vaults</div>
+                  </div>
+                </td>
+                <td style="width:25%;padding:0 3px;">
+                  <div style="background:#fefce8;border:1px solid #fef08a;border-radius:12px;padding:16px;text-align:center;">
+                    <div style="font-size:28px;font-weight:800;color:#854d0e;line-height:1;">${pending}</div>
+                    <div style="font-size:11px;color:#a16207;margin-top:4px;font-weight:500;">Pending</div>
+                  </div>
+                </td>
+                <td style="width:25%;padding:0 3px;">
+                  <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:12px;padding:16px;text-align:center;">
+                    <div style="font-size:28px;font-weight:800;color:#14532d;line-height:1;">${ready}</div>
+                    <div style="font-size:11px;color:#15803d;margin-top:4px;font-weight:500;">Ready</div>
+                  </div>
+                </td>
+                <td style="width:25%;padding:0 0 0 3px;">
+                  <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:12px;padding:16px;text-align:center;">
+                    <div style="font-size:28px;font-weight:800;color:#1e3a8a;line-height:1;">${delivered}</div>
+                    <div style="font-size:11px;color:#1d4ed8;margin-top:4px;font-weight:500;">Delivered</div>
+                  </div>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+
+        <!-- Grid -->
+        <tr>
+          <td style="background:#fff;padding:8px 40px 28px;">
+            <div style="font-size:12px;font-weight:700;color:#374151;letter-spacing:.5px;margin-bottom:16px;padding-bottom:10px;border-bottom:1px solid #f1f5f9;">WAREHOUSE GRID</div>
+            ${buildGrid(1)}
+            ${buildGrid(2)}
+            <!-- Legend -->
+            <table cellpadding="0" cellspacing="0" style="margin-top:8px;">
+              <tr>
+                <td style="padding-right:12px;"><span style="display:inline-block;width:10px;height:10px;background:#fef9c3;border-radius:2px;margin-right:4px;"></span><span style="font-size:11px;color:#64748b;">Pending</span></td>
+                <td style="padding-right:12px;"><span style="display:inline-block;width:10px;height:10px;background:#dcfce7;border-radius:2px;margin-right:4px;"></span><span style="font-size:11px;color:#64748b;">Ready</span></td>
+                <td style="padding-right:12px;"><span style="display:inline-block;width:10px;height:10px;background:#dbeafe;border-radius:2px;margin-right:4px;"></span><span style="font-size:11px;color:#64748b;">Delivered</span></td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+
+        <!-- Footer -->
+        <tr>
+          <td style="background:#1e293b;border-radius:0 0 16px 16px;padding:20px 40px;text-align:center;">
+            <p style="margin:0;font-size:12px;color:#64748b;">
+              Generated by <strong style="color:#93c5fd;">Warehouse Manager</strong> · Powered by PixelCore
+            </p>
+          </td>
+        </tr>
+
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>`,
+  };
+}
+
 export function passwordResetEmail(name: string, token: string) {
   const link = `${APP_URL}/reset-password?token=${token}`;
   return {
