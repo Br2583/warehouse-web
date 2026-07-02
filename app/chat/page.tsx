@@ -7,6 +7,7 @@ import Sidebar from '@/components/Sidebar';
 import { useAuth } from '@/lib/auth-context';
 import { getToken } from '@/lib/api';
 import { notify, requestNotificationPermission } from '@/lib/notifications';
+import { markChatSeen } from '@/lib/unread-chat';
 
 interface Message {
   id: string;
@@ -71,6 +72,7 @@ export default function ChatPage() {
         lastCountRef.current = msgs.length;
         setMessages(msgs);
         setSendError('');
+        markChatSeen();
       }).catch((err: any) => {
         setSendError(err?.message || 'Could not load messages');
       }).finally(() => setLoading(false));

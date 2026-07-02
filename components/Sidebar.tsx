@@ -16,6 +16,7 @@ import {
 } from '@heroicons/react/24/solid';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useUnreadChat } from '@/lib/use-unread-chat';
 
 const navItems = [
   { href: '/dashboard',  label: 'Dashboard',  icon: HomeIcon,                iconActive: HomeSolid },
@@ -33,6 +34,7 @@ const navItems = [
 export default function Sidebar() {
   const { user, logout } = useAuth();
   const pathname = usePathname();
+  const unreadChat = useUnreadChat();
 
   return (
     <div className="hidden md:flex w-64 bg-white border-r border-gray-100 h-screen flex-col shadow-sm fixed left-0 top-0 z-40">
@@ -62,7 +64,14 @@ export default function Sidebar() {
                   active ? 'bg-blue-50 text-blue-600' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-700'
                 }`}
               >
-                <Icon className="w-5 h-5 flex-shrink-0" />
+                <div className="relative flex-shrink-0">
+                  <Icon className="w-5 h-5" />
+                  {item.href === '/chat' && unreadChat > 0 && (
+                    <span className="absolute -top-1 -right-1.5 min-w-[14px] h-[14px] bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center px-0.5">
+                      {unreadChat > 9 ? '9+' : unreadChat}
+                    </span>
+                  )}
+                </div>
                 <span className="text-sm font-medium">{item.label}</span>
                 {active && (
                   <motion.div layoutId="activeIndicator" className="ml-auto w-1.5 h-1.5 rounded-full bg-blue-600" />

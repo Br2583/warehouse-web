@@ -23,7 +23,7 @@ export default function SnapshotsPage() {
   const [emailModal, setEmailModal] = useState(false);
   const [toEmail, setToEmail] = useState('');
   const [sending, setSending] = useState(false);
-  const [sendResult, setSendResult] = useState<'ok' | 'err' | null>(null);
+  const [sendResult, setSendResult] = useState<'ok' | 'err' | 'invalid' | null>(null);
   const [actionError, setActionError] = useState('');
   const [confirmModal, setConfirmModal] = useState<{ message: string; onConfirm: () => void } | null>(null);
   const printRef = useRef<HTMLDivElement>(null);
@@ -82,8 +82,12 @@ export default function SnapshotsPage() {
 
   const handlePrint = () => window.print();
 
+  const isValidEmail = (email: string) =>
+    /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
+
   const sendEmail = async () => {
     if (!report || !toEmail) return;
+    if (!isValidEmail(toEmail)) { setSendResult('invalid'); return; }
     setSending(true);
     setSendResult(null);
     try {
@@ -378,18 +382,21 @@ export default function SnapshotsPage() {
                 type="email"
                 placeholder="recipient@email.com"
                 value={toEmail}
-                onChange={e => setToEmail(e.target.value)}
+                onChange={e => { setToEmail(e.target.value); setSendResult(null); }}
                 className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 mb-4"
               />
               {sendResult === 'ok' && (
-                <p className="text-sm text-green-600 font-medium mb-3">OK Email sent successfully!</p>
+                <p className="text-sm text-green-600 font-medium mb-3">Email sent successfully!</p>
+              )}
+              {sendResult === 'invalid' && (
+                <p className="text-sm text-red-500 mb-3">Please enter a valid email address.</p>
               )}
               {sendResult === 'err' && (
-                <p className="text-sm text-red-500 mb-3">Failed to send. Please try again or contact support.</p>
+                <p className="text-sm text-red-500 mb-3">Failed to send. Please try again.</p>
               )}
               <button
                 onClick={sendEmail}
-                disabled={sending || !toEmail}
+                disabled={sending || !toEmail.trim()}
                 className="w-full py-2.5 bg-green-600 text-white text-sm font-medium rounded-xl hover:bg-green-700 transition-colors disabled:opacity-50"
               >
                 {sending ? 'Sending...' : 'Send'}
