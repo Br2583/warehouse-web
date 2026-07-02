@@ -1,9 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 const PB_URL = process.env.NEXT_PUBLIC_PB_URL || 'https://pocketbase-production-e699.up.railway.app';
+const TIMEOUT_MS = 10_000;
+
+async function pbFetch(url: string, init: RequestInit = {}): Promise<Response> {
+  const ctrl = new AbortController();
+  const tid = setTimeout(() => ctrl.abort(), TIMEOUT_MS);
+  try {
+    return await fetch(url, { ...init, signal: ctrl.signal });
+  } finally {
+    clearTimeout(tid);
+  }
+}
 
 async function getAdminToken(): Promise<string> {
-  const res = await fetch(`${PB_URL}/api/collections/_superusers/auth-with-password`, {
+  const res = await pbFetch(`${PB_URL}/api/collections/_superusers/auth-with-password`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ identity: process.env.PB_ADMIN_EMAIL, password: process.env.PB_ADMIN_PASSWORD }),
@@ -13,9 +24,8 @@ async function getAdminToken(): Promise<string> {
   return data.token as string;
 }
 
-// Validate the user's PocketBase token and return their company_id
 async function getUserCompanyId(userToken: string): Promise<string> {
-  const res = await fetch(`${PB_URL}/api/collections/users/auth-refresh`, {
+  const res = await pbFetch(`${PB_URL}/api/collections/users/auth-refresh`, {
     method: 'POST',
     headers: { Authorization: `Bearer ${userToken}` },
   });
@@ -35,7 +45,7 @@ export async function GET(req: NextRequest) {
     const companyId = await getUserCompanyId(userToken);
     const adminToken = await getAdminToken();
 
-    const res = await fetch(
+    const res = await pbFetch(
       `${PB_URL}/api/collections/chat_messages/records?perPage=150&sort=-created&filter=${encodeURIComponent(`company_id="${companyId}"`)}&fields=id,author_name,author_id,content,created`,
       { headers: { Authorization: `Bearer ${adminToken}` } },
     );
@@ -52,7 +62,8 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json(msgs);
   } catch (e: any) {
-    return NextResponse.json({ error: e?.message || 'Failed to load messages' }, { status: 500 });
+    const msg = e?.name === 'AbortError' ? 'Connection timed out' : (e?.message || 'Failed to load messages');
+    return NextResponse.json({ error: msg }, { status: 500 });
   }
 }
 
@@ -65,8 +76,7 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     if (!body.text?.trim()) return NextResponse.json({ error: 'Message text is required' }, { status: 400 });
 
-    // Get user data from their own token — authoritative source
-    const refreshRes = await fetch(`${PB_URL}/api/collections/users/auth-refresh`, {
+    const refreshRes = await pbFetch(`${PB_URL}/api/collections/users/auth-refresh`, {
       method: 'POST',
       headers: { Authorization: `Bearer ${userToken}` },
     });
@@ -77,7 +87,7 @@ export async function POST(req: NextRequest) {
     if (!companyId) return NextResponse.json({ error: 'No company associated with this account' }, { status: 400 });
 
     const adminToken = await getAdminToken();
-    const res = await fetch(`${PB_URL}/api/collections/chat_messages/records`, {
+    const res = await pbFetch(`${PB_URL}/api/collections/chat_messages/records`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${adminToken}` },
       body: JSON.stringify({
@@ -99,7 +109,8 @@ export async function POST(req: NextRequest) {
       timestamp:    (msg.created || '').replace(' ', 'T'),
     });
   } catch (e: any) {
-    return NextResponse.json({ error: e?.message || 'Failed to send message' }, { status: 500 });
+    const msg = e?.name === 'AbortError' ? 'Connection timed out' : (e?.message || 'Failed to send message');
+    return NextResponse.json({ error: msg }, { status: 500 });
   }
 }
 
@@ -112,17 +123,17 @@ export async function DELETE(req: NextRequest) {
     const id = req.nextUrl.searchParams.get('id');
     if (!id) return NextResponse.json({ error: 'Missing id' }, { status: 400 });
 
-    // Verify the message belongs to this user's company before deleting
     await getUserCompanyId(userToken);
 
     const adminToken = await getAdminToken();
-    const res = await fetch(`${PB_URL}/api/collections/chat_messages/records/${id}`, {
+    const res = await pbFetch(`${PB_URL}/api/collections/chat_messages/records/${id}`, {
       method: 'DELETE',
       headers: { Authorization: `Bearer ${adminToken}` },
     });
     if (!res.ok && res.status !== 204) throw new Error('Failed to delete');
     return NextResponse.json({ ok: true });
   } catch (e: any) {
-    return NextResponse.json({ error: e?.message || 'Failed to delete' }, { status: 500 });
+    const msg = e?.name === 'AbortError' ? 'Connection timed out' : (e?.message || 'Failed to delete');
+    return NextResponse.json({ error: msg }, { status: 500 });
   }
 }

@@ -57,8 +57,11 @@ export default function ChatPage() {
   const fetchMessages = useCallback(() => {
     if (!user?.company_id) { setLoading(false); return Promise.resolve(); }
     const token = getToken();
+    const ctrl = new AbortController();
+    const tid = setTimeout(() => ctrl.abort(), 15_000);
     return fetch('/api/chat/messages', {
       headers: token ? { Authorization: `Bearer ${token}` } : {},
+      signal: ctrl.signal,
     })
       .then(r => r.json())
       .then((msgs: Message[]) => {
@@ -74,8 +77,9 @@ export default function ChatPage() {
         setSendError('');
         markChatSeen();
       }).catch((err: any) => {
-        setSendError(err?.message || 'Could not load messages');
-      }).finally(() => setLoading(false));
+        const msg = err?.name === 'AbortError' ? 'Connection timed out — retrying…' : (err?.message || 'Could not load messages');
+        setSendError(msg);
+      }).finally(() => { clearTimeout(tid); setLoading(false); });
   }, [user?.company_id, user?.email]);
 
   useEffect(() => {

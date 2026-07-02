@@ -77,6 +77,7 @@ const emptyForm = {
   client_name: '',
   work_type: 'Cleaning',
   date: new Date().toISOString().split('T')[0],
+  assigned_to: '',
   notes: '',
   volt_ids: [] as string[],
 };
@@ -87,6 +88,7 @@ export default function ProductionPage() {
   const isOwner = user?.role === 'owner';
 
   const [orders, setOrders] = useState<any[]>([]);
+  const [members, setMembers] = useState<{ name: string; user_id: string }[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCreate, setShowCreate] = useState(false);
   const [selected, setSelected] = useState<any>(null);
@@ -108,7 +110,13 @@ export default function ProductionPage() {
     finally { setLoading(false); }
   };
 
-  useEffect(() => { fetchOrders(); requestNotificationPermission(); }, []);
+  useEffect(() => {
+    fetchOrders();
+    requestNotificationPermission();
+    api.get('/api/company/members')
+      .then((m: any[]) => setMembers(Array.isArray(m) ? m : []))
+      .catch(() => {});
+  }, []);
 
   const openDetail = async (order: any) => {
     setSelected(order);
@@ -183,6 +191,7 @@ export default function ProductionPage() {
         client_name: form.client_name.trim(),
         work_type: form.work_type,
         date: form.date,
+        assigned_to: form.assigned_to.trim(),
         notes: form.notes,
         volt_ids: form.volt_ids,
       });
@@ -410,6 +419,26 @@ export default function ProductionPage() {
                         </button>
                       ))}
                     </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs text-gray-500 mb-1">Assign To <span className="text-gray-300">(optional)</span></label>
+                    {members.length > 0 ? (
+                      <select
+                        value={form.assigned_to}
+                        onChange={e => setForm(f => ({ ...f, assigned_to: e.target.value }))}
+                        className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                      >
+                        <option value="">— Unassigned —</option>
+                        {members.map(m => (
+                          <option key={m.user_id} value={m.name}>{m.name}</option>
+                        ))}
+                      </select>
+                    ) : (
+                      <input type="text" placeholder="Team member name" value={form.assigned_to}
+                        onChange={e => setForm(f => ({ ...f, assigned_to: e.target.value }))}
+                        className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                    )}
                   </div>
 
                   <div>

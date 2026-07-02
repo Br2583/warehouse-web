@@ -64,11 +64,36 @@ function buildTrend(boxes: any[]): { week: string; vaults: number }[] {
   return Object.entries(map).slice(-8).map(([week, vaults]) => ({ week, vaults }));
 }
 
+type Period = '7d' | '30d' | '3m' | 'all';
+
+const PERIOD_LABELS: Record<Period, string> = {
+  '7d': '7 days', '30d': '30 days', '3m': '3 months', 'all': 'All time',
+};
+
+function filterByPeriod(boxes: any[], period: Period): any[] {
+  if (period === 'all') return boxes;
+  const now = Date.now();
+  const ms: Record<Period, number> = {
+    '7d':  7  * 86400_000,
+    '30d': 30 * 86400_000,
+    '3m':  90 * 86400_000,
+    'all': 0,
+  };
+  const cutoff = now - ms[period];
+  return boxes.filter(b => {
+    const raw = b.created || '';
+    const iso = raw.includes('T') ? raw : raw.replace(' ', 'T');
+    const ts = new Date(iso.endsWith('Z') || iso.includes('+') ? iso : iso + 'Z').getTime();
+    return !isNaN(ts) && ts >= cutoff;
+  });
+}
+
 export default function StatsPage() {
   const [stats, setStats]     = useState<any>(null);
   const [boxes, setBoxes]     = useState<any[]>([]);
   const [whNames, setWhNames] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
+  const [period, setPeriod]   = useState<Period>('all');
   const [search, setSearch]   = useState('');
   const [sortBy, setSortBy]   = useState<'count' | 'name'>('count');
   const [selectedClient, setSelectedClient] = useState<string | null>(null);
@@ -99,10 +124,13 @@ export default function StatsPage() {
     load();
   }, []);
 
-  const total     = stats?.total_boxes ?? boxes.length ?? 0;
-  const pending   = stats?.statuses?.PENDING   ?? 0;
-  const ready     = stats?.statuses?.READY     ?? 0;
-  const delivered = stats?.statuses?.DELIVERED ?? 0;
+  const filteredBoxes = useMemo(() => filterByPeriod(boxes, period), [boxes, period]);
+
+  // When period changes, reset client selection
+  const total     = filteredBoxes.length;
+  const pending   = filteredBoxes.filter(b => (b.estado || b.status || 'PENDING') === 'PENDING').length;
+  const ready     = filteredBoxes.filter(b => (b.estado || b.status || '') === 'READY').length;
+  const delivered = filteredBoxes.filter(b => (b.estado || b.status || '') === 'DELIVERED').length;
 
   const pieData = useMemo(() => [
     { name: 'Pending',   value: pending,   color: STATUS_COLORS_HEX.PENDING },
@@ -110,24 +138,26 @@ export default function StatsPage() {
     { name: 'Delivered', value: delivered, color: STATUS_COLORS_HEX.DELIVERED },
   ].filter(d => d.value > 0), [pending, ready, delivered]);
 
-  const jobData = useMemo(() =>
-    Object.entries(stats?.job_types || {}).map(([k, v]) => ({ name: k, value: v as number, fill: JOB_COLORS[k] || '#6b7280' })),
-  [stats]);
+  const jobData = useMemo(() => {
+    const map: Record<string, number> = {};
+    filteredBoxes.forEach(b => { const k = b.job_type || 'Unknown'; map[k] = (map[k] || 0) + 1; });
+    return Object.entries(map).map(([k, v]) => ({ name: k, value: v, fill: JOB_COLORS[k] || '#6b7280' }));
+  }, [filteredBoxes]);
 
-  const trendData = useMemo(() => buildTrend(boxes), [boxes]);
+  const trendData = useMemo(() => buildTrend(filteredBoxes), [filteredBoxes]);
 
   const warehouseData = useMemo(() => {
     const map: Record<string, number> = {};
-    boxes.forEach(b => {
+    filteredBoxes.forEach(b => {
       const name = whNames[b.warehouse_id] || 'Unknown';
       map[name] = (map[name] || 0) + 1;
     });
     return Object.entries(map).map(([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value);
-  }, [boxes, whNames]);
+  }, [filteredBoxes, whNames]);
 
   const clientStats = useMemo(() => {
     const map: Record<string, { total: number; byJob: Record<string, number>; byStatus: Record<string, number> }> = {};
-    boxes.forEach(box => {
+    filteredBoxes.forEach(box => {
       const name = (box.client_name || 'Unknown').trim();
       if (!map[name]) map[name] = { total: 0, byJob: {}, byStatus: {} };
       map[name].total++;
@@ -136,7 +166,7 @@ export default function StatsPage() {
       map[name].byStatus[st] = (map[name].byStatus[st] || 0) + 1;
     });
     return map;
-  }, [boxes]);
+  }, [filteredBoxes]);
 
   const clientList = useMemo(() => {
     let list = Object.entries(clientStats).map(([name, data]) => ({ name, ...data }));
@@ -145,13 +175,12 @@ export default function StatsPage() {
   }, [clientStats, search, sortBy]);
 
   const clientVolts = useMemo(() =>
-    selectedClient ? boxes.filter(b => (b.client_name || 'Unknown').trim() === selectedClient) : [],
-  [selectedClient, boxes]);
+    selectedClient ? filteredBoxes.filter(b => (b.client_name || 'Unknown').trim() === selectedClient) : [],
+  [selectedClient, filteredBoxes]);
 
-  // Recent vaults (last 5)
   const recentVaults = useMemo(() =>
-    [...boxes].sort((a, b) => a.created < b.created ? 1 : -1).slice(0, 6),
-  [boxes]);
+    [...filteredBoxes].sort((a, b) => a.created < b.created ? 1 : -1).slice(0, 6),
+  [filteredBoxes]);
 
   if (loading) return (
     <div className="flex min-h-screen bg-gray-50">
@@ -169,13 +198,29 @@ export default function StatsPage() {
 
         {/* Header */}
         <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} className="mb-8">
-          <div className="flex items-center gap-3 mb-1">
-            <div className="w-9 h-9 bg-blue-600 rounded-xl flex items-center justify-center">
-              <ArrowTrendingUpIcon className="w-5 h-5 text-white" />
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div>
+              <div className="flex items-center gap-3 mb-1">
+                <div className="w-9 h-9 bg-blue-600 rounded-xl flex items-center justify-center">
+                  <ArrowTrendingUpIcon className="w-5 h-5 text-white" />
+                </div>
+                <h1 className="text-2xl font-bold text-gray-900">Analytics</h1>
+              </div>
+              <p className="text-gray-400 text-sm ml-12">Real-time inventory intelligence</p>
             </div>
-            <h1 className="text-2xl font-bold text-gray-900">Analytics</h1>
+            {/* Period selector */}
+            <div className="flex items-center gap-1.5 bg-gray-100 p-1 rounded-xl self-start sm:self-auto">
+              {(['7d', '30d', '3m', 'all'] as Period[]).map(p => (
+                <button
+                  key={p}
+                  onClick={() => { setPeriod(p); setSelectedClient(null); }}
+                  className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-all ${period === p ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+                >
+                  {PERIOD_LABELS[p]}
+                </button>
+              ))}
+            </div>
           </div>
-          <p className="text-gray-400 text-sm ml-12">Real-time inventory intelligence</p>
         </motion.div>
 
         <div className="space-y-6">
