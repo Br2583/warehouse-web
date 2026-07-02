@@ -4,7 +4,6 @@ import { useEffect, useState, useRef, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { PaperAirplaneIcon, TrashIcon } from '@heroicons/react/24/outline';
 import Sidebar from '@/components/Sidebar';
-import { api } from '@/lib/api';
 import { useAuth } from '@/lib/auth-context';
 import { notify, requestNotificationPermission } from '@/lib/notifications';
 
@@ -53,18 +52,24 @@ export default function ChatPage() {
     isAtBottomRef.current = el.scrollHeight - el.scrollTop - el.clientHeight < 80;
   }, []);
 
-  const fetchMessages = useCallback(() =>
-    api.get('/api/chat/messages').then((msgs: Message[]) => {
-      if (lastCountRef.current >= 0 && msgs.length > lastCountRef.current) {
-        const newest = msgs[msgs.length - 1];
-        if (newest && newest.sender_email !== user?.email) {
-          notify(`${newest.sender_name}`, newest.text);
+  const fetchMessages = useCallback(() => {
+    if (!user?.company_id) { setLoading(false); return Promise.resolve(); }
+    return fetch(`/api/chat/messages?company_id=${encodeURIComponent(user.company_id)}`)
+      .then(r => r.json())
+      .then((msgs: Message[]) => {
+        if (!Array.isArray(msgs)) throw new Error((msgs as any)?.error || 'Failed to load messages');
+        if (lastCountRef.current >= 0 && msgs.length > lastCountRef.current) {
+          const newest = msgs[msgs.length - 1];
+          if (newest && newest.sender_email !== user?.email) {
+            notify(`${newest.sender_name}`, newest.text);
+          }
         }
-      }
-      lastCountRef.current = msgs.length;
-      setMessages(msgs);
-    }).catch(() => {}).finally(() => setLoading(false))
-  , [user?.email]);
+        lastCountRef.current = msgs.length;
+        setMessages(msgs);
+      }).catch((err: any) => {
+        setSendError(err?.message || 'Could not load messages');
+      }).finally(() => setLoading(false));
+  }, [user?.company_id, user?.email]);
 
   useEffect(() => {
     requestNotificationPermission();
@@ -86,12 +91,20 @@ export default function ChatPage() {
     setSending(true);
     setSendError('');
     try {
-      await api.post('/api/chat/messages', {
-        sender_email: user?.email,
-        sender_name: user?.name,
-        sender_photo: user?.picture || null,
-        text: text.trim(),
+      const res = await fetch('/api/chat/messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          company_id:  user?.company_id,
+          author_id:   user?.email,
+          author_name: user?.name,
+          text:        text.trim(),
+        }),
       });
+      if (!res.ok) {
+        const d = await res.json().catch(() => ({}));
+        throw new Error(d?.error || 'Failed to send message');
+      }
       setText('');
       isAtBottomRef.current = true;
       await fetchMessages();
@@ -105,7 +118,7 @@ export default function ChatPage() {
 
   const deleteMsg = async (id: string) => {
     try {
-      await api.delete(`/api/chat/messages/${id}`);
+      await fetch(`/api/chat/messages?id=${encodeURIComponent(id)}`, { method: 'DELETE' });
       fetchMessages();
     } catch {
       // deletion failed, list stays unchanged

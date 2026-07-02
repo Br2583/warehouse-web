@@ -11,8 +11,6 @@ import Sidebar from '@/components/Sidebar';
 import { api } from '@/lib/api';
 import { useAuth } from '@/lib/auth-context';
 import { compressImage } from '@/lib/compress-image';
-import { pb } from '@/lib/pb';
-
 export default function ProfilePage() {
   const { user, logout, refreshUser } = useAuth();
   const [company, setCompany] = useState<any>(null);
@@ -29,7 +27,15 @@ export default function ProfilePage() {
     setAvatarError('');
     try {
       const base64 = await compressImage(files[0]);
-      await pb.collection('users').update(user.id, { avatar_base64: base64 });
+      const res = await fetch('/api/profile/avatar', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: user.id, avatar_base64: base64 }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data?.error || 'Failed to upload photo');
+      }
       await refreshUser();
     } catch (e: any) {
       setAvatarError(e?.message || 'Failed to upload photo');
