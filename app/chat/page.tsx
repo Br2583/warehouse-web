@@ -157,7 +157,7 @@ export default function ChatPage() {
             <div className="text-center py-16 text-gray-400 text-sm">No messages yet. Start the conversation!</div>
           ) : (
             messages.map((msg, i) => {
-              const isMe = msg.sender_email === user?.email;
+              const isMe = msg.sender_email === user?.id || msg.sender_email === user?.email;
               return (
                 <motion.div
                   key={msg.id}

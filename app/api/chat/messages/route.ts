@@ -93,8 +93,8 @@ export async function POST(req: NextRequest) {
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${adminToken}` },
       body: JSON.stringify({
         company_id:  companyId,
-        author_id:   record.email || record.id,
-        author_name: record.name || 'Unknown',
+        author_id:   record.id,
+        author_name: record.name || record.email || 'Unknown',
         content:     body.text.trim(),
         type:        'text',
       }),
