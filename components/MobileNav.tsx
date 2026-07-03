@@ -5,35 +5,39 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
 import {
-  HomeIcon, BuildingOffice2Icon, ArchiveBoxIcon, WrenchScrewdriverIcon,
+  HomeIcon, BuildingOffice2Icon, ArchiveBoxIcon, ClipboardDocumentListIcon,
   MagnifyingGlassIcon, ChartBarSquareIcon, CameraIcon, ChatBubbleLeftRightIcon,
   UserCircleIcon, ArrowRightOnRectangleIcon, Bars3Icon, XMarkIcon, LifebuoyIcon,
 } from '@heroicons/react/24/outline';
 import {
   HomeIcon as HomeSolid, BuildingOffice2Icon as BuildingSolid, ArchiveBoxIcon as ArchiveSolid,
-  WrenchScrewdriverIcon as WrenchSolid, MagnifyingGlassIcon as SearchSolid,
+  ClipboardDocumentListIcon as TasksSolid, MagnifyingGlassIcon as SearchSolid,
   ChartBarSquareIcon as ChartSolid, CameraIcon as CameraSolid,
   ChatBubbleLeftRightIcon as ChatSolid, UserCircleIcon as UserSolid,
   LifebuoyIcon as LifebuoySolid,
 } from '@heroicons/react/24/solid';
+import { useUnreadChat } from '@/lib/use-unread-chat';
+import { usePendingTasks } from '@/lib/use-pending-tasks';
 
 const NAV_ITEMS = [
-  { href: '/dashboard',  label: 'Dashboard',   icon: HomeIcon,                 iconActive: HomeSolid },
-  { href: '/warehouses', label: 'Warehouses',  icon: BuildingOffice2Icon,      iconActive: BuildingSolid },
-  { href: '/storage',    label: 'Storage',     icon: ArchiveBoxIcon,           iconActive: ArchiveSolid },
-  { href: '/production', label: 'Production',  icon: WrenchScrewdriverIcon,    iconActive: WrenchSolid },
-  { href: '/search',     label: 'Search',      icon: MagnifyingGlassIcon,      iconActive: SearchSolid },
-  { href: '/stats',      label: 'Statistics',  icon: ChartBarSquareIcon,       iconActive: ChartSolid },
-  { href: '/snapshots',  label: 'Snapshots',   icon: CameraIcon,               iconActive: CameraSolid },
-  { href: '/chat',       label: 'Chat',        icon: ChatBubbleLeftRightIcon,  iconActive: ChatSolid },
-  { href: '/profile',    label: 'Profile',     icon: UserCircleIcon,           iconActive: UserSolid },
-  { href: '/support',    label: 'Support',     icon: LifebuoyIcon,             iconActive: LifebuoySolid },
+  { href: '/dashboard',  label: 'Dashboard',   icon: HomeIcon,                  iconActive: HomeSolid },
+  { href: '/warehouses', label: 'Warehouses',  icon: BuildingOffice2Icon,       iconActive: BuildingSolid },
+  { href: '/storage',    label: 'Storage',     icon: ArchiveBoxIcon,            iconActive: ArchiveSolid },
+  { href: '/tasks',      label: 'Tasks',       icon: ClipboardDocumentListIcon, iconActive: TasksSolid },
+  { href: '/search',     label: 'Search',      icon: MagnifyingGlassIcon,       iconActive: SearchSolid },
+  { href: '/stats',      label: 'Statistics',  icon: ChartBarSquareIcon,        iconActive: ChartSolid },
+  { href: '/snapshots',  label: 'Snapshots',   icon: CameraIcon,                iconActive: CameraSolid },
+  { href: '/chat',       label: 'Chat',        icon: ChatBubbleLeftRightIcon,   iconActive: ChatSolid },
+  { href: '/profile',    label: 'Profile',     icon: UserCircleIcon,            iconActive: UserSolid },
+  { href: '/support',    label: 'Support',     icon: LifebuoyIcon,              iconActive: LifebuoySolid },
 ];
 
 export default function MobileNav() {
   const [open, setOpen] = useState(false);
   const pathname = usePathname();
   const { user, logout } = useAuth();
+  const unreadChat   = useUnreadChat();
+  const pendingTasks = usePendingTasks();
 
   return (
     <>
@@ -86,15 +90,23 @@ export default function MobileNav() {
             const active = pathname === href || pathname.startsWith(href + '/');
             const ActiveIcon = IconActive;
             const InactiveIcon = Icon;
+            const badge = href === '/chat' ? unreadChat : href === '/tasks' ? pendingTasks : 0;
             return (
               <Link key={href} href={href} onClick={() => setOpen(false)}>
                 <div className={`flex items-center gap-3 px-3 py-3 rounded-xl transition-colors ${
                   active ? 'bg-blue-50 text-blue-600' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-700'
                 }`}>
-                  {active
-                    ? <ActiveIcon className="w-5 h-5 flex-shrink-0 text-blue-600" />
-                    : <InactiveIcon className="w-5 h-5 flex-shrink-0" />
-                  }
+                  <div className="relative flex-shrink-0">
+                    {active
+                      ? <ActiveIcon className="w-5 h-5 text-blue-600" />
+                      : <InactiveIcon className="w-5 h-5" />
+                    }
+                    {badge > 0 && (
+                      <span className="absolute -top-1 -right-1.5 min-w-[14px] h-[14px] bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center px-0.5">
+                        {badge > 9 ? '9+' : badge}
+                      </span>
+                    )}
+                  </div>
                   <span className="text-sm font-medium">{label}</span>
                   {active && <div className="ml-auto w-1.5 h-1.5 rounded-full bg-blue-600" />}
                 </div>

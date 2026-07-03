@@ -235,62 +235,13 @@ async function routeGet(path: string): Promise<any> {
     }));
   }
 
-  // ── Work Orders ────────────────────────────────────────────────────────────
-  if (p === '/api/work-orders') {
-    if (!cid) return [];
-    const items = await pb.collection('work_orders').getFullList({
-      filter:  `company_id="${cid}"`,
-    });
-    const phaseMap: Record<string, number> = { PENDING: 1, IN_PROGRESS: 2, REVIEW: 3, DONE: 4 };
-    return items
-      .sort((a: any, b: any) => a.created < b.created ? 1 : -1)
-      .map(o => ({
-        id:          o.id,
-        work_order_id: o.id,
-        client_name: o.notes ? o.notes.split('\n')[0] : 'Work Order',
-        work_type:   o.type,
-        type:        o.type,
-        status:      (o.status || 'PENDING').toLowerCase(),
-        phase:       phaseMap[o.status] || 1,
-        date:        o.due_date ? o.due_date.replace(' ', 'T').split('T')[0] : o.created?.split(' ')[0],
-        notes:       o.notes,
-        assigned_to: o.assigned_to,
-        vault_id:    o.vault_id,
-        created:     o.created,
-      }));
-  }
-
-  // GET /api/work-orders/search-volts/:q — vault search for work order creation
-  const svMatch = p.match(/^\/api\/work-orders\/search-volts\/(.+)$/);
-  if (svMatch) {
-    if (!cid) return [];
-    const q = decodeURIComponent(svMatch[1]).toLowerCase();
-    const qSafe = sf(q);
-    const vaults = await pb.collection('vaults').getFullList({
-      filter: `company_id="${cid}" && (client_name~"${qSafe}" || position~"${qSafe}" || packer~"${qSafe}")`,
-      sort: 'client_name',
-    });
-    return vaults.map(mapVault);
-  }
-
-  // GET /api/work-orders/:id
-  const woMatch = p.match(/^\/api\/work-orders\/([^/]+)$/);
-  if (woMatch) {
-    const phaseMap2: Record<string, number> = { PENDING: 1, IN_PROGRESS: 2, REVIEW: 3, DONE: 4 };
-    const o = await pb.collection('work_orders').getOne(woMatch[1]);
-    if (o.company_id !== cid) throw new Error('Forbidden');
-    return {
-      id:            o.id,
-      work_order_id: o.id,
-      client_name:   o.notes ? o.notes.split('\n')[0] : 'Work Order',
-      work_type:     o.type,
-      status:        (o.status || 'PENDING').toLowerCase(),
-      phase:         phaseMap2[o.status] || 1,
-      date:          o.due_date ? o.due_date.replace(' ', 'T').split('T')[0] : o.created?.split(' ')[0],
-      notes:         o.notes,
-      vault_ids:     o.vault_id ? [o.vault_id] : [],
-      vaults:        [],
-    };
+  // ── Tasks ──────────────────────────────────────────────────────────────────
+  if (p === '/api/tasks') {
+    const token = pb.authStore.token;
+    if (!token) return [];
+    const r = await fetch('/api/tasks', { headers: { Authorization: `Bearer ${token}` } });
+    if (!r.ok) return [];
+    return r.json();
   }
 
   // ── Chat ───────────────────────────────────────────────────────────────────
@@ -446,30 +397,18 @@ async function routePost(path: string, body: any): Promise<any> {
     return { invite_code: code };
   }
 
-  // ── Work Orders ────────────────────────────────────────────────────────────
-  if (p === '/api/work-orders') {
-    if (!cid) throw new Error('No company');
-    const o = await pb.collection('work_orders').create({
-      company_id:  cid,
-      type:        body.work_type || body.type || 'Cleaning',
-      vault_id:    body.vault_ids?.[0] || body.vault_id || '',
-      assigned_to: body.assigned_to || '',
-      status:      'PENDING',
-      due_date:    body.date || '',
-      notes:       body.notes || body.client_name || '',
-      created_by:  uid,
+  // ── Tasks ──────────────────────────────────────────────────────────────────
+  if (p === '/api/tasks') {
+    const token = pb.authStore.token;
+    if (!token) throw new Error('Not authenticated');
+    const r = await fetch('/api/tasks', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
     });
-    return { ...o };
-  }
-
-  // PUT work-order volt status — /api/work-orders/:id/volt
-  const woVoltMatch = p.match(/^\/api\/work-orders\/([^/]+)\/volt$/);
-  if (woVoltMatch) {
-    const o = await pb.collection('work_orders').getOne(woVoltMatch[1]);
-    if (o.company_id !== cid) throw new Error('Forbidden');
-    const newStatus = body.status === 'completed' ? 'DONE' : body.status.toUpperCase().replace('-', '_');
-    await pb.collection('work_orders').update(o.id, { status: newStatus });
-    return { success: true };
+    const data = await r.json();
+    if (!r.ok) throw new Error((data as any).error || 'Failed to create task');
+    return data;
   }
 
   // ── Chat ───────────────────────────────────────────────────────────────────
@@ -621,34 +560,19 @@ async function routePut(path: string, body: any): Promise<any> {
     return mapStorage(s);
   }
 
-  // PUT /api/work-orders/:id/phase — update phase only
-  const woPhaseMatch = p.match(/^\/api\/work-orders\/([^/]+)\/phase$/);
-  if (woPhaseMatch) {
-    const existingPhase = await pb.collection('work_orders').getOne(woPhaseMatch[1]);
-    if (existingPhase.company_id !== cid) throw new Error('Forbidden');
-    const phaseToStatus: Record<number, string> = { 1: 'PENDING', 2: 'IN_PROGRESS', 3: 'REVIEW', 4: 'DONE' };
-    await pb.collection('work_orders').update(woPhaseMatch[1], {
-      status: phaseToStatus[body.phase as number] || 'PENDING',
+  // PUT /api/tasks/:id
+  const taskMatch = p.match(/^\/api\/tasks\/([^/]+)$/);
+  if (taskMatch) {
+    const token = pb.authStore.token;
+    if (!token) throw new Error('Not authenticated');
+    const r = await fetch(`/api/tasks/${taskMatch[1]}`, {
+      method: 'PUT',
+      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
     });
-    return { success: true };
-  }
-
-  // PUT /api/work-orders/:id
-  const woMatch = p.match(/^\/api\/work-orders\/([^/]+)$/);
-  if (woMatch) {
-    const existingWo = await pb.collection('work_orders').getOne(woMatch[1]);
-    if (existingWo.company_id !== cid) throw new Error('Forbidden');
-    const statusMap: Record<string, string> = {
-      pending: 'PENDING', in_progress: 'IN_PROGRESS', review: 'REVIEW', completed: 'DONE',
-    };
-    await pb.collection('work_orders').update(woMatch[1], {
-      type:        body.work_type || body.type,
-      status:      statusMap[body.status] || body.status?.toUpperCase() || 'PENDING',
-      notes:       body.notes,
-      assigned_to: body.assigned_to,
-      due_date:    body.date,
-    });
-    return { success: true };
+    const data = await r.json();
+    if (!r.ok) throw new Error((data as any).error || 'Failed to update task');
+    return data;
   }
 
   throw new Error(`Unknown PUT path: ${p}`);
@@ -713,12 +637,19 @@ async function routeDelete(path: string): Promise<any> {
     return null;
   }
 
-  // DELETE /api/work-orders/:id
-  const woMatch = p.match(/^\/api\/work-orders\/([^/]+)$/);
-  if (woMatch) {
-    const wo = await pb.collection('work_orders').getOne(woMatch[1]);
-    if (wo.company_id !== cid) throw new Error('Forbidden');
-    await pb.collection('work_orders').delete(woMatch[1]);
+  // DELETE /api/tasks/:id
+  const taskDelMatch = p.match(/^\/api\/tasks\/([^/]+)$/);
+  if (taskDelMatch) {
+    const token = pb.authStore.token;
+    if (!token) throw new Error('Not authenticated');
+    const r = await fetch(`/api/tasks/${taskDelMatch[1]}`, {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (r.status !== 204 && !r.ok) {
+      const data = await r.json().catch(() => ({}));
+      throw new Error((data as any).error || 'Failed to delete task');
+    }
     return null;
   }
 

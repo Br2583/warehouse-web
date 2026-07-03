@@ -5,7 +5,7 @@ import { useEffect } from 'react';
 import MobileNav from './MobileNav';
 import { useAuth } from '@/lib/auth-context';
 
-const AUTH_ROUTES = ['/dashboard', '/warehouses', '/search', '/production', '/stats', '/snapshots', '/chat', '/profile', '/storage', '/onboarding'];
+const AUTH_ROUTES = ['/dashboard', '/warehouses', '/search', '/tasks', '/production', '/stats', '/snapshots', '/chat', '/profile', '/storage', '/onboarding'];
 
 export default function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();

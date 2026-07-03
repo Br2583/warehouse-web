@@ -4,13 +4,13 @@ import { useAuth } from '@/lib/auth-context';
 import { motion } from 'framer-motion';
 import { UserAvatar } from '@/components/UserAvatar';
 import {
-  HomeIcon, BuildingOffice2Icon, ArchiveBoxIcon, WrenchScrewdriverIcon,
+  HomeIcon, BuildingOffice2Icon, ArchiveBoxIcon, ClipboardDocumentListIcon,
   MagnifyingGlassIcon, ChartBarSquareIcon, CameraIcon, ChatBubbleLeftRightIcon,
   UserCircleIcon, ArrowRightOnRectangleIcon, LifebuoyIcon,
 } from '@heroicons/react/24/outline';
 import {
   HomeIcon as HomeSolid, BuildingOffice2Icon as BuildingSolid, ArchiveBoxIcon as ArchiveSolid,
-  WrenchScrewdriverIcon as WrenchSolid, MagnifyingGlassIcon as SearchSolid,
+  ClipboardDocumentListIcon as TasksSolid, MagnifyingGlassIcon as SearchSolid,
   ChartBarSquareIcon as ChartSolid, CameraIcon as CameraSolid,
   ChatBubbleLeftRightIcon as ChatSolid, UserCircleIcon as UserSolid,
   LifebuoyIcon as LifebuoySolid,
@@ -18,24 +18,26 @@ import {
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useUnreadChat } from '@/lib/use-unread-chat';
+import { usePendingTasks } from '@/lib/use-pending-tasks';
 
 const navItems = [
-  { href: '/dashboard',  label: 'Dashboard',  icon: HomeIcon,                iconActive: HomeSolid },
-  { href: '/warehouses', label: 'Warehouses', icon: BuildingOffice2Icon,     iconActive: BuildingSolid },
-  { href: '/storage',    label: 'Storage',    icon: ArchiveBoxIcon,          iconActive: ArchiveSolid },
-  { href: '/production', label: 'Production', icon: WrenchScrewdriverIcon,   iconActive: WrenchSolid },
-  { href: '/search',     label: 'Search',     icon: MagnifyingGlassIcon,     iconActive: SearchSolid },
-  { href: '/stats',      label: 'Statistics', icon: ChartBarSquareIcon,      iconActive: ChartSolid },
-  { href: '/snapshots',  label: 'Snapshots',  icon: CameraIcon,              iconActive: CameraSolid },
-  { href: '/chat',       label: 'Chat',       icon: ChatBubbleLeftRightIcon, iconActive: ChatSolid },
-  { href: '/profile',    label: 'Profile',    icon: UserCircleIcon,          iconActive: UserSolid },
-  { href: '/support',    label: 'Support',    icon: LifebuoyIcon,            iconActive: LifebuoySolid },
+  { href: '/dashboard',  label: 'Dashboard',  icon: HomeIcon,                   iconActive: HomeSolid },
+  { href: '/warehouses', label: 'Warehouses', icon: BuildingOffice2Icon,        iconActive: BuildingSolid },
+  { href: '/storage',    label: 'Storage',    icon: ArchiveBoxIcon,             iconActive: ArchiveSolid },
+  { href: '/tasks',      label: 'Tasks',      icon: ClipboardDocumentListIcon,  iconActive: TasksSolid },
+  { href: '/search',     label: 'Search',     icon: MagnifyingGlassIcon,        iconActive: SearchSolid },
+  { href: '/stats',      label: 'Statistics', icon: ChartBarSquareIcon,         iconActive: ChartSolid },
+  { href: '/snapshots',  label: 'Snapshots',  icon: CameraIcon,                 iconActive: CameraSolid },
+  { href: '/chat',       label: 'Chat',       icon: ChatBubbleLeftRightIcon,    iconActive: ChatSolid },
+  { href: '/profile',    label: 'Profile',    icon: UserCircleIcon,             iconActive: UserSolid },
+  { href: '/support',    label: 'Support',    icon: LifebuoyIcon,               iconActive: LifebuoySolid },
 ];
 
 export default function Sidebar() {
   const { user, logout } = useAuth();
   const pathname = usePathname();
-  const unreadChat = useUnreadChat();
+  const unreadChat    = useUnreadChat();
+  const pendingTasks  = usePendingTasks();
 
   return (
     <div className="hidden md:flex w-64 bg-white border-r border-gray-100 h-screen flex-col shadow-sm fixed left-0 top-0 z-40">
@@ -70,6 +72,11 @@ export default function Sidebar() {
                   {item.href === '/chat' && unreadChat > 0 && (
                     <span className="absolute -top-1 -right-1.5 min-w-[14px] h-[14px] bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center px-0.5">
                       {unreadChat > 9 ? '9+' : unreadChat}
+                    </span>
+                  )}
+                  {item.href === '/tasks' && pendingTasks > 0 && (
+                    <span className="absolute -top-1 -right-1.5 min-w-[14px] h-[14px] bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center px-0.5">
+                      {pendingTasks > 9 ? '9+' : pendingTasks}
                     </span>
                   )}
                 </div>
