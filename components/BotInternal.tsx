@@ -9,11 +9,10 @@ import { getGreeting } from '@/lib/bot-phrases';
 import Link from 'next/link';
 
 /* ─────────────────────────────────────────────
-   Shared SVG character — viewBox 0 0 60 92
-   eyeNormX / eyeNormY: -1..1
+   Shared SVG character — viewBox 0 0 60 88
 ───────────────────────────────────────────── */
 function BotCharacter({
-  w = 40, h = 60,
+  w = 40, h = 58,
   eyeNormX = 0, eyeNormY = 0,
   blinking = false,
 }: {
@@ -21,72 +20,59 @@ function BotCharacter({
   eyeNormX?: number; eyeNormY?: number;
   blinking?: boolean;
 }) {
-  const maxEyeShift = 2.6;
-  const ox = eyeNormX * maxEyeShift;
-  const oy = eyeNormY * maxEyeShift;
+  const maxShift = 2.2;
+  const ox = eyeNormX * maxShift;
+  const oy = eyeNormY * maxShift;
 
   return (
-    <svg width={w} height={h} viewBox="0 0 60 92" fill="none">
-      <defs>
-        <linearGradient id="int-head" x1="0" y1="0" x2="60" y2="51" gradientUnits="userSpaceOnUse">
-          <stop stopColor="#60a5fa" />
-          <stop offset="1" stopColor="#1e3a8a" />
-        </linearGradient>
-        <linearGradient id="int-body" x1="0" y1="58" x2="60" y2="88" gradientUnits="userSpaceOnUse">
-          <stop stopColor="#2563eb" />
-          <stop offset="1" stopColor="#1e40af" />
-        </linearGradient>
-      </defs>
+    <svg width={w} height={h} viewBox="0 0 60 88" fill="none">
+      {/* ANTENNA */}
+      <line x1="30" y1="8" x2="30" y2="15" stroke="#1d4ed8" strokeWidth="2.8" strokeLinecap="round" />
+      <circle cx="30" cy="5.5" r="3.5" fill="#60a5fa" />
 
-      {/* CAP */}
-      <rect x="17" y="3" width="26" height="14" rx="5" fill="#1d4ed8" />
-      <rect x="9" y="16" width="42" height="5" rx="2.5" fill="#1e40af" />
-      <rect x="17" y="12" width="26" height="2.5" rx="1" fill="rgba(255,255,255,0.18)" />
-      <circle cx="30" cy="4.5" r="2.5" fill="#93c5fd" />
+      {/* EARS */}
+      <circle cx="8"  cy="30" r="7.5" fill="#1d4ed8" />
+      <circle cx="52" cy="30" r="7.5" fill="#1d4ed8" />
 
       {/* HEAD */}
-      <rect x="11" y="20" width="38" height="31" rx="10" fill="url(#int-head)" />
-      <rect x="15" y="23" width="14" height="7" rx="3.5" fill="rgba(255,255,255,0.13)" />
+      <circle cx="30" cy="30" r="21" fill="#1d4ed8" />
+      <ellipse cx="23" cy="21" rx="8" ry="5" fill="rgba(255,255,255,0.12)" transform="rotate(-20 23 21)" />
 
-      {/* Eyes */}
-      <circle cx="22" cy="34" r="6.5" fill="white" opacity={blinking ? 0.08 : 1} />
-      <circle cx="38" cy="34" r="6.5" fill="white" opacity={blinking ? 0.08 : 1} />
-      {!blinking && <circle cx={22 + ox} cy={34 + oy} r="3.5" fill="#0f172a" />}
-      {!blinking && <circle cx={38 + ox} cy={34 + oy} r="3.5" fill="#0f172a" />}
+      {/* VISOR */}
+      <rect x="11" y="23" width="38" height="15" rx="7.5" fill="white" />
 
-      {/* Mouth */}
-      <path d="M 21 44 Q 30 50.5 39 44" stroke="white" strokeWidth="2.4" strokeLinecap="round" />
+      {/* EYES */}
+      {!blinking ? (
+        <>
+          <circle cx={22 + ox} cy={30.5 + oy} r="5"   fill="#0f172a" />
+          <circle cx={38 + ox} cy={30.5 + oy} r="5"   fill="#0f172a" />
+        </>
+      ) : (
+        <>
+          <rect x={17 + ox} y="29" width="10" height="3.5" rx="1.75" fill="#0f172a" />
+          <rect x={33 + ox} y="29" width="10" height="3.5" rx="1.75" fill="#0f172a" />
+        </>
+      )}
 
-      {/* NECK */}
-      <rect x="24" y="51" width="12" height="8" rx="3" fill="#1e40af" />
+      {/* BODY */}
+      <path d="M 18 53 L 42 53 C 48 63 41 79 30 84 C 19 79 12 63 18 53 Z" fill="#1d4ed8" />
+      <ellipse cx="30" cy="58" rx="9" ry="3.5" fill="rgba(255,255,255,0.1)" />
 
-      {/* TORSO */}
-      <rect x="13" y="58" width="34" height="24" rx="8" fill="url(#int-body)" />
-      <rect x="20" y="64" width="20" height="12" rx="3.5" fill="rgba(255,255,255,0.18)" />
-      <text x="30" y="73.5" textAnchor="middle" fill="white" fontSize="6.5" fontWeight="900" fontStyle="italic" fontFamily="sans-serif">WM</text>
-
-      {/* LEFT ARM + HAND */}
-      <rect x="3" y="60" width="9" height="18" rx="4.5" fill="#1d4ed8" />
-      <circle cx="7.5" cy="80" r="5.5" fill="#2563eb" />
-
-      {/* RIGHT ARM + HAND */}
-      <rect x="48" y="60" width="9" height="18" rx="4.5" fill="#1d4ed8" />
-      <circle cx="52.5" cy="80" r="5.5" fill="#2563eb" />
+      {/* WM */}
+      <text x="30" y="72" textAnchor="middle" fill="white" fontSize="9.5" fontWeight="900" fontStyle="italic" fontFamily="system-ui, sans-serif">WM</text>
     </svg>
   );
 }
 
-/* ── Data types ── */
+/* ── Data ── */
 interface BotData {
   totalVaults: number;
   readyVaults: number;
   pendingOrders: number;
   inProgressOrders: number;
-  completedOrders: number;
   unreadMessages: number;
 }
 
-/* ── Quick action button ── */
 function QuickBtn({ icon, label, value, color }: {
   icon: React.ReactNode; label: string; value?: string | number; color: string;
 }) {
@@ -103,20 +89,19 @@ function QuickBtn({ icon, label, value, color }: {
   );
 }
 
-/* ── Main component ── */
+/* ── Main ── */
 export default function BotInternal() {
-  const { user } = useAuth();
-  const unread = useUnreadChat();
-  const [open, setOpen] = useState(false);
-  const [peeked, setPeeked] = useState(false);
+  const { user }   = useAuth();
+  const unread     = useUnreadChat();
+  const [open, setOpen]       = useState(false);
+  const [peeked, setPeeked]   = useState(false);
   const [eyeNorm, setEyeNorm] = useState({ x: 0, y: 0 });
   const [blinking, setBlinking] = useState(false);
-  const [data, setData] = useState<BotData | null>(null);
+  const [data, setData]       = useState<BotData | null>(null);
   const [loading, setLoading] = useState(false);
-  const fabRef = useRef<HTMLDivElement>(null);
+  const fabRef    = useRef<HTMLDivElement>(null);
   const peekShown = useRef(false);
 
-  // Fetch bot data once
   const fetchData = useCallback(async () => {
     if (data) return;
     setLoading(true);
@@ -129,30 +114,25 @@ export default function BotInternal() {
           ? fetch('/api/chat/messages', { headers: { Authorization: `Bearer ${token}` } }).then(r => r.ok ? r.json() : [])
           : Promise.resolve([]),
       ]);
-
-      const stats  = statsRes.status === 'fulfilled' ? statsRes.value : null;
+      const stats  = statsRes.status  === 'fulfilled' ? statsRes.value  : null;
       const orders = ordersRes.status === 'fulfilled' && Array.isArray(ordersRes.value) ? ordersRes.value : [];
       const msgs: any[] = chatRes.status === 'fulfilled' ? (chatRes.value ?? []) : [];
-
-      const lastSeen   = parseInt(localStorage.getItem('chat_last_seen') || '0', 10);
+      const lastSeen = parseInt(localStorage.getItem('chat_last_seen') || '0', 10);
       const unreadCount = msgs.filter((m: any) => {
         const ts = m.timestamp ? new Date(m.timestamp.replace(' ', 'T')).getTime() : 0;
         return ts > lastSeen;
       }).length;
-
       setData({
         totalVaults:      stats?.total_boxes ?? 0,
         readyVaults:      stats?.statuses?.READY ?? 0,
         pendingOrders:    orders.filter((o: any) => o.status === 'pending').length,
         inProgressOrders: orders.filter((o: any) => o.status === 'in_progress').length,
-        completedOrders:  orders.filter((o: any) => ['completed', 'done'].includes(o.status)).length,
         unreadMessages:   unreadCount,
       });
     } catch { /* silent */ }
     finally { setLoading(false); }
   }, [data]);
 
-  // Auto-peek on mount
   useEffect(() => {
     if (peekShown.current || !user) return;
     peekShown.current = true;
@@ -161,10 +141,8 @@ export default function BotInternal() {
     return () => { clearTimeout(t1); clearTimeout(t2); };
   }, [user, fetchData]);
 
-  // Fetch when panel opens
   useEffect(() => { if (open) fetchData(); }, [open, fetchData]);
 
-  // Re-peek on new unread messages
   const prevUnread = useRef(unread);
   useEffect(() => {
     if (unread > prevUnread.current && !open) {
@@ -176,24 +154,22 @@ export default function BotInternal() {
     prevUnread.current = unread;
   }, [unread, open]);
 
-  // Blink
   useEffect(() => {
     const schedule = (): ReturnType<typeof setTimeout> =>
-      setTimeout(() => { setBlinking(true); setTimeout(() => setBlinking(false), 110); schedule(); }, 2800 + Math.random() * 3500);
+      setTimeout(() => { setBlinking(true); setTimeout(() => setBlinking(false), 130); schedule(); }, 2800 + Math.random() * 3500);
     const t = schedule();
     return () => clearTimeout(t);
   }, []);
 
-  // Mouse tracking
   useEffect(() => {
     const h = (e: MouseEvent) => {
       const el = fabRef.current;
       if (!el) return;
       const rect = el.getBoundingClientRect();
-      const cx = rect.left + rect.width / 2;
-      const cy = rect.top + rect.height / 2;
-      const dx = e.clientX - cx;
-      const dy = e.clientY - cy;
+      const cx   = rect.left + rect.width  / 2;
+      const cy   = rect.top  + rect.height / 2;
+      const dx   = e.clientX - cx;
+      const dy   = e.clientY - cy;
       const dist = Math.hypot(dx, dy) || 1;
       const norm = Math.min(dist, 280) / 280;
       setEyeNorm({ x: (dx / dist) * norm, y: (dy / dist) * norm });
@@ -204,8 +180,8 @@ export default function BotInternal() {
 
   if (!user) return null;
 
-  const greeting   = getGreeting();
-  const firstName  = user.name?.split(' ')[0] || 'there';
+  const greeting  = getGreeting();
+  const firstName = user.name?.split(' ')[0] || 'there';
 
   const peekMessage = (() => {
     if (!data) return `${greeting}, ${firstName}! Loading summary…`;
@@ -221,28 +197,22 @@ export default function BotInternal() {
 
       <div className="fixed z-40 select-none" style={{ bottom: '80px', right: '16px' }}>
         <AnimatePresence>
-          {/* Full panel */}
           {open && (
             <motion.div
               initial={{ opacity: 0, y: 16, scale: 0.92 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: 10, scale: 0.95 }}
               transition={{ type: 'spring', stiffness: 360, damping: 28 }}
-              className="absolute bottom-[68px] right-0 w-[300px] bg-white border border-gray-200 rounded-2xl shadow-[0_16px_48px_rgba(0,0,0,0.14)] overflow-hidden"
+              className="absolute bottom-[66px] right-0 w-[300px] bg-white border border-gray-200 rounded-2xl shadow-[0_16px_48px_rgba(0,0,0,0.14)] overflow-hidden"
             >
               {/* Header */}
               <div className="flex items-center gap-2.5 px-4 py-3 border-b border-gray-100" style={{ background: 'linear-gradient(135deg,#1e3a8a,#3b82f6)' }}>
-                <BotCharacter w={28} h={42} eyeNormX={eyeNorm.x} eyeNormY={eyeNorm.y} blinking={blinking} />
+                <BotCharacter w={26} h={38} eyeNormX={eyeNorm.x} eyeNormY={eyeNorm.y} blinking={blinking} />
                 <div className="flex-1 min-w-0">
                   <p className="text-white font-bold text-[13px] leading-tight">WM Assistant</p>
                   <p className="text-white/70 text-[11px] leading-tight">{greeting}, {firstName}!</p>
                 </div>
-                <button
-                  onClick={() => setOpen(false)}
-                  className="w-6 h-6 rounded-full flex items-center justify-center text-white/70 hover:text-white hover:bg-white/20 transition-colors text-xs"
-                >
-                  ×
-                </button>
+                <button onClick={() => setOpen(false)} className="w-6 h-6 rounded-full flex items-center justify-center text-white/70 hover:text-white hover:bg-white/20 transition-colors text-xs">×</button>
               </div>
 
               {/* Body */}
@@ -255,7 +225,6 @@ export default function BotInternal() {
 
                 {!loading && data && (
                   <>
-                    {/* KPI mini cards */}
                     <div className="grid grid-cols-2 gap-1.5 mb-2">
                       <div className="bg-blue-50 rounded-xl p-2.5 text-center border border-blue-100">
                         <div className="text-[20px] font-black text-blue-700">{data.totalVaults}</div>
@@ -270,10 +239,10 @@ export default function BotInternal() {
                     <p className="text-[11px] font-semibold text-gray-400 px-1 uppercase tracking-wider pt-1">Quick Actions</p>
 
                     <Link href="/production" onClick={() => setOpen(false)}>
-                      <QuickBtn icon="📋" label="Pending orders"     value={data.pendingOrders}    color="bg-amber-50 border-amber-100 hover:bg-amber-100" />
+                      <QuickBtn icon="📋" label="Pending orders"    value={data.pendingOrders}    color="bg-amber-50 border-amber-100 hover:bg-amber-100" />
                     </Link>
                     <Link href="/production" onClick={() => setOpen(false)}>
-                      <QuickBtn icon="⚙️" label="In progress"        value={data.inProgressOrders} color="bg-blue-50 border-blue-100 hover:bg-blue-100" />
+                      <QuickBtn icon="⚙️" label="In progress"       value={data.inProgressOrders} color="bg-blue-50 border-blue-100 hover:bg-blue-100" />
                     </Link>
                     <Link href="/chat" onClick={() => setOpen(false)}>
                       <QuickBtn
@@ -283,13 +252,13 @@ export default function BotInternal() {
                       />
                     </Link>
                     <Link href="/search?status=READY" onClick={() => setOpen(false)}>
-                      <QuickBtn icon="✅" label="Ready for delivery"  value={data.readyVaults}      color="bg-green-50 border-green-100 hover:bg-green-100" />
+                      <QuickBtn icon="✅" label="Ready for delivery" value={data.readyVaults}     color="bg-green-50 border-green-100 hover:bg-green-100" />
                     </Link>
                     <Link href="/warehouses" onClick={() => setOpen(false)}>
-                      <QuickBtn icon="🏭" label="View warehouses"      color="bg-gray-50 border-gray-100 hover:bg-gray-100" />
+                      <QuickBtn icon="🏭" label="View warehouses"    color="bg-gray-50 border-gray-100 hover:bg-gray-100" />
                     </Link>
                     <Link href="/search" onClick={() => setOpen(false)}>
-                      <QuickBtn icon="🔍" label="Search a vault"       color="bg-gray-50 border-gray-100 hover:bg-gray-100" />
+                      <QuickBtn icon="🔍" label="Search a vault"     color="bg-gray-50 border-gray-100 hover:bg-gray-100" />
                     </Link>
                   </>
                 )}
@@ -310,7 +279,7 @@ export default function BotInternal() {
               animate={{ opacity: 1, x: 0, scale: 1 }}
               exit={{ opacity: 0, x: 8, scale: 0.95 }}
               transition={{ type: 'spring', stiffness: 340, damping: 26 }}
-              className="absolute bottom-[68px] right-[50px] bg-white border border-gray-200 rounded-2xl rounded-br-sm px-3.5 py-2.5 shadow-[0_8px_28px_rgba(0,0,0,0.12)] w-max max-w-[220px] cursor-pointer"
+              className="absolute bottom-[66px] right-[50px] bg-white border border-gray-200 rounded-2xl rounded-br-sm px-3.5 py-2.5 shadow-[0_8px_28px_rgba(0,0,0,0.12)] w-max max-w-[220px] cursor-pointer"
               onClick={() => { setPeeked(false); setOpen(true); }}
             >
               <p className="text-[12px] text-gray-800 leading-snug font-medium">{peekMessage}</p>
@@ -322,15 +291,14 @@ export default function BotInternal() {
         {/* FAB */}
         <motion.div
           ref={fabRef}
-          whileHover={{ scale: 1.08 }}
-          whileTap={{ scale: 0.93 }}
+          whileHover={{ scale: 1.1 }}
+          whileTap={{ scale: 0.92 }}
           onClick={() => { setOpen(v => !v); setPeeked(false); }}
           className="cursor-pointer drop-shadow-xl relative"
           style={!open && !peeked ? { animation: 'botPulse 2.8s ease-in-out infinite' } : {}}
         >
-          <BotCharacter w={40} h={60} eyeNormX={eyeNorm.x} eyeNormY={eyeNorm.y} blinking={blinking} />
+          <BotCharacter w={42} h={61} eyeNormX={eyeNorm.x} eyeNormY={eyeNorm.y} blinking={blinking} />
 
-          {/* Unread badge */}
           {unread > 0 && !open && (
             <div className="absolute -top-1 -right-1 min-w-[18px] h-[18px] bg-red-500 rounded-full flex items-center justify-center px-1">
               <span className="text-white text-[9px] font-bold leading-none">{unread > 9 ? '9+' : unread}</span>
