@@ -2,19 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { signToken } from '@/lib/tokens';
 import { sendEmail, clientApprovedEmail, clientRejectedEmail, clientDeletedEmail, activationEmail } from '@/lib/email';
 import { isAdminRequest } from '@/lib/admin-auth';
+import { getPbAdminToken, PB_URL } from '@/lib/pb-admin';
 
-const PB_URL = process.env.NEXT_PUBLIC_PB_URL || 'https://pocketbase-production-e699.up.railway.app';
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://managerwarehouse.cc';
-
-async function getPbAdminToken() {
-  const res = await fetch(`${PB_URL}/api/collections/_superusers/auth-with-password`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ identity: process.env.PB_ADMIN_EMAIL, password: process.env.PB_ADMIN_PASSWORD }),
-  });
-  const data = await res.json();
-  return data.token as string;
-}
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   if (!isAdminRequest(req)) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
@@ -27,18 +17,19 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   try { adminToken = await getPbAdminToken(); }
   catch { return NextResponse.json({ error: 'Admin auth failed' }, { status: 500 }); }
 
-  const companyRes = await fetch(`${PB_URL}/api/collections/companies/records/${id}`, {
-    headers: { Authorization: `Bearer ${adminToken}` },
-  });
+  const [companyRes, ownerRes] = await Promise.all([
+    fetch(`${PB_URL}/api/collections/companies/records/${id}`, {
+      headers: { Authorization: `Bearer ${adminToken}` },
+    }),
+    fetch(`${PB_URL}/api/collections/users/records?filter=(company_id="${id}")&fields=id,name,email,role&perPage=200`, {
+      headers: { Authorization: `Bearer ${adminToken}` },
+    }),
+  ]);
+
   if (!companyRes.ok) return NextResponse.json({ error: 'Company not found' }, { status: 404 });
   const company = await companyRes.json();
-
-  const ownerRes = company.owner_id
-    ? await fetch(`${PB_URL}/api/collections/users/records/${company.owner_id}`, {
-        headers: { Authorization: `Bearer ${adminToken}` },
-      })
-    : null;
-  const owner = ownerRes ? await ownerRes.json() : null;
+  const usersData = await ownerRes.json();
+  const owner = (usersData.items || []).find((u: any) => u.id === company.owner_id) || null;
 
   if (action === 'send_code') {
     if (!owner?.email) return NextResponse.json({ error: 'Owner email not found' }, { status: 400 });
@@ -46,6 +37,32 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     const link = `${APP_URL}/activate?token=${token}`;
     const email = activationEmail(owner.name || 'Cliente', company.name, link);
     await sendEmail({ to: owner.email, toName: owner.name, ...email });
+    return NextResponse.json({ ok: true });
+  }
+
+  if (action === 'approve') {
+    await fetch(`${PB_URL}/api/collections/companies/records/${id}`, {
+      method: 'PATCH',
+      headers: { Authorization: `Bearer ${adminToken}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ approved: true, suspended: false, rejected: false }),
+    });
+    if (owner?.email) {
+      const email = clientApprovedEmail(owner.name || 'Cliente', company.name);
+      await sendEmail({ to: owner.email, toName: owner.name, ...email }).catch(() => {});
+    }
+    return NextResponse.json({ ok: true });
+  }
+
+  if (action === 'reject') {
+    await fetch(`${PB_URL}/api/collections/companies/records/${id}`, {
+      method: 'PATCH',
+      headers: { Authorization: `Bearer ${adminToken}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ approved: false, rejected: true }),
+    });
+    if (owner?.email) {
+      const email = clientRejectedEmail(owner.name || 'Cliente', company.name);
+      await sendEmail({ to: owner.email, toName: owner.name, ...email }).catch(() => {});
+    }
     return NextResponse.json({ ok: true });
   }
 
@@ -79,24 +96,29 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
   try { adminToken = await getPbAdminToken(); }
   catch { return NextResponse.json({ error: 'Admin auth failed' }, { status: 500 }); }
 
-  const companyRes = await fetch(`${PB_URL}/api/collections/companies/records/${id}`, {
-    headers: { Authorization: `Bearer ${adminToken}` },
-  });
+  const [companyRes, usersRes] = await Promise.all([
+    fetch(`${PB_URL}/api/collections/companies/records/${id}`, {
+      headers: { Authorization: `Bearer ${adminToken}` },
+    }),
+    fetch(`${PB_URL}/api/collections/users/records?filter=(company_id="${id}")&perPage=200`, {
+      headers: { Authorization: `Bearer ${adminToken}` },
+    }),
+  ]);
+
   if (!companyRes.ok) return NextResponse.json({ error: 'Company not found' }, { status: 404 });
   const company = await companyRes.json();
-
-  const usersRes = await fetch(`${PB_URL}/api/collections/users/records?filter=(company_id="${id}")&perPage=200`, {
-    headers: { Authorization: `Bearer ${adminToken}` },
-  });
   const usersData = await usersRes.json();
   const owner = (usersData.items || []).find((u: any) => u.id === company.owner_id);
 
-  for (const u of usersData.items || []) {
-    await fetch(`${PB_URL}/api/collections/users/records/${u.id}`, {
-      method: 'DELETE',
-      headers: { Authorization: `Bearer ${adminToken}` },
-    });
-  }
+  // Delete users and company in parallel (users first, then company)
+  await Promise.all(
+    (usersData.items || []).map((u: any) =>
+      fetch(`${PB_URL}/api/collections/users/records/${u.id}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${adminToken}` },
+      })
+    )
+  );
 
   await fetch(`${PB_URL}/api/collections/companies/records/${id}`, {
     method: 'DELETE',

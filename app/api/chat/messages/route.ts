@@ -1,12 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { getPbAdminToken, PB_URL } from '@/lib/pb-admin';
 
-const PB_URL = process.env.NEXT_PUBLIC_PB_URL || 'https://pocketbase-production-e699.up.railway.app';
 const TIMEOUT_MS = 28_000;
-
-// Cache admin token — PB admin tokens last 30 days, refresh every 20 min
-let _adminToken = '';
-let _adminTokenAt = 0;
-const ADMIN_TOKEN_TTL = 20 * 60 * 1000;
 
 async function pbFetch(url: string, init: RequestInit = {}): Promise<Response> {
   const ctrl = new AbortController();
@@ -16,20 +11,6 @@ async function pbFetch(url: string, init: RequestInit = {}): Promise<Response> {
   } finally {
     clearTimeout(tid);
   }
-}
-
-async function getAdminToken(): Promise<string> {
-  if (_adminToken && Date.now() - _adminTokenAt < ADMIN_TOKEN_TTL) return _adminToken;
-  const res = await pbFetch(`${PB_URL}/api/collections/_superusers/auth-with-password`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ identity: process.env.PB_ADMIN_EMAIL, password: process.env.PB_ADMIN_PASSWORD }),
-  });
-  const data = await res.json();
-  if (!data.token) throw new Error('Admin auth failed');
-  _adminToken = data.token as string;
-  _adminTokenAt = Date.now();
-  return _adminToken;
 }
 
 async function getUserCompanyId(userToken: string): Promise<string> {
@@ -50,8 +31,10 @@ export async function GET(req: NextRequest) {
     const userToken = authHeader.replace('Bearer ', '').trim();
     if (!userToken) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-    const companyId = await getUserCompanyId(userToken);
-    const adminToken = await getAdminToken();
+    const [companyId, adminToken] = await Promise.all([
+      getUserCompanyId(userToken),
+      getPbAdminToken(),
+    ]);
 
     const res = await pbFetch(
       `${PB_URL}/api/collections/chat_messages/records?perPage=150&sort=sent_at&filter=${encodeURIComponent(`company_id="${companyId}"`)}&fields=id,author_name,author_id,content,sent_at`,
@@ -94,7 +77,7 @@ export async function POST(req: NextRequest) {
     const companyId = record?.company_id;
     if (!companyId) return NextResponse.json({ error: 'No company associated with this account' }, { status: 400 });
 
-    const adminToken = await getAdminToken();
+    const adminToken = await getPbAdminToken();
     const res = await pbFetch(`${PB_URL}/api/collections/chat_messages/records`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${adminToken}` },
@@ -132,9 +115,11 @@ export async function DELETE(req: NextRequest) {
     const id = req.nextUrl.searchParams.get('id');
     if (!id) return NextResponse.json({ error: 'Missing id' }, { status: 400 });
 
-    await getUserCompanyId(userToken);
+    const [, adminToken] = await Promise.all([
+      getUserCompanyId(userToken),
+      getPbAdminToken(),
+    ]);
 
-    const adminToken = await getAdminToken();
     const res = await pbFetch(`${PB_URL}/api/collections/chat_messages/records/${id}`, {
       method: 'DELETE',
       headers: { Authorization: `Bearer ${adminToken}` },

@@ -101,7 +101,9 @@ function LoginForm() {
   const sessionExpired  = params.get('session')  === 'expired';
 
   useEffect(() => {
-    // If the middleware detected inactivity, clear PocketBase auth first
+    // Pre-warm PocketBase so login is fast (fire-and-forget, no await)
+    fetch('/api/ping').catch(() => {});
+
     if (sessionExpired) {
       pb.authStore.clear();
       return;

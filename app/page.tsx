@@ -71,9 +71,10 @@ export default function Home() {
   const [phraseIdx, setPhraseIdx] = useState(0);
   const [typing, setTyping] = useState(true);
 
-  // Redirect if logged in
+  // Redirect if logged in + pre-warm PocketBase for faster login
   useEffect(() => {
-    if (pb.authStore.isValid) router.replace('/dashboard');
+    if (pb.authStore.isValid) { router.replace('/dashboard'); return; }
+    fetch('/api/ping').catch(() => {});
   }, [router]);
 
   // Typewriter
