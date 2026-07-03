@@ -12,7 +12,6 @@ import {
   Bars3Icon,
   XMarkIcon,
 } from '@heroicons/react/24/outline';
-import BotExternal from '@/components/BotExternal';
 
 const PHRASES = [
   'Inventory & Records Management.',
@@ -421,7 +420,6 @@ export default function Home() {
         Built by <span className="text-blue-600 font-semibold">PixelCore</span> &middot; Warehouse Manager &copy; {new Date().getFullYear()}
       </footer>
 
-      <BotExternal />
     </div>
   );
 }
