@@ -3,44 +3,60 @@
 import { useEffect, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
 import {
-  UserCircleIcon, DocumentDuplicateIcon, PlusIcon, ExclamationCircleIcon,
-  XMarkIcon, ArrowRightOnRectangleIcon, ShieldCheckIcon, CameraIcon,
+  DocumentDuplicateIcon, PlusIcon, ExclamationCircleIcon,
+  XMarkIcon, ArrowRightOnRectangleIcon, ShieldCheckIcon, PencilSquareIcon,
 } from '@heroicons/react/24/outline';
 import { AnimatePresence } from 'framer-motion';
 import Sidebar from '@/components/Sidebar';
+import { UserAvatar } from '@/components/UserAvatar';
+import { AVATARS } from '@/lib/avatars';
 import { api } from '@/lib/api';
 import { useAuth } from '@/lib/auth-context';
-import { compressImage } from '@/lib/compress-image';
-import { pb } from '@/lib/pb';
+
 export default function ProfilePage() {
   const { user, logout, updatePicture } = useAuth();
   const [company, setCompany] = useState<any>(null);
   const [members, setMembers] = useState<any[]>([]);
   const [genError, setGenError] = useState('');
   const [loading, setLoading] = useState(true);
-  const [avatarUploading, setAvatarUploading] = useState(false);
+
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const [avatarSaving, setAvatarSaving] = useState(false);
   const [avatarError, setAvatarError] = useState('');
   const [avatarSuccess, setAvatarSuccess] = useState(false);
-  const avatarInputRef = useRef<HTMLInputElement>(null);
+  const pickerRef = useRef<HTMLDivElement>(null);
 
-  const handleAvatarChange = async (files: FileList | null) => {
-    if (!files || !files[0] || !user) return;
-    setAvatarUploading(true);
+  useEffect(() => {
+    if (!pickerOpen) return;
+    const handler = (e: MouseEvent) => {
+      if (pickerRef.current && !pickerRef.current.contains(e.target as Node)) {
+        setPickerOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [pickerOpen]);
+
+  const handleAvatarSelect = async (avatarValue: string) => {
+    if (!user) return;
+    setPickerOpen(false);
+    setAvatarSaving(true);
     setAvatarError('');
     setAvatarSuccess(false);
     try {
-      const base64 = await compressImage(files[0]);
-      // Direct PB update — updateRule: id = @request.auth.id (no server route needed)
-      await pb.collection('users').update(user.id, { avatar_base64: base64 });
-      // Sync local model so next authRefresh picks it up
-      if (pb.authStore.model) pb.authStore.model.avatar_base64 = base64;
-      updatePicture(base64);
+      const res = await fetch('/api/profile/avatar', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: user.id, avatar_base64: avatarValue }),
+      });
+      if (!res.ok) throw new Error((await res.json()).error || 'Failed to update');
+      updatePicture(avatarValue);
       setAvatarSuccess(true);
       setTimeout(() => setAvatarSuccess(false), 3000);
     } catch (e: any) {
-      setAvatarError(e?.message || 'Failed to upload photo');
+      setAvatarError(e?.message || 'Failed to update');
     }
-    setAvatarUploading(false);
+    setAvatarSaving(false);
   };
 
   useEffect(() => {
@@ -88,28 +104,62 @@ export default function ProfilePage() {
             {/* User Info */}
             <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="bg-white rounded-2xl border border-gray-100 p-6">
               <div className="flex items-start gap-4">
-                {/* Avatar with upload */}
-                <div className="relative flex-shrink-0">
-                  {user?.picture ? (
-                    <img src={user.picture} alt={user?.name || ''} className="w-16 h-16 rounded-2xl object-cover" />
-                  ) : (
-                    <div className="w-16 h-16 rounded-2xl bg-blue-100 flex items-center justify-center">
-                      <UserCircleIcon className="w-8 h-8 text-blue-600" />
-                    </div>
-                  )}
+                {/* Avatar with picker */}
+                <div className="relative flex-shrink-0" ref={pickerRef}>
                   <button
-                    onClick={() => avatarInputRef.current?.click()}
-                    disabled={avatarUploading}
-                    className="absolute -bottom-1.5 -right-1.5 w-7 h-7 bg-blue-600 rounded-full flex items-center justify-center shadow-md hover:bg-blue-700 transition-colors disabled:opacity-50"
-                    title="Change photo"
+                    onClick={() => setPickerOpen(p => !p)}
+                    disabled={avatarSaving}
+                    className="relative block group"
+                    title="Change icon"
                   >
-                    {avatarUploading
-                      ? <div className="w-3 h-3 border-2 border-white/40 border-t-white rounded-full animate-spin" />
-                      : <CameraIcon className="w-3.5 h-3.5 text-white" />
-                    }
+                    <UserAvatar picture={user?.picture} name={user?.name} size={64} shape="square" />
+                    <div className="absolute -bottom-1.5 -right-1.5 w-6 h-6 bg-blue-600 rounded-full flex items-center justify-center shadow-md group-hover:bg-blue-700 transition-colors">
+                      {avatarSaving
+                        ? <div className="w-3 h-3 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+                        : <PencilSquareIcon className="w-3 h-3 text-white" />
+                      }
+                    </div>
                   </button>
-                  <input ref={avatarInputRef} type="file" accept="image/*" className="hidden" onChange={e => { handleAvatarChange(e.target.files); e.target.value = ''; }} />
+
+                  {/* Icon picker */}
+                  <AnimatePresence>
+                    {pickerOpen && (
+                      <motion.div
+                        initial={{ opacity: 0, scale: 0.95, y: -4 }}
+                        animate={{ opacity: 1, scale: 1, y: 0 }}
+                        exit={{ opacity: 0, scale: 0.95, y: -4 }}
+                        transition={{ duration: 0.14 }}
+                        className="absolute left-0 top-[72px] z-30 bg-white rounded-2xl shadow-xl border border-gray-100 p-3"
+                        style={{ width: 228 }}
+                      >
+                        <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-wide mb-2.5">Choose your icon</p>
+                        <div className="grid grid-cols-4 gap-1.5">
+                          {AVATARS.map(av => (
+                            <button
+                              key={av.id}
+                              onClick={() => handleAvatarSelect('avatar:' + av.id)}
+                              title={av.label}
+                              className={`rounded-xl transition-transform hover:scale-110 active:scale-95 ${
+                                user?.picture === 'avatar:' + av.id
+                                  ? 'ring-2 ring-blue-500 ring-offset-1'
+                                  : ''
+                              }`}
+                            >
+                              <UserAvatar picture={'avatar:' + av.id} name="" size={48} shape="square" />
+                            </button>
+                          ))}
+                        </div>
+                        <button
+                          onClick={() => handleAvatarSelect('')}
+                          className="mt-2 w-full py-1.5 text-xs text-gray-400 hover:text-gray-600 hover:bg-gray-50 rounded-lg transition-colors"
+                        >
+                          Remove icon
+                        </button>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
                 </div>
+
                 <div className="flex-1 min-w-0">
                   <h2 className="text-lg font-bold text-gray-900">{user?.name}</h2>
                   <p className="text-gray-500 text-sm">{user?.email}</p>
@@ -121,10 +171,7 @@ export default function ProfilePage() {
                     </p>
                   )}
                   {avatarSuccess && (
-                    <p className="text-xs text-green-600 mt-2 flex items-center gap-1">
-                      <span className="w-3.5 h-3.5 flex-shrink-0 flex items-center justify-center rounded-full bg-green-100">✓</span>
-                      Photo updated!
-                    </p>
+                    <p className="text-xs text-green-600 mt-2">Icon updated!</p>
                   )}
                 </div>
               </div>
@@ -181,18 +228,7 @@ export default function ProfilePage() {
               <div className="space-y-3">
                 {members.map(m => (
                   <div key={m.user_id} className="flex items-center gap-3">
-                    {m.picture ? (
-                      <img
-                        src={m.picture}
-                        alt={m.name}
-                        referrerPolicy="no-referrer"
-                        className="w-9 h-9 rounded-full object-cover"
-                        onError={e => { (e.target as HTMLImageElement).style.display = 'none'; (e.target as HTMLImageElement).nextElementSibling?.classList.remove('hidden'); }}
-                      />
-                    ) : null}
-                    <div className={`w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0${m.picture ? ' hidden' : ''}`}>
-                      <span className="text-sm font-bold text-gray-500">{m.name?.[0]}</span>
-                    </div>
+                    <UserAvatar picture={m.picture} name={m.name} size={36} />
                     <div className="flex-1">
                       <p className="text-sm font-medium text-gray-900">{m.name}</p>
                       <p className="text-xs text-gray-400">{m.email}</p>
@@ -203,7 +239,7 @@ export default function ProfilePage() {
               </div>
             </motion.div>
 
-            {/* Admin panel link — only visible to the platform admin */}
+            {/* Admin panel link */}
             {user?.id === 'ezcrajrmevn36cu' && (
               <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="bg-white rounded-2xl border border-gray-100 p-6">
                 <div className="flex items-center gap-2 mb-1">

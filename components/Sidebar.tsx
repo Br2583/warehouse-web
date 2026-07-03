@@ -2,6 +2,7 @@
 
 import { useAuth } from '@/lib/auth-context';
 import { motion } from 'framer-motion';
+import { UserAvatar } from '@/components/UserAvatar';
 import {
   HomeIcon, BuildingOffice2Icon, ArchiveBoxIcon, WrenchScrewdriverIcon,
   MagnifyingGlassIcon, ChartBarSquareIcon, CameraIcon, ChatBubbleLeftRightIcon,
@@ -85,13 +86,7 @@ export default function Sidebar() {
       {/* User */}
       <div className="p-4 border-t border-gray-100">
         <div className="flex items-center gap-3 mb-3">
-          {user?.picture ? (
-            <img src={user.picture} alt={user.name || ''} referrerPolicy="no-referrer" className="w-8 h-8 rounded-full object-cover" />
-          ) : (
-            <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center">
-              <span className="text-blue-600 text-xs font-bold">{user?.name?.[0]}</span>
-            </div>
-          )}
+          <UserAvatar picture={user?.picture} name={user?.name} size={32} />
           <div className="flex-1 min-w-0">
             <p className="text-sm font-medium text-gray-900 truncate">{user?.name}</p>
             <p className="text-xs text-gray-400 capitalize">{user?.role}</p>

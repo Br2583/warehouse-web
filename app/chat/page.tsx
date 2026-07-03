@@ -4,6 +4,7 @@ import { useEffect, useState, useRef, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { PaperAirplaneIcon, TrashIcon } from '@heroicons/react/24/outline';
 import Sidebar from '@/components/Sidebar';
+import { UserAvatar } from '@/components/UserAvatar';
 import { useAuth } from '@/lib/auth-context';
 import { getToken } from '@/lib/api';
 import { notify, requestNotificationPermission } from '@/lib/notifications';
@@ -166,13 +167,7 @@ export default function ChatPage() {
                   transition={{ delay: Math.min(i * 0.015, 0.3) }}
                   className={`flex gap-3 group ${isMe ? 'flex-row-reverse' : ''}`}
                 >
-                  {msg.sender_photo ? (
-                    <img src={msg.sender_photo} alt={msg.sender_name} referrerPolicy="no-referrer" className="w-8 h-8 rounded-full flex-shrink-0 mt-1" />
-                  ) : (
-                    <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0 mt-1">
-                      <span className="text-blue-600 text-xs font-bold">{msg.sender_name?.[0]}</span>
-                    </div>
-                  )}
+                  <UserAvatar picture={msg.sender_photo} name={msg.sender_name} size={32} className="mt-1" />
                   <div className={`max-w-[75%] md:max-w-md ${isMe ? 'items-end' : 'items-start'} flex flex-col`}>
                     <span className="text-xs text-gray-400 mb-1">{isMe ? 'You' : msg.sender_name}</span>
                     <div className={`px-4 py-2.5 rounded-2xl text-sm break-words ${isMe ? 'bg-blue-600 text-white rounded-tr-sm' : 'bg-white border border-gray-100 text-gray-800 rounded-tl-sm'}`}>

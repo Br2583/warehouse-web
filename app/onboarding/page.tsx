@@ -5,11 +5,12 @@ import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { pb } from '@/lib/pb';
 import { useAuth } from '@/lib/auth-context';
-import { compressImage } from '@/lib/compress-image';
 import {
-  BuildingOffice2Icon, UserCircleIcon, CameraIcon, ChevronRightIcon,
-  ArrowPathIcon, BriefcaseIcon, ArrowLeftIcon, CheckIcon,
+  BuildingOffice2Icon, UserCircleIcon, ChevronRightIcon,
+  BriefcaseIcon, ArrowLeftIcon, CheckIcon,
 } from '@heroicons/react/24/outline';
+import { UserAvatar } from '@/components/UserAvatar';
+import { AVATARS } from '@/lib/avatars';
 
 const INDUSTRIES = [
   'Warehouse & Logistics',
@@ -39,16 +40,27 @@ export default function OnboardingPage() {
   // Step 1 — profile
   const [displayName, setDisplayName] = useState('');
   const [jobTitle, setJobTitle] = useState('');
-  const [avatarBase64, setAvatarBase64] = useState('');
-  const [avatarPreview, setAvatarPreview] = useState<string>('');
-  const fileRef = useRef<HTMLInputElement>(null);
+  const [avatarValue, setAvatarValue] = useState('');
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const pickerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (user) {
       setDisplayName(prev => prev || user.name || '');
-      setAvatarPreview(prev => prev || user.picture || '');
+      setAvatarValue(prev => prev || user.picture || '');
     }
   }, [user]);
+
+  useEffect(() => {
+    if (!pickerOpen) return;
+    const handler = (e: MouseEvent) => {
+      if (pickerRef.current && !pickerRef.current.contains(e.target as Node)) {
+        setPickerOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [pickerOpen]);
 
   // Step 2 — company (owner only)
   const [companyName, setCompanyName] = useState('');
@@ -66,38 +78,18 @@ export default function OnboardingPage() {
   const isOwner = user?.role === 'owner';
   const totalSteps = isOwner ? 2 : 1;
 
-  const handleAvatar = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const f = e.target.files?.[0];
-    if (!f) return;
-    e.target.value = '';
-    setError('');
-    try {
-      const base64 = await compressImage(f);
-      setAvatarBase64(base64);
-      setAvatarPreview(base64);
-    } catch (err: any) {
-      setError(err?.message || 'Image too large to upload');
-    }
-  };
-
   const saveProfile = async () => {
     if (!displayName.trim()) { setError('Please enter your name'); return; }
     if (!user?.id) { setError('Not authenticated'); return; }
     setSaving(true);
     setError('');
     try {
-      // Update name and job_title (small fields — direct PB call with fresh token)
       await pb.collection('users').update(user.id, {
-        name:      displayName.trim(),
-        job_title: jobTitle.trim(),
+        name:         displayName.trim(),
+        job_title:    jobTitle.trim(),
+        avatar_base64: avatarValue || null,
         ...(isOwner ? {} : { profile_complete: true }),
       });
-
-      // Upload avatar directly via PB SDK (updateRule: id = @request.auth.id)
-      if (avatarBase64) {
-        await pb.collection('users').update(user.id, { avatar_base64: avatarBase64 });
-        if (pb.authStore.model) pb.authStore.model.avatar_base64 = avatarBase64;
-      }
 
       if (isOwner) {
         setStep(2);
@@ -193,22 +185,53 @@ export default function OnboardingPage() {
                 </div>
               </div>
 
-              {/* Avatar */}
-              <div className="flex justify-center mb-6">
-                <button type="button" onClick={() => fileRef.current?.click()}
-                  className="relative w-20 h-20 rounded-full overflow-hidden border-2 border-gray-200 hover:border-blue-400 transition-colors group">
-                  {avatarPreview ? (
-                    <img src={avatarPreview} alt="Avatar preview" className="w-full h-full object-cover" />
-                  ) : (
-                    <div className="w-full h-full bg-gray-100 flex items-center justify-center">
-                      <UserCircleIcon className="w-8 h-8 text-gray-300" />
-                    </div>
+              {/* Avatar picker */}
+              <div className="mb-6" ref={pickerRef}>
+                <label className="block text-[12px] font-semibold text-slate-500 mb-2.5">
+                  Profile icon <span className="font-normal text-slate-300">(optional)</span>
+                </label>
+                <div className="flex items-center gap-3">
+                  <UserAvatar picture={avatarValue || undefined} name={displayName || user?.name} size={56} shape="square" />
+                  <button
+                    type="button"
+                    onClick={() => setPickerOpen(p => !p)}
+                    className="text-sm text-blue-600 hover:text-blue-700 font-medium"
+                  >
+                    {avatarValue ? 'Change icon' : 'Choose icon'}
+                  </button>
+                  {avatarValue && (
+                    <button type="button" onClick={() => setAvatarValue('')} className="text-sm text-gray-400 hover:text-gray-600">
+                      Remove
+                    </button>
                   )}
-                  <div className="absolute inset-0 bg-black/30 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                    <CameraIcon className="w-5 h-5 text-white" />
-                  </div>
-                </button>
-                <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleAvatar} />
+                </div>
+                <AnimatePresence>
+                  {pickerOpen && (
+                    <motion.div
+                      initial={{ opacity: 0, y: -4 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -4 }}
+                      transition={{ duration: 0.14 }}
+                      className="mt-2 bg-white rounded-2xl border border-gray-200 shadow-lg p-3 w-fit"
+                    >
+                      <div className="grid grid-cols-6 gap-1.5">
+                        {AVATARS.map(av => (
+                          <button
+                            key={av.id}
+                            type="button"
+                            onClick={() => { setAvatarValue('avatar:' + av.id); setPickerOpen(false); }}
+                            title={av.label}
+                            className={`rounded-xl transition-transform hover:scale-110 active:scale-95 ${
+                              avatarValue === 'avatar:' + av.id ? 'ring-2 ring-blue-500 ring-offset-1' : ''
+                            }`}
+                          >
+                            <UserAvatar picture={'avatar:' + av.id} name="" size={44} shape="square" />
+                          </button>
+                        ))}
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </div>
 
               <div className="space-y-4">
