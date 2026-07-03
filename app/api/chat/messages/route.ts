@@ -54,7 +54,7 @@ export async function GET(req: NextRequest) {
     const adminToken = await getAdminToken();
 
     const res = await pbFetch(
-      `${PB_URL}/api/collections/chat_messages/records?perPage=150&sort=created&filter=${encodeURIComponent(`company_id="${companyId}"`)}&fields=id,author_name,author_id,content,created`,
+      `${PB_URL}/api/collections/chat_messages/records?perPage=150&sort=sent_at&filter=${encodeURIComponent(`company_id="${companyId}"`)}&fields=id,author_name,author_id,content,sent_at`,
       { headers: { Authorization: `Bearer ${adminToken}` } },
     );
     const data = await res.json();
@@ -65,7 +65,7 @@ export async function GET(req: NextRequest) {
       sender_name:  m.author_name,
       sender_email: m.author_id,
       text:         m.content,
-      timestamp:    m.created || '',
+      timestamp:    m.sent_at || '',
     }));
 
     return NextResponse.json(msgs);
@@ -104,6 +104,7 @@ export async function POST(req: NextRequest) {
         author_name: record.name || record.email || 'Unknown',
         content:     body.text.trim(),
         type:        'text',
+        sent_at:     new Date().toISOString(),
       }),
     });
     const msg = await res.json();
@@ -114,7 +115,7 @@ export async function POST(req: NextRequest) {
       sender_name:  msg.author_name,
       sender_email: msg.author_id,
       text:         msg.content,
-      timestamp:    (msg.created || '').replace(' ', 'T'),
+      timestamp:    msg.sent_at || '',
     });
   } catch (e: any) {
     const msg = e?.name === 'AbortError' ? 'Connection timed out' : (e?.message || 'Failed to send message');
