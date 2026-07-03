@@ -11,34 +11,32 @@ import Sidebar from '@/components/Sidebar';
 import { api } from '@/lib/api';
 import { useAuth } from '@/lib/auth-context';
 import { compressImage } from '@/lib/compress-image';
+import { pb } from '@/lib/pb';
 export default function ProfilePage() {
-  const { user, logout, refreshUser, updatePicture } = useAuth();
+  const { user, logout, updatePicture } = useAuth();
   const [company, setCompany] = useState<any>(null);
   const [members, setMembers] = useState<any[]>([]);
   const [genError, setGenError] = useState('');
   const [loading, setLoading] = useState(true);
   const [avatarUploading, setAvatarUploading] = useState(false);
   const [avatarError, setAvatarError] = useState('');
+  const [avatarSuccess, setAvatarSuccess] = useState(false);
   const avatarInputRef = useRef<HTMLInputElement>(null);
 
   const handleAvatarChange = async (files: FileList | null) => {
     if (!files || !files[0] || !user) return;
     setAvatarUploading(true);
     setAvatarError('');
+    setAvatarSuccess(false);
     try {
       const base64 = await compressImage(files[0]);
-      const res = await fetch('/api/profile/avatar', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId: user.id, avatar_base64: base64 }),
-      });
-      if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
-        throw new Error(data?.error || 'Failed to upload photo');
-      }
-      // Update picture immediately in UI, then sync auth state in background
+      // Direct PB update — updateRule: id = @request.auth.id (no server route needed)
+      await pb.collection('users').update(user.id, { avatar_base64: base64 });
+      // Sync local model so next authRefresh picks it up
+      if (pb.authStore.model) pb.authStore.model.avatar_base64 = base64;
       updatePicture(base64);
-      refreshUser().catch(() => {});
+      setAvatarSuccess(true);
+      setTimeout(() => setAvatarSuccess(false), 3000);
     } catch (e: any) {
       setAvatarError(e?.message || 'Failed to upload photo');
     }
@@ -120,6 +118,12 @@ export default function ProfilePage() {
                     <p className="text-xs text-red-500 mt-2 flex items-center gap-1">
                       <ExclamationCircleIcon className="w-3.5 h-3.5 flex-shrink-0" />
                       {avatarError}
+                    </p>
+                  )}
+                  {avatarSuccess && (
+                    <p className="text-xs text-green-600 mt-2 flex items-center gap-1">
+                      <span className="w-3.5 h-3.5 flex-shrink-0 flex items-center justify-center rounded-full bg-green-100">✓</span>
+                      Photo updated!
                     </p>
                   )}
                 </div>

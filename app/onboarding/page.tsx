@@ -93,14 +93,10 @@ export default function OnboardingPage() {
         ...(isOwner ? {} : { profile_complete: true }),
       });
 
-      // Upload avatar via server-side admin route (avoids user token permission issues)
+      // Upload avatar directly via PB SDK (updateRule: id = @request.auth.id)
       if (avatarBase64) {
-        const res = await fetch('/api/profile/avatar', {
-          method:  'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body:    JSON.stringify({ userId: user.id, avatar_base64: avatarBase64 }),
-        });
-        if (!res.ok) throw new Error('Failed to upload photo — profile saved without it');
+        await pb.collection('users').update(user.id, { avatar_base64: avatarBase64 });
+        if (pb.authStore.model) pb.authStore.model.avatar_base64 = avatarBase64;
       }
 
       if (isOwner) {
