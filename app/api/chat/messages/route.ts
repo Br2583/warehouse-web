@@ -1,7 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 const PB_URL = process.env.NEXT_PUBLIC_PB_URL || 'https://pocketbase-production-e699.up.railway.app';
-const TIMEOUT_MS = 10_000;
+const TIMEOUT_MS = 28_000;
+
+// Cache admin token — PB admin tokens last 30 days, refresh every 20 min
+let _adminToken = '';
+let _adminTokenAt = 0;
+const ADMIN_TOKEN_TTL = 20 * 60 * 1000;
 
 async function pbFetch(url: string, init: RequestInit = {}): Promise<Response> {
   const ctrl = new AbortController();
@@ -14,6 +19,7 @@ async function pbFetch(url: string, init: RequestInit = {}): Promise<Response> {
 }
 
 async function getAdminToken(): Promise<string> {
+  if (_adminToken && Date.now() - _adminTokenAt < ADMIN_TOKEN_TTL) return _adminToken;
   const res = await pbFetch(`${PB_URL}/api/collections/_superusers/auth-with-password`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -21,7 +27,9 @@ async function getAdminToken(): Promise<string> {
   });
   const data = await res.json();
   if (!data.token) throw new Error('Admin auth failed');
-  return data.token as string;
+  _adminToken = data.token as string;
+  _adminTokenAt = Date.now();
+  return _adminToken;
 }
 
 async function getUserCompanyId(userToken: string): Promise<string> {

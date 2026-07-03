@@ -1,16 +1,34 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 const PB_URL = process.env.NEXT_PUBLIC_PB_URL || 'https://pocketbase-production-e699.up.railway.app';
+const TIMEOUT_MS = 28_000;
+
+let _adminToken = '';
+let _adminTokenAt = 0;
+const ADMIN_TOKEN_TTL = 20 * 60 * 1000;
+
+async function pbFetch(url: string, init: RequestInit = {}): Promise<Response> {
+  const ctrl = new AbortController();
+  const tid = setTimeout(() => ctrl.abort(), TIMEOUT_MS);
+  try {
+    return await fetch(url, { ...init, signal: ctrl.signal });
+  } finally {
+    clearTimeout(tid);
+  }
+}
 
 async function getAdminToken(): Promise<string> {
-  const res = await fetch(`${PB_URL}/api/collections/_superusers/auth-with-password`, {
+  if (_adminToken && Date.now() - _adminTokenAt < ADMIN_TOKEN_TTL) return _adminToken;
+  const res = await pbFetch(`${PB_URL}/api/collections/_superusers/auth-with-password`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ identity: process.env.PB_ADMIN_EMAIL, password: process.env.PB_ADMIN_PASSWORD }),
   });
   const data = await res.json();
   if (!data.token) throw new Error('Admin auth failed');
-  return data.token as string;
+  _adminToken = data.token as string;
+  _adminTokenAt = Date.now();
+  return _adminToken;
 }
 
 export async function POST(req: NextRequest) {
@@ -21,7 +39,7 @@ export async function POST(req: NextRequest) {
     }
 
     const token = await getAdminToken();
-    const res = await fetch(`${PB_URL}/api/collections/users/records/${userId}`, {
+    const res = await pbFetch(`${PB_URL}/api/collections/users/records/${userId}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
       body: JSON.stringify({ avatar_base64 }),
@@ -31,6 +49,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ ok: true });
   } catch (e: any) {
-    return NextResponse.json({ error: e?.message || 'Failed to update photo' }, { status: 500 });
+    const msg = (e as any)?.name === 'AbortError' ? 'Connection timed out' : ((e as any)?.message || 'Failed to update photo');
+    return NextResponse.json({ error: msg }, { status: 500 });
   }
 }
