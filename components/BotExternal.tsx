@@ -4,70 +4,83 @@ import { useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { getGreeting, getRandomPhrase } from '@/lib/bot-phrases';
 
-/* ── SVG face with eyes that follow the mouse ── */
-function BotFace({ size = 56, eyeOffsetX = 0, eyeOffsetY = 0, blinking = false }: {
-  size?: number;
-  eyeOffsetX?: number;
-  eyeOffsetY?: number;
+/* ─────────────────────────────────────────────
+   SVG character — viewBox 0 0 60 92
+   eyeNormX / eyeNormY: -1..1 (normalised)
+   blinking: closes eyes
+───────────────────────────────────────────── */
+function BotCharacter({
+  w = 56, h = 84,
+  eyeNormX = 0, eyeNormY = 0,
+  blinking = false,
+}: {
+  w?: number; h?: number;
+  eyeNormX?: number; eyeNormY?: number;
   blinking?: boolean;
 }) {
-  const cx = size / 2;
-  const cy = size / 2;
-  const r = size / 2;
-  const eyeR = size * 0.115;
-  const pupilR = size * 0.065;
-  const maxOff = size * 0.055;
-  const ox = Math.max(-maxOff, Math.min(maxOff, eyeOffsetX));
-  const oy = Math.max(-maxOff, Math.min(maxOff, eyeOffsetY));
-
-  const leyX = cx - size * 0.22;
-  const reyX = cx + size * 0.22;
-  const eyY  = cy - size * 0.07;
+  const maxEyeShift = 2.6; // SVG units
+  const ox = eyeNormX * maxEyeShift;
+  const oy = eyeNormY * maxEyeShift;
 
   return (
-    <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
+    <svg width={w} height={h} viewBox="0 0 60 92" fill="none">
       <defs>
-        <radialGradient id="bg-ext" cx="40%" cy="35%" r="70%">
-          <stop offset="0%" stopColor="#3b82f6" />
-          <stop offset="100%" stopColor="#1e3a8a" />
-        </radialGradient>
-        <radialGradient id="shine-ext" cx="35%" cy="25%" r="55%">
-          <stop offset="0%" stopColor="rgba(255,255,255,0.22)" />
-          <stop offset="100%" stopColor="rgba(255,255,255,0)" />
-        </radialGradient>
+        <linearGradient id="ext-head" x1="0" y1="0" x2="60" y2="51" gradientUnits="userSpaceOnUse">
+          <stop stopColor="#60a5fa" />
+          <stop offset="1" stopColor="#1e3a8a" />
+        </linearGradient>
+        <linearGradient id="ext-body" x1="0" y1="58" x2="60" y2="88" gradientUnits="userSpaceOnUse">
+          <stop stopColor="#2563eb" />
+          <stop offset="1" stopColor="#1e40af" />
+        </linearGradient>
       </defs>
 
-      {/* Head */}
-      <circle cx={cx} cy={cy} r={r - 1} fill="url(#bg-ext)" />
-      <circle cx={cx} cy={cy} r={r - 1} fill="url(#shine-ext)" />
+      {/* ── CAP ── */}
+      {/* Cap body */}
+      <rect x="17" y="3" width="26" height="14" rx="5" fill="#1d4ed8" />
+      {/* Cap brim */}
+      <rect x="9" y="16" width="42" height="5" rx="2.5" fill="#1e40af" />
+      {/* Cap highlight stripe */}
+      <rect x="17" y="12" width="26" height="2.5" rx="1" fill="rgba(255,255,255,0.18)" />
+      {/* Button on top */}
+      <circle cx="30" cy="4.5" r="2.5" fill="#93c5fd" />
 
-      {/* Left eye white */}
-      <circle cx={leyX} cy={eyY} r={eyeR} fill="white" opacity={blinking ? 0.1 : 1} />
-      {/* Right eye white */}
-      <circle cx={reyX} cy={eyY} r={eyeR} fill="white" opacity={blinking ? 0.1 : 1} />
+      {/* ── HEAD (rounded square) ── */}
+      <rect x="11" y="20" width="38" height="31" rx="10" fill="url(#ext-head)" />
+      {/* Shine */}
+      <rect x="15" y="23" width="14" height="7" rx="3.5" fill="rgba(255,255,255,0.13)" />
+
+      {/* Left eye */}
+      <circle cx="22" cy="34" r="6.5" fill="white" opacity={blinking ? 0.08 : 1} />
+      {/* Right eye */}
+      <circle cx="38" cy="34" r="6.5" fill="white" opacity={blinking ? 0.08 : 1} />
 
       {/* Left pupil */}
-      {!blinking && (
-        <circle cx={leyX + ox} cy={eyY + oy} r={pupilR} fill="#0f172a" />
-      )}
+      {!blinking && <circle cx={22 + ox} cy={34 + oy} r="3.5" fill="#0f172a" />}
       {/* Right pupil */}
-      {!blinking && (
-        <circle cx={reyX + ox} cy={eyY + oy} r={pupilR} fill="#0f172a" />
-      )}
+      {!blinking && <circle cx={38 + ox} cy={34 + oy} r="3.5" fill="#0f172a" />}
 
       {/* Mouth */}
-      <path
-        d={`M ${cx - size * 0.18} ${cy + size * 0.2} Q ${cx} ${cy + size * 0.33} ${cx + size * 0.18} ${cy + size * 0.2}`}
-        stroke="white"
-        strokeWidth={size * 0.045}
-        strokeLinecap="round"
-        fill="none"
-        opacity={0.9}
-      />
+      <path d="M 21 44 Q 30 50.5 39 44" stroke="white" strokeWidth="2.4" strokeLinecap="round" />
 
-      {/* Antenna */}
-      <line x1={cx} y1={2} x2={cx} y2={size * 0.14} stroke="white" strokeWidth={size * 0.045} strokeLinecap="round" opacity={0.6} />
-      <circle cx={cx} cy={2} r={size * 0.055} fill="#60a5fa" />
+      {/* ── NECK ── */}
+      <rect x="24" y="51" width="12" height="8" rx="3" fill="#1e40af" />
+
+      {/* ── TORSO ── */}
+      <rect x="13" y="58" width="34" height="24" rx="8" fill="url(#ext-body)" />
+      {/* WM badge */}
+      <rect x="20" y="64" width="20" height="12" rx="3.5" fill="rgba(255,255,255,0.18)" />
+      <text x="30" y="73.5" textAnchor="middle" fill="white" fontSize="6.5" fontWeight="900" fontStyle="italic" fontFamily="sans-serif">WM</text>
+
+      {/* ── LEFT ARM ── */}
+      <rect x="3" y="60" width="9" height="18" rx="4.5" fill="#1d4ed8" />
+      {/* Left hand */}
+      <circle cx="7.5" cy="80" r="5.5" fill="#2563eb" />
+
+      {/* ── RIGHT ARM ── */}
+      <rect x="48" y="60" width="9" height="18" rx="4.5" fill="#1d4ed8" />
+      {/* Right hand */}
+      <circle cx="52.5" cy="80" r="5.5" fill="#2563eb" />
     </svg>
   );
 }
@@ -76,7 +89,7 @@ function BotFace({ size = 56, eyeOffsetX = 0, eyeOffsetY = 0, blinking = false }
 export default function BotExternal() {
   const [visible, setVisible] = useState(false);
   const [dismissed, setDismissed] = useState(false);
-  const [eyeOff, setEyeOff] = useState({ x: 0, y: 0 });
+  const [eyeNorm, setEyeNorm] = useState({ x: 0, y: 0 });
   const [blinking, setBlinking] = useState(false);
   const faceRef = useRef<HTMLDivElement>(null);
   const phrase = useRef(getRandomPhrase());
@@ -97,16 +110,13 @@ export default function BotExternal() {
 
   // Blink randomly
   useEffect(() => {
-    const blink = () => {
-      setBlinking(true);
-      setTimeout(() => setBlinking(false), 120);
-    };
-    const schedule = () => setTimeout(() => { blink(); schedule(); }, 2500 + Math.random() * 3000);
+    const schedule = (): ReturnType<typeof setTimeout> =>
+      setTimeout(() => { setBlinking(true); setTimeout(() => setBlinking(false), 120); schedule(); }, 2500 + Math.random() * 3000);
     const t = schedule();
     return () => clearTimeout(t);
   }, []);
 
-  // Mouse tracking → move eyes
+  // Mouse tracking → normalised eye offset
   useEffect(() => {
     const handler = (e: MouseEvent) => {
       const el = faceRef.current;
@@ -116,10 +126,9 @@ export default function BotExternal() {
       const cy = rect.top + rect.height / 2;
       const dx = e.clientX - cx;
       const dy = e.clientY - cy;
-      const dist = Math.hypot(dx, dy);
-      const maxDist = 300;
-      const factor = Math.min(dist, maxDist) / maxDist;
-      setEyeOff({ x: (dx / dist || 0) * factor * 3.5, y: (dy / dist || 0) * factor * 3.5 });
+      const dist = Math.hypot(dx, dy) || 1;
+      const norm = Math.min(dist, 300) / 300;
+      setEyeNorm({ x: (dx / dist) * norm, y: (dy / dist) * norm });
     };
     window.addEventListener('mousemove', handler);
     return () => window.removeEventListener('mousemove', handler);
@@ -138,9 +147,9 @@ export default function BotExternal() {
           className="fixed bottom-5 left-5 z-50 flex items-end gap-3 pointer-events-none"
           style={{ maxWidth: 'calc(100vw - 40px)' }}
         >
-          {/* Face */}
+          {/* Character */}
           <div ref={faceRef} className="flex-shrink-0 drop-shadow-xl">
-            <BotFace size={56} eyeOffsetX={eyeOff.x} eyeOffsetY={eyeOff.y} blinking={blinking} />
+            <BotCharacter w={56} h={84} eyeNormX={eyeNorm.x} eyeNormY={eyeNorm.y} blinking={blinking} />
           </div>
 
           {/* Bubble */}
@@ -148,7 +157,7 @@ export default function BotExternal() {
             initial={{ opacity: 0, x: -12, scale: 0.92 }}
             animate={{ opacity: 1, x: 0, scale: 1 }}
             transition={{ delay: 0.18, duration: 0.35, ease: 'easeOut' }}
-            className="pointer-events-auto relative bg-white border border-gray-200 rounded-2xl rounded-bl-sm px-4 py-3 shadow-[0_8px_32px_rgba(0,0,0,0.12)] max-w-[260px] sm:max-w-[300px]"
+            className="pointer-events-auto relative bg-white border border-gray-200 rounded-2xl rounded-bl-sm px-4 py-3 shadow-[0_8px_32px_rgba(0,0,0,0.12)] max-w-[260px] sm:max-w-[300px] mb-2"
           >
             {/* Close */}
             <button
@@ -158,13 +167,8 @@ export default function BotExternal() {
             >
               ×
             </button>
-
-            <p className="text-[13px] font-semibold text-gray-900 pr-4">
-              {greeting}! 👋
-            </p>
-            <p className="text-[12px] text-slate-500 mt-1 leading-[1.5] pr-2">
-              {phrase.current}
-            </p>
+            <p className="text-[13px] font-semibold text-gray-900 pr-4">{greeting}! 👋</p>
+            <p className="text-[12px] text-slate-500 mt-1 leading-[1.5] pr-2">{phrase.current}</p>
 
             {/* Tail */}
             <div
