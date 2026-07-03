@@ -53,9 +53,8 @@ export async function GET(req: NextRequest) {
     const companyId = await getUserCompanyId(userToken);
     const adminToken = await getAdminToken();
 
-    // chat_messages has no 'created' field — sort by id (PocketBase IDs are time-ordered)
     const res = await pbFetch(
-      `${PB_URL}/api/collections/chat_messages/records?perPage=150&sort=id&filter=${encodeURIComponent(`company_id="${companyId}"`)}&fields=id,author_name,author_id,content`,
+      `${PB_URL}/api/collections/chat_messages/records?perPage=150&sort=created&filter=${encodeURIComponent(`company_id="${companyId}"`)}&fields=id,author_name,author_id,content,created`,
       { headers: { Authorization: `Bearer ${adminToken}` } },
     );
     const data = await res.json();
@@ -66,7 +65,7 @@ export async function GET(req: NextRequest) {
       sender_name:  m.author_name,
       sender_email: m.author_id,
       text:         m.content,
-      timestamp:    '',
+      timestamp:    m.created || '',
     }));
 
     return NextResponse.json(msgs);
