@@ -93,7 +93,7 @@ export default function SnapshotsPage() {
     try {
       const res = await fetch('/api/snapshots/send-email', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${pb.authStore.token}` },
         body: JSON.stringify({
           to:            toEmail,
           warehouseName: report.snap.warehouse_name,

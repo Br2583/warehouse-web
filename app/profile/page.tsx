@@ -11,6 +11,7 @@ import Sidebar from '@/components/Sidebar';
 import { UserAvatar } from '@/components/UserAvatar';
 import { AVATARS } from '@/lib/avatars';
 import { api } from '@/lib/api';
+import { pb } from '@/lib/pb';
 import { useAuth } from '@/lib/auth-context';
 
 export default function ProfilePage() {
@@ -46,7 +47,7 @@ export default function ProfilePage() {
     try {
       const res = await fetch('/api/profile/avatar', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${pb.authStore.token}` },
         body: JSON.stringify({ userId: user.id, avatar_base64: avatarValue }),
       });
       if (!res.ok) throw new Error((await res.json()).error || 'Failed to update');

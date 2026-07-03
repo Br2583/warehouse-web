@@ -115,10 +115,20 @@ export async function DELETE(req: NextRequest) {
     const id = req.nextUrl.searchParams.get('id');
     if (!id) return NextResponse.json({ error: 'Missing id' }, { status: 400 });
 
-    const [, adminToken] = await Promise.all([
+    const [companyId, adminToken] = await Promise.all([
       getUserCompanyId(userToken),
       getPbAdminToken(),
     ]);
+
+    // Verify the message belongs to the user's company before deleting
+    const msgRes = await pbFetch(`${PB_URL}/api/collections/chat_messages/records/${id}`, {
+      headers: { Authorization: `Bearer ${adminToken}` },
+    });
+    if (!msgRes.ok) return NextResponse.json({ error: 'Message not found' }, { status: 404 });
+    const msgData = await msgRes.json();
+    if (msgData.company_id !== companyId) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
 
     const res = await pbFetch(`${PB_URL}/api/collections/chat_messages/records/${id}`, {
       method: 'DELETE',
