@@ -1,9 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { createHash, timingSafeEqual } from 'crypto';
 import { hashAdminSecret } from '@/lib/admin-auth';
 
 export async function POST(req: NextRequest) {
   const { password } = await req.json().catch(() => ({}));
-  if (!password || password !== process.env.ADMIN_SECRET) {
+  const secret = process.env.ADMIN_SECRET || '';
+  const passHash = createHash('sha256').update(password || '').digest();
+  const secretHash = createHash('sha256').update(secret).digest();
+  if (!password || !timingSafeEqual(passHash, secretHash)) {
     return NextResponse.json({ error: 'Wrong password' }, { status: 401 });
   }
   const res = NextResponse.json({ ok: true });

@@ -1,3 +1,12 @@
+function esc(s: string): string {
+  return String(s ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
 const BREVO_API_KEY    = process.env.BREVO_API_KEY!;
 const SENDER_EMAIL     = process.env.BREVO_SENDER_EMAIL!;
 const SENDER_NAME      = process.env.BREVO_SENDER_NAME!;
@@ -51,7 +60,7 @@ export function verificationEmail(name: string, token: string) {
         </tr>
         <tr>
           <td style="background:#fff;padding:36px 40px;text-align:center;">
-            <p style="margin:0 0 8px;font-size:16px;color:#1e293b;">Hi <strong>${name}</strong>,</p>
+            <p style="margin:0 0 8px;font-size:16px;color:#1e293b;">Hi <strong>${esc(name)}</strong>,</p>
             <p style="margin:0 0 28px;font-size:14px;color:#64748b;line-height:1.6;">
               Click the button below to verify your email and activate your account.
               This link expires in <strong>24 hours</strong>.
@@ -101,9 +110,9 @@ export function adminNewRequestEmail(companyName: string, ownerName: string, own
           <td style="background:#fff;padding:36px 40px;">
             <p style="margin:0 0 16px;font-size:16px;color:#1e293b;font-weight:600;">Nueva empresa solicitando acceso</p>
             <table width="100%" style="border-collapse:collapse;font-size:14px;color:#374151;">
-              <tr><td style="padding:8px 0;border-bottom:1px solid #f1f5f9;color:#6b7280;width:120px;">Empresa</td><td style="padding:8px 0;border-bottom:1px solid #f1f5f9;font-weight:600;">${companyName}</td></tr>
-              <tr><td style="padding:8px 0;border-bottom:1px solid #f1f5f9;color:#6b7280;">Dueño</td><td style="padding:8px 0;border-bottom:1px solid #f1f5f9;">${ownerName}</td></tr>
-              <tr><td style="padding:8px 0;color:#6b7280;">Email</td><td style="padding:8px 0;">${ownerEmail}</td></tr>
+              <tr><td style="padding:8px 0;border-bottom:1px solid #f1f5f9;color:#6b7280;width:120px;">Empresa</td><td style="padding:8px 0;border-bottom:1px solid #f1f5f9;font-weight:600;">${esc(companyName)}</td></tr>
+              <tr><td style="padding:8px 0;border-bottom:1px solid #f1f5f9;color:#6b7280;">Dueño</td><td style="padding:8px 0;border-bottom:1px solid #f1f5f9;">${esc(ownerName)}</td></tr>
+              <tr><td style="padding:8px 0;color:#6b7280;">Email</td><td style="padding:8px 0;">${esc(ownerEmail)}</td></tr>
             </table>
           </td>
         </tr>
@@ -142,9 +151,9 @@ export function clientApprovedEmail(ownerName: string, companyName: string) {
         </tr>
         <tr>
           <td style="background:#fff;padding:36px 40px;text-align:center;">
-            <p style="margin:0 0 8px;font-size:16px;color:#1e293b;">Hola <strong>${ownerName}</strong>,</p>
+            <p style="margin:0 0 8px;font-size:16px;color:#1e293b;">Hola <strong>${esc(ownerName)}</strong>,</p>
             <p style="margin:0 0 24px;font-size:14px;color:#64748b;line-height:1.6;">
-              Tu empresa <strong>${companyName}</strong> ha sido aprobada.<br>
+              Tu empresa <strong>${esc(companyName)}</strong> ha sido aprobada.<br>
               Ya podés iniciar sesión y comenzar a usar Warehouse Manager.
             </p>
             <a href="${loginUrl}" style="display:inline-block;background:linear-gradient(135deg,#059669,#10b981);color:#fff;font-size:15px;font-weight:600;text-decoration:none;padding:14px 36px;border-radius:12px;">
@@ -186,9 +195,9 @@ export function clientRejectedEmail(ownerName: string, companyName: string) {
         </tr>
         <tr>
           <td style="background:#fff;padding:36px 40px;text-align:center;">
-            <p style="margin:0 0 8px;font-size:16px;color:#1e293b;">Hola <strong>${ownerName}</strong>,</p>
+            <p style="margin:0 0 8px;font-size:16px;color:#1e293b;">Hola <strong>${esc(ownerName)}</strong>,</p>
             <p style="margin:0 0 24px;font-size:14px;color:#64748b;line-height:1.6;">
-              Lamentablemente tu solicitud para la empresa <strong>${companyName}</strong> no fue aprobada en este momento.<br>
+              Lamentablemente tu solicitud para la empresa <strong>${esc(companyName)}</strong> no fue aprobada en este momento.<br>
               Si creés que es un error, respondé este email para que podamos revisarlo.
             </p>
           </td>
@@ -227,9 +236,9 @@ export function clientDeletedEmail(ownerName: string, companyName: string) {
         </tr>
         <tr>
           <td style="background:#fff;padding:36px 40px;text-align:center;">
-            <p style="margin:0 0 8px;font-size:16px;color:#1e293b;">Hola <strong>${ownerName}</strong>,</p>
+            <p style="margin:0 0 8px;font-size:16px;color:#1e293b;">Hola <strong>${esc(ownerName)}</strong>,</p>
             <p style="margin:0 0 24px;font-size:14px;color:#64748b;line-height:1.6;">
-              Tu empresa <strong>${companyName}</strong> y todos sus datos han sido eliminados de Warehouse Manager.<br>
+              Tu empresa <strong>${esc(companyName)}</strong> y todos sus datos han sido eliminados de Warehouse Manager.<br>
               Si tenés preguntas, respondé este email.
             </p>
           </td>
@@ -266,9 +275,9 @@ export function activationEmail(ownerName: string, companyName: string, link: st
         </tr>
         <tr>
           <td style="background:#fff;padding:36px 40px;text-align:center;">
-            <p style="margin:0 0 8px;font-size:16px;color:#1e293b;">Hola <strong>${ownerName}</strong>,</p>
+            <p style="margin:0 0 8px;font-size:16px;color:#1e293b;">Hola <strong>${esc(ownerName)}</strong>,</p>
             <p style="margin:0 0 28px;font-size:14px;color:#64748b;line-height:1.6;">
-              Tu empresa <strong>${companyName}</strong> ha sido revisada.<br>
+              Tu empresa <strong>${esc(companyName)}</strong> ha sido revisada.<br>
               Hacé clic en el botón para activar tu cuenta. El enlace expira en <strong>1 hora</strong>.
             </p>
             <a href="${link}" style="display:inline-block;background:linear-gradient(135deg,#059669,#10b981);color:#fff;font-size:15px;font-weight:600;text-decoration:none;padding:14px 36px;border-radius:12px;">
@@ -323,8 +332,8 @@ export function snapshotReportEmail(opts: {
         const st = v ? (v.estado || v.status || 'PENDING') : '';
         cells += v
           ? `<td style="padding:4px 3px;text-align:center;background:${statusColor(st)};border:1px solid #e2e8f0;border-radius:4px;">
-               <div style="font-size:9px;font-weight:700;color:${statusText(st)};line-height:1.2;">${v.client_name.slice(0,8)}</div>
-               <div style="font-size:8px;color:${statusText(st)};opacity:.8;">${st.slice(0,3)}</div>
+               <div style="font-size:9px;font-weight:700;color:${statusText(st)};line-height:1.2;">${esc(v.client_name).slice(0,8)}</div>
+               <div style="font-size:8px;color:${statusText(st)};opacity:.8;">${esc(st).slice(0,3)}</div>
              </td>`
           : `<td style="padding:4px 3px;text-align:center;background:#f8fafc;border:1px solid #e2e8f0;border-radius:4px;"><span style="color:#cbd5e1;font-size:10px;">-</span></td>`;
       });
@@ -344,7 +353,7 @@ export function snapshotReportEmail(opts: {
   };
 
   return {
-    subject: `Snapshot Report — ${warehouseName} · ${date}`,
+    subject: `Snapshot Report — ${esc(warehouseName)} · ${esc(date)}`,
     html: `<!DOCTYPE html>
 <html lang="en">
 <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"></head>
@@ -367,9 +376,9 @@ export function snapshotReportEmail(opts: {
         <!-- Warehouse + Date -->
         <tr>
           <td style="background:#1e40af;padding:14px 40px;text-align:center;">
-            <span style="color:#bfdbfe;font-size:14px;font-weight:600;">${warehouseName}</span>
+            <span style="color:#bfdbfe;font-size:14px;font-weight:600;">${esc(warehouseName)}</span>
             <span style="color:#60a5fa;margin:0 10px;">·</span>
-            <span style="color:#bfdbfe;font-size:14px;">${date}</span>
+            <span style="color:#bfdbfe;font-size:14px;">${esc(date)}</span>
           </td>
         </tr>
 
@@ -461,7 +470,7 @@ export function passwordResetEmail(name: string, token: string) {
         </tr>
         <tr>
           <td style="background:#fff;padding:36px 40px;text-align:center;">
-            <p style="margin:0 0 8px;font-size:16px;color:#1e293b;">Hi <strong>${name}</strong>,</p>
+            <p style="margin:0 0 8px;font-size:16px;color:#1e293b;">Hi <strong>${esc(name)}</strong>,</p>
             <p style="margin:0 0 28px;font-size:14px;color:#64748b;line-height:1.6;">
               We received a request to reset your password. Click the button below.
               This link expires in <strong>1 hour</strong>. If you didn't request this, ignore this email.
