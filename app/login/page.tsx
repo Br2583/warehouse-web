@@ -8,6 +8,7 @@ import {
 } from '@heroicons/react/24/outline';
 import { pb } from '@/lib/pb';
 import { genCode } from '@/lib/utils';
+import BotExternal from '@/components/BotExternal';
 
 /* ─── Left panel (blue gradient) ─── */
 function AuthLeft({ title, subtitle }: { title: React.ReactNode; subtitle: string }) {
@@ -389,12 +390,15 @@ function LoginForm() {
 
 export default function LoginPage() {
   return (
-    <Suspense fallback={
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
-        <div className="w-8 h-8 border-2 border-blue-200 border-t-blue-600 rounded-full animate-spin" />
-      </div>
-    }>
-      <LoginForm />
-    </Suspense>
+    <>
+      <Suspense fallback={
+        <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+          <div className="w-8 h-8 border-2 border-blue-200 border-t-blue-600 rounded-full animate-spin" />
+        </div>
+      }>
+        <LoginForm />
+      </Suspense>
+      <BotExternal />
+    </>
   );
 }

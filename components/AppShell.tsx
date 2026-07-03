@@ -3,6 +3,7 @@
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 import MobileNav from './MobileNav';
+import BotInternal from './BotInternal';
 import { useAuth } from '@/lib/auth-context';
 
 const AUTH_ROUTES = ['/dashboard', '/warehouses', '/search', '/production', '/stats', '/snapshots', '/chat', '/profile', '/storage', '/onboarding'];
@@ -31,6 +32,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
     <>
       {children}
       {showNav && <MobileNav />}
+      {showNav && <BotInternal />}
     </>
   );
 }
