@@ -5,6 +5,7 @@ import { motion } from 'framer-motion';
 import {
   DocumentDuplicateIcon, PlusIcon, ExclamationCircleIcon,
   XMarkIcon, ArrowRightOnRectangleIcon, ShieldCheckIcon, PencilSquareIcon,
+  TrashIcon,
 } from '@heroicons/react/24/outline';
 import { AnimatePresence } from 'framer-motion';
 import Sidebar from '@/components/Sidebar';
@@ -20,6 +21,8 @@ export default function ProfilePage() {
   const [members, setMembers] = useState<any[]>([]);
   const [genError, setGenError] = useState('');
   const [loading, setLoading] = useState(true);
+  const [removingId, setRemovingId] = useState<string | null>(null);
+  const [removeError, setRemoveError] = useState('');
 
   const [pickerOpen, setPickerOpen] = useState(false);
   const [avatarSaving, setAvatarSaving] = useState(false);
@@ -67,6 +70,27 @@ export default function ProfilePage() {
     ]).then(([c, m]) => { setCompany(c); setMembers(m); })
       .catch(() => {}).finally(() => setLoading(false));
   }, []);
+
+  const removeMember = async (memberId: string) => {
+    setRemoveError('');
+    setRemovingId(memberId);
+    try {
+      const res = await fetch(`/api/company/members/${memberId}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${pb.authStore.token}` },
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        setRemoveError(data.error || 'Failed to remove member');
+        return;
+      }
+      setMembers(prev => prev.filter(m => m.user_id !== memberId));
+    } catch {
+      setRemoveError('Failed to remove member');
+    } finally {
+      setRemovingId(null);
+    }
+  };
 
   const generateCode = async () => {
     setGenError('');
@@ -226,15 +250,42 @@ export default function ProfilePage() {
             {/* Members */}
             <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }} className="bg-white rounded-2xl border border-gray-100 p-6">
               <h3 className="font-semibold text-gray-900 mb-4">Team Members</h3>
+              <AnimatePresence>
+                {removeError && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: 'auto' }}
+                    exit={{ opacity: 0, height: 0 }}
+                    className="flex items-center gap-2 bg-red-50 border border-red-100 text-red-700 text-sm rounded-xl px-3 py-2 mb-3"
+                  >
+                    <ExclamationCircleIcon className="w-4 h-4 flex-shrink-0" />
+                    <span className="flex-1">{removeError}</span>
+                    <button onClick={() => setRemoveError('')}><XMarkIcon className="w-4 h-4" /></button>
+                  </motion.div>
+                )}
+              </AnimatePresence>
               <div className="space-y-3">
                 {members.map(m => (
                   <div key={m.user_id} className="flex items-center gap-3">
                     <UserAvatar picture={m.picture} name={m.name} size={36} />
-                    <div className="flex-1">
-                      <p className="text-sm font-medium text-gray-900">{m.name}</p>
-                      <p className="text-xs text-gray-400">{m.email}</p>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-gray-900 truncate">{m.name}</p>
+                      <p className="text-xs text-gray-400 truncate">{m.email}</p>
                     </div>
-                    <span className="text-xs capitalize text-gray-400">{m.role}</span>
+                    <span className="text-xs capitalize text-gray-400 flex-shrink-0">{m.role}</span>
+                    {company?.is_owner && m.user_id !== user?.id && m.role !== 'owner' && (
+                      <button
+                        onClick={() => removeMember(m.user_id)}
+                        disabled={removingId === m.user_id}
+                        title="Remove from company"
+                        className="flex-shrink-0 p-1.5 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-40"
+                      >
+                        {removingId === m.user_id
+                          ? <span className="w-3.5 h-3.5 border-2 border-red-300 border-t-red-500 rounded-full animate-spin block" />
+                          : <TrashIcon className="w-3.5 h-3.5" />
+                        }
+                      </button>
+                    )}
                   </div>
                 ))}
               </div>

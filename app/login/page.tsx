@@ -170,10 +170,19 @@ function LoginForm() {
     }
   };
 
-  const joinCompany = async (userId: string, code: string) => {
+  const joinCompany = async (_userId: string, code: string) => {
     try {
-      const company = await pb.collection('companies').getFirstListItem(`invite_code="${code}"`);
-      await pb.collection('users').update(userId, { company_id: company.id, role: 'worker', pending_action: '', pending_company_name: '' });
+      const res = await fetch('/api/company/join', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${pb.authStore.token}` },
+        body: JSON.stringify({ inviteCode: code }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        setError(data.error || 'Invitation code not found or expired.');
+        setLoading(false);
+        return;
+      }
       await pb.collection('users').authRefresh();
       router.replace('/onboarding');
     } catch {

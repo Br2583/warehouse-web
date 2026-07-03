@@ -18,7 +18,7 @@ interface CompanyRecord {
   owner: { id: string; name: string; email: string } | null;
 }
 
-type Tab = 'pending' | 'active' | 'suspended';
+type Tab = 'pending' | 'active' | 'suspended' | 'rejected';
 
 export default function AdminPage() {
   const [authed, setAuthed] = useState(false);
@@ -167,17 +167,20 @@ export default function AdminPage() {
     );
   }
 
-  const pending   = companies.filter(c => !c.approved && !c.suspended);
+  const pending   = companies.filter(c => !c.approved && !c.suspended && !c.rejected);
   const active    = companies.filter(c => c.approved && !c.suspended);
   const suspended = companies.filter(c => c.suspended);
+  const rejected  = companies.filter(c => c.rejected && !c.approved && !c.suspended);
 
   const tabs: { id: Tab; label: string; count: number; color: string }[] = [
     { id: 'pending',   label: 'Pending',   count: pending.length,   color: 'bg-amber-100 text-amber-700' },
     { id: 'active',    label: 'Active',    count: active.length,    color: 'bg-green-100 text-green-700' },
     { id: 'suspended', label: 'Suspended', count: suspended.length, color: 'bg-red-100 text-red-700' },
+    { id: 'rejected',  label: 'Rejected',  count: rejected.length,  color: 'bg-gray-100 text-gray-600' },
   ];
 
-  const list = tab === 'pending' ? pending : tab === 'active' ? active : suspended;
+  const listMap: Record<Tab, CompanyRecord[]> = { pending, active, suspended, rejected };
+  const list = listMap[tab] ?? [];
 
   return (
     <div className="min-h-screen bg-gray-50 p-4 md:p-8">
