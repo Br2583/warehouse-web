@@ -12,6 +12,7 @@ import Sidebar from '@/components/Sidebar';
 import { UserAvatar } from '@/components/UserAvatar';
 import { api } from '@/lib/api';
 import { useAuth } from '@/lib/auth-context';
+import { pb } from '@/lib/pb';
 
 type TaskStatus   = 'PENDING' | 'IN_PROGRESS' | 'DONE';
 type TaskPriority = 'normal' | 'urgent';
@@ -380,8 +381,11 @@ function TaskFormModal({ open, onClose, members, editTask, onSave }: {
         storage_id:  editTask.storage_id || '',
       });
       if (editTask.vault_id) {
-        api.get(`/api/vaults?id=${editTask.vault_id}`)
-          .then((v: any) => setVaultInfo({ id: v.id, display: `${v.client_name} · ${v.position}` }))
+        const tok = pb.authStore.token
+          || (() => { try { return JSON.parse(localStorage.getItem('pocketbase_auth') || '{}')?.token; } catch { return ''; } })();
+        fetch(`/api/vaults?id=${editTask.vault_id}`, { headers: tok ? { Authorization: `Bearer ${tok}` } : {} })
+          .then(r => r.ok ? r.json() : null)
+          .then((v: any) => v ? setVaultInfo({ id: v.id, display: `${v.client_name} · ${v.position}` }) : setVaultInfo({ id: editTask.vault_id!, display: editTask.vault_id! }))
           .catch(() => setVaultInfo({ id: editTask.vault_id!, display: editTask.vault_id! }));
       } else {
         setVaultInfo(null);
@@ -398,7 +402,7 @@ function TaskFormModal({ open, onClose, members, editTask, onSave }: {
       .catch(() => {});
   }, [open, editTask]);
 
-  // Vault search with debounce — uses server route (admin token) to avoid PB auth issues
+  // Vault search with debounce — direct fetch to server route (bypasses client router)
   useEffect(() => {
     if (vaultQ.trim().length < 2) {
       setVaultResults([]);
@@ -406,11 +410,20 @@ function TaskFormModal({ open, onClose, members, editTask, onSave }: {
       return;
     }
     setVaultLoading(true);
-    const t = setTimeout(() => {
-      api.get(`/api/vaults?q=${encodeURIComponent(vaultQ.trim())}`)
-        .then((results: any) => setVaultResults(Array.isArray(results) ? results : []))
-        .catch(() => setVaultResults([]))
-        .finally(() => setVaultLoading(false));
+    const t = setTimeout(async () => {
+      try {
+        const token = pb.authStore.token
+          || (() => { try { return JSON.parse(localStorage.getItem('pocketbase_auth') || '{}')?.token; } catch { return ''; } })();
+        const r = await fetch(`/api/vaults?q=${encodeURIComponent(vaultQ.trim())}`, {
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+        });
+        const data = await r.json();
+        setVaultResults(Array.isArray(data) ? data : []);
+      } catch {
+        setVaultResults([]);
+      } finally {
+        setVaultLoading(false);
+      }
     }, 300);
     return () => clearTimeout(t);
   }, [vaultQ]);
