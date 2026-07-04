@@ -20,11 +20,11 @@ export const metadata: Metadata = {
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
-    statusBarStyle: "default",
-    title: "WH Manager",
+    statusBarStyle: "black-translucent",
+    title: "WM",
   },
   icons: {
-    apple: "/icon.svg",
+    apple: "/icons/apple-touch-icon.png",
   },
 };
 
