@@ -6,9 +6,10 @@ import { XMarkIcon } from '@heroicons/react/24/outline';
 interface QRScannerProps {
   onClose: () => void;
   onResult: (vaultId: string) => void;
+  inline?: boolean;
 }
 
-export default function QRScanner({ onClose, onResult }: QRScannerProps) {
+export default function QRScanner({ onClose, onResult, inline = false }: QRScannerProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
@@ -86,6 +87,42 @@ export default function QRScanner({ onClose, onResult }: QRScannerProps) {
     };
   }, [onResult]);
 
+  const cameraBlock = (
+    <div className="relative rounded-2xl overflow-hidden bg-black aspect-square">
+      <video ref={videoRef} className="w-full h-full object-cover" muted playsInline autoPlay />
+      <canvas ref={canvasRef} className="hidden" />
+
+      {/* Corner frame overlay */}
+      {!found && !error && (
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+          <div className="relative w-56 h-56">
+            <div className="absolute top-0 left-0 w-10 h-10 border-t-4 border-l-4 border-blue-400 rounded-tl-xl" />
+            <div className="absolute top-0 right-0 w-10 h-10 border-t-4 border-r-4 border-blue-400 rounded-tr-xl" />
+            <div className="absolute bottom-0 left-0 w-10 h-10 border-b-4 border-l-4 border-blue-400 rounded-bl-xl" />
+            <div className="absolute bottom-0 right-0 w-10 h-10 border-b-4 border-r-4 border-blue-400 rounded-br-xl" />
+            <div className="absolute left-3 right-3 h-0.5 bg-blue-400/90 rounded-full animate-scan-line" />
+          </div>
+        </div>
+      )}
+
+      {/* Success */}
+      {found && (
+        <div className="absolute inset-0 flex items-center justify-center bg-black/60">
+          <div className="text-center text-white">
+            <div className="w-16 h-16 bg-green-500 rounded-full flex items-center justify-center mx-auto mb-2">
+              <svg className="w-9 h-9" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+              </svg>
+            </div>
+            <p className="font-bold text-lg">Vault found!</p>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+
+  if (inline) return cameraBlock;
+
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/85 backdrop-blur-sm">
       <div className="relative w-full max-w-sm mx-4">
@@ -98,39 +135,7 @@ export default function QRScanner({ onClose, onResult }: QRScannerProps) {
           </button>
         </div>
 
-        {/* Camera */}
-        <div className="relative rounded-2xl overflow-hidden bg-black aspect-square">
-          <video ref={videoRef} className="w-full h-full object-cover" muted playsInline autoPlay />
-          <canvas ref={canvasRef} className="hidden" />
-
-          {/* Corner frame overlay */}
-          {!found && !error && (
-            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-              <div className="relative w-56 h-56">
-                <div className="absolute top-0 left-0 w-10 h-10 border-t-4 border-l-4 border-blue-400 rounded-tl-xl" />
-                <div className="absolute top-0 right-0 w-10 h-10 border-t-4 border-r-4 border-blue-400 rounded-tr-xl" />
-                <div className="absolute bottom-0 left-0 w-10 h-10 border-b-4 border-l-4 border-blue-400 rounded-bl-xl" />
-                <div className="absolute bottom-0 right-0 w-10 h-10 border-b-4 border-r-4 border-blue-400 rounded-br-xl" />
-                {/* Animated scan line */}
-                <div className="absolute left-3 right-3 h-0.5 bg-blue-400/90 rounded-full animate-scan-line" />
-              </div>
-            </div>
-          )}
-
-          {/* Success */}
-          {found && (
-            <div className="absolute inset-0 flex items-center justify-center bg-black/60">
-              <div className="text-center text-white">
-                <div className="w-16 h-16 bg-green-500 rounded-full flex items-center justify-center mx-auto mb-2">
-                  <svg className="w-9 h-9" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
-                  </svg>
-                </div>
-                <p className="font-bold text-lg">Vault found!</p>
-              </div>
-            </div>
-          )}
-        </div>
+        {cameraBlock}
 
         {error ? (
           <p className="mt-3 text-center text-sm text-red-300">{error}</p>

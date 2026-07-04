@@ -12,7 +12,7 @@ import Sidebar from '@/components/Sidebar';
 import VaultForm, { VaultFormData } from '@/components/VaultForm';
 import QRScanner from '@/components/QRScanner';
 import { api } from '@/lib/api';
-import { useParams } from 'next/navigation';
+import { useParams, useSearchParams } from 'next/navigation';
 import { compressImage } from '@/lib/compress-image';
 import { QRCodeSVG } from 'qrcode.react';
 import { STATUS_COLORS, STATUS_CELL } from '@/lib/constants';
@@ -59,6 +59,7 @@ const emptyForm: VaultFormData = {
 
 export default function WarehouseDetailPage() {
   const { id } = useParams();
+  const searchParams = useSearchParams();
   const warehouseId = id as string;
   const [warehouseName, setWarehouseName] = useState('');
   const [boxes, setBoxes] = useState<Box[]>([]);
@@ -113,6 +114,21 @@ export default function WarehouseDetailPage() {
       }).catch(() => {})
     );
   }, [warehouseId]);
+
+  // Auto-open vault when navigating from /scan?vault=<box_id>
+  useEffect(() => {
+    const targetId = searchParams?.get('vault');
+    if (!targetId || boxes.length === 0 || selected) return;
+    const found = boxes.find(b => b.box_id === targetId);
+    if (!found) return;
+    setSelected(found);
+    setShowQR(false);
+    setLoadingPhotos(true);
+    api.get(`/api/boxes/${found.box_id}`)
+      .then(full => { if (full?.photos) setSelected(prev => prev ? { ...prev, photos: full.photos } : prev); })
+      .catch(() => {})
+      .finally(() => setLoadingPhotos(false));
+  }, [boxes, searchParams]);
 
   const filtered = boxes.filter(b =>
     b.client_name?.toLowerCase().includes(search.toLowerCase()) ||

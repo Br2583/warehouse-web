@@ -9,6 +9,7 @@ import {
   HomeIcon, BuildingOffice2Icon, ArchiveBoxIcon, ClipboardDocumentListIcon,
   MagnifyingGlassIcon, ChartBarSquareIcon, CameraIcon, ChatBubbleLeftRightIcon,
   UserCircleIcon, ArrowRightOnRectangleIcon, Bars3Icon, XMarkIcon, LifebuoyIcon,
+  QrCodeIcon,
 } from '@heroicons/react/24/outline';
 import {
   HomeIcon as HomeSolid, BuildingOffice2Icon as BuildingSolid, ArchiveBoxIcon as ArchiveSolid,
@@ -83,6 +84,18 @@ export default function MobileNav() {
           >
             <XMarkIcon className="w-5 h-5 text-gray-400" />
           </button>
+        </div>
+
+        {/* Scan QR — prominent CTA */}
+        <div className="px-4 pt-4 pb-2">
+          <Link
+            href="/scan"
+            onClick={() => setOpen(false)}
+            className="flex items-center gap-3 w-full bg-blue-600 text-white rounded-2xl px-4 py-3.5 font-semibold text-sm active:scale-95 transition-transform"
+          >
+            <QrCodeIcon className="w-5 h-5 flex-shrink-0" />
+            Scan QR Code
+          </Link>
         </div>
 
         {/* Nav items */}
