@@ -235,6 +235,15 @@ async function routeGet(path: string): Promise<any> {
     }));
   }
 
+  // ── Vaults search / single record (for Tasks modal) ──────────────────────
+  if (p === '/api/vaults') {
+    const token = pb.authStore.token;
+    if (!token) return q.get('id') ? null : [];
+    const r = await fetch(`/api/vaults${url.search}`, { headers: { Authorization: `Bearer ${token}` } });
+    if (!r.ok) return q.get('id') ? null : [];
+    return r.json();
+  }
+
   // ── Tasks ──────────────────────────────────────────────────────────────────
   if (p === '/api/tasks') {
     const token = pb.authStore.token;
