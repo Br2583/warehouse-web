@@ -11,7 +11,6 @@ import Link from 'next/link';
 import Sidebar from '@/components/Sidebar';
 import { UserAvatar } from '@/components/UserAvatar';
 import { api } from '@/lib/api';
-import { pb } from '@/lib/pb';
 import { useAuth } from '@/lib/auth-context';
 
 type TaskStatus   = 'PENDING' | 'IN_PROGRESS' | 'DONE';
@@ -381,7 +380,7 @@ function TaskFormModal({ open, onClose, members, editTask, onSave }: {
         storage_id:  editTask.storage_id || '',
       });
       if (editTask.vault_id) {
-        pb.collection('vaults').getOne(editTask.vault_id, { fields: 'id,client_name,position' } as any)
+        api.get(`/api/vaults?id=${editTask.vault_id}`)
           .then((v: any) => setVaultInfo({ id: v.id, display: `${v.client_name} · ${v.position}` }))
           .catch(() => setVaultInfo({ id: editTask.vault_id!, display: editTask.vault_id! }));
       } else {
@@ -399,29 +398,22 @@ function TaskFormModal({ open, onClose, members, editTask, onSave }: {
       .catch(() => {});
   }, [open, editTask]);
 
-  // Vault search with debounce
+  // Vault search with debounce — uses server route (admin token) to avoid PB auth issues
   useEffect(() => {
     if (vaultQ.trim().length < 2) {
       setVaultResults([]);
       setVaultLoading(false);
       return;
     }
-    const cid = (user as any)?.company_id as string | undefined;
-    if (!cid) { setVaultLoading(false); return; }
     setVaultLoading(true);
-    const q = vaultQ.trim().replace(/\\/g, '\\\\').replace(/"/g, '\\"');
     const t = setTimeout(() => {
-      pb.collection('vaults').getFullList({
-        filter: `company_id="${cid}" && (client_name~"${q}" || position~"${q}")`,
-        fields: 'id,client_name,position',
-        sort:   '-created',
-      } as any)
-        .then((results: any) => setVaultResults(results))
+      api.get(`/api/vaults?q=${encodeURIComponent(vaultQ.trim())}`)
+        .then((results: any) => setVaultResults(Array.isArray(results) ? results : []))
         .catch(() => setVaultResults([]))
         .finally(() => setVaultLoading(false));
     }, 300);
     return () => clearTimeout(t);
-  }, [vaultQ, (user as any)?.company_id]);
+  }, [vaultQ]);
 
   const selectVault = (v: VaultResult) => {
     setForm(f => ({ ...f, vault_id: v.id }));
