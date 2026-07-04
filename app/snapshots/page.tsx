@@ -287,10 +287,13 @@ export default function SnapshotsPage() {
                     {/* Level grids */}
                     {report.boxes.length > 0 ? (
                       <div className="space-y-8">
-                        {[1, 2].map(level => {
+                        {(() => {
+                          const maxCol = Math.max(8, ...report.boxes.map(b => Number(b.column) || 0));
+                          const allCols = Array.from({ length: maxCol }, (_, i) => i + 1);
+                          return [1, 2].map(level => {
                           const levelName = level === 1 ? 'Lower' : 'Upper';
                           const rows = ['A','B','C','D','E','F','G','H','I','J'];
-                          const cols = [1,2,3,4,5,6,7,8];
+                          const cols = allCols;
                           const getBox = (row: string, col: number) =>
                             report.boxes.find(b => b.row === row && Number(b.column) === col && Number(b.level) === level);
                           const levelBoxes = report.boxes.filter(b => Number(b.level) === level);
@@ -346,7 +349,8 @@ export default function SnapshotsPage() {
                               </div>
                             </div>
                           );
-                        })}
+                        });
+                        })()}
                       </div>
                     ) : (
                       <p className="text-center py-8 text-gray-400">No vault data available for this snapshot.</p>

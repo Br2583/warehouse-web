@@ -26,6 +26,7 @@ export default function WarehousesPage() {
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
   const [newName, setNewName] = useState('');
+  const [newCols, setNewCols] = useState(8);
   const [showCreate, setShowCreate] = useState(false);
   const [createError, setCreateError] = useState('');
   const [confirmModal, setConfirmModal] = useState<{ message: string; onConfirm: () => void } | null>(null);
@@ -63,9 +64,10 @@ export default function WarehousesPage() {
         company_id: user.company_id,
         name:       newName.trim(),
         rows:       10,
-        cols:       8,
+        cols:       newCols,
       });
       setNewName('');
+      setNewCols(8);
       setShowCreate(false);
       await fetchWarehouses();
     } catch (err: any) {
@@ -121,6 +123,15 @@ export default function WarehousesPage() {
               autoFocus
               className="flex-1 border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
+            <select
+              value={newCols}
+              onChange={e => setNewCols(Number(e.target.value))}
+              className="border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+            >
+              <option value={8}>8 cols</option>
+              <option value={10}>10 cols</option>
+              <option value={11}>11 cols</option>
+            </select>
             <button
               type="submit"
               disabled={creating || !newName.trim()}
