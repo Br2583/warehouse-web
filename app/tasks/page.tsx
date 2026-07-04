@@ -400,7 +400,7 @@ function TaskFormModal({ open, onClose, members, editTask, onSave }: {
       .catch(() => {});
   }, [open, editTask]);
 
-  // Vault search — direct PocketBase SDK call (same approach as warehouse page)
+  // Vault search — reuses /api/search/global which is proven to work on the search page
   useEffect(() => {
     if (vaultQ.trim().length < 2) {
       setVaultResults([]);
@@ -408,33 +408,27 @@ function TaskFormModal({ open, onClose, members, editTask, onSave }: {
       setVaultLoading(false);
       return;
     }
-    const cid = pb.authStore.model?.company_id || user?.company_id;
-    if (!cid) {
-      setVaultResults([]);
-      setVaultDebug(`ERR: no company_id — authStore=${JSON.stringify(pb.authStore.model?.company_id)} user=${user?.company_id}`);
-      setVaultLoading(false);
-      return;
-    }
     setVaultLoading(true);
-    setVaultDebug(`searching cid=${cid} q="${vaultQ.trim()}"`);
-    const q = vaultQ.trim().replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+    setVaultDebug('');
     const t = setTimeout(() => {
-      pb.collection('vaults').getFullList({
-        filter: `company_id="${cid}" && (client_name~"${q}" || position~"${q}")`,
-        fields: 'id,client_name,position',
-      } as any)
+      api.get(`/api/search/global?q=${encodeURIComponent(vaultQ.trim())}`)
         .then((results: any[]) => {
-          setVaultDebug(`OK: ${results.length} results`);
-          setVaultResults(results.map(v => ({ id: v.id, client_name: v.client_name, position: v.position || '' })));
+          const mapped = (Array.isArray(results) ? results : []).map((v: any) => ({
+            id:          v.box_id || v.id,
+            client_name: v.client_name,
+            position:    v.position || '',
+          }));
+          setVaultDebug(`OK:${mapped.length}`);
+          setVaultResults(mapped);
         })
         .catch((e: any) => {
-          setVaultDebug(`ERR: ${e?.message || e?.status || JSON.stringify(e)}`);
+          setVaultDebug(`ERR:${e?.message || e}`);
           setVaultResults([]);
         })
         .finally(() => setVaultLoading(false));
     }, 300);
     return () => clearTimeout(t);
-  }, [vaultQ, user?.company_id]);
+  }, [vaultQ]);
 
   const selectVault = (v: VaultResult) => {
     setForm(f => ({ ...f, vault_id: v.id }));
