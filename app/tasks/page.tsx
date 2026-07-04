@@ -365,6 +365,7 @@ function TaskFormModal({ open, onClose, members, editTask, onSave }: {
   const [vaultResults, setVaultResults] = useState<VaultResult[]>([]);
   const [vaultInfo, setVaultInfo]       = useState<{ id: string; display: string } | null>(null);
   const [vaultLoading, setVaultLoading] = useState(false);
+  const [vaultDebug, setVaultDebug]     = useState('');
   const [storageUnits, setStorageUnits] = useState<StorageUnit[]>([]);
 
   useEffect(() => {
@@ -403,20 +404,33 @@ function TaskFormModal({ open, onClose, members, editTask, onSave }: {
   useEffect(() => {
     if (vaultQ.trim().length < 2) {
       setVaultResults([]);
+      setVaultDebug('');
       setVaultLoading(false);
       return;
     }
     const cid = pb.authStore.model?.company_id || user?.company_id;
-    if (!cid) { setVaultResults([]); setVaultLoading(false); return; }
+    if (!cid) {
+      setVaultResults([]);
+      setVaultDebug(`ERR: no company_id — authStore=${JSON.stringify(pb.authStore.model?.company_id)} user=${user?.company_id}`);
+      setVaultLoading(false);
+      return;
+    }
     setVaultLoading(true);
+    setVaultDebug(`searching cid=${cid} q="${vaultQ.trim()}"`);
     const q = vaultQ.trim().replace(/\\/g, '\\\\').replace(/"/g, '\\"');
     const t = setTimeout(() => {
       pb.collection('vaults').getFullList({
         filter: `company_id="${cid}" && (client_name~"${q}" || position~"${q}")`,
         fields: 'id,client_name,position',
       } as any)
-        .then((results: any[]) => setVaultResults(results.map(v => ({ id: v.id, client_name: v.client_name, position: v.position || '' }))))
-        .catch(() => setVaultResults([]))
+        .then((results: any[]) => {
+          setVaultDebug(`OK: ${results.length} results`);
+          setVaultResults(results.map(v => ({ id: v.id, client_name: v.client_name, position: v.position || '' })));
+        })
+        .catch((e: any) => {
+          setVaultDebug(`ERR: ${e?.message || e?.status || JSON.stringify(e)}`);
+          setVaultResults([]);
+        })
         .finally(() => setVaultLoading(false));
     }, 300);
     return () => clearTimeout(t);
@@ -587,7 +601,7 @@ function TaskFormModal({ open, onClose, members, editTask, onSave }: {
                         {vaultLoading ? (
                           <div className="px-3 py-2.5 text-xs text-gray-400">Searching…</div>
                         ) : vaultResults.length === 0 ? (
-                          <div className="px-3 py-2.5 text-xs text-gray-400">No vaults found</div>
+                          <div className="px-3 py-2.5 text-xs text-gray-400">No vaults found{vaultDebug ? ` · ${vaultDebug}` : ''}</div>
                         ) : (
                           vaultResults.map(v => (
                             <button key={v.id} onClick={() => selectVault(v)}
