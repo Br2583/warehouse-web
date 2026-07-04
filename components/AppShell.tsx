@@ -29,7 +29,9 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
 
   return (
     <>
-      {children}
+      <div style={isProtected ? { paddingTop: 'env(safe-area-inset-top)' } : undefined}>
+        {children}
+      </div>
       {showNav && <MobileNav />}
     </>
   );
