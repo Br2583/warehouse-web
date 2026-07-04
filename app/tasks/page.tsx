@@ -5,11 +5,13 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   PlusIcon, XMarkIcon, TrashIcon, CalendarIcon, UserCircleIcon,
   ExclamationCircleIcon, ListBulletIcon, ViewColumnsIcon, PencilIcon,
-  ClipboardDocumentListIcon,
+  ClipboardDocumentListIcon, MagnifyingGlassIcon,
 } from '@heroicons/react/24/outline';
+import Link from 'next/link';
 import Sidebar from '@/components/Sidebar';
 import { UserAvatar } from '@/components/UserAvatar';
 import { api } from '@/lib/api';
+import { pb } from '@/lib/pb';
 import { useAuth } from '@/lib/auth-context';
 
 type TaskStatus   = 'PENDING' | 'IN_PROGRESS' | 'DONE';
@@ -33,11 +35,23 @@ interface Task {
 }
 
 interface Member {
-  user_id: string;
-  name:    string;
-  email:   string;
+  user_id:  string;
+  name:     string;
+  email:    string;
   picture?: string;
-  role:    string;
+  role:     string;
+}
+
+interface StorageUnit {
+  id:        string;
+  unit_name: string;
+  city:      string;
+}
+
+interface VaultResult {
+  id:          string;
+  client_name: string;
+  position:    string;
 }
 
 const TASK_TYPES: TaskType[] = ['Cleaning', 'Restoration', 'Delivery', 'Free'];
@@ -55,11 +69,6 @@ const COLUMNS: { status: TaskStatus; label: string; dot: string }[] = [
   { status: 'DONE',        label: 'Done',        dot: 'bg-green-500' },
 ];
 
-const NEXT_STATUS: Partial<Record<TaskStatus, TaskStatus>> = {
-  PENDING:     'IN_PROGRESS',
-  IN_PROGRESS: 'DONE',
-};
-
 const STATUS_STYLE: Record<TaskStatus, string> = {
   PENDING:     'bg-gray-100  text-gray-500',
   IN_PROGRESS: 'bg-amber-50  text-amber-700',
@@ -69,6 +78,11 @@ const STATUS_LABEL: Record<TaskStatus, string> = {
   PENDING:     'Pending',
   IN_PROGRESS: 'In Progress',
   DONE:        'Done',
+};
+
+const NEXT_STATUS: Partial<Record<TaskStatus, TaskStatus>> = {
+  PENDING:     'IN_PROGRESS',
+  IN_PROGRESS: 'DONE',
 };
 
 function formatDate(d?: string) {
@@ -85,6 +99,8 @@ const emptyForm = {
   priority:    'normal' as TaskPriority,
   due_date:    '',
   notes:       '',
+  vault_id:    '',
+  storage_id:  '',
 };
 
 // ── Kanban card ───────────────────────────────────────────────────────────────
@@ -96,9 +112,10 @@ function TaskCard({ task, members, isOwner, onStatus, onDelete, onEdit }: {
   onDelete: (id: string) => void;
   onEdit:   (t: Task) => void;
 }) {
-  const assignee  = members.find(m => m.user_id === task.assigned_to);
-  const nextSt    = NEXT_STATUS[task.status];
-  const nextLabel = task.status === 'PENDING' ? 'Start' : 'Mark Done';
+  const assignee    = members.find(m => m.user_id === task.assigned_to);
+  const [statusMenu, setStatusMenu] = useState(false);
+  const nextSt      = NEXT_STATUS[task.status];
+  const nextLabel   = task.status === 'PENDING' ? 'Start' : 'Mark Done';
 
   return (
     <div className="bg-white rounded-xl border border-gray-100 p-3.5 shadow-sm hover:shadow-md transition-shadow group">
@@ -144,7 +161,63 @@ function TaskCard({ task, members, isOwner, onStatus, onDelete, onEdit }: {
         </div>
       )}
 
-      {nextSt && (
+      {/* Free task description */}
+      {task.type === 'Free' && task.notes && (
+        <p className="text-xs text-purple-700 bg-purple-50 border border-purple-100 rounded-lg px-2.5 py-2 mb-2 leading-relaxed line-clamp-3">
+          {task.notes}
+        </p>
+      )}
+
+      {/* Navigation links */}
+      {(task.vault_id || task.storage_id) && (
+        <div className="flex flex-wrap gap-2 mb-2">
+          {task.vault_id && (
+            <Link href="/warehouses" title={`Vault: ${task.vault_id}`}
+              className="text-[10px] text-blue-500 hover:text-blue-700 hover:underline">
+              → View Vault
+            </Link>
+          )}
+          {task.storage_id && (
+            <Link href={`/storage/${task.storage_id}`}
+              className="text-[10px] text-blue-500 hover:text-blue-700 hover:underline">
+              → View Storage
+            </Link>
+          )}
+        </div>
+      )}
+
+      {/* Status control */}
+      {isOwner ? (
+        <div className="relative mt-1">
+          <button
+            onClick={() => setStatusMenu(m => !m)}
+            className={`w-full py-1.5 text-xs font-medium rounded-lg transition-colors flex items-center justify-center gap-1 ${STATUS_STYLE[task.status]}`}
+          >
+            {STATUS_LABEL[task.status]}
+            <span className="opacity-40">▾</span>
+          </button>
+          {statusMenu && (
+            <>
+              <div className="fixed inset-0 z-10" onClick={() => setStatusMenu(false)} />
+              <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-xl shadow-lg z-20 overflow-hidden">
+                {(['PENDING', 'IN_PROGRESS', 'DONE'] as TaskStatus[]).map(s => (
+                  <button
+                    key={s}
+                    onClick={() => { onStatus(task.id, s); setStatusMenu(false); }}
+                    className={`w-full text-left px-3 py-2 text-xs font-medium transition-colors ${
+                      task.status === s
+                        ? 'bg-gray-50 text-gray-400 cursor-default'
+                        : 'hover:bg-gray-50 text-gray-700'
+                    }`}
+                  >
+                    {STATUS_LABEL[s]}
+                  </button>
+                ))}
+              </div>
+            </>
+          )}
+        </div>
+      ) : nextSt && (
         <button onClick={() => onStatus(task.id, nextSt)}
           className={`w-full mt-1 py-1.5 text-xs font-medium rounded-lg border transition-colors ${
             nextSt === 'IN_PROGRESS'
@@ -168,8 +241,9 @@ function TaskRow({ task, members, isOwner, onStatus, onDelete, onEdit }: {
   onDelete: (id: string) => void;
   onEdit:   (t: Task) => void;
 }) {
-  const assignee  = members.find(m => m.user_id === task.assigned_to);
-  const nextSt    = NEXT_STATUS[task.status];
+  const assignee   = members.find(m => m.user_id === task.assigned_to);
+  const [statusMenu, setStatusMenu] = useState(false);
+  const nextSt     = NEXT_STATUS[task.status];
 
   return (
     <div className="flex items-center gap-3 bg-white rounded-xl border border-gray-100 px-4 py-3 hover:shadow-sm transition-shadow group">
@@ -195,14 +269,64 @@ function TaskRow({ task, members, isOwner, onStatus, onDelete, onEdit }: {
               {formatDate(task.due_date)}
             </span>
           )}
+          {task.vault_id && (
+            <Link href="/warehouses" title={`Vault: ${task.vault_id}`}
+              className="text-xs text-blue-500 hover:underline">
+              → Vault
+            </Link>
+          )}
+          {task.storage_id && (
+            <Link href={`/storage/${task.storage_id}`}
+              className="text-xs text-blue-500 hover:underline">
+              → Storage
+            </Link>
+          )}
+          {task.type === 'Free' && task.notes && (
+            <span className="text-xs text-purple-600 italic truncate max-w-[200px]" title={task.notes}>
+              {task.notes}
+            </span>
+          )}
         </div>
       </div>
 
-      <span className={`text-xs font-medium px-2.5 py-1 rounded-full flex-shrink-0 ${STATUS_STYLE[task.status]}`}>
-        {STATUS_LABEL[task.status]}
-      </span>
+      {/* Status: dropdown for owner, badge for worker */}
+      {isOwner ? (
+        <div className="relative flex-shrink-0">
+          <button
+            onClick={() => setStatusMenu(m => !m)}
+            className={`text-xs font-medium px-2.5 py-1 rounded-full flex items-center gap-1 ${STATUS_STYLE[task.status]}`}
+          >
+            {STATUS_LABEL[task.status]}
+            <span className="opacity-40 text-[9px]">▾</span>
+          </button>
+          {statusMenu && (
+            <>
+              <div className="fixed inset-0 z-10" onClick={() => setStatusMenu(false)} />
+              <div className="absolute right-0 top-full mt-1 bg-white border border-gray-200 rounded-xl shadow-lg z-20 overflow-hidden min-w-[120px]">
+                {(['PENDING', 'IN_PROGRESS', 'DONE'] as TaskStatus[]).map(s => (
+                  <button
+                    key={s}
+                    onClick={() => { onStatus(task.id, s); setStatusMenu(false); }}
+                    className={`w-full text-left px-3 py-2 text-xs font-medium whitespace-nowrap transition-colors ${
+                      task.status === s
+                        ? 'bg-gray-50 text-gray-400 cursor-default'
+                        : 'hover:bg-gray-50 text-gray-700'
+                    }`}
+                  >
+                    {STATUS_LABEL[s]}
+                  </button>
+                ))}
+              </div>
+            </>
+          )}
+        </div>
+      ) : (
+        <span className={`text-xs font-medium px-2.5 py-1 rounded-full flex-shrink-0 ${STATUS_STYLE[task.status]}`}>
+          {STATUS_LABEL[task.status]}
+        </span>
+      )}
 
-      {nextSt && (
+      {!isOwner && nextSt && (
         <button onClick={() => onStatus(task.id, nextSt)}
           className="flex-shrink-0 text-xs font-medium px-3 py-1.5 border border-gray-200 text-gray-600 hover:bg-gray-50 rounded-lg transition-colors">
           {task.status === 'PENDING' ? 'Start' : 'Done'}
@@ -233,9 +357,15 @@ function TaskFormModal({ open, onClose, members, editTask, onSave }: {
   editTask: Task | null;
   onSave:   (data: typeof emptyForm, editId?: string) => Promise<void>;
 }) {
-  const [form, setForm]     = useState(emptyForm);
-  const [saving, setSaving] = useState(false);
-  const [error, setError]   = useState('');
+  const { user }                        = useAuth();
+  const [form, setForm]                 = useState(emptyForm);
+  const [saving, setSaving]             = useState(false);
+  const [error, setError]               = useState('');
+  const [vaultQ, setVaultQ]             = useState('');
+  const [vaultResults, setVaultResults] = useState<VaultResult[]>([]);
+  const [vaultInfo, setVaultInfo]       = useState<{ id: string; display: string } | null>(null);
+  const [vaultLoading, setVaultLoading] = useState(false);
+  const [storageUnits, setStorageUnits] = useState<StorageUnit[]>([]);
 
   useEffect(() => {
     if (!open) return;
@@ -247,15 +377,67 @@ function TaskFormModal({ open, onClose, members, editTask, onSave }: {
         priority:    editTask.priority,
         due_date:    editTask.due_date?.split(/[ T]/)[0] || '',
         notes:       editTask.notes || '',
+        vault_id:    editTask.vault_id || '',
+        storage_id:  editTask.storage_id || '',
       });
+      if (editTask.vault_id) {
+        pb.collection('vaults').getOne(editTask.vault_id, { fields: 'id,client_name,position' } as any)
+          .then((v: any) => setVaultInfo({ id: v.id, display: `${v.client_name} · ${v.position}` }))
+          .catch(() => setVaultInfo({ id: editTask.vault_id!, display: editTask.vault_id! }));
+      } else {
+        setVaultInfo(null);
+      }
     } else {
       setForm(emptyForm);
+      setVaultInfo(null);
     }
+    setVaultQ('');
+    setVaultResults([]);
     setError('');
+    api.get('/api/storage')
+      .then((units: any) => setStorageUnits(Array.isArray(units) ? units : []))
+      .catch(() => {});
   }, [open, editTask]);
+
+  // Vault search with debounce
+  useEffect(() => {
+    if (vaultQ.trim().length < 2) {
+      setVaultResults([]);
+      setVaultLoading(false);
+      return;
+    }
+    const cid = (user as any)?.company_id as string | undefined;
+    if (!cid) { setVaultLoading(false); return; }
+    setVaultLoading(true);
+    const q = vaultQ.trim().replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+    const t = setTimeout(() => {
+      pb.collection('vaults').getFullList({
+        filter: `company_id="${cid}" && (client_name~"${q}" || position~"${q}")`,
+        fields: 'id,client_name,position',
+        sort:   '-created',
+      } as any)
+        .then((results: any) => setVaultResults(results))
+        .catch(() => setVaultResults([]))
+        .finally(() => setVaultLoading(false));
+    }, 300);
+    return () => clearTimeout(t);
+  }, [vaultQ, (user as any)?.company_id]);
+
+  const selectVault = (v: VaultResult) => {
+    setForm(f => ({ ...f, vault_id: v.id }));
+    setVaultInfo({ id: v.id, display: `${v.client_name} · ${v.position}` });
+    setVaultQ('');
+    setVaultResults([]);
+  };
+
+  const clearVault = () => {
+    setForm(f => ({ ...f, vault_id: '' }));
+    setVaultInfo(null);
+  };
 
   const submit = async () => {
     if (!form.title.trim()) { setError('Title is required'); return; }
+    if (form.type === 'Free' && !form.notes.trim()) { setError('Please describe what needs to be done'); return; }
     setSaving(true);
     setError('');
     try {
@@ -379,17 +561,87 @@ function TaskFormModal({ open, onClose, members, editTask, onSave }: {
                 />
               </div>
 
-              {/* Notes */}
+              {/* Vault search */}
               <div>
                 <label className="block text-xs text-gray-500 mb-1">
-                  Notes <span className="text-gray-300">(optional)</span>
+                  Linked Vault <span className="text-gray-300">(optional)</span>
+                </label>
+                {vaultInfo ? (
+                  <div className="flex items-center justify-between bg-blue-50 border border-blue-100 rounded-xl px-3 py-2.5">
+                    <span className="text-sm text-blue-700 truncate">{vaultInfo.display}</span>
+                    <button onClick={clearVault} className="text-blue-400 hover:text-blue-600 ml-2 flex-shrink-0">
+                      <XMarkIcon className="w-4 h-4" />
+                    </button>
+                  </div>
+                ) : (
+                  <div className="relative">
+                    <MagnifyingGlassIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-300 pointer-events-none" />
+                    <input
+                      type="text"
+                      value={vaultQ}
+                      onChange={e => setVaultQ(e.target.value)}
+                      placeholder="Search by client or position…"
+                      className="w-full border border-gray-200 rounded-xl pl-9 pr-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                    {vaultQ.trim().length >= 2 && (
+                      <div className="absolute z-20 top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-xl shadow-lg max-h-40 overflow-y-auto">
+                        {vaultLoading ? (
+                          <div className="px-3 py-2.5 text-xs text-gray-400">Searching…</div>
+                        ) : vaultResults.length === 0 ? (
+                          <div className="px-3 py-2.5 text-xs text-gray-400">No vaults found</div>
+                        ) : (
+                          vaultResults.map(v => (
+                            <button key={v.id} onClick={() => selectVault(v)}
+                              className="w-full text-left px-3 py-2.5 text-sm hover:bg-gray-50 transition-colors border-b border-gray-50 last:border-0">
+                              <span className="font-medium text-gray-800">{v.client_name}</span>
+                              <span className="text-gray-400 ml-2 text-xs">{v.position}</span>
+                            </button>
+                          ))
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* Storage */}
+              <div>
+                <label className="block text-xs text-gray-500 mb-1">
+                  Linked Storage Unit <span className="text-gray-300">(optional)</span>
+                </label>
+                <select
+                  value={form.storage_id}
+                  onChange={e => setForm(f => ({ ...f, storage_id: e.target.value }))}
+                  className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                >
+                  <option value="">— None —</option>
+                  {storageUnits.map(s => (
+                    <option key={s.id} value={s.id}>
+                      {s.unit_name}{s.city ? ` · ${s.city}` : ''}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Notes / Free description */}
+              <div>
+                <label className="block text-xs text-gray-500 mb-1">
+                  {form.type === 'Free' ? (
+                    <>What needs to be done? <span className="text-red-400">*</span></>
+                  ) : (
+                    <>Notes <span className="text-gray-300">(optional)</span></>
+                  )}
                 </label>
                 <textarea
                   value={form.notes}
                   onChange={e => setForm(f => ({ ...f, notes: e.target.value }))}
-                  placeholder="Additional details..."
-                  rows={2}
-                  className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                  placeholder={form.type === 'Free' ? 'Describe the task in detail…' : 'Additional details...'}
+                  rows={form.type === 'Free' ? 4 : 2}
+                  className={`w-full border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 resize-none transition-colors ${
+                    form.type === 'Free'
+                      ? 'border-purple-200 focus:ring-purple-400 bg-purple-50/30'
+                      : 'border-gray-200 focus:ring-blue-500'
+                  }`}
                 />
               </div>
 
@@ -483,7 +735,6 @@ export default function TasksPage() {
   const openEdit = (task: Task) => { setEditTask(task); setFormOpen(true); };
   const openNew  = ()           => { setEditTask(null); setFormOpen(true); };
 
-  // Sort: urgent first, then newest
   const sorted = [...tasks].sort((a, b) => {
     if (a.priority === 'urgent' && b.priority !== 'urgent') return -1;
     if (b.priority === 'urgent' && a.priority !== 'urgent') return  1;

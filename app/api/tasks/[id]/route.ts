@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getPbAdminToken, PB_URL } from '@/lib/pb-admin';
+import { sendEmail, taskStatusEmail } from '@/lib/email';
 
 async function verifyUser(token: string) {
   const res = await fetch(`${PB_URL}/api/collections/users/auth-refresh`, {
@@ -64,7 +65,37 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
   });
 
   if (!updateRes.ok) return NextResponse.json({ error: 'Failed to update task' }, { status: 500 });
-  return NextResponse.json(await updateRes.json());
+  const updated = await updateRes.json();
+
+  // Notify owner when a worker changes the status
+  if (me.role !== 'owner' && body.status && body.status !== task.status && task.created_by) {
+    try {
+      const [ownerRes, workerRes] = await Promise.all([
+        fetch(`${PB_URL}/api/collections/users/records/${task.created_by}`, {
+          headers: { Authorization: `Bearer ${adminToken}` },
+        }),
+        fetch(`${PB_URL}/api/collections/users/records/${me.id}`, {
+          headers: { Authorization: `Bearer ${adminToken}` },
+        }),
+      ]);
+      if (ownerRes.ok && workerRes.ok) {
+        const owner = await ownerRes.json();
+        const worker = await workerRes.json();
+        if (owner.email) {
+          const { subject, html } = taskStatusEmail(
+            owner.name || owner.email,
+            worker.name || worker.email,
+            task.title,
+            task.status,
+            body.status,
+          );
+          await sendEmail({ to: owner.email, toName: owner.name, subject, html });
+        }
+      }
+    } catch { /* email failure should never break the task update */ }
+  }
+
+  return NextResponse.json(updated);
 }
 
 export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {

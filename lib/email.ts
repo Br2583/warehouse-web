@@ -170,6 +170,16 @@ function greeting(name: string) {
   return `<p style="margin:0 0 12px;font-size:16px;color:#0f172a;font-weight:700;">Hi, ${esc(name)} 👋</p>`;
 }
 
+/* ── Task / notification helpers ── */
+
+function fmtTaskStatus(s: string) {
+  return s === 'IN_PROGRESS' ? 'In Progress' : s === 'DONE' ? 'Done' : 'Pending';
+}
+
+function fmtTaskPriority(p: string) {
+  return ({ urgent: 'Urgent', high: 'High', normal: 'Normal', low: 'Low' } as Record<string, string>)[p.toLowerCase()] ?? p;
+}
+
 /* ═══════════════════════════════════════════════════════════
    EMAIL TEMPLATES
 ═══════════════════════════════════════════════════════════ */
@@ -321,6 +331,124 @@ export function adminNewRequestEmail(companyName: string, ownerName: string, own
           { label: 'Email',   value: ownerEmail   },
         ], '#d97706')}
         ${ctaButton(adminUrl, 'Review in Admin Panel', '#d97706', '#b45309')}
+      `,
+    }),
+  };
+}
+
+/* ── Task assigned notification ── */
+
+export function taskAssignedEmail(
+  workerName: string,
+  taskTitle: string,
+  taskType: string,
+  priority: string,
+  dueDate: string,
+  ownerName: string,
+) {
+  const link = `${APP_URL}/tasks`;
+  let fmtDue = 'Not set';
+  if (dueDate) {
+    const d = new Date(dueDate);
+    fmtDue = isNaN(d.getTime()) ? dueDate : d.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+  }
+  return {
+    subject: `New task assigned: ${taskTitle}`,
+    html: base({
+      accent: '#4f46e5', accentDark: '#4338ca',
+      icon: '📋', iconBg: 'rgba(79,70,229,0.15)',
+      label: 'Task assignment',
+      content: `
+        ${greeting(workerName)}
+        <p style="margin:0 0 16px;font-size:14px;color:#475569;line-height:1.7;">
+          You have been assigned a new task. Log in to view it and get started when you're ready.
+        </p>
+        ${infoBox([
+          { label: 'Task',        value: taskTitle },
+          { label: 'Type',        value: taskType },
+          { label: 'Priority',    value: fmtTaskPriority(priority) },
+          { label: 'Due date',    value: fmtDue },
+          { label: 'Assigned by', value: ownerName },
+        ], '#4f46e5')}
+        ${ctaButton(link, 'View Task →', '#4f46e5', '#4338ca')}
+      `,
+    }),
+  };
+}
+
+/* ── Task status changed notification ── */
+
+export function taskStatusEmail(
+  ownerName: string,
+  workerName: string,
+  taskTitle: string,
+  oldStatus: string,
+  newStatus: string,
+) {
+  const link = `${APP_URL}/tasks`;
+  const isDone = newStatus === 'DONE';
+  const accent = isDone ? '#059669' : '#d97706';
+  const accentDark = isDone ? '#047857' : '#b45309';
+  return {
+    subject: `Task update — "${taskTitle}" is now ${fmtTaskStatus(newStatus)}`,
+    html: base({
+      accent, accentDark,
+      icon: isDone ? '✅' : '🔄',
+      iconBg: isDone ? 'rgba(5,150,105,0.15)' : 'rgba(217,119,6,0.15)',
+      label: 'Task status update',
+      content: `
+        ${greeting(ownerName)}
+        <p style="margin:0 0 16px;font-size:14px;color:#475569;line-height:1.7;">
+          <strong style="color:#0f172a;">${esc(workerName)}</strong> updated the status of a task.
+        </p>
+        ${infoBox([
+          { label: 'Task',   value: taskTitle },
+          { label: 'Worker', value: workerName },
+          { label: 'Was',    value: fmtTaskStatus(oldStatus) },
+          { label: 'Now',    value: fmtTaskStatus(newStatus) },
+        ], accent)}
+        ${ctaButton(link, 'View Task →', accent, accentDark)}
+      `,
+    }),
+  };
+}
+
+/* ── Chat digest ── */
+
+export function chatDigestEmail(
+  userName: string,
+  companyName: string,
+  messageCount: number,
+  previews: { sender: string; text: string }[],
+) {
+  const link = `${APP_URL}/chat`;
+  const previewHtml = previews.length > 0
+    ? `<div style="border-left:4px solid #7c3aed;border-radius:0 10px 10px 0;background:#faf5ff;padding:4px 20px;margin:20px 0;">
+         <table width="100%" cellpadding="0" cellspacing="0">
+           ${previews.map(p => `
+             <tr>
+               <td style="padding:10px 0;border-bottom:1px solid #f3e8ff;">
+                 <div style="font-size:12px;font-weight:700;color:#6d28d9;margin-bottom:3px;">${esc(p.sender)}</div>
+                 <div style="font-size:13px;color:#374151;">${esc(p.text.length > 90 ? p.text.slice(0, 90) + '…' : p.text)}</div>
+               </td>
+             </tr>`).join('')}
+         </table>
+       </div>`
+    : '';
+  return {
+    subject: `${messageCount} new message${messageCount !== 1 ? 's' : ''} in ${companyName} team chat`,
+    html: base({
+      accent: '#7c3aed', accentDark: '#6d28d9',
+      icon: '💬', iconBg: 'rgba(124,58,237,0.15)',
+      label: 'Team chat digest',
+      content: `
+        ${greeting(userName)}
+        <p style="margin:0 0 8px;font-size:14px;color:#475569;line-height:1.7;">
+          You have <strong style="color:#0f172a;">${messageCount} new message${messageCount !== 1 ? 's' : ''}</strong> waiting in the
+          <strong style="color:#0f172a;">${esc(companyName)}</strong> team chat.
+        </p>
+        ${previewHtml}
+        ${ctaButton(link, 'Open Chat →', '#7c3aed', '#6d28d9')}
       `,
     }),
   };

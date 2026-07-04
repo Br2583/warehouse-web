@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getPbAdminToken, PB_URL } from '@/lib/pb-admin';
+import { sendEmail, taskAssignedEmail } from '@/lib/email';
 
 async function verifyUser(token: string) {
   const res = await fetch(`${PB_URL}/api/collections/users/auth-refresh`, {
@@ -71,5 +72,35 @@ export async function POST(req: NextRequest) {
     const err = await res.json().catch(() => ({}));
     return NextResponse.json({ error: (err as any)?.message || 'Failed to create task' }, { status: 500 });
   }
-  return NextResponse.json(await res.json());
+  const created = await res.json();
+
+  if (body.assigned_to) {
+    try {
+      const [workerRes, ownerRes] = await Promise.all([
+        fetch(`${PB_URL}/api/collections/users/records/${body.assigned_to}`, {
+          headers: { Authorization: `Bearer ${adminToken}` },
+        }),
+        fetch(`${PB_URL}/api/collections/users/records/${me.id}`, {
+          headers: { Authorization: `Bearer ${adminToken}` },
+        }),
+      ]);
+      if (workerRes.ok && ownerRes.ok) {
+        const worker = await workerRes.json();
+        const owner = await ownerRes.json();
+        if (worker.email) {
+          const { subject, html } = taskAssignedEmail(
+            worker.name || worker.email,
+            body.title,
+            body.type || 'Free',
+            body.priority || 'normal',
+            body.due_date || '',
+            owner.name || owner.email,
+          );
+          await sendEmail({ to: worker.email, toName: worker.name, subject, html });
+        }
+      }
+    } catch { /* email failure should never break task creation */ }
+  }
+
+  return NextResponse.json(created);
 }

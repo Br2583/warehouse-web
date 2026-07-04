@@ -27,17 +27,24 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
   // Cannot remove yourself
   if (me.id === targetUserId) return NextResponse.json({ error: 'Cannot remove yourself' }, { status: 400 });
 
-  // Fetch target user via admin token to verify they're in the same company
-  const targetRes = await fetch(`${PB_URL}/api/collections/users/records/${targetUserId}`, {
-    headers: { Authorization: `Bearer ${adminToken}` },
-  });
+  // Fetch target user and company in parallel to verify membership and ownership
+  const [targetRes, companyRes] = await Promise.all([
+    fetch(`${PB_URL}/api/collections/users/records/${targetUserId}`, {
+      headers: { Authorization: `Bearer ${adminToken}` },
+    }),
+    fetch(`${PB_URL}/api/collections/companies/records/${me.company_id}`, {
+      headers: { Authorization: `Bearer ${adminToken}` },
+    }),
+  ]);
   if (!targetRes.ok) return NextResponse.json({ error: 'Member not found' }, { status: 404 });
   const target = await targetRes.json();
+  const company = companyRes.ok ? await companyRes.json() : null;
 
   if (target.company_id !== me.company_id) {
     return NextResponse.json({ error: 'Member not in your company' }, { status: 403 });
   }
-  if (target.role === 'owner') {
+  // Guard by both role AND company owner_id — role alone can be corrupted
+  if (target.role === 'owner' || (company && company.owner_id === targetUserId)) {
     return NextResponse.json({ error: 'Cannot remove the company owner' }, { status: 400 });
   }
 
