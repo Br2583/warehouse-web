@@ -158,46 +158,60 @@ export default function WarehousesPage() {
             <p className="text-sm mt-1">Create your first warehouse to get started</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {warehouses.map((wh, i) => (
-              <motion.div
-                key={wh.id}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: i * 0.1 }}
-              >
-                <div className="relative group">
-                  {user?.role === 'owner' && (
-                    <button
-                      onClick={e => { e.preventDefault(); deleteWarehouse(wh.id, wh.name); }}
-                      className="absolute top-3 right-3 z-10 p-1.5 rounded-lg text-gray-300 hover:text-red-500 hover:bg-red-50 md:opacity-0 md:group-hover:opacity-100 transition-all"
-                    >
-                      <TrashIcon className="w-4 h-4" />
-                    </button>
-                  )}
-                  <Link href={`/warehouses/${wh.id}`}>
-                    <div className="bg-white rounded-2xl border border-gray-100 p-6 hover:shadow-md transition-all cursor-pointer">
-                      <div className="flex items-center justify-between mb-4">
-                        <div className="w-12 h-12 bg-blue-50 rounded-xl flex items-center justify-center group-hover:bg-blue-100 transition-colors">
-                          <BuildingOffice2Icon className="w-6 h-6 text-blue-600" />
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-stretch">
+            {warehouses.map((wh, i) => {
+              const accent = wh.color || '#2563eb';
+              return (
+                <motion.div
+                  key={wh.id}
+                  className="h-full"
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: i * 0.1 }}
+                >
+                  <div className="relative group h-full">
+                    {user?.role === 'owner' && (
+                      <button
+                        onClick={e => { e.preventDefault(); deleteWarehouse(wh.id, wh.name); }}
+                        className="absolute top-3 right-3 z-10 p-1.5 rounded-lg text-gray-300 hover:text-red-500 hover:bg-red-50 md:opacity-0 md:group-hover:opacity-100 transition-all"
+                      >
+                        <TrashIcon className="w-4 h-4" />
+                      </button>
+                    )}
+                    <Link href={`/warehouses/${wh.id}`} className="h-full block">
+                      <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden hover:shadow-md transition-all cursor-pointer h-full flex flex-col">
+                        {/* Color accent bar */}
+                        <div className="h-1.5 flex-shrink-0" style={{ backgroundColor: accent }} />
+                        {/* Card body */}
+                        <div className="p-6 flex-1 flex flex-col">
+                          <div className="flex items-start justify-between mb-4">
+                            <div
+                              className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0"
+                              style={{ backgroundColor: accent + '1a' }}
+                            >
+                              <BuildingOffice2Icon className="w-6 h-6" style={{ color: accent }} />
+                            </div>
+                            <ChevronRightIcon className="w-5 h-5 text-gray-300 group-hover:text-blue-500 transition-colors mt-3" />
+                          </div>
+                          <h2 className="text-lg font-semibold text-gray-900 truncate pr-2">{wh.name}</h2>
+                          {wh.address
+                            ? <p className="text-xs text-gray-400 mt-0.5 truncate">{wh.address}</p>
+                            : <p className="text-xs text-gray-300 mt-0.5">No address</p>
+                          }
+                          <div className="flex items-baseline gap-1.5 mt-3">
+                            <span className="text-3xl font-bold text-gray-900 tabular-nums">{wh.vault_count}</span>
+                            <span className="text-sm text-gray-400">vaults</span>
+                          </div>
+                          <div className="mt-auto pt-4 border-t border-gray-50">
+                            <span className="text-xs font-medium" style={{ color: accent }}>View inventory →</span>
+                          </div>
                         </div>
-                        <ChevronRightIcon className="w-5 h-5 text-gray-300 group-hover:text-blue-500 transition-colors" />
                       </div>
-                      <h2 className="text-lg font-semibold text-gray-900">{wh.name}</h2>
-                      {wh.address && <p className="text-xs text-gray-400 mt-0.5">{wh.address}</p>}
-                      <div className="flex items-center gap-2 mt-2">
-                        <ArchiveBoxIcon className="w-4 h-4 text-gray-400" />
-                        <span className="text-2xl font-bold text-gray-900">{wh.vault_count}</span>
-                        <span className="text-sm text-gray-400">vaults stored</span>
-                      </div>
-                      <div className="mt-4 pt-4 border-t border-gray-50">
-                        <span className="text-xs text-blue-600 font-medium">View inventory →</span>
-                      </div>
-                    </div>
-                  </Link>
-                </div>
-              </motion.div>
-            ))}
+                    </Link>
+                  </div>
+                </motion.div>
+              );
+            })}
           </div>
         )}
       </main>
