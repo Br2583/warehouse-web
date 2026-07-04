@@ -381,11 +381,8 @@ function TaskFormModal({ open, onClose, members, editTask, onSave }: {
         storage_id:  editTask.storage_id || '',
       });
       if (editTask.vault_id) {
-        const tok = pb.authStore.token
-          || (() => { try { return JSON.parse(localStorage.getItem('pocketbase_auth') || '{}')?.token; } catch { return ''; } })();
-        fetch(`/api/vaults?id=${editTask.vault_id}`, { headers: tok ? { Authorization: `Bearer ${tok}` } : {} })
-          .then(r => r.ok ? r.json() : null)
-          .then((v: any) => v ? setVaultInfo({ id: v.id, display: `${v.client_name} · ${v.position}` }) : setVaultInfo({ id: editTask.vault_id!, display: editTask.vault_id! }))
+        pb.collection('vaults').getOne(editTask.vault_id, { fields: 'id,client_name,position' } as any)
+          .then((v: any) => setVaultInfo({ id: v.id, display: `${v.client_name} · ${v.position}` }))
           .catch(() => setVaultInfo({ id: editTask.vault_id!, display: editTask.vault_id! }));
       } else {
         setVaultInfo(null);
@@ -402,31 +399,28 @@ function TaskFormModal({ open, onClose, members, editTask, onSave }: {
       .catch(() => {});
   }, [open, editTask]);
 
-  // Vault search with debounce — direct fetch to server route (bypasses client router)
+  // Vault search — direct PocketBase SDK call (same approach as warehouse page)
   useEffect(() => {
     if (vaultQ.trim().length < 2) {
       setVaultResults([]);
       setVaultLoading(false);
       return;
     }
+    const cid = pb.authStore.model?.company_id || user?.company_id;
+    if (!cid) { setVaultResults([]); setVaultLoading(false); return; }
     setVaultLoading(true);
-    const t = setTimeout(async () => {
-      try {
-        const token = pb.authStore.token
-          || (() => { try { return JSON.parse(localStorage.getItem('pocketbase_auth') || '{}')?.token; } catch { return ''; } })();
-        const r = await fetch(`/api/vaults?q=${encodeURIComponent(vaultQ.trim())}`, {
-          headers: token ? { Authorization: `Bearer ${token}` } : {},
-        });
-        const data = await r.json();
-        setVaultResults(Array.isArray(data) ? data : []);
-      } catch {
-        setVaultResults([]);
-      } finally {
-        setVaultLoading(false);
-      }
+    const q = vaultQ.trim().replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+    const t = setTimeout(() => {
+      pb.collection('vaults').getFullList({
+        filter: `company_id="${cid}" && (client_name~"${q}" || position~"${q}")`,
+        fields: 'id,client_name,position',
+      } as any)
+        .then((results: any[]) => setVaultResults(results.map(v => ({ id: v.id, client_name: v.client_name, position: v.position || '' }))))
+        .catch(() => setVaultResults([]))
+        .finally(() => setVaultLoading(false));
     }, 300);
     return () => clearTimeout(t);
-  }, [vaultQ]);
+  }, [vaultQ, user?.company_id]);
 
   const selectVault = (v: VaultResult) => {
     setForm(f => ({ ...f, vault_id: v.id }));
