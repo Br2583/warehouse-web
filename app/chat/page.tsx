@@ -6,7 +6,7 @@ import { PaperAirplaneIcon, TrashIcon } from '@heroicons/react/24/outline';
 import Sidebar from '@/components/Sidebar';
 import { UserAvatar } from '@/components/UserAvatar';
 import { useAuth } from '@/lib/auth-context';
-import { getToken } from '@/lib/api';
+import { api, getToken } from '@/lib/api';
 import { notify, requestNotificationPermission } from '@/lib/notifications';
 import { markChatSeen } from '@/lib/unread-chat';
 
@@ -32,6 +32,7 @@ function formatTime(ts: string): string {
 export default function ChatPage() {
   const { user } = useAuth();
   const [messages, setMessages] = useState<Message[]>([]);
+  const [members, setMembers]   = useState<{ user_id: string; name: string; picture?: string }[]>([]);
   const [text, setText] = useState('');
   const [loading, setLoading] = useState(true);
   const [sendError, setSendError] = useState('');
@@ -89,6 +90,13 @@ export default function ChatPage() {
     const interval = setInterval(fetchMessages, 30000);
     return () => clearInterval(interval);
   }, [fetchMessages]);
+
+  useEffect(() => {
+    if (!user?.company_id) return;
+    api.get('/api/company/members')
+      .then((m: any) => setMembers(Array.isArray(m) ? m : []))
+      .catch(() => {});
+  }, [user?.company_id]);
 
   useEffect(() => {
     if (messages.length === 0) return;
@@ -159,6 +167,7 @@ export default function ChatPage() {
           ) : (
             messages.map((msg, i) => {
               const isMe = msg.sender_email === user?.id || msg.sender_email === user?.email;
+              const senderPicture = members.find(m => m.user_id === msg.sender_email)?.picture;
               return (
                 <motion.div
                   key={msg.id}
@@ -167,7 +176,7 @@ export default function ChatPage() {
                   transition={{ delay: Math.min(i * 0.015, 0.3) }}
                   className={`flex gap-3 group ${isMe ? 'flex-row-reverse' : ''}`}
                 >
-                  <UserAvatar picture={msg.sender_photo} name={msg.sender_name} size={32} className="mt-1" />
+                  <UserAvatar picture={senderPicture} name={msg.sender_name} size={32} className="mt-1" />
                   <div className={`max-w-[75%] md:max-w-md ${isMe ? 'items-end' : 'items-start'} flex flex-col`}>
                     <span className="text-xs text-gray-400 mb-1">{isMe ? 'You' : msg.sender_name}</span>
                     <div className={`px-4 py-2.5 rounded-2xl text-sm break-words ${isMe ? 'bg-blue-600 text-white rounded-tr-sm' : 'bg-white border border-gray-100 text-gray-800 rounded-tl-sm'}`}>

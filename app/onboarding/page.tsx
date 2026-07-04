@@ -328,7 +328,7 @@ export default function OnboardingPage() {
                       <ChevronRightIcon className={`w-4 h-4 text-gray-300 transition-transform ${showIndustryDropdown ? 'rotate-90' : ''}`} />
                     </button>
                     {showIndustryDropdown && (
-                      <div className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-2xl overflow-y-auto max-h-48 shadow-xl">
+                      <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-2xl overflow-y-auto max-h-48 shadow-xl">
                         {INDUSTRIES.map(ind => (
                           <button
                             key={ind}

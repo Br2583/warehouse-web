@@ -13,6 +13,18 @@ import { pb } from '@/lib/pb';
 import { useAuth } from '@/lib/auth-context';
 import { STATUS_COLORS } from '@/lib/constants';
 
+function formatSnapDate(dateStr: string): string {
+  if (!dateStr) return '';
+  try {
+    const parts = dateStr.split(/[-T ]/);
+    const y = parseInt(parts[0], 10);
+    const m = parseInt(parts[1], 10) - 1;
+    const d = parseInt(parts[2], 10);
+    if (isNaN(y) || isNaN(m + 1) || isNaN(d)) return dateStr;
+    return new Date(y, m, d).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+  } catch { return dateStr; }
+}
+
 export default function SnapshotsPage() {
   const { user } = useAuth();
   const [snapshots, setSnapshots] = useState<any[]>([]);
@@ -97,7 +109,7 @@ export default function SnapshotsPage() {
         body: JSON.stringify({
           to:            toEmail,
           warehouseName: report.snap.warehouse_name,
-          date:          report.snap.date,
+          date:          formatSnapDate(report.snap.date),
           total:         report.boxes.length || report.snap.box_count,
           pending:       report.boxes.filter(b => (b.estado||b.status) === 'PENDING').length,
           ready:         report.boxes.filter(b => (b.estado||b.status) === 'READY').length,
@@ -190,7 +202,7 @@ export default function SnapshotsPage() {
                     </button>
                   </div>
                   <p className="font-semibold text-gray-900">{snap.warehouse_name}</p>
-                  <p className="text-sm text-gray-500 mt-0.5">{snap.date}</p>
+                  <p className="text-sm text-gray-500 mt-0.5">{formatSnapDate(snap.date)}</p>
                   <p className="text-2xl font-bold text-gray-900 mt-3">{snap.box_count}</p>
                   <p className="text-xs text-gray-400 mb-4">total vaults</p>
                   <button
@@ -219,7 +231,7 @@ export default function SnapshotsPage() {
               {/* Modal toolbar (hidden on print) */}
               <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 print:hidden">
                 <h2 className="font-bold text-gray-900">
-                  {report.snap.warehouse_name} - {report.snap.date}
+                  {report.snap.warehouse_name} — {formatSnapDate(report.snap.date)}
                 </h2>
                 <div className="flex items-center gap-3">
                   <button
@@ -247,7 +259,7 @@ export default function SnapshotsPage() {
                   <div className="flex items-center justify-between">
                     <div>
                       <h1 className="text-2xl font-bold text-gray-900">Inventory Report</h1>
-                      <p className="text-gray-500 mt-1">{report.snap.warehouse_name} · {report.snap.date}</p>
+                      <p className="text-gray-500 mt-1">{report.snap.warehouse_name} · {formatSnapDate(report.snap.date)}</p>
                     </div>
                     <div className="text-right">
                       <p className="text-sm text-gray-400">Generated</p>
@@ -348,7 +360,7 @@ export default function SnapshotsPage() {
 
                     {/* Print footer */}
                     <div className="mt-8 pt-4 border-t border-gray-100 flex justify-between text-xs text-gray-400">
-                      <span>{report.snap.warehouse_name} · Snapshot {report.snap.date}</span>
+                      <span>{report.snap.warehouse_name} · {formatSnapDate(report.snap.date)}</span>
                       <span>Printed {new Date().toLocaleString()}</span>
                     </div>
                   </>
@@ -376,7 +388,7 @@ export default function SnapshotsPage() {
                 </button>
               </div>
               <p className="text-sm text-gray-500 mb-4">
-                {report.snap.warehouse_name} · {report.snap.date}
+                {report.snap.warehouse_name} · {formatSnapDate(report.snap.date)}
               </p>
               <input
                 type="email"

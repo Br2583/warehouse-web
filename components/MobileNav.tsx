@@ -4,6 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
+import { UserAvatar } from '@/components/UserAvatar';
 import {
   HomeIcon, BuildingOffice2Icon, ArchiveBoxIcon, ClipboardDocumentListIcon,
   MagnifyingGlassIcon, ChartBarSquareIcon, CameraIcon, ChatBubbleLeftRightIcon,
@@ -118,18 +119,7 @@ export default function MobileNav() {
         {/* User footer */}
         <div className="p-4 border-t border-gray-100">
           <div className="flex items-center gap-3 mb-3">
-            {user?.picture ? (
-              <img
-                src={user.picture}
-                alt={user.name || ''}
-                referrerPolicy="no-referrer"
-                className="w-9 h-9 rounded-full object-cover flex-shrink-0"
-              />
-            ) : (
-              <div className="w-9 h-9 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0">
-                <span className="text-blue-600 text-xs font-bold">{user?.name?.[0]}</span>
-              </div>
-            )}
+            <UserAvatar picture={user?.picture} name={user?.name} size={36} />
             <div className="flex-1 min-w-0">
               <p className="text-sm font-semibold text-gray-900 truncate">{user?.name}</p>
               <p className="text-xs text-gray-400 capitalize">{user?.role}</p>

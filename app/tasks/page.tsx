@@ -364,8 +364,6 @@ function TaskFormModal({ open, onClose, members, editTask, onSave }: {
   const [vaultQ, setVaultQ]             = useState('');
   const [vaultResults, setVaultResults] = useState<VaultResult[]>([]);
   const [vaultInfo, setVaultInfo]       = useState<{ id: string; display: string } | null>(null);
-  const [vaultLoading, setVaultLoading] = useState(false);
-  const [vaultDebug, setVaultDebug]     = useState('');
   const [storageUnits, setStorageUnits] = useState<StorageUnit[]>([]);
 
   useEffect(() => {
@@ -415,11 +413,10 @@ function TaskFormModal({ open, onClose, members, editTask, onSave }: {
 
   useEffect(() => {
     const q = vaultQ.trim().toLowerCase();
-    if (q.length < 2) { setVaultResults([]); setVaultDebug(''); return; }
+    if (q.length < 2) { setVaultResults([]); return; }
     const filtered = allVaults.filter(v =>
       v.client_name.toLowerCase().includes(q) || v.position.toLowerCase().includes(q)
     );
-    setVaultDebug(`${allVaults.length} vaults loaded, ${filtered.length} match`);
     setVaultResults(filtered);
   }, [vaultQ, allVaults]);
 
@@ -585,10 +582,8 @@ function TaskFormModal({ open, onClose, members, editTask, onSave }: {
                     />
                     {vaultQ.trim().length >= 2 && (
                       <div className="absolute z-20 top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-xl shadow-lg max-h-40 overflow-y-auto">
-                        {vaultLoading ? (
-                          <div className="px-3 py-2.5 text-xs text-gray-400">Searching…</div>
-                        ) : vaultResults.length === 0 ? (
-                          <div className="px-3 py-2.5 text-xs text-gray-400">No vaults found{vaultDebug ? ` · ${vaultDebug}` : ''}</div>
+                        {vaultResults.length === 0 ? (
+                          <div className="px-3 py-2.5 text-xs text-gray-400">No vaults found</div>
                         ) : (
                           vaultResults.map(v => (
                             <button key={v.id} onClick={() => selectVault(v)}
