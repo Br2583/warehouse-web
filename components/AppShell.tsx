@@ -3,7 +3,9 @@
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 import MobileNav from './MobileNav';
+import Tutorial from './Tutorial';
 import { useAuth } from '@/lib/auth-context';
+import { useTutorial } from '@/lib/use-tutorial';
 
 const AUTH_ROUTES = ['/dashboard', '/warehouses', '/search', '/tasks', '/production', '/stats', '/snapshots', '/chat', '/profile', '/storage', '/onboarding'];
 
@@ -11,6 +13,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const { user, loading } = useAuth();
+  const { show: showTutorial, dismiss: dismissTutorial } = useTutorial(user?.id);
   const isProtected = AUTH_ROUTES.some(r => pathname === r || pathname.startsWith(r + '/'));
   const showNav = isProtected && pathname !== '/onboarding';
 
@@ -29,6 +32,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
 
   return (
     <>
+      {showTutorial && isProtected && !loading && <Tutorial onDismiss={dismissTutorial} />}
       <div style={isProtected ? { paddingTop: 'env(safe-area-inset-top)' } : undefined}>
         {children}
       </div>
