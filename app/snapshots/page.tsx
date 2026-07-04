@@ -33,9 +33,8 @@ export default function SnapshotsPage() {
   const [report, setReport] = useState<{ snap: any; boxes: any[] } | null>(null);
   const [reportLoading, setReportLoading] = useState(false);
   const [emailModal, setEmailModal] = useState(false);
-  const [toEmail, setToEmail] = useState('');
   const [sending, setSending] = useState(false);
-  const [sendResult, setSendResult] = useState<'ok' | 'err' | 'invalid' | null>(null);
+  const [sendResult, setSendResult] = useState<'ok' | 'err' | null>(null);
   const [actionError, setActionError] = useState('');
   const [confirmModal, setConfirmModal] = useState<{ message: string; onConfirm: () => void } | null>(null);
   const printRef = useRef<HTMLDivElement>(null);
@@ -94,12 +93,8 @@ export default function SnapshotsPage() {
 
   const handlePrint = () => window.print();
 
-  const isValidEmail = (email: string) =>
-    /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
-
   const sendEmail = async () => {
-    if (!report || !toEmail) return;
-    if (!isValidEmail(toEmail)) { setSendResult('invalid'); return; }
+    if (!report || !user?.email) return;
     setSending(true);
     setSendResult(null);
     try {
@@ -107,7 +102,7 @@ export default function SnapshotsPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${pb.authStore.token}` },
         body: JSON.stringify({
-          to:            toEmail,
+          to:            user.email,
           warehouseName: report.snap.warehouse_name,
           date:          formatSnapDate(report.snap.date),
           total:         report.boxes.length || report.snap.box_count,
@@ -122,7 +117,6 @@ export default function SnapshotsPage() {
       });
       if (!res.ok) throw new Error();
       setSendResult('ok');
-      setToEmail('');
       setTimeout(() => { setEmailModal(false); setSendResult(null); }, 2000);
     } catch {
       setSendResult('err');
@@ -390,28 +384,22 @@ export default function SnapshotsPage() {
               <p className="text-sm text-gray-500 mb-4">
                 {report.snap.warehouse_name} · {formatSnapDate(report.snap.date)}
               </p>
-              <input
-                type="email"
-                placeholder="recipient@email.com"
-                value={toEmail}
-                onChange={e => { setToEmail(e.target.value); setSendResult(null); }}
-                className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 mb-4"
-              />
+              <div className="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 mb-4">
+                <EnvelopeIcon className="w-4 h-4 text-gray-400 flex-shrink-0" />
+                <span className="text-sm text-gray-700 truncate">{user?.email}</span>
+              </div>
               {sendResult === 'ok' && (
                 <p className="text-sm text-green-600 font-medium mb-3">Email sent successfully!</p>
-              )}
-              {sendResult === 'invalid' && (
-                <p className="text-sm text-red-500 mb-3">Please enter a valid email address.</p>
               )}
               {sendResult === 'err' && (
                 <p className="text-sm text-red-500 mb-3">Failed to send. Please try again.</p>
               )}
               <button
                 onClick={sendEmail}
-                disabled={sending || !toEmail.trim()}
+                disabled={sending}
                 className="w-full py-2.5 bg-green-600 text-white text-sm font-medium rounded-xl hover:bg-green-700 transition-colors disabled:opacity-50"
               >
-                {sending ? 'Sending...' : 'Send'}
+                {sending ? 'Sending...' : 'Send to my email'}
               </button>
             </motion.div>
           </div>
