@@ -400,35 +400,28 @@ function TaskFormModal({ open, onClose, members, editTask, onSave }: {
       .catch(() => {});
   }, [open, editTask]);
 
-  // Vault search — reuses /api/search/global which is proven to work on the search page
+  // Vault search — loads all company vaults (same as warehouse page) and filters client-side
+  const [allVaults, setAllVaults] = useState<VaultResult[]>([]);
   useEffect(() => {
-    if (vaultQ.trim().length < 2) {
-      setVaultResults([]);
-      setVaultDebug('');
-      setVaultLoading(false);
-      return;
-    }
-    setVaultLoading(true);
-    setVaultDebug('');
-    const t = setTimeout(() => {
-      api.get(`/api/search/global?q=${encodeURIComponent(vaultQ.trim())}`)
-        .then((results: any[]) => {
-          const mapped = (Array.isArray(results) ? results : []).map((v: any) => ({
-            id:          v.box_id || v.id,
-            client_name: v.client_name,
-            position:    v.position || '',
-          }));
-          setVaultDebug(`OK:${mapped.length}`);
-          setVaultResults(mapped);
-        })
-        .catch((e: any) => {
-          setVaultDebug(`ERR:${e?.message || e}`);
-          setVaultResults([]);
-        })
-        .finally(() => setVaultLoading(false));
-    }, 300);
-    return () => clearTimeout(t);
-  }, [vaultQ]);
+    if (!open) return;
+    api.get('/api/boxes').then((boxes: any[]) => {
+      setAllVaults((Array.isArray(boxes) ? boxes : []).map((b: any) => ({
+        id:          b.box_id || b.id,
+        client_name: b.client_name || '',
+        position:    b.position || '',
+      })));
+    }).catch(() => {});
+  }, [open]);
+
+  useEffect(() => {
+    const q = vaultQ.trim().toLowerCase();
+    if (q.length < 2) { setVaultResults([]); setVaultDebug(''); return; }
+    const filtered = allVaults.filter(v =>
+      v.client_name.toLowerCase().includes(q) || v.position.toLowerCase().includes(q)
+    );
+    setVaultDebug(`${allVaults.length} vaults loaded, ${filtered.length} match`);
+    setVaultResults(filtered);
+  }, [vaultQ, allVaults]);
 
   const selectVault = (v: VaultResult) => {
     setForm(f => ({ ...f, vault_id: v.id }));
