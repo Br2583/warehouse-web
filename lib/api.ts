@@ -118,7 +118,7 @@ async function buildStats() {
   for (const v of vaults) {
     const s = v.estado || 'PENDING';
     statuses[s] = (statuses[s] || 0) + 1;
-    by_warehouse[whMap[v.warehouse_id] || 'Unknown'] = (by_warehouse[whMap[v.warehouse_id] || 'Unknown'] || 0) + 1;
+    by_warehouse[v.warehouse_id] = (by_warehouse[v.warehouse_id] || 0) + 1;
     job_types[v.job_type || 'Other'] = (job_types[v.job_type || 'Other'] || 0) + 1;
     if (s === 'PENDING' && v.created) {
       const ts = new Date(v.created.includes('T') ? v.created : v.created.replace(' ', 'T') + 'Z').getTime();
