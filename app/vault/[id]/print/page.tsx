@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import { QRCodeSVG } from 'qrcode.react';
 import { api } from '@/lib/api';
 
@@ -19,6 +19,7 @@ const STATUS_COLOR: Record<string, string> = {
 
 export default function VaultPrintPage() {
   const { id } = useParams();
+  const router = useRouter();
   const [vault, setVault] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -31,9 +32,8 @@ export default function VaultPrintPage() {
         setVault(v);
         if (v.warehouse_id) {
           try {
-            const whs = await api.get('/api/warehouses');
-            const wh = (Array.isArray(whs) ? whs : whs?.warehouses || []).find((w: any) => w.id === v.warehouse_id || w.warehouse_id === v.warehouse_id);
-            if (wh) setWarehouseName(wh.name);
+            const wh = await api.get(`/api/warehouses/${v.warehouse_id}`);
+            if (wh?.name) setWarehouseName(wh.name);
           } catch {}
         }
       })
@@ -51,14 +51,18 @@ export default function VaultPrintPage() {
     <div className="min-h-screen flex items-center justify-center text-gray-500">{error || 'Not found'}</div>
   );
 
-  const qrUrl = `https://managerwarehouse.cc/vault/${id}`;
+  const qrUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'https://managerwarehouse.cc'}/vault/${id}`;
 
   const status = vault.estado || vault.status || 'PENDING';
   const pos = vault.position || `${vault.row}${vault.column}-L${vault.level}`;
-  const level = vault.level === 1 ? 'Lower' : 'Upper';
+  const levelNum = Number(vault.level);
+  const level = levelNum === 1 ? 'Lower' : levelNum === 2 ? 'Upper' : `Level ${levelNum}`;
+
+  const title = `Vault ${pos} — ${vault.client_name || 'No Client'}`;
 
   return (
     <>
+      <title>{title}</title>
       <style>{`
         @media print {
           @page { size: 4in 6in; margin: 0.2in; }
@@ -77,7 +81,7 @@ export default function VaultPrintPage() {
           Print / Save PDF
         </button>
         <button
-          onClick={() => window.close()}
+          onClick={() => { if (window.history.length > 1) window.close(); else router.push('/dashboard'); }}
           className="px-4 py-2 bg-gray-100 text-gray-700 text-sm font-medium rounded-xl hover:bg-gray-200 transition-colors"
         >
           Close

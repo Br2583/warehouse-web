@@ -13,5 +13,5 @@ export const STATUS_CELL: Record<string, string> = {
 export const STATUS_COLORS_HEX: Record<string, string> = {
   PENDING:   '#f59e0b',
   READY:     '#22c55e',
-  DELIVERED: '#6366f1',
+  DELIVERED: '#3b82f6',
 };

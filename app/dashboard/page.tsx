@@ -32,6 +32,7 @@ export default function DashboardPage() {
   const { user } = useAuth();
   const [stats, setStats] = useState<any>(null);
   const [workStats, setWorkStats] = useState({ total: 0, pending: 0, in_progress: 0, completed: 0 });
+  const [warehouseNames, setWarehouseNames] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
   useEffect(() => {
     if (!user?.company_id) return;
@@ -53,6 +54,15 @@ export default function DashboardPage() {
           });
         }
       } catch { /* no work orders yet */ }
+
+      try {
+        const whs = await api.get('/api/warehouses');
+        if (Array.isArray(whs)) {
+          const map: Record<string, string> = {};
+          whs.forEach((w: any) => { map[w.id] = w.name || w.warehouse_name || w.id; });
+          setWarehouseNames(map);
+        }
+      } catch { /* warehouse names unavailable */ }
 
       setLoading(false);
     };
@@ -178,10 +188,10 @@ export default function DashboardPage() {
               <div className="mt-5 pt-5 border-t border-gray-50">
                 <p className="text-xs font-medium text-gray-400 uppercase tracking-wide mb-3">By Warehouse</p>
                 <div className="flex gap-4">
-                  {Object.entries(stats.by_warehouse).map(([id, count]: any) => (
-                    <div key={id} className="flex-1 bg-gray-50 rounded-xl p-3 text-center">
+                  {Object.entries(stats.by_warehouse).map(([whId, count]: any) => (
+                    <div key={whId} className="flex-1 bg-gray-50 rounded-xl p-3 text-center">
                       <p className="text-xl font-bold text-gray-900">{count}</p>
-                      <p className="text-xs text-gray-400 mt-0.5">Warehouse {id}</p>
+                      <p className="text-xs text-gray-400 mt-0.5 truncate">{warehouseNames[whId] || 'Warehouse'}</p>
                     </div>
                   ))}
                 </div>

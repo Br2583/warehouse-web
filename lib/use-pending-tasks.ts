@@ -15,7 +15,7 @@ export function usePendingTasks(): number {
       });
       if (!res.ok) return;
       const tasks: { status: string }[] = await res.json();
-      setCount(tasks.filter(t => t.status !== 'DONE').length);
+      setCount(tasks.filter(t => t.status === 'PENDING').length);
     } catch {
       // silent
     }

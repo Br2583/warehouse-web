@@ -33,7 +33,13 @@ function Spinner() {
 export default function OnboardingPage() {
   const router = useRouter();
   const { user, loading, refreshUser } = useAuth();
-  const [step, setStep] = useState(1);
+  const [step, setStep] = useState<number>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('onboarding_step');
+      return saved ? parseInt(saved, 10) : 1;
+    }
+    return 1;
+  });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
 
@@ -67,16 +73,50 @@ export default function OnboardingPage() {
   const [industry, setIndustry] = useState('');
   const [description, setDescription] = useState('');
   const [showIndustryDropdown, setShowIndustryDropdown] = useState(false);
+  const industryRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (user?.company_name) setCompanyName(prev => prev || user.company_name || '');
   }, [user?.company_name]);
 
+  // M-26: persist step to localStorage
+  useEffect(() => {
+    localStorage.setItem('onboarding_step', String(step));
+  }, [step]);
+
+  // M-25: close industry dropdown on outside click
+  useEffect(() => {
+    if (!showIndustryDropdown) return;
+    const handler = (e: MouseEvent) => {
+      if (industryRef.current && !industryRef.current.contains(e.target as Node)) {
+        setShowIndustryDropdown(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [showIndustryDropdown]);
+
   if (loading) return <Spinner />;
   if (!user) { router.replace('/login'); return <Spinner />; }
+  // M-27: guard for already-completed users
+  if (user.profile_complete) { router.replace('/dashboard'); return <Spinner />; }
 
   const isOwner = user?.role === 'owner';
   const totalSteps = isOwner ? 2 : 1;
+
+  const normalizePbError = (e: any): string => {
+    if (e?.data?.data) {
+      const fields = Object.values(e.data.data as Record<string, { message?: string }>)
+        .map((v: any) => v?.message)
+        .filter(Boolean)
+        .join('. ');
+      if (fields) return fields;
+    }
+    if (e?.status === 400) return 'Please check your input and try again.';
+    if (e?.status === 403) return 'You do not have permission to do this.';
+    if (e?.status === 404) return 'Record not found.';
+    return 'Something went wrong. Please try again.';
+  };
 
   const saveProfile = async () => {
     if (!displayName.trim()) { setError('Please enter your name'); return; }
@@ -94,11 +134,12 @@ export default function OnboardingPage() {
       if (isOwner) {
         setStep(2);
       } else {
+        localStorage.removeItem('onboarding_step');
         await refreshUser();
         router.replace('/dashboard');
       }
     } catch (e: any) {
-      setError(e?.message || 'Failed to save profile');
+      setError(normalizePbError(e));
     } finally {
       setSaving(false);
     }
@@ -115,10 +156,11 @@ export default function OnboardingPage() {
         description: description.trim(),
       });
       await pb.collection('users').update(user.id, { profile_complete: true });
+      localStorage.removeItem('onboarding_step');
       await refreshUser();
       router.replace('/dashboard');
     } catch (e: any) {
-      setError(e?.message || 'Failed to save company info');
+      setError(normalizePbError(e));
     } finally {
       setSaving(false);
     }
@@ -236,8 +278,9 @@ export default function OnboardingPage() {
 
               <div className="space-y-4">
                 <div className="group">
-                  <label className="block text-[12px] font-semibold text-slate-500 mb-1.5 group-focus-within:text-blue-600 transition-colors">Full name *</label>
+                  <label htmlFor="ob-name" className="block text-[12px] font-semibold text-slate-500 mb-1.5 group-focus-within:text-blue-600 transition-colors">Full name *</label>
                   <input
+                    id="ob-name"
                     type="text"
                     value={displayName}
                     onChange={e => setDisplayName(e.target.value)}
@@ -250,10 +293,11 @@ export default function OnboardingPage() {
                 </div>
 
                 <div className="group">
-                  <label className="block text-[12px] font-semibold text-slate-500 mb-1.5 group-focus-within:text-blue-600 transition-colors">Job title</label>
+                  <label htmlFor="ob-title" className="block text-[12px] font-semibold text-slate-500 mb-1.5 group-focus-within:text-blue-600 transition-colors">Job title</label>
                   <div className="relative">
                     <BriefcaseIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-300 pointer-events-none" />
                     <input
+                      id="ob-title"
                       type="text"
                       value={jobTitle}
                       onChange={e => setJobTitle(e.target.value)}
@@ -302,8 +346,9 @@ export default function OnboardingPage() {
 
               <div className="space-y-4">
                 <div className="group">
-                  <label className="block text-[12px] font-semibold text-slate-500 mb-1.5 group-focus-within:text-blue-600 transition-colors">Company name *</label>
+                  <label htmlFor="ob-company" className="block text-[12px] font-semibold text-slate-500 mb-1.5 group-focus-within:text-blue-600 transition-colors">Company name *</label>
                   <input
+                    id="ob-company"
                     type="text"
                     value={companyName}
                     onChange={e => setCompanyName(e.target.value)}
@@ -317,7 +362,7 @@ export default function OnboardingPage() {
 
                 <div>
                   <label className="block text-[12px] font-semibold text-slate-500 mb-1.5">Industry</label>
-                  <div className="relative">
+                  <div className="relative" ref={industryRef}>
                     <button
                       type="button"
                       onClick={() => setShowIndustryDropdown(s => !s)}
@@ -372,7 +417,7 @@ export default function OnboardingPage() {
 
               <div className="mt-6 flex gap-3">
                 <button
-                  onClick={() => setStep(1)}
+                  onClick={() => { setStep(1); setError(''); }}
                   className="flex items-center gap-1.5 px-4 py-3 text-slate-400 hover:text-slate-600 text-sm transition-colors"
                 >
                   <ArrowLeftIcon className="w-4 h-4" /> Back

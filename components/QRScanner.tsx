@@ -19,6 +19,7 @@ export default function QRScanner({ onClose, onResult, inline = false }: QRScann
   const [found, setFound] = useState(false);
 
   useEffect(() => {
+    doneRef.current = false;
     let jsQRLib: ((data: Uint8ClampedArray, width: number, height: number) => { data: string } | null) | null = null;
 
     const start = async () => {
@@ -115,6 +116,16 @@ export default function QRScanner({ onClose, onResult, inline = false }: QRScann
               </svg>
             </div>
             <p className="font-bold text-lg">Vault found!</p>
+          </div>
+        </div>
+      )}
+
+      {/* Camera error overlay — visible in both inline and modal modes */}
+      {error && (
+        <div className="absolute inset-0 flex items-center justify-center bg-black/80 p-4">
+          <div className="text-center text-white">
+            <XMarkIcon className="w-10 h-10 text-red-400 mx-auto mb-2" />
+            <p className="text-sm font-semibold text-red-300">{error}</p>
           </div>
         </div>
       )}

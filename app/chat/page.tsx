@@ -13,7 +13,7 @@ import { markChatSeen } from '@/lib/unread-chat';
 interface Message {
   id: string;
   sender_name: string;
-  sender_email: string;
+  sender_id: string;
   sender_photo?: string;
   text: string;
   timestamp: string;
@@ -37,6 +37,7 @@ export default function ChatPage() {
   const [loading, setLoading] = useState(true);
   const [sendError, setSendError] = useState('');
   const [sending, setSending] = useState(false);
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const lastCountRef = useRef(-1);
   const containerRef = useRef<HTMLDivElement>(null);
   const isAtBottomRef = useRef(true);
@@ -70,7 +71,7 @@ export default function ChatPage() {
         if (!Array.isArray(msgs)) throw new Error((msgs as any)?.error || 'Failed to load messages');
         if (lastCountRef.current >= 0 && msgs.length > lastCountRef.current) {
           const newest = msgs[msgs.length - 1];
-          if (newest && newest.sender_email !== user?.email) {
+          if (newest && newest.sender_id !== user?.id) {
             notify(`${newest.sender_name}`, newest.text);
           }
         }
@@ -87,7 +88,7 @@ export default function ChatPage() {
   useEffect(() => {
     requestNotificationPermission();
     fetchMessages();
-    const interval = setInterval(fetchMessages, 30000);
+    const interval = setInterval(fetchMessages, 5000);
     return () => clearInterval(interval);
   }, [fetchMessages]);
 
@@ -166,8 +167,8 @@ export default function ChatPage() {
             <div className="text-center py-16 text-gray-400 text-sm">No messages yet. Start the conversation!</div>
           ) : (
             messages.map((msg, i) => {
-              const isMe = msg.sender_email === user?.id || msg.sender_email === user?.email;
-              const senderPicture = members.find(m => m.user_id === msg.sender_email)?.picture;
+              const isMe = msg.sender_id === user?.id;
+              const senderPicture = members.find(m => m.user_id === msg.sender_id)?.picture;
               return (
                 <motion.div
                   key={msg.id}
@@ -185,9 +186,16 @@ export default function ChatPage() {
                     <span className="text-xs text-gray-300 mt-1">{formatTime(msg.timestamp)}</span>
                   </div>
                   {isMe && (
-                    <button onClick={() => deleteMsg(msg.id)} className="opacity-0 group-hover:opacity-100 text-gray-300 hover:text-red-400 transition-all mt-2 flex-shrink-0">
-                      <TrashIcon className="w-3.5 h-3.5" />
-                    </button>
+                    confirmDeleteId === msg.id ? (
+                      <div className="flex flex-col gap-1 mt-2 flex-shrink-0">
+                        <button onClick={() => { deleteMsg(msg.id); setConfirmDeleteId(null); }} className="text-[10px] text-red-500 hover:text-red-700 font-semibold leading-tight">Delete</button>
+                        <button onClick={() => setConfirmDeleteId(null)} className="text-[10px] text-gray-400 hover:text-gray-600 leading-tight">Cancel</button>
+                      </div>
+                    ) : (
+                      <button onClick={() => setConfirmDeleteId(msg.id)} className="text-gray-300 hover:text-red-400 transition-colors mt-2 flex-shrink-0">
+                        <TrashIcon className="w-3.5 h-3.5" />
+                      </button>
+                    )
                   )}
                 </motion.div>
               );
@@ -208,6 +216,7 @@ export default function ChatPage() {
               type="text"
               placeholder="Type a message..."
               value={text}
+              maxLength={2000}
               disabled={sending}
               onChange={e => { setText(e.target.value); if (sendError) setSendError(''); }}
               className="flex-1 px-4 py-2.5 bg-gray-50 border border-gray-100 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-60"

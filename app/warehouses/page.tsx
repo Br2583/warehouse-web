@@ -4,12 +4,14 @@ import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import {
   BuildingOffice2Icon, ArchiveBoxIcon, PlusIcon, ChevronRightIcon, ArrowPathIcon, TrashIcon,
+  ExclamationCircleIcon,
 } from '@heroicons/react/24/outline';
 import Sidebar from '@/components/Sidebar';
 import { pb } from '@/lib/pb';
 import { useAuth } from '@/lib/auth-context';
 import Link from 'next/link';
 import ConfirmModal from '@/components/ConfirmModal';
+import { useToast } from '@/lib/toast-context';
 
 interface Warehouse {
   id: string;
@@ -30,9 +32,12 @@ export default function WarehousesPage() {
   const [showCreate, setShowCreate] = useState(false);
   const [createError, setCreateError] = useState('');
   const [confirmModal, setConfirmModal] = useState<{ message: string; onConfirm: () => void } | null>(null);
+  const { showToast } = useToast();
+  const [loadError, setLoadError] = useState<string | null>(null);
   const fetchWarehouses = async () => {
     const cid = user?.company_id;
     if (!cid) { setLoading(false); return; }
+    setLoadError(null);
     try {
       const [whs, vaults] = await Promise.all([
         pb.collection('warehouses').getFullList({ filter: `company_id="${cid}"` }),
@@ -47,7 +52,7 @@ export default function WarehousesPage() {
         color:      w['color'] as string | undefined,
         vault_count: counts[w.id] || 0,
       })));
-    } catch {}
+    } catch { setLoadError('Failed to load warehouses. Try again.'); }
     finally { setLoading(false); }
   };
 
@@ -70,6 +75,7 @@ export default function WarehousesPage() {
       setNewCols(8);
       setShowCreate(false);
       await fetchWarehouses();
+      showToast('Warehouse created');
     } catch (err: any) {
       setCreateError(err?.message || 'Failed to create warehouse. Please try again.');
     } finally { setCreating(false); }
@@ -84,6 +90,7 @@ export default function WarehousesPage() {
           await Promise.all(vaults.map((v: any) => pb.collection('vaults').delete(v.id)));
           await pb.collection('warehouses').delete(id);
           await fetchWarehouses();
+          showToast('Warehouse deleted');
         } catch {}
       },
     });
@@ -145,6 +152,14 @@ export default function WarehousesPage() {
         )}
         {createError && (
           <p className="text-red-500 text-sm mb-4 px-1">{createError}</p>
+        )}
+
+        {loadError && (
+          <div className="flex items-center gap-3 bg-red-50 border border-red-100 text-red-700 text-sm px-4 py-3 rounded-xl mb-4">
+            <ExclamationCircleIcon className="w-4 h-4 flex-shrink-0" />
+            <span className="flex-1">{loadError}</span>
+            <button onClick={() => fetchWarehouses()} className="text-xs font-medium text-red-600 hover:text-red-800 underline">Retry</button>
+          </div>
         )}
 
         {loading ? (

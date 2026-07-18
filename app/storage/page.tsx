@@ -26,6 +26,7 @@ export default function StoragePage() {
 
   const [units, setUnits] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [showCreate, setShowCreate] = useState(false);
   const [saving, setSaving] = useState(false);
   const [createError, setCreateError] = useState('');
@@ -41,10 +42,11 @@ export default function StoragePage() {
   };
 
   const fetchUnits = async () => {
+    setLoadError(null);
     try {
       const data = await api.get('/api/storage');
       setUnits(Array.isArray(data) ? data : []);
-    } catch { setUnits([]); }
+    } catch { setLoadError('Failed to load storage units. Try again.'); }
     finally { setLoading(false); }
   };
 
@@ -74,12 +76,14 @@ export default function StoragePage() {
             <h1 className="text-2xl font-bold text-gray-900">Storage Units</h1>
             <p className="text-gray-500 text-sm mt-1">External storage locations</p>
           </div>
-          <button
-            onClick={() => { setShowCreate(s => !s); setCreateError(''); }}
-            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-xl hover:bg-blue-700 transition-colors"
-          >
-            <PlusIcon className="w-4 h-4" /> New Storage Unit
-          </button>
+          {isOwner && (
+            <button
+              onClick={() => { setShowCreate(s => !s); setCreateError(''); }}
+              className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-xl hover:bg-blue-700 transition-colors"
+            >
+              <PlusIcon className="w-4 h-4" /> New Storage Unit
+            </button>
+          )}
         </div>
 
         {/* Inline create form */}
@@ -149,7 +153,7 @@ export default function StoragePage() {
                         <CameraIcon className="w-4 h-4 text-gray-400" />
                         <span className="text-[10px] text-gray-400 mt-0.5">Add</span>
                         <input type="file" accept="image/*" multiple className="hidden"
-                          onChange={e => handleCreatePhotos(e.target.files)} />
+                          onChange={e => { handleCreatePhotos(e.target.files); e.target.value = ''; }} />
                       </label>
                     )}
                   </div>
@@ -173,6 +177,14 @@ export default function StoragePage() {
           )}
         </AnimatePresence>
 
+        {loadError && (
+          <div className="flex items-center gap-3 bg-red-50 border border-red-100 text-red-700 text-sm px-4 py-3 rounded-xl mb-4">
+            <ExclamationCircleIcon className="w-4 h-4 flex-shrink-0" />
+            <span className="flex-1">{loadError}</span>
+            <button onClick={() => fetchUnits()} className="text-xs font-medium text-red-600 hover:text-red-800 underline">Retry</button>
+          </div>
+        )}
+
         {loading ? (
           <div className="flex justify-center py-16">
             <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
@@ -186,7 +198,7 @@ export default function StoragePage() {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
             {units.map((unit, i) => {
-              const sc = STATUS_CONFIG[unit.status] || STATUS_CONFIG.AVAILABLE;
+              const sc = STATUS_CONFIG[unit.status] || { color: 'bg-gray-100 text-gray-500', label: 'Unknown' };
               const hasPhoto = unit.photos?.length > 0;
               return (
                 <motion.div

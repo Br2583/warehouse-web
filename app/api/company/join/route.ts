@@ -8,10 +8,11 @@ export async function POST(req: NextRequest) {
 
   const body = await req.json().catch(() => ({}));
   const { inviteCode } = body as { inviteCode?: string };
-  if (!inviteCode || inviteCode.trim().length < 4) {
+  if (!inviteCode || inviteCode.trim().length < 8) {
     return NextResponse.json({ error: 'Invalid invite code' }, { status: 400 });
   }
   const code = inviteCode.trim().toUpperCase();
+  const safeCode = code.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
 
   let adminToken: string;
   try { adminToken = await getPbAdminToken(); }
@@ -29,7 +30,7 @@ export async function POST(req: NextRequest) {
 
   // Find company by invite code — using admin token so PB rules don't block the lookup
   const searchRes = await fetch(
-    `${PB_URL}/api/collections/companies/records?filter=(invite_code%3D%22${encodeURIComponent(code)}%22)&perPage=1`,
+    `${PB_URL}/api/collections/companies/records?filter=(invite_code%3D%22${encodeURIComponent(safeCode)}%22)&perPage=1`,
     { headers: { Authorization: `Bearer ${adminToken}` } },
   );
   if (!searchRes.ok) return NextResponse.json({ error: 'Lookup failed' }, { status: 500 });
@@ -38,6 +39,25 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Invitation code not found or expired' }, { status: 404 });
   }
   const company = items[0];
+
+  // A-10: Block if company is not active
+  if (!company.approved || company.suspended || company.rejected) {
+    return NextResponse.json({ error: 'This company is not currently accepting new members' }, { status: 403 });
+  }
+
+  // A-11: Enforce member limit
+  if (company.max_members) {
+    const countRes = await fetch(
+      `${PB_URL}/api/collections/users/records?filter=(company_id%3D%22${company.id}%22)&perPage=1&fields=id`,
+      { headers: { Authorization: `Bearer ${adminToken}` } },
+    );
+    if (countRes.ok) {
+      const countData = await countRes.json();
+      if ((countData.totalItems ?? 0) >= company.max_members) {
+        return NextResponse.json({ error: 'This company has reached its member limit' }, { status: 403 });
+      }
+    }
+  }
 
   // Update user to join the company
   const updateRes = await fetch(`${PB_URL}/api/collections/users/records/${me.id}`, {

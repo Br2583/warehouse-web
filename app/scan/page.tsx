@@ -19,7 +19,7 @@ export default function ScanPage() {
     setState('searching');
     try {
       const records = await pb.collection('vaults').getFullList({
-        filter: `box_id="${boxId}" && company_id="${user?.company_id}"`,
+        filter: `id="${boxId}" && company_id="${user?.company_id}"`,
         fields: 'id,box_id,warehouse_id',
       });
       if (records.length === 0) {
@@ -47,7 +47,7 @@ export default function ScanPage() {
           <p className="text-white/50 text-xs mt-0.5">Point camera at a vault label</p>
         </div>
         <button
-          onClick={() => router.back()}
+          onClick={() => { if (window.history.length > 1) router.back(); else router.push('/dashboard'); }}
           className="w-9 h-9 rounded-xl bg-white/10 flex items-center justify-center active:scale-95 transition-transform"
         >
           <XMarkIcon className="w-5 h-5 text-white" />

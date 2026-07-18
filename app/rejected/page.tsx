@@ -1,30 +1,11 @@
 'use client';
 
-import { useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { ShieldExclamationIcon, ArrowRightOnRectangleIcon, EnvelopeIcon } from '@heroicons/react/24/outline';
+import { XCircleIcon, ArrowRightOnRectangleIcon, EnvelopeIcon } from '@heroicons/react/24/outline';
 import { useAuth } from '@/lib/auth-context';
-import { api } from '@/lib/api';
-import { useRouter } from 'next/navigation';
 
-export default function SuspendedPage() {
-  const { logout, user } = useAuth();
-  const router = useRouter();
-
-  useEffect(() => {
-    if (!user?.company_id) return;
-    const check = async () => {
-      try {
-        const company = await api.get(`/api/companies/${user.company_id}`);
-        if (!company.suspended && company.approved && !company.rejected) {
-          router.replace('/dashboard');
-        }
-      } catch { /* ignore */ }
-    };
-    check();
-    const interval = setInterval(check, 15000);
-    return () => clearInterval(interval);
-  }, [user?.company_id]);
+export default function RejectedPage() {
+  const { logout } = useAuth();
 
   return (
     <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
@@ -44,17 +25,17 @@ export default function SuspendedPage() {
 
         {/* Icon */}
         <div className="w-16 h-16 bg-red-50 rounded-2xl flex items-center justify-center mx-auto mb-5">
-          <ShieldExclamationIcon className="w-8 h-8 text-red-500" />
+          <XCircleIcon className="w-8 h-8 text-red-500" />
         </div>
 
-        <h1 className="text-2xl font-extrabold text-gray-900 tracking-tight mb-2">Account suspended</h1>
+        <h1 className="text-2xl font-extrabold text-gray-900 tracking-tight mb-2">Application not approved</h1>
         <p className="text-sm text-slate-500 leading-relaxed mb-6">
-          Access to your company has been temporarily suspended. Contact the administrator for more information.
+          Your company application was not approved. Please contact support if you believe this is a mistake.
         </p>
 
         <div className="space-y-3">
           <a
-            href={`mailto:${process.env.NEXT_PUBLIC_SUPPORT_EMAIL || 'support@managerwarehouse.cc'}`}
+            href="mailto:noreplywarehousemanager@gmail.com"
             className="w-full flex items-center justify-center gap-2 py-3.5 rounded-[10px] bg-red-600 text-white font-bold text-sm hover:bg-red-700 active:scale-[0.98] transition-all shadow-[0_2px_12px_rgba(239,68,68,.3)]"
           >
             <EnvelopeIcon className="w-4 h-4" />

@@ -5,7 +5,7 @@ import { motion, AnimatePresence, useMotionValue, useTransform, animate } from '
 import {
   MagnifyingGlassIcon, XMarkIcon, BuildingOffice2Icon, ChevronRightIcon,
   ArchiveBoxIcon, ClockIcon, CheckCircleIcon, TruckIcon,
-  ArrowTrendingUpIcon, UserGroupIcon,
+  ArrowTrendingUpIcon, UserGroupIcon, ExclamationCircleIcon,
 } from '@heroicons/react/24/outline';
 import Sidebar from '@/components/Sidebar';
 import { api } from '@/lib/api';
@@ -93,6 +93,7 @@ export default function StatsPage() {
   const [boxes, setBoxes]     = useState<any[]>([]);
   const [whNames, setWhNames] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [period, setPeriod]   = useState<Period>('all');
   const [search, setSearch]   = useState('');
   const [sortBy, setSortBy]   = useState<'count' | 'name'>('count');
@@ -118,6 +119,9 @@ export default function StatsPage() {
           const map: Record<string, string> = {};
           arr.forEach((w: any) => { map[w.warehouse_id || w.id] = w.name; });
           setWhNames(map);
+        }
+        if ([gs, ab, whs].every(r => r.status === 'rejected')) {
+          setLoadError('Failed to load stats. Try again.');
         }
       } finally { setLoading(false); }
     };
@@ -223,6 +227,14 @@ export default function StatsPage() {
           </div>
         </motion.div>
 
+        {loadError && (
+          <div className="flex items-center gap-3 bg-red-50 border border-red-100 text-red-700 text-sm px-4 py-3 rounded-xl mb-4">
+            <ExclamationCircleIcon className="w-4 h-4 flex-shrink-0" />
+            <span className="flex-1">{loadError}</span>
+            <button onClick={() => { setLoadError(null); window.location.reload(); }} className="text-xs font-medium text-red-600 hover:text-red-800 underline">Retry</button>
+          </div>
+        )}
+
         <div className="space-y-6">
 
           {/* ── KPI cards with mini sparklines ── */}
@@ -285,7 +297,7 @@ export default function StatsPage() {
             >
               <div className="flex items-center justify-between mb-1">
                 <h2 className="font-bold text-gray-900">Vault Activity</h2>
-                <span className="text-xs text-gray-400 bg-gray-50 px-3 py-1 rounded-xl">Last 8 weeks</span>
+                <span className="text-xs text-gray-400 bg-gray-50 px-3 py-1 rounded-xl">{PERIOD_LABELS[period]}</span>
               </div>
               <p className="text-xs text-gray-400 mb-5">New vaults added per week</p>
               {trendData.length > 1 ? (
@@ -509,7 +521,7 @@ export default function StatsPage() {
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5">
               <div>
                 <h2 className="font-bold text-gray-900">All Clients</h2>
-                <p className="text-xs text-gray-400 mt-0.5">{clientList.length} clients · {boxes.length} vaults</p>
+                <p className="text-xs text-gray-400 mt-0.5">{clientList.length} clients · {filteredBoxes.length} vaults</p>
               </div>
               <div className="flex items-center gap-2 flex-wrap">
                 <div className="flex bg-gray-100 rounded-xl overflow-hidden text-xs">

@@ -18,8 +18,7 @@ import {
   ChatBubbleLeftRightIcon as ChatSolid, UserCircleIcon as UserSolid,
   LifebuoyIcon as LifebuoySolid,
 } from '@heroicons/react/24/solid';
-import { useUnreadChat } from '@/lib/use-unread-chat';
-import { usePendingTasks } from '@/lib/use-pending-tasks';
+import { useNavData } from '@/lib/nav-data-context';
 
 const NAV_ITEMS = [
   { href: '/dashboard',  label: 'Dashboard',   icon: HomeIcon,                  iconActive: HomeSolid },
@@ -38,8 +37,7 @@ export default function MobileNav() {
   const [open, setOpen] = useState(false);
   const pathname = usePathname();
   const { user, logout } = useAuth();
-  const unreadChat   = useUnreadChat();
-  const pendingTasks = usePendingTasks();
+  const { unreadChat, pendingTasks } = useNavData();
 
   return (
     <>

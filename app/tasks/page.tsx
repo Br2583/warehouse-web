@@ -12,6 +12,7 @@ import Sidebar from '@/components/Sidebar';
 import { UserAvatar } from '@/components/UserAvatar';
 import { api } from '@/lib/api';
 import { useAuth } from '@/lib/auth-context';
+import { useToast } from '@/lib/toast-context';
 import { pb } from '@/lib/pb';
 
 type TaskStatus   = 'PENDING' | 'IN_PROGRESS' | 'DONE';
@@ -154,12 +155,16 @@ function TaskCard({ task, members, isOwner, onStatus, onDelete, onEdit }: {
         </div>
       )}
 
-      {task.due_date && (
-        <div className="flex items-center gap-1 text-xs text-gray-400 mb-2">
-          <CalendarIcon className="w-3 h-3 flex-shrink-0" />
-          {formatDate(task.due_date)}
-        </div>
-      )}
+      {task.due_date && (() => {
+        const overdue = task.status !== 'DONE' && new Date(task.due_date) < new Date();
+        return (
+          <div className={`flex items-center gap-1 text-xs mb-2 ${overdue ? 'text-red-500 font-medium' : 'text-gray-400'}`}>
+            <CalendarIcon className="w-3 h-3 flex-shrink-0" />
+            {formatDate(task.due_date)}
+            {overdue && <span className="ml-0.5">· Overdue</span>}
+          </div>
+        );
+      })()}
 
       {/* Free task description */}
       {task.type === 'Free' && task.notes && (
@@ -172,7 +177,7 @@ function TaskCard({ task, members, isOwner, onStatus, onDelete, onEdit }: {
       {(task.vault_id || task.storage_id) && (
         <div className="flex flex-wrap gap-2 mb-2">
           {task.vault_id && (
-            <Link href="/warehouses" title={`Vault: ${task.vault_id}`}
+            <Link href={`/vault/${task.vault_id}`} title={`Vault: ${task.vault_id}`}
               className="text-[10px] text-blue-500 hover:text-blue-700 hover:underline">
               → View Vault
             </Link>
@@ -270,7 +275,7 @@ function TaskRow({ task, members, isOwner, onStatus, onDelete, onEdit }: {
             </span>
           )}
           {task.vault_id && (
-            <Link href="/warehouses" title={`Vault: ${task.vault_id}`}
+            <Link href={`/vault/${task.vault_id}`} title={`Vault: ${task.vault_id}`}
               className="text-xs text-blue-500 hover:underline">
               → Vault
             </Link>
@@ -482,7 +487,7 @@ function TaskFormModal({ open, onClose, members, editTask, onSave }: {
                   autoFocus
                   value={form.title}
                   onChange={e => setForm(f => ({ ...f, title: e.target.value }))}
-                  onKeyDown={e => e.key === 'Enter' && submit()}
+                  onKeyDown={e => { if (e.key === 'Enter') e.preventDefault(); }}
                   placeholder="Task description"
                   className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
@@ -666,6 +671,7 @@ function TaskFormModal({ open, onClose, members, editTask, onSave }: {
 export default function TasksPage() {
   const { user } = useAuth();
   const isOwner = user?.role === 'owner';
+  const { showToast } = useToast();
 
   const [tasks,    setTasks]    = useState<Task[]>([]);
   const [members,  setMembers]  = useState<Member[]>([]);
@@ -707,8 +713,10 @@ export default function TasksPage() {
   const handleSave = async (form: typeof emptyForm, editId?: string) => {
     if (editId) {
       await api.put(`/api/tasks/${editId}`, form);
+      showToast('Task updated');
     } else {
       await api.post('/api/tasks', form);
+      showToast('Task created');
     }
     await loadTasks();
   };
@@ -719,6 +727,7 @@ export default function TasksPage() {
     try {
       await api.delete(`/api/tasks/${deleteId}`);
       setTasks(prev => prev.filter(t => t.id !== deleteId));
+      showToast('Task deleted');
     } catch {
       setError('Failed to delete task');
     } finally {

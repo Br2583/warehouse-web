@@ -42,8 +42,17 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     if (task.assigned_to !== me.id) {
       return NextResponse.json({ error: 'Can only update your own tasks' }, { status: 403 });
     }
+    const VALID_STATUSES = ['PENDING', 'IN_PROGRESS', 'DONE'];
+    if (!body.status) return NextResponse.json({ error: 'status required' }, { status: 400 });
+    if (!VALID_STATUSES.includes(body.status)) return NextResponse.json({ error: 'Invalid status' }, { status: 400 });
     updateData = { status: body.status };
   } else {
+    const VALID_STATUSES  = ['PENDING', 'IN_PROGRESS', 'DONE'];
+    const VALID_TYPES     = ['Free', 'Cleaning', 'Restoration', 'Delivery'];
+    const VALID_PRIORITIES = ['low', 'normal', 'high', 'urgent'];
+    if (body.status   && !VALID_STATUSES.includes(body.status))      return NextResponse.json({ error: 'Invalid status' },   { status: 400 });
+    if (body.type     && !VALID_TYPES.includes(body.type))           return NextResponse.json({ error: 'Invalid type' },     { status: 400 });
+    if (body.priority && !VALID_PRIORITIES.includes(body.priority))  return NextResponse.json({ error: 'Invalid priority' }, { status: 400 });
     updateData = {
       title:       body.title,
       type:        body.type,

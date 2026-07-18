@@ -11,18 +11,15 @@ export function useUnreadChat(): number {
     const token = getToken();
     if (!token) return;
     try {
-      const res = await fetch('/api/chat/messages', {
+      const res = await fetch('/api/chat/messages?perPage=1&sort=-sent_at', {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (!res.ok) return;
       const msgs: { timestamp: string }[] = await res.json();
-      const lastSeen = getChatLastSeen();
-      const unread = msgs.filter(m => {
-        const iso = m.timestamp.includes('T') ? m.timestamp : m.timestamp.replace(' ', 'T');
-        const ts = new Date(iso.endsWith('Z') || iso.includes('+') ? iso : iso + 'Z').getTime();
-        return ts > lastSeen;
-      }).length;
-      setCount(unread);
+      if (!msgs.length) { setCount(0); return; }
+      const iso = msgs[0].timestamp.includes('T') ? msgs[0].timestamp : msgs[0].timestamp.replace(' ', 'T');
+      const ts = new Date(iso.endsWith('Z') || iso.includes('+') ? iso : iso + 'Z').getTime();
+      setCount(ts > getChatLastSeen() ? 1 : 0);
     } catch {
       // silent
     }

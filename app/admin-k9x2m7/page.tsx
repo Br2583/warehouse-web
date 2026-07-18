@@ -1,9 +1,10 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import {
   PaperAirplaneIcon, PauseIcon, PlayIcon, TrashIcon, UsersIcon, ClockIcon,
-  ArrowRightOnRectangleIcon, ArrowPathIcon, XMarkIcon, LockClosedIcon,
+  ArrowRightOnRectangleIcon, ArrowPathIcon, XMarkIcon,
 } from '@heroicons/react/24/outline';
 
 interface CompanyRecord {
@@ -21,11 +22,7 @@ interface CompanyRecord {
 type Tab = 'pending' | 'active' | 'suspended' | 'rejected';
 
 export default function AdminPage() {
-  const [authed, setAuthed] = useState(false);
-  const [password, setPassword] = useState('');
-  const [loginError, setLoginError] = useState('');
-  const [loginLoading, setLoginLoading] = useState(false);
-
+  const router = useRouter();
   const [companies, setCompanies] = useState<CompanyRecord[]>([]);
   const [tab, setTab] = useState<Tab>('pending');
   const [fetching, setFetching] = useState(false);
@@ -33,31 +30,11 @@ export default function AdminPage() {
   const [confirmDelete, setConfirmDelete] = useState<CompanyRecord | null>(null);
   const [error, setError] = useState('');
   const [successId, setSuccessId] = useState<string | null>(null);
-
-  const login = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoginLoading(true);
-    setLoginError('');
-    try {
-      const res = await fetch('/api/admin/auth', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ password }),
-      });
-      if (!res.ok) { setLoginError('Incorrect password.'); return; }
-      setAuthed(true);
-    } catch {
-      setLoginError('Network error.');
-    } finally {
-      setLoginLoading(false);
-    }
-  };
+  const [truncated, setTruncated] = useState(false);
 
   const logout = async () => {
     await fetch('/api/admin/auth', { method: 'DELETE' });
-    setAuthed(false);
-    setPassword('');
-    setCompanies([]);
+    router.replace('/admin-k9x2m7/login');
   };
 
   const fetchCompanies = async () => {
@@ -65,10 +42,11 @@ export default function AdminPage() {
     setError('');
     try {
       const res = await fetch('/api/admin/companies');
-      if (res.status === 403) { setAuthed(false); return; }
+      if (res.status === 403) { router.replace('/admin-k9x2m7/login'); return; }
       if (!res.ok) throw new Error();
       const data = await res.json();
       setCompanies(data.companies || []);
+      setTruncated(!!data.truncated);
     } catch {
       setError('Failed to load companies.');
     } finally {
@@ -77,13 +55,7 @@ export default function AdminPage() {
   };
 
   useEffect(() => {
-    if (authed) fetchCompanies();
-  }, [authed]);
-
-  useEffect(() => {
-    fetch('/api/admin/companies').then(r => {
-      if (r.ok) { setAuthed(true); }
-    }).catch(() => {});
+    fetchCompanies();
   }, []);
 
   const doAction = async (id: string, action: string) => {
@@ -123,49 +95,13 @@ export default function AdminPage() {
 
   const fmt = (d: string) => {
     try {
-      return new Date((d || '').replace(' ', 'T')).toLocaleDateString('es-AR', {
+      return new Date((d || '').replace(' ', 'T')).toLocaleDateString('en-US', {
         day: '2-digit', month: 'short', year: 'numeric',
       });
     } catch {
       return d || '-';
     }
   };
-
-  if (!authed) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-        <div className="bg-white rounded-2xl border border-gray-100 p-8 w-full max-w-sm shadow-sm">
-          <div className="flex items-center gap-3 mb-6">
-            <div className="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center">
-              <LockClosedIcon className="w-5 h-5 text-blue-600" />
-            </div>
-            <div>
-              <h1 className="font-semibold text-gray-900">Panel de Admin</h1>
-              <p className="text-xs text-gray-400">Warehouse Manager</p>
-            </div>
-          </div>
-          <form onSubmit={login} className="space-y-4">
-            <input
-              type="password"
-              value={password}
-              onChange={e => setPassword(e.target.value)}
-              placeholder="Password"
-              className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-              autoFocus
-            />
-            {loginError && <p className="text-xs text-red-600">{loginError}</p>}
-            <button
-              type="submit"
-              disabled={loginLoading || !password}
-              className="w-full py-3 bg-blue-600 text-white rounded-xl text-sm font-medium hover:bg-blue-700 transition-colors disabled:opacity-50"
-            >
-              {loginLoading ? 'Signing in...' : 'Sign In'}
-            </button>
-          </form>
-        </div>
-      </div>
-    );
-  }
 
   const pending   = companies.filter(c => !c.approved && !c.suspended && !c.rejected);
   const active    = companies.filter(c => c.approved && !c.suspended);
@@ -214,7 +150,7 @@ export default function AdminPage() {
           {tabs.map(t => (
             <button
               key={t.id}
-              onClick={() => setTab(t.id)}
+              onClick={() => { setTab(t.id); setSuccessId(null); }}
               className={`px-4 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2 ${
                 tab === t.id ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'
               }`}
@@ -228,6 +164,13 @@ export default function AdminPage() {
             </button>
           ))}
         </div>
+
+        {/* Truncation warning */}
+        {truncated && (
+          <div className="bg-amber-50 border border-amber-100 text-amber-700 text-sm rounded-xl px-4 py-3 mb-4">
+            ⚠ Showing first 200 companies only. Total may exceed this limit.
+          </div>
+        )}
 
         {/* Error */}
         {error && (
@@ -288,6 +231,24 @@ export default function AdminPage() {
 
                   {/* Actions */}
                   <div className="flex items-center gap-2 flex-shrink-0 flex-wrap justify-end">
+                    {tab === 'pending' && (
+                      <>
+                        <button
+                          onClick={() => doAction(company.id, 'approve')}
+                          disabled={actionId === company.id}
+                          className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-green-50 text-green-700 border border-green-100 rounded-lg hover:bg-green-100 transition-colors disabled:opacity-50"
+                        >
+                          ✓ Approve
+                        </button>
+                        <button
+                          onClick={() => doAction(company.id, 'reject')}
+                          disabled={actionId === company.id}
+                          className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-red-50 text-red-700 border border-red-100 rounded-lg hover:bg-red-100 transition-colors disabled:opacity-50"
+                        >
+                          ✗ Reject
+                        </button>
+                      </>
+                    )}
                     {(tab === 'pending' || tab === 'active') && (
                       <button
                         onClick={() => doAction(company.id, 'send_code')}

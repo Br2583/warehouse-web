@@ -1,6 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import { pb } from './pb';
 
 export interface User {
@@ -23,6 +24,7 @@ export interface User {
 interface AuthContextType {
   user: User | null;
   loading: boolean;
+  sessionExpired: boolean;
   logout: () => Promise<void>;
   refreshUser: () => Promise<void>;
   setUserFromLogin: (user: User, token: string) => void;
@@ -64,8 +66,10 @@ async function buildUser(model: any): Promise<User> {
 }
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
+  const router = useRouter();
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [sessionExpired, setSessionExpired] = useState(false);
 
   useEffect(() => {
     if (pb.authStore.isValid && pb.authStore.model) {
@@ -76,6 +80,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         .catch(() => {
           pb.authStore.clear();
           setUser(null);
+          setSessionExpired(true);
         })
         .finally(() => setLoading(false));
     } else {
@@ -116,11 +121,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const logout = async () => {
     pb.authStore.clear();
     setUser(null);
-    window.location.href = '/login';
+    router.replace('/login');
   };
 
   const setUserFromLogin = (userData: User, _token: string) => {
     setUser(userData);
+    setSessionExpired(false);
   };
 
   const updatePicture = (picture: string) => {
@@ -128,7 +134,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, logout, refreshUser, setUserFromLogin, updatePicture }}>
+    <AuthContext.Provider value={{ user, loading, sessionExpired, logout, refreshUser, setUserFromLogin, updatePicture }}>
       {children}
     </AuthContext.Provider>
   );

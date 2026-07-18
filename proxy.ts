@@ -37,7 +37,18 @@ export function proxy(request: NextRequest) {
     return NextResponse.redirect(url.toString(), { status: 301 });
   }
 
-  // 2. Inactivity session timeout — only on protected routes
+  // 2. Admin panel: require admin_session cookie (server-side guard)
+  if (
+    (pathname === '/admin-k9x2m7' || pathname.startsWith('/admin-k9x2m7/')) &&
+    !pathname.startsWith('/admin-k9x2m7/login')
+  ) {
+    const adminSession = request.cookies.get('admin_session')?.value;
+    if (!adminSession) {
+      return NextResponse.redirect(new URL('/admin-k9x2m7/login', request.url));
+    }
+  }
+
+  // 3. Inactivity session timeout — only on protected routes
   if (isProtected(pathname)) {
     const raw = request.cookies.get(ACTIVITY_COOKIE)?.value;
     const now = Date.now();

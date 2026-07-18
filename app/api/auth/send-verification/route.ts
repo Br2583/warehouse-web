@@ -1,22 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { signToken } from '@/lib/tokens';
 import { sendEmail, verificationEmail } from '@/lib/email';
-
-const PB_URL = process.env.NEXT_PUBLIC_PB_URL || 'https://pocketbase-production-e699.up.railway.app';
-
-async function getPbAdminToken() {
-  const res = await fetch(`${PB_URL}/api/collections/_superusers/auth-with-password`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      identity: process.env.PB_ADMIN_EMAIL,
-      password: process.env.PB_ADMIN_PASSWORD,
-    }),
-  });
-  const data = await res.json();
-  if (!res.ok) throw new Error(`PB admin auth failed: ${data?.message ?? res.status}`);
-  return data.token as string;
-}
+import { getPbAdminToken, PB_URL } from '@/lib/pb-admin';
 
 export async function POST(req: NextRequest) {
   try {
@@ -25,8 +10,9 @@ export async function POST(req: NextRequest) {
 
     // Find user by email
     const adminToken = await getPbAdminToken();
+    const safeEmail = email.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
     const search = await fetch(
-      `${PB_URL}/api/collections/users/records?filter=${encodeURIComponent(`email="${email}"`)}`,
+      `${PB_URL}/api/collections/users/records?filter=${encodeURIComponent(`email="${safeEmail}"`)}`,
       { headers: { Authorization: `Bearer ${adminToken}` } }
     );
     const { items } = await search.json();

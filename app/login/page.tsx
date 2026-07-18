@@ -35,7 +35,7 @@ function AuthLeft({ title, subtitle }: { title: React.ReactNode; subtitle: strin
         </h2>
         <p className="text-sm text-white/75 leading-[1.65]">{subtitle}</p>
         <div className="flex gap-7">
-          {[{ n: '12K+', l: 'Teams' }, { n: '99.9%', l: 'Uptime' }, { n: '50+', l: 'Countries' }].map(s => (
+          {[{ n: '10K+', l: 'Users' }, { n: '99.9%', l: 'Uptime' }, { n: '50+', l: 'Countries' }].map(s => (
             <div key={s.l}>
               <div className="text-[22px] font-extrabold leading-tight">{s.n}</div>
               <div className="text-[11px] text-white/60 mt-0.5">{s.l}</div>
@@ -60,10 +60,12 @@ function Field({
   label: string; type?: string; value: string; onChange: (v: string) => void;
   placeholder?: string; onKeyDown?: React.KeyboardEventHandler<HTMLInputElement>; autoFocus?: boolean;
 }) {
+  const fieldId = `login-${label.toLowerCase().replace(/\s+/g, '-')}`;
   return (
     <div className="group">
-      <label className="block text-[12px] font-semibold text-slate-500 mb-1.5 group-focus-within:text-blue-600 transition-colors">{label}</label>
+      <label htmlFor={fieldId} className="block text-[12px] font-semibold text-slate-500 mb-1.5 group-focus-within:text-blue-600 transition-colors">{label}</label>
       <input
+        id={fieldId}
         type={type}
         value={value}
         onChange={e => onChange(e.target.value)}
@@ -95,6 +97,7 @@ function LoginForm() {
   const [inviteCode, setInviteCode] = useState('');
   const [companyLoading, setCompanyLoading] = useState(false);
   const [termsAccepted, setTermsAccepted] = useState(false);
+  const [bannerDismissed, setBannerDismissed] = useState(false);
 
   const verified        = params.get('verified') === '1';
   const reset           = params.get('reset')    === '1';
@@ -106,12 +109,14 @@ function LoginForm() {
 
     if (sessionExpired) {
       pb.authStore.clear();
+      router.replace('/login');
       return;
     }
     if (!pb.authStore.isValid || !pb.authStore.model?.company_id) return;
     pb.collection('companies').getOne(pb.authStore.model.company_id)
       .then(c => {
         if (c.suspended) router.replace('/suspended');
+        else if (c.rejected) router.replace('/rejected');
         else if (!c.approved) router.replace('/pending');
         else router.replace('/dashboard');
       })
@@ -128,6 +133,7 @@ function LoginForm() {
       if (!model.verified) {
         pb.authStore.clear();
         localStorage.setItem('verify_email', email.trim().toLowerCase());
+        setLoading(false);
         router.push('/verify-email');
         return;
       }
@@ -135,7 +141,7 @@ function LoginForm() {
         const pendingAction = model.pending_action as string;
         const pendingData   = model.pending_company_name as string;
         if (pendingAction === 'create' && pendingData) { await createCompany(model.id, pendingData, email.trim().toLowerCase()); return; }
-        if (pendingAction === 'join'   && pendingData) { await joinCompany(model.id, pendingData); return; }
+        if (pendingAction === 'join'   && pendingData) { await joinCompany(pendingData); return; }
         setNeedsCompany(true);
         setLoading(false);
         return;
@@ -144,11 +150,13 @@ function LoginForm() {
         try {
           const company = await pb.collection('companies').getOne(model.company_id);
           if (company.suspended) { router.replace('/suspended'); return; }
-          if (!company.approved)  { router.replace('/pending');   return; }
+          if (company.rejected)  { router.replace('/rejected');  return; }
+          if (!company.approved) { router.replace('/pending');   return; }
         } catch {}
       }
       if (!model.profile_complete) { router.replace('/onboarding'); return; }
-      router.replace('/dashboard');
+      const returnTo = params.get('returnTo');
+      router.replace(returnTo && returnTo.startsWith('/') ? returnTo : '/dashboard');
     } catch (e: any) {
       setError(e?.status === 400 ? 'Incorrect email or password.' : (e?.message || 'Sign in failed. Try again.'));
       setLoading(false);
@@ -170,7 +178,7 @@ function LoginForm() {
     }
   };
 
-  const joinCompany = async (_userId: string, code: string) => {
+  const joinCompany = async (code: string) => {
     try {
       const res = await fetch('/api/company/join', {
         method: 'POST',
@@ -197,12 +205,12 @@ function LoginForm() {
     if (!model) { setError('Session expired. Sign in again.'); return; }
     if (companyMode === 'create' && !companyName.trim()) { setError('Enter a company name.'); return; }
     if (companyMode === 'create' && !termsAccepted) { setError('You must accept the Terms & Conditions.'); return; }
-    if (companyMode === 'join' && inviteCode.trim().length < 6) { setError('Enter a valid invitation code.'); return; }
+    if (companyMode === 'join' && inviteCode.trim().length < 8) { setError('Enter a valid invitation code.'); return; }
     setCompanyLoading(true);
     if (companyMode === 'create') {
       await createCompany(model.id, companyName.trim(), model.email || email.trim().toLowerCase());
     } else {
-      await joinCompany(model.id, inviteCode.trim().toUpperCase());
+      await joinCompany(inviteCode.trim().toUpperCase());
     }
     setCompanyLoading(false);
   };
@@ -238,19 +246,22 @@ function LoginForm() {
           </p>
 
           {/* Banners */}
-          {sessionExpired && !error && (
+          {!bannerDismissed && sessionExpired && !error && (
             <div className="flex items-center gap-2 bg-amber-50 border border-amber-200 text-amber-700 text-sm px-4 py-3 rounded-xl mb-4">
-              ⏱ Your session expired after 2 hours of inactivity. Sign in again.
+              <span className="flex-1">⏱ Your session expired after 2 hours of inactivity. Sign in again.</span>
+              <button onClick={() => setBannerDismissed(true)} className="text-amber-400 hover:text-amber-600 text-lg leading-none flex-shrink-0">✕</button>
             </div>
           )}
-          {verified && !error && (
+          {!bannerDismissed && verified && !error && (
             <div className="flex items-center gap-2 bg-green-50 border border-green-200 text-green-700 text-sm px-4 py-3 rounded-xl mb-4">
-              ✓ Email verified! Sign in to continue.
+              <span className="flex-1">✓ Email verified! Sign in to continue.</span>
+              <button onClick={() => setBannerDismissed(true)} className="text-green-400 hover:text-green-600 text-lg leading-none flex-shrink-0">✕</button>
             </div>
           )}
-          {reset && !error && (
+          {!bannerDismissed && reset && !error && (
             <div className="flex items-center gap-2 bg-green-50 border border-green-200 text-green-700 text-sm px-4 py-3 rounded-xl mb-4">
-              ✓ Password updated! Sign in with your new password.
+              <span className="flex-1">✓ Password updated! Sign in with your new password.</span>
+              <button onClick={() => setBannerDismissed(true)} className="text-green-400 hover:text-green-600 text-lg leading-none flex-shrink-0">✕</button>
             </div>
           )}
 
@@ -272,7 +283,7 @@ function LoginForm() {
             {/* ── LOGIN FORM ── */}
             {!needsCompany && (
               <>
-                <Field label="Email" type="email" value={email} onChange={setEmail} placeholder="you@company.com" autoFocus />
+                <Field label="Email" type="email" value={email} onChange={setEmail} placeholder="you@company.com" autoFocus onKeyDown={e => { if (e.key === 'Enter') handleLogin(); }} />
 
                 <div className="group">
                   <label className="block text-[12px] font-semibold text-slate-500 mb-1.5 group-focus-within:text-blue-600 transition-colors">Password</label>

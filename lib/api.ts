@@ -1,11 +1,8 @@
 import { pb } from './pb';
 import { genCode } from './utils';
 
-export const BACKEND_URL = 'https://pocketbase-production-e699.up.railway.app';
-
 // ─── Auth token helpers (now PocketBase manages the session) ──────────────────
 export const getToken = (): string | null => pb.authStore.token || null;
-export const setToken = (_t: string) => {};
 export const removeToken = () => pb.authStore.clear();
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -29,7 +26,7 @@ function validatePhotos(photos: unknown): void {
   if (!Array.isArray(photos)) return;
   if (photos.length > 6) throw new Error('Maximum 6 photos allowed');
   for (const p of photos) {
-    if (typeof p === 'string' && p.length > 7 * 1024 * 1024) {
+    if (typeof p === 'string' && Math.ceil(p.length * 3 / 4) > 5 * 1024 * 1024) {
       throw new Error('Each photo must be under 5MB');
     }
   }
@@ -72,7 +69,7 @@ function mapStorage(s: any) {
     address:     s.address || '',
     city:        s.city || '',
     state:       s.state || '',
-    client_name: s.client_id || '',
+    client_name: s.expand?.client_id?.name || s.client_id || '',
     capacity:    s.capacity || '',
     access_code: s.access_code || '',
     status:      s.status || 'AVAILABLE',
@@ -88,11 +85,11 @@ function mapStorage(s: any) {
 // Map a PocketBase chat_messages record to the Message shape
 function mapMessage(m: any) {
   return {
-    id:           m.id,
-    sender_name:  m.author_name,
-    sender_email: m.author_id,
-    text:         m.content,
-    timestamp:    m.created?.replace(' ', 'T') ?? new Date().toISOString(),
+    id:          m.id,
+    sender_name: m.author_name,
+    sender_id:   m.author_id,
+    text:        m.content,
+    timestamp:   m.created?.replace(' ', 'T') ?? new Date().toISOString(),
   };
 }
 
@@ -305,6 +302,7 @@ async function routeGet(path: string): Promise<any> {
     const items = await pb.collection('storage_units').getFullList({
       filter: `company_id="${cid}"`,
       fields: 'id,unit_name,address,city,state,client_id,capacity,access_code,status,notes,photos,company_id,created,slots,grid_rows,grid_cols',
+      expand: 'client_id',
     });
     return items
       .sort((a: any, b: any) => a.created < b.created ? 1 : -1)
@@ -317,7 +315,7 @@ async function routeGet(path: string): Promise<any> {
 
   const storageOneMatch = p.match(/^\/api\/storage\/([^/]+)$/);
   if (storageOneMatch) {
-    const s = await pb.collection('storage_units').getOne(storageOneMatch[1]);
+    const s = await pb.collection('storage_units').getOne(storageOneMatch[1], { expand: 'client_id' });
     if (s.company_id !== cid) throw new Error('Forbidden');
     return mapStorage(s);
   }
@@ -513,6 +511,13 @@ async function routePut(path: string, body: any): Promise<any> {
   const p   = url.pathname;
   const uid = userId();
   const cid = companyId();
+
+  // PUT /api/profile
+  if (p === '/api/profile') {
+    if (!uid) throw new Error('Not authenticated');
+    const u = await pb.collection('users').update(uid, { name: body.name });
+    return { name: u.name };
+  }
 
   // PUT /api/boxes/:id
   const boxMatch = p.match(/^\/api\/boxes\/([^/]+)$/);

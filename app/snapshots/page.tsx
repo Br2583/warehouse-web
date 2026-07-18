@@ -8,6 +8,7 @@ import {
 } from '@heroicons/react/24/outline';
 import ConfirmModal from '@/components/ConfirmModal';
 import Sidebar from '@/components/Sidebar';
+import { useToast } from '@/lib/toast-context';
 import { api } from '@/lib/api';
 import { pb } from '@/lib/pb';
 import { useAuth } from '@/lib/auth-context';
@@ -27,6 +28,7 @@ function formatSnapDate(dateStr: string): string {
 
 export default function SnapshotsPage() {
   const { user } = useAuth();
+  const { showToast } = useToast();
   const [snapshots, setSnapshots] = useState<any[]>([]);
   const [warehouses, setWarehouses] = useState<{ id: string; name: string }[]>([]);
   const [loading, setLoading] = useState(true);
@@ -36,14 +38,17 @@ export default function SnapshotsPage() {
   const [sending, setSending] = useState(false);
   const [sendResult, setSendResult] = useState<'ok' | 'err' | null>(null);
   const [actionError, setActionError] = useState('');
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [confirmModal, setConfirmModal] = useState<{ message: string; onConfirm: () => void } | null>(null);
   const printRef = useRef<HTMLDivElement>(null);
 
-  const fetchSnapshots = () =>
-    api.get('/api/snapshots')
+  const fetchSnapshots = () => {
+    setLoadError(null);
+    return api.get('/api/snapshots')
       .then(data => setSnapshots(Array.isArray(data) ? data : []))
-      .catch(() => {})
+      .catch(() => setLoadError('Failed to load snapshots. Try again.'))
       .finally(() => setLoading(false));
+  };
 
   useEffect(() => { fetchSnapshots(); }, []);
 
@@ -117,6 +122,7 @@ export default function SnapshotsPage() {
       });
       if (!res.ok) throw new Error();
       setSendResult('ok');
+      showToast('Report sent to ' + user.email);
       setTimeout(() => { setEmailModal(false); setSendResult(null); }, 2000);
     } catch {
       setSendResult('err');
@@ -162,6 +168,14 @@ export default function SnapshotsPage() {
               ))}
             </div>
           </div>
+
+          {loadError && (
+            <div className="flex items-center gap-3 bg-red-50 border border-red-100 text-red-700 text-sm px-4 py-3 rounded-xl mb-4">
+              <ExclamationCircleIcon className="w-4 h-4 flex-shrink-0" />
+              <span className="flex-1">{loadError}</span>
+              <button onClick={() => fetchSnapshots()} className="text-xs font-medium text-red-600 hover:text-red-800 underline">Retry</button>
+            </div>
+          )}
 
           {actionError && (
             <div className="flex items-center gap-3 bg-red-50 border border-red-100 text-red-700 text-sm px-4 py-3 rounded-xl mb-4">
@@ -292,7 +306,9 @@ export default function SnapshotsPage() {
                           const allCols = Array.from({ length: maxCol }, (_, i) => i + 1);
                           return [1, 2].map(level => {
                           const levelName = level === 1 ? 'Lower' : 'Upper';
-                          const rows = ['A','B','C','D','E','F','G','H','I','J'];
+                          const rowLetters = 'ABCDEFGHIJ';
+                          const usedRows = [...new Set(report.boxes.map((b: any) => b.row))].sort() as string[];
+                          const rows = usedRows.length > 0 ? usedRows : rowLetters.split('');
                           const cols = allCols;
                           const getBox = (row: string, col: number) =>
                             report.boxes.find(b => b.row === row && Number(b.column) === col && Number(b.level) === level);

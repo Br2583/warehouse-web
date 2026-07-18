@@ -19,6 +19,11 @@ export default function PendingPage() {
       if (!pb.authStore.model?.company_id) return;
       try {
         const company = await pb.collection('companies').getOne(pb.authStore.model.company_id);
+        if (company.rejected) {
+          redirecting.current = true;
+          router.replace('/rejected');
+          return;
+        }
         if (company.approved && !company.suspended) {
           redirecting.current = true;
           await pb.collection('users').authRefresh();

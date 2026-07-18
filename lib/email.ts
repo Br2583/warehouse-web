@@ -313,7 +313,8 @@ export function clientDeletedEmail(ownerName: string, companyName: string) {
 }
 
 export function adminNewRequestEmail(companyName: string, ownerName: string, ownerEmail: string) {
-  const adminUrl = `${APP_URL}/admin-k9x2m7`;
+  const ADMIN_PATH = process.env.ADMIN_PANEL_PATH || 'admin-k9x2m7';
+  const adminUrl = `${APP_URL}/${ADMIN_PATH}`;
   return {
     subject: `New access request — ${companyName}`,
     html: base({
@@ -467,7 +468,8 @@ export function snapshotReportEmail(opts: {
 }) {
   const { warehouseName, date, total, pending, ready, delivered, vaults } = opts;
   const ROWS = ['A','B','C','D','E','F','G','H','I','J'];
-  const COLS = [1,2,3,4,5,6,7,8];
+  const maxCol = vaults.length ? Math.max(8, ...vaults.map(v => Number(v.column))) : 8;
+  const COLS = Array.from({ length: maxCol }, (_, i) => i + 1);
 
   const stColor = (s: string) =>
     s === 'READY' ? '#dcfce7' : s === 'DELIVERED' ? '#dbeafe' : s === 'PENDING' ? '#fef9c3' : '#f1f5f9';

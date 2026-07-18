@@ -175,7 +175,7 @@ export default function VaultForm({
 
       {/* Photos */}
       <div>
-        <label className="block text-xs text-gray-500 mb-2">Photos (max 4)</label>
+        <label className="block text-xs text-gray-500 mb-2">Photos (max 6)</label>
         {value.photos.length > 0 && (
           <div className="grid grid-cols-3 gap-2 mb-2">
             {value.photos.map((src, idx) => (
@@ -192,7 +192,7 @@ export default function VaultForm({
             ))}
           </div>
         )}
-        {value.photos.length < 4 && (
+        {value.photos.length < 6 && (
           <label className="flex flex-col items-center justify-center w-full h-20 border-2 border-dashed border-gray-200 rounded-xl cursor-pointer hover:border-blue-400 hover:bg-blue-50 transition-colors">
             <CameraIcon className="w-5 h-5 text-gray-300 mb-1" />
             <span className="text-xs text-gray-400">Click to add photos</span>

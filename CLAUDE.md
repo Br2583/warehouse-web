@@ -1,4 +1,5 @@
 @AGENTS.md
+@BUGS.md
 
 # Warehouse Manager — Project Context
 

@@ -41,11 +41,12 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   }
 
   if (action === 'approve') {
-    await fetch(`${PB_URL}/api/collections/companies/records/${id}`, {
+    const patchRes = await fetch(`${PB_URL}/api/collections/companies/records/${id}`, {
       method: 'PATCH',
       headers: { Authorization: `Bearer ${adminToken}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({ approved: true, suspended: false, rejected: false }),
     });
+    if (!patchRes.ok) return NextResponse.json({ error: 'PocketBase update failed' }, { status: 502 });
     if (owner?.email) {
       const email = clientApprovedEmail(owner.name || 'Cliente', company.name);
       await sendEmail({ to: owner.email, toName: owner.name, ...email }).catch(() => {});
@@ -54,11 +55,12 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   }
 
   if (action === 'reject') {
-    await fetch(`${PB_URL}/api/collections/companies/records/${id}`, {
+    const patchRes = await fetch(`${PB_URL}/api/collections/companies/records/${id}`, {
       method: 'PATCH',
       headers: { Authorization: `Bearer ${adminToken}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({ approved: false, rejected: true }),
     });
+    if (!patchRes.ok) return NextResponse.json({ error: 'PocketBase update failed' }, { status: 502 });
     if (owner?.email) {
       const email = clientRejectedEmail(owner.name || 'Cliente', company.name);
       await sendEmail({ to: owner.email, toName: owner.name, ...email }).catch(() => {});
@@ -67,20 +69,22 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   }
 
   if (action === 'suspend') {
-    await fetch(`${PB_URL}/api/collections/companies/records/${id}`, {
+    const patchRes = await fetch(`${PB_URL}/api/collections/companies/records/${id}`, {
       method: 'PATCH',
       headers: { Authorization: `Bearer ${adminToken}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({ suspended: true }),
     });
+    if (!patchRes.ok) return NextResponse.json({ error: 'PocketBase update failed' }, { status: 502 });
     return NextResponse.json({ ok: true });
   }
 
   if (action === 'reactivate') {
-    await fetch(`${PB_URL}/api/collections/companies/records/${id}`, {
+    const patchRes = await fetch(`${PB_URL}/api/collections/companies/records/${id}`, {
       method: 'PATCH',
       headers: { Authorization: `Bearer ${adminToken}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({ suspended: false, approved: true, rejected: false }),
     });
+    if (!patchRes.ok) return NextResponse.json({ error: 'PocketBase update failed' }, { status: 502 });
     return NextResponse.json({ ok: true });
   }
 
@@ -110,8 +114,8 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
   const usersData = await usersRes.json();
   const owner = (usersData.items || []).find((u: any) => u.id === company.owner_id);
 
-  // Delete users and company in parallel (users first, then company)
-  await Promise.all(
+  // Delete users first; tolerate individual failures but stop if all fail
+  const userDels = await Promise.allSettled(
     (usersData.items || []).map((u: any) =>
       fetch(`${PB_URL}/api/collections/users/records/${u.id}`, {
         method: 'DELETE',
@@ -119,6 +123,10 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
       })
     )
   );
+  const failures = userDels.filter(r => r.status === 'rejected');
+  if (failures.length > 0 && failures.length === userDels.length && userDels.length > 0) {
+    return NextResponse.json({ error: 'Failed to delete company users' }, { status: 500 });
+  }
 
   await fetch(`${PB_URL}/api/collections/companies/records/${id}`, {
     method: 'DELETE',

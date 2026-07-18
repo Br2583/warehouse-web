@@ -3,6 +3,19 @@ import { getPbAdminToken, PB_URL } from '@/lib/pb-admin';
 
 const TIMEOUT_MS = 28_000;
 
+const _rateLimitMap = new Map<string, { count: number; resetAt: number }>();
+function checkRateLimit(userId: string): boolean {
+  const now = Date.now();
+  const entry = _rateLimitMap.get(userId);
+  if (!entry || now > entry.resetAt) {
+    _rateLimitMap.set(userId, { count: 1, resetAt: now + 60_000 });
+    return true;
+  }
+  if (entry.count >= 30) return false;
+  entry.count++;
+  return true;
+}
+
 async function pbFetch(url: string, init: RequestInit = {}): Promise<Response> {
   const ctrl = new AbortController();
   const tid = setTimeout(() => ctrl.abort(), TIMEOUT_MS);
@@ -13,7 +26,7 @@ async function pbFetch(url: string, init: RequestInit = {}): Promise<Response> {
   }
 }
 
-async function getUserCompanyId(userToken: string): Promise<string> {
+async function getUserInfo(userToken: string): Promise<{ companyId: string; userId: string }> {
   const res = await pbFetch(`${PB_URL}/api/collections/users/auth-refresh`, {
     method: 'POST',
     headers: { Authorization: `Bearer ${userToken}` },
@@ -21,8 +34,14 @@ async function getUserCompanyId(userToken: string): Promise<string> {
   if (!res.ok) throw new Error('Unauthorized');
   const data = await res.json();
   const companyId = data.record?.company_id;
+  const userId = data.record?.id;
   if (!companyId) throw new Error('No company associated with this account');
-  return companyId;
+  if (!userId) throw new Error('User not found');
+  return { companyId, userId };
+}
+
+async function getUserCompanyId(userToken: string): Promise<string> {
+  return (await getUserInfo(userToken)).companyId;
 }
 
 export async function GET(req: NextRequest) {
@@ -36,19 +55,23 @@ export async function GET(req: NextRequest) {
       getPbAdminToken(),
     ]);
 
+    const url = req.nextUrl;
+    const perPage = url.searchParams.get('perPage') || '500';
+    const sort    = url.searchParams.get('sort')    || 'sent_at';
+
     const res = await pbFetch(
-      `${PB_URL}/api/collections/chat_messages/records?perPage=150&sort=sent_at&filter=${encodeURIComponent(`company_id="${companyId}"`)}&fields=id,author_name,author_id,content,sent_at`,
+      `${PB_URL}/api/collections/chat_messages/records?perPage=${encodeURIComponent(perPage)}&sort=${encodeURIComponent(sort)}&filter=${encodeURIComponent(`company_id="${companyId}"`)}&fields=id,author_name,author_id,content,sent_at`,
       { headers: { Authorization: `Bearer ${adminToken}` } },
     );
     const data = await res.json();
     if (!res.ok) throw new Error(data?.message || 'Failed to load messages');
 
     const msgs = (data.items as any[]).map((m: any) => ({
-      id:           m.id,
-      sender_name:  m.author_name,
-      sender_email: m.author_id,
-      text:         m.content,
-      timestamp:    m.sent_at || '',
+      id:          m.id,
+      sender_name: m.author_name,
+      sender_id:   m.author_id,
+      text:        m.content,
+      timestamp:   m.sent_at || '',
     }));
 
     return NextResponse.json(msgs);
@@ -77,6 +100,10 @@ export async function POST(req: NextRequest) {
     const companyId = record?.company_id;
     if (!companyId) return NextResponse.json({ error: 'No company associated with this account' }, { status: 400 });
 
+    if (!checkRateLimit(record.id)) {
+      return NextResponse.json({ error: 'Too many messages. Please wait a moment.' }, { status: 429 });
+    }
+
     const adminToken = await getPbAdminToken();
     const res = await pbFetch(`${PB_URL}/api/collections/chat_messages/records`, {
       method: 'POST',
@@ -94,11 +121,11 @@ export async function POST(req: NextRequest) {
     if (!res.ok) throw new Error(msg?.message || 'Failed to send message');
 
     return NextResponse.json({
-      id:           msg.id,
-      sender_name:  msg.author_name,
-      sender_email: msg.author_id,
-      text:         msg.content,
-      timestamp:    msg.sent_at || '',
+      id:          msg.id,
+      sender_name: msg.author_name,
+      sender_id:   msg.author_id,
+      text:        msg.content,
+      timestamp:   msg.sent_at || '',
     });
   } catch (e: any) {
     const msg = e?.name === 'AbortError' ? 'Connection timed out' : (e?.message || 'Failed to send message');
@@ -115,18 +142,18 @@ export async function DELETE(req: NextRequest) {
     const id = req.nextUrl.searchParams.get('id');
     if (!id) return NextResponse.json({ error: 'Missing id' }, { status: 400 });
 
-    const [companyId, adminToken] = await Promise.all([
-      getUserCompanyId(userToken),
+    const [{ companyId, userId }, adminToken] = await Promise.all([
+      getUserInfo(userToken),
       getPbAdminToken(),
     ]);
 
-    // Verify the message belongs to the user's company before deleting
+    // Verify the message belongs to the user's company AND was authored by them
     const msgRes = await pbFetch(`${PB_URL}/api/collections/chat_messages/records/${id}`, {
       headers: { Authorization: `Bearer ${adminToken}` },
     });
     if (!msgRes.ok) return NextResponse.json({ error: 'Message not found' }, { status: 404 });
     const msgData = await msgRes.json();
-    if (msgData.company_id !== companyId) {
+    if (msgData.company_id !== companyId || msgData.author_id !== userId) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 

@@ -28,7 +28,9 @@ async function geocode(address: string, city: string, state: string): Promise<st
   const q = [address, city, state].filter(Boolean).join(', ');
   if (!q) return null;
   try {
-    const res = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(q)}&format=json&limit=1`);
+    const res = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(q)}&format=json&limit=1`, {
+      headers: { 'User-Agent': 'WarehouseManager/1.0 (managerwarehouse.cc)' },
+    });
     const data = await res.json();
     if (data[0]) {
       const lat = parseFloat(data[0].lat);
@@ -67,6 +69,7 @@ export default function StorageDetailPage() {
   const [showGridConfig, setShowGridConfig] = useState(false);
   const [gridConfigForm, setGridConfigForm] = useState({ rows: 4, cols: 6 });
   const [confirmModal, setConfirmModal] = useState<{ message: string; onConfirm: () => void } | null>(null);
+  const [showCode, setShowCode] = useState(false);
 
   useEffect(() => {
     api.get(`/api/storage/${id}`)
@@ -84,6 +87,13 @@ export default function StorageDetailPage() {
       .catch(() => router.replace('/storage'))
       .finally(() => setLoading(false));
   }, [id]);
+
+  useEffect(() => {
+    if (!editMode) return;
+    const handler = (e: BeforeUnloadEvent) => { e.preventDefault(); e.returnValue = ''; };
+    window.addEventListener('beforeunload', handler);
+    return () => window.removeEventListener('beforeunload', handler);
+  }, [editMode]);
 
   const startEdit = () => {
     setForm({ ...unit });
@@ -140,15 +150,16 @@ export default function StorageDetailPage() {
     setSlotModal(key);
   };
 
-  const saveSlot = async () => {
+  const saveSlot = async (formOverride?: { client: string; notes: string }) => {
     if (!slotModal) return;
     setSlotSaving(true);
+    const data = formOverride || slotForm;
     const updated = {
       ...slots,
       [slotModal]: {
-        client: slotForm.client.trim(),
-        notes: slotForm.notes.trim(),
-        occupied: !!(slotForm.client.trim() || slotForm.notes.trim()),
+        client: data.client.trim(),
+        notes: data.notes.trim(),
+        occupied: !!(data.client.trim() || data.notes.trim()),
       },
     };
     // Remove empty slots to keep the JSON lean
@@ -165,11 +176,17 @@ export default function StorageDetailPage() {
   const saveGridConfig = async () => {
     const rows = Math.min(10, Math.max(1, gridConfigForm.rows));
     const cols = Math.min(12, Math.max(1, gridConfigForm.cols));
+    const trimmedSlots: typeof slots = {};
+    Object.entries(slots).forEach(([key, val]) => {
+      const m = key.match(/R(\d+)C(\d+)/);
+      if (m && Number(m[1]) <= rows && Number(m[2]) <= cols) trimmedSlots[key] = val;
+    });
     try {
-      await api.put(`/api/storage/${id}`, { ...unit, slots, grid_rows: rows, grid_cols: cols });
+      await api.put(`/api/storage/${id}`, { ...unit, slots: trimmedSlots, grid_rows: rows, grid_cols: cols });
       setGridRows(rows);
       setGridCols(cols);
-      setUnit((u: any) => ({ ...u, grid_rows: rows, grid_cols: cols }));
+      setSlots(trimmedSlots);
+      setUnit((u: any) => ({ ...u, grid_rows: rows, grid_cols: cols, slots: trimmedSlots }));
     } catch { /* ignore */ }
     setShowGridConfig(false);
   };
@@ -264,7 +281,7 @@ export default function StorageDetailPage() {
             </div>
           )}
           {photoError && <p className="text-xs text-red-500 mt-2">{photoError}</p>}
-          <input ref={fileRef} type="file" accept="image/*,.heic,.heif,.webp,.avif,.pdf" multiple className="hidden" onChange={addPhotos} />
+          <input ref={fileRef} type="file" accept="image/*,.heic,.heif,.webp,.avif" multiple className="hidden" onChange={addPhotos} />
         </motion.div>
 
         {/* Position Map */}
@@ -378,11 +395,11 @@ export default function StorageDetailPage() {
                   </div>
                 </div>
                 <div className="flex gap-3 mt-5">
-                  <button onClick={() => { setSlotForm({ client: '', notes: '' }); saveSlot(); }}
+                  <button onClick={() => saveSlot({ client: '', notes: '' })}
                     className="px-4 py-2 text-sm text-red-500 hover:bg-red-50 rounded-xl transition-colors">
                     Clear
                   </button>
-                  <button onClick={saveSlot} disabled={slotSaving}
+                  <button onClick={() => saveSlot()} disabled={slotSaving}
                     className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-blue-600 text-white text-sm font-medium rounded-xl hover:bg-blue-700 disabled:opacity-50 transition-colors">
                     {slotSaving && <div className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />}
                     Save
@@ -477,7 +494,6 @@ export default function StorageDetailPage() {
                 { label: 'Address',      value: [unit?.address, unit?.city, unit?.state].filter(Boolean).join(', ') || '—' },
                 { label: 'Client',       value: unit?.client_name || '—' },
                 { label: 'Capacity',     value: unit?.capacity || '—' },
-                { label: 'Access Code',  value: unit?.access_code || '—' },
                 { label: 'Notes',        value: unit?.notes || '—' },
               ].map(({ label, value }) => (
                 <div key={label} className="flex justify-between text-sm gap-4">
@@ -485,6 +501,26 @@ export default function StorageDetailPage() {
                   <span className="text-gray-900 font-medium text-right">{value}</span>
                 </div>
               ))}
+              {/* Access Code with reveal toggle */}
+              {unit?.access_code && (
+                <div className="flex justify-between text-sm gap-4">
+                  <span className="text-gray-400 flex-shrink-0">Access Code</span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-gray-900 font-medium font-mono">
+                      {showCode ? unit.access_code : '••••••'}
+                    </span>
+                    <button onClick={() => setShowCode(s => !s)} className="text-xs text-blue-600 hover:text-blue-800 underline">
+                      {showCode ? 'Hide' : 'Reveal'}
+                    </button>
+                  </div>
+                </div>
+              )}
+              {!unit?.access_code && (
+                <div className="flex justify-between text-sm gap-4">
+                  <span className="text-gray-400 flex-shrink-0">Access Code</span>
+                  <span className="text-gray-900 font-medium text-right">—</span>
+                </div>
+              )}
             </div>
           )}
         </motion.div>
@@ -507,7 +543,7 @@ export default function StorageDetailPage() {
             <button onClick={cancelEdit} className="px-5 py-2.5 text-gray-400 hover:text-gray-600 text-sm transition-colors">Cancel</button>
             <button onClick={save} disabled={saving}
               className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-blue-600 text-white text-sm font-medium rounded-xl hover:bg-blue-700 disabled:opacity-50 transition-colors">
-              {saving && <div className="w-4 h-4 animate-spin" />}
+              {saving && <div className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />}
               Save Changes
             </button>
           </div>

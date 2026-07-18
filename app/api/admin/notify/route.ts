@@ -30,7 +30,7 @@ export async function POST(req: NextRequest) {
   }
 
   const email = adminNewRequestEmail(companyName, ownerName, ownerEmail);
-  await sendEmail({ to: ADMIN_EMAIL, toName: 'Brayan', ...email });
+  await sendEmail({ to: ADMIN_EMAIL, toName: process.env.ADMIN_NAME || 'Admin', ...email });
 
   return NextResponse.json({ ok: true });
 }

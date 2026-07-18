@@ -53,7 +53,7 @@ const FEATURES = [
 
 const SIDEBAR_ITEMS = ['Dashboard', 'Warehouses', 'Storage', 'Production', 'Statistics', 'Chat'];
 const KPI = [
-  { label: 'Total Volts', val: '24', bg: '#eff6ff', dot: '#2563eb' },
+  { label: 'Total Vaults', val: '24', bg: '#eff6ff', dot: '#2563eb' },
   { label: 'Work Orders', val: '8',  bg: '#fff7ed', dot: '#ea580c' },
   { label: 'Ready',       val: '12', bg: '#f0fdf4', dot: '#16a34a' },
   { label: 'Delivered',   val: '4',  bg: '#faf5ff', dot: '#7c3aed' },
@@ -329,7 +329,7 @@ export default function Home() {
               <div className="p-4 md:p-5 flex flex-col gap-3" style={{ background: '#f8fafc' }}>
                 <div>
                   <div className="text-[12px] text-slate-400">Good morning,</div>
-                  <div className="text-[20px] font-extrabold text-gray-900 tracking-tight leading-tight">Brayan</div>
+                  <div className="text-[20px] font-extrabold text-gray-900 tracking-tight leading-tight">Alex</div>
                 </div>
 
                 {/* KPI row */}

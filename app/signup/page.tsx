@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -20,11 +20,14 @@ export default function SignupPage() {
   const [companyName, setCompanyName] = useState('');
   const [inviteCode, setInviteCode] = useState('');
   const [showPass, setShowPass] = useState(false);
+  const [showConfirmPass, setShowConfirmPass] = useState(false);
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const submittingRef = useRef(false);
 
   const handleSubmit = async () => {
+    if (submittingRef.current) return;
     setError('');
     if (!name.trim())  { setError('Enter your name.'); return; }
     if (!email.trim()) { setError('Enter your email.'); return; }
@@ -32,8 +35,9 @@ export default function SignupPage() {
     if (password !== passwordConfirm) { setError('Passwords do not match.'); return; }
     if (mode === 'create' && !companyName.trim()) { setError('Enter your company name.'); return; }
     if (mode === 'create' && !termsAccepted) { setError('You must accept the Terms & Conditions to create a company.'); return; }
-    if (mode === 'join' && inviteCode.trim().length < 6) { setError('Enter a valid invitation code.'); return; }
+    if (mode === 'join' && inviteCode.trim().length < 8) { setError('Enter a valid invitation code.'); return; }
 
+    submittingRef.current = true;
     setLoading(true);
     try {
       await pb.collection('users').create({
@@ -60,6 +64,7 @@ export default function SignupPage() {
       else if (msg?.password?.message)                       setError(msg.password.message);
       else                                                   setError(e?.message || 'Could not create account. Try again.');
     } finally {
+      submittingRef.current = false;
       setLoading(false);
     }
   };
@@ -141,24 +146,25 @@ export default function SignupPage() {
             )}
           </AnimatePresence>
 
-          <div className="space-y-4">
+          <form className="space-y-4" onSubmit={e => { e.preventDefault(); handleSubmit(); }}>
             {/* Name */}
             <div className="group">
-              <label className="block text-[12px] font-semibold text-slate-500 mb-1.5 group-focus-within:text-blue-600 transition-colors">Full name</label>
-              <input type="text" value={name} onChange={e => setName(e.target.value)} placeholder="John Smith" autoFocus className={inputBase} style={inputStyle} onFocus={onFocus} onBlur={onBlur} />
+              <label htmlFor="signup-name" className="block text-[12px] font-semibold text-slate-500 mb-1.5 group-focus-within:text-blue-600 transition-colors">Full name</label>
+              <input id="signup-name" type="text" value={name} onChange={e => setName(e.target.value)} placeholder="John Smith" autoFocus className={inputBase} style={inputStyle} onFocus={onFocus} onBlur={onBlur} />
             </div>
 
             {/* Email */}
             <div className="group">
-              <label className="block text-[12px] font-semibold text-slate-500 mb-1.5 group-focus-within:text-blue-600 transition-colors">Email</label>
-              <input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="you@company.com" className={inputBase} style={inputStyle} onFocus={onFocus} onBlur={onBlur} />
+              <label htmlFor="signup-email" className="block text-[12px] font-semibold text-slate-500 mb-1.5 group-focus-within:text-blue-600 transition-colors">Email</label>
+              <input id="signup-email" type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="you@company.com" className={inputBase} style={inputStyle} onFocus={onFocus} onBlur={onBlur} />
             </div>
 
             {/* Password */}
             <div className="group">
-              <label className="block text-[12px] font-semibold text-slate-500 mb-1.5 group-focus-within:text-blue-600 transition-colors">Password</label>
+              <label htmlFor="signup-password" className="block text-[12px] font-semibold text-slate-500 mb-1.5 group-focus-within:text-blue-600 transition-colors">Password</label>
               <div className="relative">
                 <input
+                  id="signup-password"
                   type={showPass ? 'text' : 'password'}
                   value={password}
                   onChange={e => setPassword(e.target.value)}
@@ -176,18 +182,24 @@ export default function SignupPage() {
 
             {/* Confirm password */}
             <div className="group">
-              <label className="block text-[12px] font-semibold text-slate-500 mb-1.5 group-focus-within:text-blue-600 transition-colors">Confirm password</label>
-              <input
-                type={showPass ? 'text' : 'password'}
-                value={passwordConfirm}
-                onChange={e => setPasswordConfirm(e.target.value)}
-                onKeyDown={e => { if (e.key === 'Enter' && mode === 'join') handleSubmit(); }}
-                placeholder="Repeat password"
-                className={inputBase}
-                style={inputStyle}
-                onFocus={onFocus}
-                onBlur={onBlur}
-              />
+              <label htmlFor="signup-confirm" className="block text-[12px] font-semibold text-slate-500 mb-1.5 group-focus-within:text-blue-600 transition-colors">Confirm password</label>
+              <div className="relative">
+                <input
+                  id="signup-confirm"
+                  type={showConfirmPass ? 'text' : 'password'}
+                  value={passwordConfirm}
+                  onChange={e => setPasswordConfirm(e.target.value)}
+                  onKeyDown={e => { if (e.key === 'Enter') handleSubmit(); }}
+                  placeholder="Repeat password"
+                  className={`${inputBase} pr-11`}
+                  style={inputStyle}
+                  onFocus={onFocus}
+                  onBlur={onBlur}
+                />
+                <button type="button" onClick={() => setShowConfirmPass(v => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-blue-600 transition-colors">
+                  {showConfirmPass ? <EyeSlashIcon className="w-4 h-4" /> : <EyeIcon className="w-4 h-4" />}
+                </button>
+              </div>
             </div>
 
             {/* Mode toggle */}
@@ -197,6 +209,7 @@ export default function SignupPage() {
                 {(['create', 'join'] as const).map(m => (
                   <button
                     key={m}
+                    type="button"
                     onClick={() => setMode(m)}
                     className="flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm font-medium transition-all"
                     style={mode === m
@@ -216,13 +229,14 @@ export default function SignupPage() {
             <AnimatePresence mode="wait">
               {mode === 'create' ? (
                 <motion.div key="create" initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="group">
-                  <label className="block text-[12px] font-semibold text-slate-500 mb-1.5 group-focus-within:text-blue-600 transition-colors">Company name</label>
-                  <input type="text" value={companyName} onChange={e => setCompanyName(e.target.value)} placeholder="Acme Restoration Co." className={inputBase} style={inputStyle} onFocus={onFocus} onBlur={onBlur} />
+                  <label htmlFor="signup-company" className="block text-[12px] font-semibold text-slate-500 mb-1.5 group-focus-within:text-blue-600 transition-colors">Company name</label>
+                  <input id="signup-company" type="text" value={companyName} onChange={e => setCompanyName(e.target.value)} placeholder="Acme Restoration Co." className={inputBase} style={inputStyle} onFocus={onFocus} onBlur={onBlur} onKeyDown={e => { if (e.key === 'Enter') handleSubmit(); }} />
                 </motion.div>
               ) : (
                 <motion.div key="join" initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="group">
-                  <label className="block text-[12px] font-semibold text-slate-500 mb-1.5 group-focus-within:text-blue-600 transition-colors">Invitation code</label>
+                  <label htmlFor="signup-code" className="block text-[12px] font-semibold text-slate-500 mb-1.5 group-focus-within:text-blue-600 transition-colors">Invitation code</label>
                   <input
+                    id="signup-code"
                     type="text"
                     value={inviteCode}
                     onChange={e => setInviteCode(e.target.value.toUpperCase())}
@@ -259,7 +273,7 @@ export default function SignupPage() {
 
             {/* Submit */}
             <button
-              onClick={handleSubmit}
+              type="submit"
               disabled={loading}
               className="w-full py-3.5 rounded-[10px] bg-blue-600 text-white font-bold text-sm hover:bg-blue-700 hover:-translate-y-0.5 active:translate-y-0 transition-all shadow-[0_2px_12px_rgba(59,130,246,.3)] hover:shadow-[0_6px_20px_rgba(59,130,246,.4)] disabled:opacity-50 flex items-center justify-center gap-2"
             >
@@ -270,11 +284,11 @@ export default function SignupPage() {
 
             <p className="text-center text-[13px] text-slate-500">
               Already have an account?{' '}
-              <button onClick={() => router.push('/login')} className="text-blue-600 font-semibold hover:text-blue-700 transition-colors">
+              <button type="button" onClick={() => router.push('/login')} className="text-blue-600 font-semibold hover:text-blue-700 transition-colors">
                 Sign in
               </button>
             </p>
-          </div>
+          </form>
         </div>
       </motion.div>
     </div>

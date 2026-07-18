@@ -35,7 +35,7 @@ export function compressImage(file: File): Promise<string> {
 
         // Guard: if still too large after compression, reject with a clear message
         const byteLen = Math.round((dataUrl.length * 3) / 4);
-        if (byteLen > MAX_OUTPUT_BYTES * 2) {
+        if (byteLen > MAX_OUTPUT_BYTES) {
           reject(new Error(`"${file.name}" is too large to upload even after compression`));
           return;
         }

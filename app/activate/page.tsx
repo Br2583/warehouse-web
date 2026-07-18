@@ -12,7 +12,7 @@ function ActivateInner() {
 
   useEffect(() => {
     const token = params.get('token');
-    if (!token) { setStatus('error'); setMessage('Enlace inválido.'); return; }
+    if (!token) { setStatus('error'); setMessage('Invalid activation link.'); return; }
 
     fetch('/api/activate', {
       method: 'POST',
@@ -26,10 +26,10 @@ function ActivateInner() {
           setTimeout(() => router.replace('/login'), 3000);
         } else {
           setStatus('error');
-          setMessage(data.error || 'No se pudo activar la cuenta.');
+          setMessage(data.error || 'Could not activate the account.');
         }
       })
-      .catch(() => { setStatus('error'); setMessage('Error de red. Intentá de nuevo.'); });
+      .catch(() => { setStatus('error'); setMessage('Network error. Please try again.'); });
   }, []);
 
   return (
@@ -45,8 +45,8 @@ function ActivateInner() {
         {status === 'loading' && (
           <>
             <div className="w-12 h-12 border-2 border-blue-600/20 border-t-blue-600 rounded-full animate-spin mx-auto mb-4" />
-            <h2 className="text-lg font-semibold text-gray-900">Activando cuenta...</h2>
-            <p className="text-sm text-slate-400 mt-2">Un momento</p>
+            <h2 className="text-lg font-semibold text-gray-900">Activating account...</h2>
+            <p className="text-sm text-slate-400 mt-2">Just a moment</p>
           </>
         )}
         {status === 'ok' && (
@@ -54,8 +54,8 @@ function ActivateInner() {
             <div className="w-14 h-14 bg-green-50 rounded-2xl flex items-center justify-center mx-auto mb-4">
               <CheckCircleIcon className="w-7 h-7 text-green-500" />
             </div>
-            <h2 className="text-lg font-bold text-gray-900">¡Cuenta activada!</h2>
-            <p className="text-sm text-slate-400 mt-2">Tu empresa ya está activa. Redirigiendo al login...</p>
+            <h2 className="text-lg font-bold text-gray-900">Account Activated!</h2>
+            <p className="text-sm text-slate-400 mt-2">Your company is now active. Redirecting to login...</p>
           </>
         )}
         {status === 'error' && (
@@ -63,9 +63,9 @@ function ActivateInner() {
             <div className="w-14 h-14 bg-red-50 rounded-2xl flex items-center justify-center mx-auto mb-4">
               <XCircleIcon className="w-7 h-7 text-red-500" />
             </div>
-            <h2 className="text-lg font-bold text-gray-900">Error de activación</h2>
+            <h2 className="text-lg font-bold text-gray-900">Activation Error</h2>
             <p className="text-sm text-slate-400 mt-2">{message}</p>
-            <p className="text-xs text-slate-300 mt-3">El enlace puede haber expirado (1 hora). Contactá al administrador.</p>
+            <p className="text-xs text-slate-300 mt-3">The link may have expired (1 hour). Contact your administrator.</p>
           </>
         )}
       </div>

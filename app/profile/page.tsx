@@ -5,7 +5,7 @@ import { motion } from 'framer-motion';
 import {
   DocumentDuplicateIcon, PlusIcon, ExclamationCircleIcon,
   XMarkIcon, ArrowRightOnRectangleIcon, ShieldCheckIcon, PencilSquareIcon,
-  TrashIcon,
+  TrashIcon, KeyIcon, EyeIcon, EyeSlashIcon,
 } from '@heroicons/react/24/outline';
 import { AnimatePresence } from 'framer-motion';
 import Sidebar from '@/components/Sidebar';
@@ -14,21 +14,52 @@ import { AVATARS } from '@/lib/avatars';
 import { api } from '@/lib/api';
 import { pb } from '@/lib/pb';
 import { useAuth } from '@/lib/auth-context';
+import ConfirmModal from '@/components/ConfirmModal';
+import { useToast } from '@/lib/toast-context';
 
 export default function ProfilePage() {
   const { user, logout, updatePicture } = useAuth();
+  const { showToast } = useToast();
   const [company, setCompany] = useState<any>(null);
   const [members, setMembers] = useState<any[]>([]);
   const [genError, setGenError] = useState('');
+  const [generatingCode, setGeneratingCode] = useState(false);
   const [loading, setLoading] = useState(true);
   const [removingId, setRemovingId] = useState<string | null>(null);
   const [removeError, setRemoveError] = useState('');
 
+  // Avatar picker
   const [pickerOpen, setPickerOpen] = useState(false);
   const [avatarSaving, setAvatarSaving] = useState(false);
   const [avatarError, setAvatarError] = useState('');
-  const [avatarSuccess, setAvatarSuccess] = useState(false);
   const pickerRef = useRef<HTMLDivElement>(null);
+
+  // A-1: Inline name editing
+  const [editingName, setEditingName] = useState(false);
+  const [nameValue, setNameValue] = useState('');
+  const [nameSaving, setNameSaving] = useState(false);
+  const [nameError, setNameError] = useState('');
+
+  // A-2: Change password
+  const [showPasswordForm, setShowPasswordForm] = useState(false);
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [showCurrent, setShowCurrent] = useState(false);
+  const [showNew, setShowNew] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
+  const [passwordSaving, setPasswordSaving] = useState(false);
+  const [passwordError, setPasswordError] = useState('');
+
+  // A-3: Delete account
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [deleteError, setDeleteError] = useState('');
+  const [deleteSaving, setDeleteSaving] = useState(false);
+
+  // A-4: Leave company
+  const [confirmLeave, setConfirmLeave] = useState(false);
+  const [leaveError, setLeaveError] = useState('');
+  const [leaveSaving, setLeaveSaving] = useState(false);
 
   useEffect(() => {
     if (!pickerOpen) return;
@@ -46,7 +77,6 @@ export default function ProfilePage() {
     setPickerOpen(false);
     setAvatarSaving(true);
     setAvatarError('');
-    setAvatarSuccess(false);
     try {
       const res = await fetch('/api/profile/avatar', {
         method: 'POST',
@@ -55,8 +85,7 @@ export default function ProfilePage() {
       });
       if (!res.ok) throw new Error((await res.json()).error || 'Failed to update');
       updatePicture(avatarValue);
-      setAvatarSuccess(true);
-      setTimeout(() => setAvatarSuccess(false), 3000);
+      showToast('Icon updated');
     } catch (e: any) {
       setAvatarError(e?.message || 'Failed to update');
     }
@@ -93,15 +122,113 @@ export default function ProfilePage() {
   };
 
   const generateCode = async () => {
+    if (generatingCode) return;
     setGenError('');
+    setGeneratingCode(true);
     try {
       await api.post('/api/company/generate-code', {});
       const c = await api.get('/api/company/info');
       setCompany(c);
+      showToast('Invite code generated');
     } catch (err: any) {
       setGenError(err?.message || 'Failed to generate invitation code');
+    } finally {
+      setGeneratingCode(false);
     }
   };
+
+  // A-1: Save edited name
+  const saveName = async () => {
+    if (!nameValue.trim() || nameValue.trim() === user?.name) {
+      setEditingName(false);
+      return;
+    }
+    setNameSaving(true);
+    setNameError('');
+    try {
+      await api.put('/api/profile', { name: nameValue.trim() });
+      setEditingName(false);
+      showToast('Name updated');
+    } catch (e: any) {
+      setNameError(e?.message || 'Failed to update name');
+    }
+    setNameSaving(false);
+  };
+
+  // A-2: Change password
+  const changePassword = async () => {
+    setPasswordError('');
+    if (!currentPassword || !newPassword || !confirmPassword) {
+      setPasswordError('All fields are required');
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      setPasswordError('New passwords do not match');
+      return;
+    }
+    if (newPassword.length < 8) {
+      setPasswordError('Password must be at least 8 characters');
+      return;
+    }
+    setPasswordSaving(true);
+    try {
+      await pb.collection('users').update(user!.id, {
+        password: newPassword,
+        passwordConfirm: confirmPassword,
+        oldPassword: currentPassword,
+      });
+      setCurrentPassword('');
+      setNewPassword('');
+      setConfirmPassword('');
+      setShowPasswordForm(false);
+      showToast('Password changed successfully');
+    } catch (e: any) {
+      setPasswordError(e?.message || 'Failed to change password. Check your current password.');
+    }
+    setPasswordSaving(false);
+  };
+
+  // A-3: Delete account
+  const deleteAccount = async () => {
+    setDeleteSaving(true);
+    setDeleteError('');
+    try {
+      const res = await fetch('/api/account', {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${pb.authStore.token}` },
+      });
+      if (!res.ok) {
+        const d = await res.json().catch(() => ({}));
+        throw new Error(d.error || 'Failed to delete account');
+      }
+      logout();
+    } catch (e: any) {
+      setDeleteError(e?.message || 'Failed to delete account');
+      setDeleteSaving(false);
+    }
+  };
+
+  // A-4: Leave company
+  const leaveCompany = async () => {
+    setLeaveSaving(true);
+    setLeaveError('');
+    try {
+      const res = await fetch('/api/company/members/self', {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${pb.authStore.token}` },
+      });
+      if (!res.ok) {
+        const d = await res.json().catch(() => ({}));
+        throw new Error(d.error || 'Failed to leave company');
+      }
+      logout();
+    } catch (e: any) {
+      setLeaveError(e?.message || 'Failed to leave company');
+      setLeaveSaving(false);
+    }
+  };
+
+  const isOwner = company?.is_owner;
 
   return (
     <div className="flex min-h-screen bg-gray-50">
@@ -129,7 +256,7 @@ export default function ProfilePage() {
             {/* User Info */}
             <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="bg-white rounded-2xl border border-gray-100 p-6">
               <div className="flex items-start gap-4">
-                {/* Avatar with picker */}
+                {/* Avatar picker */}
                 <div className="relative flex-shrink-0" ref={pickerRef}>
                   <button
                     onClick={() => setPickerOpen(p => !p)}
@@ -146,7 +273,6 @@ export default function ProfilePage() {
                     </div>
                   </button>
 
-                  {/* Icon picker */}
                   <AnimatePresence>
                     {pickerOpen && (
                       <motion.div
@@ -186,17 +312,60 @@ export default function ProfilePage() {
                 </div>
 
                 <div className="flex-1 min-w-0">
-                  <h2 className="text-lg font-bold text-gray-900">{user?.name}</h2>
+                  {/* A-1: Inline name editing */}
+                  {editingName ? (
+                    <div className="flex items-center gap-2 mb-0.5">
+                      <input
+                        value={nameValue}
+                        onChange={e => setNameValue(e.target.value)}
+                        onKeyDown={e => {
+                          if (e.key === 'Enter') saveName();
+                          if (e.key === 'Escape') { setEditingName(false); setNameError(''); }
+                        }}
+                        className="text-sm font-bold border border-gray-200 rounded-lg px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500 w-full max-w-[200px]"
+                        autoFocus
+                        maxLength={60}
+                      />
+                      <button
+                        onClick={saveName}
+                        disabled={nameSaving}
+                        className="text-xs text-blue-600 hover:underline disabled:opacity-40 flex-shrink-0"
+                      >
+                        {nameSaving
+                          ? <span className="w-3.5 h-3.5 border-2 border-blue-300 border-t-blue-600 rounded-full animate-spin block" />
+                          : 'Save'
+                        }
+                      </button>
+                      <button
+                        onClick={() => { setEditingName(false); setNameError(''); }}
+                        className="text-xs text-gray-400 hover:text-gray-600 flex-shrink-0"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-2 mb-0.5">
+                      <h2 className="text-lg font-bold text-gray-900">{user?.name}</h2>
+                      <button
+                        onClick={() => { setNameValue(user?.name || ''); setEditingName(true); setNameError(''); }}
+                        title="Edit name"
+                        className="text-gray-300 hover:text-blue-500 transition-colors"
+                      >
+                        <PencilSquareIcon className="w-4 h-4" />
+                      </button>
+                    </div>
+                  )}
                   <p className="text-gray-500 text-sm">{user?.email}</p>
                   <span className="inline-block mt-1 text-xs font-medium px-2.5 py-1 bg-blue-50 text-blue-600 rounded-full capitalize">{user?.role}</span>
-                  {avatarError && (
-                    <p className="text-xs text-red-500 mt-2 flex items-center gap-1">
-                      <ExclamationCircleIcon className="w-3.5 h-3.5 flex-shrink-0" />
-                      {avatarError}
+                  {nameError && (
+                    <p className="text-xs text-red-500 mt-1 flex items-center gap-1">
+                      <ExclamationCircleIcon className="w-3.5 h-3.5 flex-shrink-0" />{nameError}
                     </p>
                   )}
-                  {avatarSuccess && (
-                    <p className="text-xs text-green-600 mt-2">Icon updated!</p>
+                  {avatarError && (
+                    <p className="text-xs text-red-500 mt-2 flex items-center gap-1">
+                      <ExclamationCircleIcon className="w-3.5 h-3.5 flex-shrink-0" />{avatarError}
+                    </p>
                   )}
                 </div>
               </div>
@@ -215,10 +384,13 @@ export default function ProfilePage() {
                   <span className="font-medium text-gray-900">{company?.member_count} / {company?.max_members}</span>
                 </div>
               </div>
-              {company?.is_owner && (
-                <button onClick={generateCode}
-                  className="mt-4 flex items-center gap-2 px-4 py-2 text-sm bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors">
-                  <PlusIcon className="w-4 h-4" /> Generate Invitation Code
+              {isOwner && (
+                <button onClick={generateCode} disabled={generatingCode}
+                  className="mt-4 flex items-center gap-2 px-4 py-2 text-sm bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors disabled:opacity-50">
+                  {generatingCode
+                    ? <span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+                    : <PlusIcon className="w-4 h-4" />}
+                  Generate Invitation Code
                 </button>
               )}
               <AnimatePresence>
@@ -247,7 +419,98 @@ export default function ProfilePage() {
               )}
             </motion.div>
 
-            {/* Members */}
+            {/* A-2: Security — Change Password */}
+            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.12 }} className="bg-white rounded-2xl border border-gray-100 p-6">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <KeyIcon className="w-4 h-4 text-gray-400" />
+                  <h3 className="font-semibold text-gray-900">Security</h3>
+                </div>
+                <button
+                  onClick={() => {
+                    setShowPasswordForm(p => !p);
+                    setPasswordError('');
+                  }}
+                  className="text-sm text-blue-600 hover:underline"
+                >
+                  {showPasswordForm ? 'Cancel' : 'Change Password'}
+                </button>
+              </div>
+
+              <AnimatePresence>
+                {showPasswordForm && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: 'auto' }}
+                    exit={{ opacity: 0, height: 0 }}
+                    className="overflow-hidden"
+                  >
+                    <div className="mt-4 space-y-3">
+                      <div>
+                        <label className="text-xs text-gray-500 mb-1 block">Current Password</label>
+                        <div className="relative">
+                          <input
+                            type={showCurrent ? 'text' : 'password'}
+                            value={currentPassword}
+                            onChange={e => setCurrentPassword(e.target.value)}
+                            className="w-full px-3 py-2 pr-10 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          />
+                          <button type="button" onClick={() => setShowCurrent(p => !p)} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+                            {showCurrent ? <EyeSlashIcon className="w-4 h-4" /> : <EyeIcon className="w-4 h-4" />}
+                          </button>
+                        </div>
+                      </div>
+                      <div>
+                        <label className="text-xs text-gray-500 mb-1 block">New Password</label>
+                        <div className="relative">
+                          <input
+                            type={showNew ? 'text' : 'password'}
+                            value={newPassword}
+                            onChange={e => setNewPassword(e.target.value)}
+                            className="w-full px-3 py-2 pr-10 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          />
+                          <button type="button" onClick={() => setShowNew(p => !p)} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+                            {showNew ? <EyeSlashIcon className="w-4 h-4" /> : <EyeIcon className="w-4 h-4" />}
+                          </button>
+                        </div>
+                      </div>
+                      <div>
+                        <label className="text-xs text-gray-500 mb-1 block">Confirm New Password</label>
+                        <div className="relative">
+                          <input
+                            type={showConfirm ? 'text' : 'password'}
+                            value={confirmPassword}
+                            onChange={e => setConfirmPassword(e.target.value)}
+                            onKeyDown={e => e.key === 'Enter' && changePassword()}
+                            className="w-full px-3 py-2 pr-10 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          />
+                          <button type="button" onClick={() => setShowConfirm(p => !p)} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+                            {showConfirm ? <EyeSlashIcon className="w-4 h-4" /> : <EyeIcon className="w-4 h-4" />}
+                          </button>
+                        </div>
+                      </div>
+                      {passwordError && (
+                        <p className="text-xs text-red-500 flex items-center gap-1">
+                          <ExclamationCircleIcon className="w-3.5 h-3.5 flex-shrink-0" />{passwordError}
+                        </p>
+                      )}
+                      <button
+                        onClick={changePassword}
+                        disabled={passwordSaving}
+                        className="w-full py-2 text-sm bg-blue-600 text-white rounded-xl hover:bg-blue-700 disabled:opacity-50 transition-colors flex items-center justify-center gap-2"
+                      >
+                        {passwordSaving
+                          ? <span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+                          : 'Update Password'
+                        }
+                      </button>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </motion.div>
+
+            {/* Team Members */}
             <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }} className="bg-white rounded-2xl border border-gray-100 p-6">
               <h3 className="font-semibold text-gray-900 mb-4">Team Members</h3>
               <AnimatePresence>
@@ -273,7 +536,7 @@ export default function ProfilePage() {
                       <p className="text-xs text-gray-400 truncate">{m.email}</p>
                     </div>
                     <span className="text-xs capitalize text-gray-400 flex-shrink-0">{m.role}</span>
-                    {company?.is_owner && m.user_id !== user?.id && m.role !== 'owner' && (
+                    {isOwner && m.user_id !== user?.id && m.role !== 'owner' && (
                       <button
                         onClick={() => removeMember(m.user_id)}
                         disabled={removingId === m.user_id}
@@ -289,10 +552,32 @@ export default function ProfilePage() {
                   </div>
                 ))}
               </div>
+
+              {/* A-4: Leave Company — only for non-owners who are in a company */}
+              {!isOwner && company && (
+                <div className="mt-5 pt-4 border-t border-gray-100">
+                  {leaveError && (
+                    <p className="text-xs text-red-500 mb-2 flex items-center gap-1">
+                      <ExclamationCircleIcon className="w-3.5 h-3.5 flex-shrink-0" />{leaveError}
+                    </p>
+                  )}
+                  <button
+                    onClick={() => setConfirmLeave(true)}
+                    disabled={leaveSaving}
+                    className="flex items-center gap-2 px-4 py-2 text-sm text-red-600 border border-red-100 bg-red-50 rounded-xl hover:bg-red-100 transition-colors disabled:opacity-50"
+                  >
+                    {leaveSaving
+                      ? <span className="w-4 h-4 border-2 border-red-300 border-t-red-500 rounded-full animate-spin" />
+                      : <ArrowRightOnRectangleIcon className="w-4 h-4" />
+                    }
+                    Leave Company
+                  </button>
+                </div>
+              )}
             </motion.div>
 
-            {/* Admin panel link */}
-            {user?.id === 'ezcrajrmevn36cu' && (
+            {/* A-5: Admin panel link — use NEXT_PUBLIC_ADMIN_USER_EMAIL instead of hardcoded ID */}
+            {user?.email === process.env.NEXT_PUBLIC_ADMIN_USER_EMAIL && (
               <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="bg-white rounded-2xl border border-gray-100 p-6">
                 <div className="flex items-center gap-2 mb-1">
                   <ShieldCheckIcon className="w-4 h-4 text-purple-500" />
@@ -305,9 +590,48 @@ export default function ProfilePage() {
                 </a>
               </motion.div>
             )}
+
+            {/* A-3: Danger Zone */}
+            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 }} className="bg-white rounded-2xl border border-red-100 p-6">
+              <h3 className="font-semibold text-red-600 mb-1">Danger Zone</h3>
+              <p className="text-xs text-gray-400 mb-4">Permanently delete your account and all associated data. This cannot be undone.</p>
+              {deleteError && (
+                <p className="text-xs text-red-500 mb-3 flex items-center gap-1">
+                  <ExclamationCircleIcon className="w-3.5 h-3.5 flex-shrink-0" />{deleteError}
+                </p>
+              )}
+              <button
+                onClick={() => setConfirmDelete(true)}
+                disabled={deleteSaving}
+                className="flex items-center gap-2 px-4 py-2 text-sm text-red-600 border border-red-200 rounded-xl hover:bg-red-50 transition-colors disabled:opacity-50"
+              >
+                {deleteSaving
+                  ? <span className="w-4 h-4 border-2 border-red-300 border-t-red-500 rounded-full animate-spin" />
+                  : <TrashIcon className="w-4 h-4" />
+                }
+                Delete Account
+              </button>
+            </motion.div>
           </div>
         )}
       </main>
+
+      {confirmDelete && (
+        <ConfirmModal
+          message="Are you sure you want to permanently delete your account? This action cannot be undone."
+          confirmLabel="Delete Account"
+          onConfirm={deleteAccount}
+          onCancel={() => setConfirmDelete(false)}
+        />
+      )}
+      {confirmLeave && (
+        <ConfirmModal
+          message={`Are you sure you want to leave ${company?.name}? You will need a new invitation code to rejoin.`}
+          confirmLabel="Leave Company"
+          onConfirm={leaveCompany}
+          onCancel={() => setConfirmLeave(false)}
+        />
+      )}
     </div>
   );
 }

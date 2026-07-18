@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyToken } from '@/lib/tokens';
+import { getPbAdminToken, PB_URL } from '@/lib/pb-admin';
 
 // Map of token → expiry timestamp (ms). Entries are cleaned up after expiry.
 // Note: this is in-memory; tokens could be reused across process restarts within
@@ -20,22 +21,6 @@ function isTokenUsed(token: string): boolean {
   if (exp === undefined) return false;
   if (Date.now() > exp) { usedTokens.delete(token); return false; }
   return true;
-}
-
-const PB_URL = process.env.NEXT_PUBLIC_PB_URL || 'https://pocketbase-production-e699.up.railway.app';
-
-async function getPbAdminToken() {
-  const res = await fetch(`${PB_URL}/api/collections/_superusers/auth-with-password`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      identity: process.env.PB_ADMIN_EMAIL,
-      password: process.env.PB_ADMIN_PASSWORD,
-    }),
-  });
-  const data = await res.json();
-  if (!res.ok) throw new Error(`PB admin auth failed: ${data?.message ?? res.status}`);
-  return data.token as string;
 }
 
 export async function POST(req: NextRequest) {

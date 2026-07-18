@@ -1,17 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyToken } from '@/lib/tokens';
-
-const PB_URL = process.env.NEXT_PUBLIC_PB_URL || 'https://pocketbase-production-e699.up.railway.app';
-
-async function getPbAdminToken() {
-  const res = await fetch(`${PB_URL}/api/collections/_superusers/auth-with-password`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ identity: process.env.PB_ADMIN_EMAIL, password: process.env.PB_ADMIN_PASSWORD }),
-  });
-  const data = await res.json();
-  return data.token as string;
-}
+import { getPbAdminToken, PB_URL } from '@/lib/pb-admin';
 
 export async function POST(req: NextRequest) {
   try {

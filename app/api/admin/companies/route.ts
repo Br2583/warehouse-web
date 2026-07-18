@@ -39,5 +39,9 @@ export async function GET(req: NextRequest) {
     owner:     (usersByCompany[c.id] || []).find((u: any) => u.id === c.owner_id) || null,
   }));
 
-  return NextResponse.json({ companies });
+  return NextResponse.json({
+    companies,
+    truncated: companiesData.totalItems > 200 || usersData.totalItems > 500,
+    totalCompanies: companiesData.totalItems,
+  });
 }

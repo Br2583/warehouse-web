@@ -14,6 +14,7 @@ export default function VerifyEmailPage() {
 
   useEffect(() => {
     const saved = localStorage.getItem('verify_email') || '';
+    if (!saved) setError('Email address not found. Please go back and sign up again.');
     setEmail(saved);
   }, []);
 
@@ -22,11 +23,12 @@ export default function VerifyEmailPage() {
     setLoading(true);
     setError('');
     try {
-      await fetch('/api/auth/send-verification', {
+      const res = await fetch('/api/auth/send-verification', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email }),
       });
+      if (!res.ok) { setError('Could not resend email. Try again in a moment.'); return; }
       setResent(true);
       setTimeout(() => setResent(false), 5000);
     } catch {

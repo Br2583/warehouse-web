@@ -12,6 +12,7 @@ import Sidebar from '@/components/Sidebar';
 import VaultForm, { VaultFormData } from '@/components/VaultForm';
 import QRScanner from '@/components/QRScanner';
 import { api } from '@/lib/api';
+import { useToast } from '@/lib/toast-context';
 import { useParams, useSearchParams } from 'next/navigation';
 import { compressImage } from '@/lib/compress-image';
 import { QRCodeSVG } from 'qrcode.react';
@@ -60,6 +61,7 @@ const emptyForm: VaultFormData = {
 export default function WarehouseDetailPage() {
   const { id } = useParams();
   const searchParams = useSearchParams();
+  const { showToast } = useToast();
   const warehouseId = id as string;
   const [warehouseName, setWarehouseName] = useState('');
   const [boxes, setBoxes] = useState<Box[]>([]);
@@ -182,6 +184,7 @@ export default function WarehouseDetailPage() {
       setShowEdit(false);
       setSelected(null);
       fetchBoxes();
+      showToast('Vault updated');
     } catch (err: any) {
       setEditError(err?.message || 'Failed to save');
     } finally {
@@ -197,6 +200,7 @@ export default function WarehouseDetailPage() {
           await api.delete(`/api/boxes/${boxId}`);
           setSelected(null);
           fetchBoxes();
+          showToast('Vault deleted');
         } catch (err: any) {
           setApiError(err?.message || 'Failed to delete vault');
         }
@@ -243,6 +247,7 @@ export default function WarehouseDetailPage() {
       setShowAdd(false);
       setForm(emptyForm);
       fetchBoxes();
+      showToast('Vault created');
     } catch (err: any) {
       setSaveError(err?.message || 'Failed to add vault');
     } finally {
@@ -443,7 +448,7 @@ export default function WarehouseDetailPage() {
                         >
                           {box ? (
                             <>
-                              <span className="hidden md:block text-[10px] font-bold leading-tight w-full px-1 text-center overflow-hidden text-ellipsis whitespace-nowrap">{box.client_name}</span>
+                              <span className="text-[8px] md:text-[10px] font-bold leading-tight w-full px-1 text-center overflow-hidden text-ellipsis whitespace-nowrap">{box.client_name}</span>
                               <span className="hidden md:block text-[9px] opacity-75 mt-0.5 leading-none">{box.job_type}</span>
                             </>
                           ) : (
@@ -702,6 +707,15 @@ export default function WarehouseDetailPage() {
               exit={{ opacity: 0 }}
               className="fixed inset-0 z-[60] flex items-center justify-center bg-black/90"
               onClick={() => setLightbox(null)}
+              onTouchStart={e => { (e.currentTarget as any)._touchX = e.touches[0].clientX; }}
+              onTouchEnd={e => {
+                const startX = (e.currentTarget as any)._touchX;
+                if (startX == null) return;
+                const delta = e.changedTouches[0].clientX - startX;
+                if (Math.abs(delta) < 50) return;
+                if (delta < 0) setLightbox(l => l ? { ...l, index: (l.index + 1) % l.photos.length } : null);
+                else setLightbox(l => l ? { ...l, index: (l.index - 1 + l.photos.length) % l.photos.length } : null);
+              }}
             >
               {/* Close */}
               <button

@@ -17,8 +17,7 @@ import {
 } from '@heroicons/react/24/solid';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { useUnreadChat } from '@/lib/use-unread-chat';
-import { usePendingTasks } from '@/lib/use-pending-tasks';
+import { useNavData } from '@/lib/nav-data-context';
 
 const navItems = [
   { href: '/dashboard',  label: 'Dashboard',  icon: HomeIcon,                   iconActive: HomeSolid },
@@ -36,8 +35,7 @@ const navItems = [
 export default function Sidebar() {
   const { user, logout } = useAuth();
   const pathname = usePathname();
-  const unreadChat    = useUnreadChat();
-  const pendingTasks  = usePendingTasks();
+  const { unreadChat, pendingTasks } = useNavData();
 
   return (
     <div className="hidden md:flex w-64 bg-white border-r border-gray-100 h-screen flex-col shadow-sm fixed left-0 top-0 z-40">

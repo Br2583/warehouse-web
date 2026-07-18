@@ -3,11 +3,11 @@
 import { useState, useEffect, Suspense } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  MagnifyingGlassIcon, BuildingOffice2Icon, FunnelIcon, XMarkIcon,
+  MagnifyingGlassIcon, BuildingOffice2Icon, FunnelIcon, XMarkIcon, ExclamationCircleIcon,
 } from '@heroicons/react/24/outline';
 import Sidebar from '@/components/Sidebar';
 import { api } from '@/lib/api';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
 import { STATUS_COLORS } from '@/lib/constants';
 
 const JOB_TYPES = ['Fire', 'Water', 'Moving', 'Storage'];
@@ -16,6 +16,7 @@ const STATUSES  = ['PENDING', 'READY', 'DELIVERED'];
 function SearchContent() {
   const searchParams = useSearchParams();
   const statusFilter = searchParams.get('status');
+  const router = useRouter();
 
   const [query, setQuery]         = useState('');
   const [results, setResults]     = useState<any[]>([]);
@@ -23,6 +24,7 @@ function SearchContent() {
   const [searched, setSearched]   = useState(false);
   const [warehouses, setWarehouses] = useState<{ id: string; name: string }[]>([]);
   const [showFilters, setShowFilters] = useState(false);
+  const [searchError, setSearchError] = useState<string | null>(null);
 
   // Filters
   const [filterStatus, setFilterStatus]   = useState(statusFilter || '');
@@ -60,6 +62,7 @@ function SearchContent() {
   const runSearch = async (q = query, st = filterStatus) => {
     setLoading(true);
     setSearched(true);
+    setSearchError(null);
     try {
       const params = new URLSearchParams();
       if (q) params.set('q', q);
@@ -69,7 +72,7 @@ function SearchContent() {
       if (filterPacker) params.set('packer', filterPacker);
       const data = await api.get(`/api/search/global?${params.toString()}`);
       setResults(Array.isArray(data) ? data : []);
-    } catch { setResults([]); }
+    } catch { setResults([]); setSearchError('Search failed. Please try again.'); }
     finally { setLoading(false); }
   };
 
@@ -192,6 +195,14 @@ function SearchContent() {
           </div>
         )}
 
+        {searchError && (
+          <div className="flex items-center gap-3 bg-red-50 border border-red-100 text-red-700 text-sm px-4 py-3 rounded-xl mb-4">
+            <ExclamationCircleIcon className="w-4 h-4 flex-shrink-0" />
+            <span className="flex-1">{searchError}</span>
+            <button onClick={() => setSearchError(null)} className="text-red-400 hover:text-red-600"><XMarkIcon className="w-4 h-4" /></button>
+          </div>
+        )}
+
         {!loading && searched && (
           <div>
             <div className="flex items-center justify-between mb-4">
@@ -230,7 +241,8 @@ function SearchContent() {
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         transition={{ delay: Math.min(i * 0.03, 0.4) }}
-                        className="border-b border-gray-50 hover:bg-gray-50 transition-colors"
+                        className="border-b border-gray-50 hover:bg-gray-50 transition-colors cursor-pointer"
+                        onClick={() => router.push(`/warehouses/${box.warehouse_id}?vault=${box.box_id}`)}
                       >
                         <td className="px-6 py-4 text-sm font-semibold text-gray-900">{box.position}</td>
                         <td className="px-6 py-4 text-sm text-gray-700">{box.client_name}</td>
