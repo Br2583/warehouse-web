@@ -28,7 +28,7 @@ export default function ScanPage() {
         return;
       }
       const vault = records[0];
-      router.push(`/warehouses/${vault.warehouse_id}?vault=${vault.box_id}`);
+      router.push(`/warehouses/${vault.warehouse_id}?vault=${vault.id}`);
     } catch {
       setErrorMsg('Could not look up the vault. Check your connection.');
       setState('error');
