@@ -6,6 +6,7 @@
 # +20 corregidos: M-3, M-24, M-25, M-26, M-27, M-28, M-29, M-30, M-31, M-33, M-34, M-35, NM-1, NM-8 + B-22, B-23 (admin locale+successId) — Sesión 7 (2026-07-16)
 # +31 corregidos: B-1, B-2, B-5, B-6, B-8, B-9, B-10, B-11, B-12, B-13(N/A), B-14(ya ok), B-16, B-17, B-18, B-19, B-20, B-21, B-24(ya ok), B-25(pendiente), B-27, B-28, B-29, B-30, B-31, B-32, B-33, B-35, B-36, B-37, B-40..B-44, B-46, B-48..B-52, B-55 + NB-2(ok) — Sesión 8 (2026-07-16)
 # +10 corregidos: B-3, B-4, B-15, B-25, B-38, B-39, B-45, B-47, B-54, B-13(ya ok) — Sesión 9 (2026-07-16)
+# +1 corregido: B-34 (state field en storage create form) — Sesión 13 (2026-07-18). M-8,M-13,M-14,M-17,NM-3,B-26,B-53 ya estaban ok
 #
 # REGLAS para sesiones futuras:
 # 1. Leer el issue COMPLETO antes de tocar cualquier archivo

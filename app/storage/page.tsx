@@ -117,6 +117,12 @@ export default function StoragePage() {
                     className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
                 </div>
                 <div>
+                  <label className="block text-xs text-gray-500 mb-1">State</label>
+                  <input type="text" placeholder="State" value={form.state}
+                    onChange={e => setForm(f => ({ ...f, state: e.target.value }))}
+                    className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                </div>
+                <div>
                   <label className="block text-xs text-gray-500 mb-1">Client (optional)</label>
                   <input type="text" placeholder="Assigned client" value={form.client_name}
                     onChange={e => setForm(f => ({ ...f, client_name: e.target.value }))}
