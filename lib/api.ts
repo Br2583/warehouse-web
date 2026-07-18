@@ -619,7 +619,7 @@ async function routeDelete(path: string): Promise<any> {
   const chatMatch = p.match(/^\/api\/chat\/messages\/([^/]+)$/);
   if (chatMatch) {
     const chatMsg = await pb.collection('chat_messages').getOne(chatMatch[1]);
-    if (chatMsg.company_id !== cid && chatMsg.author_id !== userId()) throw new Error('Forbidden');
+    if (chatMsg.company_id !== cid || chatMsg.author_id !== userId()) throw new Error('Forbidden');
     await pb.collection('chat_messages').delete(chatMatch[1]);
     return null;
   }

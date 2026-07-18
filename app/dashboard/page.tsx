@@ -44,16 +44,16 @@ export default function DashboardPage() {
       } catch { /* stats unavailable, show zeros */ }
 
       try {
-        const workOrders = await api.get('/api/work-orders');
-        if (Array.isArray(workOrders)) {
+        const taskList = await api.get('/api/tasks');
+        if (Array.isArray(taskList)) {
           setWorkStats({
-            total: workOrders.length,
-            pending: workOrders.filter((w: any) => w.status === 'pending').length,
-            in_progress: workOrders.filter((w: any) => w.status === 'in_progress').length,
-            completed: workOrders.filter((w: any) => w.status === 'completed' || w.status === 'done').length,
+            total: taskList.length,
+            pending: taskList.filter((t: any) => t.status === 'PENDING').length,
+            in_progress: taskList.filter((t: any) => t.status === 'IN_PROGRESS').length,
+            completed: taskList.filter((t: any) => t.status === 'DONE').length,
           });
         }
-      } catch { /* no work orders yet */ }
+      } catch { /* no tasks yet */ }
 
       try {
         const whs = await api.get('/api/warehouses');

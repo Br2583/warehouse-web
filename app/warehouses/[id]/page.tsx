@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   ArchiveBoxIcon, PlusIcon, MagnifyingGlassIcon, TrashIcon, XMarkIcon, CameraIcon,
@@ -256,7 +256,7 @@ export default function WarehouseDetailPage() {
   };
 
   // Open a vault and lazy-load its photos
-  const selectVault = async (box: Box) => {
+  const selectVault = useCallback(async (box: Box) => {
     setSelected(box);
     setShowQR(false);
     setLoadingPhotos(true);
@@ -265,9 +265,9 @@ export default function WarehouseDetailPage() {
       if (full?.photos) setSelected(prev => prev ? { ...prev, photos: full.photos } : prev);
     } catch {}
     setLoadingPhotos(false);
-  };
+  }, []);
 
-  const handleScanResult = (vaultId: string) => {
+  const handleScanResult = useCallback((vaultId: string) => {
     setShowScanner(false);
     const found = boxes.find(b => b.box_id === vaultId);
     if (found) {
@@ -275,7 +275,7 @@ export default function WarehouseDetailPage() {
     } else {
       setApiError(`Vault not found in this warehouse. It may belong to a different warehouse.`);
     }
-  };
+  }, [boxes, selectVault]);
 
   const boxStatus = (box: Box) => box.estado || box.status || 'PENDING';
 
@@ -602,7 +602,7 @@ export default function WarehouseDetailPage() {
                   {showQR && (
                     <div className="mt-3 flex flex-col items-center gap-2 p-4 bg-gray-50 rounded-xl">
                       <QRCodeSVG
-                        value={`https://managerwarehouse.cc/vault/${selected.box_id}/print`}
+                        value={`${process.env.NEXT_PUBLIC_APP_URL || 'https://managerwarehouse.cc'}/vault/${selected.box_id}/print`}
                         size={160}
                         level="H"
                       />

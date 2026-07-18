@@ -742,7 +742,7 @@ export default function TasksPage() {
   const sorted = [...tasks].sort((a, b) => {
     if (a.priority === 'urgent' && b.priority !== 'urgent') return -1;
     if (b.priority === 'urgent' && a.priority !== 'urgent') return  1;
-    return b.created > a.created ? 1 : -1;
+    return b.created > a.created ? -1 : 1;
   });
 
   const pendingCount = tasks.filter(t => t.status === 'PENDING').length;
