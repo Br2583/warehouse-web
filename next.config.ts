@@ -18,7 +18,7 @@ const securityHeaders = [
       "style-src 'self' 'unsafe-inline'",
       `img-src 'self' data: blob: https://lh3.googleusercontent.com https://*.openstreetmap.org`,
       `frame-src https://www.openstreetmap.org`,
-      `connect-src 'self' ${PB_URL} ${AUTH_URL} https://nominatim.openstreetmap.org https://api.emailjs.com`,
+      `connect-src 'self' ${PB_URL} ${AUTH_URL} https://nominatim.openstreetmap.org`,
       "media-src 'self' blob:",
       "font-src 'self'",
       "object-src 'none'",

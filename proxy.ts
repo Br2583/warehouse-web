@@ -7,7 +7,7 @@ const ACTIVITY_COOKIE    = 'wm_last_active';
 const PROTECTED = [
   '/dashboard', '/warehouses', '/search', '/production',
   '/stats', '/snapshots', '/chat', '/deleted', '/profile',
-  '/storage', '/onboarding', '/admin-k9x2m7',
+  '/storage', '/onboarding', '/admin-k9x2m7', '/scan', '/tasks',
 ];
 
 function isProtected(pathname: string): boolean {
