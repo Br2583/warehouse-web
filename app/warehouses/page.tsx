@@ -99,19 +99,19 @@ export default function WarehousesPage() {
   return (
     <div className="flex min-h-screen bg-gray-50">
       <Sidebar />
-      <main className="md:ml-64 flex-1 min-w-0 p-4 md:p-8 pb-28 md:pb-8">
-        <div className="flex items-center justify-between mb-8">
+      <main className="md:ml-64 flex-1 min-w-0 px-4 pt-4 pb-28 md:px-8 md:pt-8 md:pb-8">
+        <div className="flex items-center justify-between mb-6 md:mb-8">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">Warehouses</h1>
+            <h1 className="text-xl md:text-2xl font-bold text-gray-900">Warehouses</h1>
             <p className="text-gray-500 text-sm mt-1">Select a warehouse to manage its inventory</p>
           </div>
           {user?.role === 'owner' && (
             <button
-             
               onClick={() => setShowCreate(s => !s)}
-              className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-xl hover:bg-blue-700 transition-colors"
+              className="flex items-center gap-2 px-3 py-2 bg-blue-600 text-white text-sm font-medium rounded-xl hover:bg-blue-700 transition-colors flex-shrink-0"
             >
-              <PlusIcon className="w-4 h-4" /> New Warehouse
+              <PlusIcon className="w-4 h-4" />
+              <span className="hidden sm:inline">New Warehouse</span>
             </button>
           )}
         </div>
@@ -198,26 +198,26 @@ export default function WarehousesPage() {
                         {/* Color accent bar */}
                         <div className="h-1.5 flex-shrink-0" style={{ backgroundColor: accent }} />
                         {/* Card body */}
-                        <div className="p-6 flex-1 flex flex-col">
-                          <div className="flex items-start justify-between mb-4">
+                        <div className="p-4 md:p-6 flex-1 flex flex-col">
+                          <div className="flex items-start justify-between mb-3 md:mb-4">
                             <div
-                              className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0"
+                              className="w-10 h-10 md:w-12 md:h-12 rounded-xl flex items-center justify-center flex-shrink-0"
                               style={{ backgroundColor: accent + '1a' }}
                             >
-                              <BuildingOffice2Icon className="w-6 h-6" style={{ color: accent }} />
+                              <BuildingOffice2Icon className="w-5 h-5 md:w-6 md:h-6" style={{ color: accent }} />
                             </div>
-                            <ChevronRightIcon className="w-5 h-5 text-gray-300 group-hover:text-blue-500 transition-colors mt-3" />
+                            <ChevronRightIcon className="w-4 h-4 md:w-5 md:h-5 text-gray-300 group-hover:text-blue-500 transition-colors mt-2 md:mt-3" />
                           </div>
-                          <h2 className="text-lg font-semibold text-gray-900 truncate pr-2">{wh.name}</h2>
+                          <h2 className="text-base md:text-lg font-semibold text-gray-900 truncate pr-2">{wh.name}</h2>
                           {wh.address
                             ? <p className="text-xs text-gray-400 mt-0.5 truncate">{wh.address}</p>
                             : <p className="text-xs text-gray-300 mt-0.5">No address</p>
                           }
-                          <div className="flex items-baseline gap-1.5 mt-3">
-                            <span className="text-3xl font-bold text-gray-900 tabular-nums">{wh.vault_count}</span>
+                          <div className="flex items-baseline gap-1.5 mt-2 md:mt-3">
+                            <span className="text-2xl md:text-3xl font-bold text-gray-900 tabular-nums">{wh.vault_count}</span>
                             <span className="text-sm text-gray-400">vaults</span>
                           </div>
-                          <div className="mt-auto pt-4 border-t border-gray-50">
+                          <div className="mt-auto pt-3 md:pt-4 border-t border-gray-50">
                             <span className="text-xs font-medium" style={{ color: accent }}>View inventory →</span>
                           </div>
                         </div>

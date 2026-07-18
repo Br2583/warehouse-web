@@ -110,31 +110,31 @@ export default function DashboardPage() {
   return (
     <div className="flex min-h-screen bg-gray-50">
       <Sidebar />
-      <main className="md:ml-64 flex-1 min-w-0 p-4 md:p-8 pb-28 md:pb-8">
+      <main className="md:ml-64 flex-1 min-w-0 px-4 pt-4 pb-28 md:px-8 md:pt-8 md:pb-8">
         {/* Header */}
-        <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="mb-8">
+        <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="mb-5 md:mb-8">
           <p className="text-gray-400 text-sm">{greeting()},</p>
-          <h1 className="text-2xl font-bold text-gray-900 mt-0.5">
+          <h1 className="text-xl md:text-2xl font-bold text-gray-900 mt-0.5">
             {user?.name?.split(' ')[0] || 'User'}
           </h1>
           <p className="text-gray-500 text-sm mt-1">{user?.company_name}</p>
         </motion.div>
 
         {/* Overview Cards */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 mb-5 md:mb-8">
           {overviewCards.map((card, i) => {
             const Icon = card.icon;
             return (
               <motion.div key={card.label} custom={i} variants={fadeUp} initial="hidden" animate="show">
                 <Link href={card.href}>
-                  <div className={`bg-white rounded-2xl border p-5 hover:shadow-md transition-shadow cursor-pointer ${colorMap[card.color]}`}>
-                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center mb-4 ${iconBg[card.color]}`}>
-                      <Icon className="w-5 h-5 text-white" />
+                  <div className={`bg-white rounded-2xl border p-3.5 md:p-5 hover:shadow-md transition-shadow cursor-pointer ${colorMap[card.color]}`}>
+                    <div className={`w-8 h-8 md:w-10 md:h-10 rounded-xl flex items-center justify-center mb-3 md:mb-4 ${iconBg[card.color]}`}>
+                      <Icon className="w-4 h-4 md:w-5 md:h-5 text-white" />
                     </div>
-                    <p className="text-3xl font-bold text-gray-900">
+                    <p className="text-2xl md:text-3xl font-bold text-gray-900">
                       {loading ? '—' : card.value}
                     </p>
-                    <p className="text-sm text-gray-500 mt-1">{card.label}</p>
+                    <p className="text-xs md:text-sm text-gray-500 mt-0.5 md:mt-1">{card.label}</p>
                   </div>
                 </Link>
               </motion.div>
@@ -142,11 +142,11 @@ export default function DashboardPage() {
           })}
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 mb-5 md:mb-8">
           {/* Inventory Status */}
-          <motion.div custom={4} variants={fadeUp} initial="hidden" animate="show" className="col-span-2 bg-white rounded-2xl border border-gray-100 p-6">
-            <h2 className="font-semibold text-gray-900 mb-5">Inventory Status</h2>
-            <div className="flex gap-6 mb-5">
+          <motion.div custom={4} variants={fadeUp} initial="hidden" animate="show" className="md:col-span-2 bg-white rounded-2xl border border-gray-100 p-4 md:p-6">
+            <h2 className="font-semibold text-gray-900 mb-3 md:mb-5">Inventory Status</h2>
+            <div className="flex gap-4 md:gap-6 mb-3 md:mb-5">
               {[
                 { label: 'Pending', value: pending, color: 'bg-amber-400' },
                 { label: 'Ready', value: ready, color: 'bg-green-400' },
@@ -200,7 +200,7 @@ export default function DashboardPage() {
           </motion.div>
 
           {/* Production Status */}
-          <motion.div custom={5} variants={fadeUp} initial="hidden" animate="show" className="bg-white rounded-2xl border border-gray-100 p-6">
+          <motion.div custom={5} variants={fadeUp} initial="hidden" animate="show" className="bg-white rounded-2xl border border-gray-100 p-4 md:p-6">
             <h2 className="font-semibold text-gray-900 mb-5">Production</h2>
             <div className="space-y-4">
               {[

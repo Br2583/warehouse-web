@@ -31,6 +31,17 @@ body {
   --safe-area-top: env(safe-area-inset-top, 0px);
 }
 
+/* Mobile only: min 24px top padding for Android edge-to-edge status bar */
+.mobile-safe-top {
+  padding-top: env(safe-area-inset-top, 0px);
+}
+
+@media (max-width: 767px) {
+  .mobile-safe-top {
+    padding-top: max(env(safe-area-inset-top, 0px), 1.5rem);
+  }
+}
+
 input,
 textarea,
 select {

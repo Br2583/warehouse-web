@@ -4,6 +4,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 import MobileNav from './MobileNav';
 import Tutorial from './Tutorial';
+import CapacitorBackHandler from './CapacitorBackHandler';
 import { useAuth } from '@/lib/auth-context';
 import { useTutorial } from '@/lib/use-tutorial';
 import { useUnreadChat } from '@/lib/use-unread-chat';
@@ -42,8 +43,9 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
 
   return (
     <NavDataContext.Provider value={{ unreadChat, pendingTasks }}>
+      <CapacitorBackHandler />
       {showTutorial && isProtected && !loading && <Tutorial onDismiss={dismissTutorial} />}
-      <div style={isProtected ? { paddingTop: 'env(safe-area-inset-top)' } : undefined}>
+      <div className={isProtected ? 'mobile-safe-top' : ''}>
         {children}
       </div>
       {showNav && <MobileNav />}
