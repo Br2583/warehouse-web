@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import {
   BriefcaseIcon, BuildingOffice2Icon, StarIcon, ChartBarIcon,
   WrenchScrewdriverIcon, ArchiveBoxIcon, TruckIcon, CogIcon,
@@ -35,6 +36,7 @@ export function UserAvatar({ picture, name, size = 36, shape = 'circle', classNa
   const rounded = shape === 'square' ? 'rounded-2xl' : 'rounded-full';
   const style = { width: size, height: size, minWidth: size };
   const iconSize = Math.round(size * 0.52);
+  const [imgError, setImgError] = useState(false);
 
   const av = getAvatarById(picture);
   if (av) {
@@ -49,13 +51,14 @@ export function UserAvatar({ picture, name, size = 36, shape = 'circle', classNa
     );
   }
 
-  if (picture?.startsWith('data:image') || picture?.startsWith('http')) {
+  if (!imgError && (picture?.startsWith('data:image') || picture?.startsWith('http'))) {
     return (
       <img
         src={picture}
         alt={name ?? ''}
         style={style}
         className={`object-cover flex-shrink-0 ${rounded} ${className}`}
+        onError={() => setImgError(true)}
       />
     );
   }

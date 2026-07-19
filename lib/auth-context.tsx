@@ -47,15 +47,8 @@ async function buildUser(model: any): Promise<User> {
       company_rejected  = c.rejected  ?? false;
     } catch {}
   }
-  // Priority: icon preset → file upload → legacy base64 → initials
-  let picture: string | undefined;
-  if (model.avatar_base64?.startsWith('avatar:')) {
-    picture = model.avatar_base64;
-  } else if (model.avatar) {
-    picture = pb.files.getUrl(model, model.avatar);
-  } else if (model.avatar_base64) {
-    picture = model.avatar_base64;
-  }
+  // Use only avatar_base64 (TEXT/SQLite — persists on Railway; FILE field is ephemeral)
+  const picture: string | undefined = model.avatar_base64 || undefined;
 
   return {
     user_id:           model.id,
