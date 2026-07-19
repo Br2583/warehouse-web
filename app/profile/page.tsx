@@ -34,6 +34,12 @@ export default function ProfilePage() {
   const [nameSaving, setNameSaving] = useState(false);
   const [nameError, setNameError] = useState('');
 
+  // Inline company name editing (owner only)
+  const [editingCompany, setEditingCompany] = useState(false);
+  const [companyNameValue, setCompanyNameValue] = useState('');
+  const [companySaving, setCompanySaving] = useState(false);
+  const [companyError, setCompanyError] = useState('');
+
   useEffect(() => {
     if (!pickerOpen) return;
     const handler = (e: MouseEvent) => {
@@ -102,6 +108,27 @@ export default function ProfilePage() {
     }
     setNameSaving(false);
   };
+
+  const saveCompanyName = async () => {
+    if (!companyNameValue.trim() || companyNameValue.trim() === company?.name) {
+      setEditingCompany(false);
+      return;
+    }
+    setCompanySaving(true);
+    setCompanyError('');
+    try {
+      await api.put('/api/company/info', { name: companyNameValue.trim() });
+      setCompany((prev: any) => ({ ...prev, name: companyNameValue.trim() }));
+      await refreshUser();
+      setEditingCompany(false);
+      showToast('Company name updated');
+    } catch (e: any) {
+      setCompanyError(e?.message || 'Failed to update company name');
+    }
+    setCompanySaving(false);
+  };
+
+  const isOwner = company?.is_owner;
 
   return (
     <div className="flex min-h-screen bg-gray-50">
@@ -233,7 +260,7 @@ export default function ProfilePage() {
                       <button
                         onClick={() => { setNameValue(user?.name || ''); setEditingName(true); setNameError(''); }}
                         title="Edit name"
-                        className="text-gray-300 hover:text-blue-500 transition-colors flex-shrink-0"
+                        className="text-gray-400 hover:text-blue-500 transition-colors flex-shrink-0"
                       >
                         <PencilSquareIcon className="w-4 h-4" />
                       </button>
@@ -269,10 +296,46 @@ export default function ProfilePage() {
               >
                 <h3 className="font-semibold text-gray-900 mb-3">Company</h3>
                 <div className="space-y-2.5">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-gray-400">Name</span>
-                    <span className="font-medium text-gray-900">{company.name}</span>
+                  {/* Company name — editable for owner */}
+                  <div className="flex items-center justify-between text-sm gap-3">
+                    <span className="text-gray-400 flex-shrink-0">Name</span>
+                    {isOwner && editingCompany ? (
+                      <div className="flex items-center gap-2 flex-1 justify-end">
+                        <input
+                          value={companyNameValue}
+                          onChange={e => setCompanyNameValue(e.target.value)}
+                          onKeyDown={e => {
+                            if (e.key === 'Enter') saveCompanyName();
+                            if (e.key === 'Escape') { setEditingCompany(false); setCompanyError(''); }
+                          }}
+                          className="text-sm font-medium border border-gray-200 rounded-lg px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500 w-full max-w-[180px]"
+                          autoFocus
+                          maxLength={80}
+                        />
+                        <button onClick={saveCompanyName} disabled={companySaving} className="text-xs text-blue-600 hover:underline disabled:opacity-40 flex-shrink-0">
+                          {companySaving ? <span className="w-3 h-3 border-2 border-blue-300 border-t-blue-600 rounded-full animate-spin block" /> : 'Save'}
+                        </button>
+                        <button onClick={() => { setEditingCompany(false); setCompanyError(''); }} className="text-xs text-gray-400 hover:text-gray-600 flex-shrink-0">Cancel</button>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-2">
+                        <span className="font-medium text-gray-900">{company.name}</span>
+                        {isOwner && (
+                          <button
+                            onClick={() => { setCompanyNameValue(company.name); setEditingCompany(true); setCompanyError(''); }}
+                            className="text-gray-300 hover:text-blue-500 transition-colors"
+                          >
+                            <PencilSquareIcon className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                      </div>
+                    )}
                   </div>
+                  {companyError && (
+                    <p className="text-xs text-red-500 flex items-center gap-1">
+                      <ExclamationCircleIcon className="w-3.5 h-3.5 flex-shrink-0" />{companyError}
+                    </p>
+                  )}
                   <div className="flex justify-between text-sm">
                     <span className="text-gray-400">Industry</span>
                     <span className="font-medium text-gray-900">{company.industry || 'Warehousing'}</span>

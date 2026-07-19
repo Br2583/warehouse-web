@@ -519,6 +519,15 @@ async function routePut(path: string, body: any): Promise<any> {
     return { name: u.name };
   }
 
+  // PUT /api/company/info
+  if (p === '/api/company/info') {
+    if (!cid) throw new Error('No company');
+    const c = await pb.collection('companies').getOne(cid);
+    if (c.owner_id !== uid) throw new Error('Only the owner can update company info');
+    const updated = await pb.collection('companies').update(cid, { name: body.name });
+    return { name: updated.name };
+  }
+
   // PUT /api/boxes/:id
   const boxMatch = p.match(/^\/api\/boxes\/([^/]+)$/);
   if (boxMatch) {
