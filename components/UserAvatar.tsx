@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   BriefcaseIcon, BuildingOffice2Icon, StarIcon, ChartBarIcon,
   WrenchScrewdriverIcon, ArchiveBoxIcon, TruckIcon, CogIcon,
@@ -37,6 +37,7 @@ export function UserAvatar({ picture, name, size = 36, shape = 'circle', classNa
   const style = { width: size, height: size, minWidth: size };
   const iconSize = Math.round(size * 0.52);
   const [imgError, setImgError] = useState(false);
+  useEffect(() => { setImgError(false); }, [picture]);
 
   const av = getAvatarById(picture);
   if (av) {
