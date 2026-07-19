@@ -201,24 +201,29 @@ export default function StatsPage() {
       <main className="md:ml-64 flex-1 min-w-0 px-4 pb-28 md:px-8 md:pb-8 topbar-offset">
 
         {/* Header */}
-        <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} className="mb-8">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} className="mb-8 -mx-4 md:-mx-8 px-4 md:px-8 py-6 relative overflow-hidden">
+          <div className="absolute inset-0 pointer-events-none" style={{ background: 'linear-gradient(135deg, #eff6ff 0%, #f5f3ff 50%, transparent 75%)' }} />
+          <div className="relative flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
               <div className="flex items-center gap-3 mb-1">
-                <div className="w-9 h-9 bg-blue-600 rounded-xl flex items-center justify-center">
+                <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center shadow-sm" style={{ boxShadow: '0 4px 12px rgba(37,99,235,0.25)' }}>
                   <ArrowTrendingUpIcon className="w-5 h-5 text-white" />
                 </div>
                 <h1 className="text-2xl font-bold text-gray-900">Analytics</h1>
               </div>
-              <p className="text-gray-400 text-sm ml-12">Real-time inventory intelligence</p>
+              <p className="text-gray-500 text-sm ml-[52px]">
+                {total > 0
+                  ? `${total.toLocaleString()} vault${total !== 1 ? 's' : ''} · ${PERIOD_LABELS[period]}`
+                  : 'Real-time inventory intelligence'}
+              </p>
             </div>
             {/* Period selector */}
-            <div className="flex items-center gap-1.5 bg-gray-100 p-1 rounded-xl self-start sm:self-auto">
+            <div className="flex items-center gap-1 bg-white/70 backdrop-blur-sm border border-gray-200 p-1 rounded-xl self-start sm:self-auto shadow-sm">
               {(['7d', '30d', '3m', 'all'] as Period[]).map(p => (
                 <button
                   key={p}
                   onClick={() => { setPeriod(p); setSelectedClient(null); }}
-                  className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-all ${period === p ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+                  className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-all ${period === p ? 'bg-blue-600 text-white shadow-sm' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'}`}
                 >
                   {PERIOD_LABELS[p]}
                 </button>

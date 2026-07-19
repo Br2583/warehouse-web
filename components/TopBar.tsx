@@ -17,7 +17,7 @@ import { BellIcon as BellSolid } from '@heroicons/react/24/solid';
 export default function TopBar() {
   const { user, logout } = useAuth();
   const router = useRouter();
-  const { unreadChat, pendingTasks } = useNavData();
+  const { unreadChat, pendingTasks, chatPreview, chatSender, firstTaskTitle } = useNavData();
   const [showProfile, setShowProfile] = useState(false);
   const [showNotifs, setShowNotifs] = useState(false);
   const [timeStr, setTimeStr] = useState(() =>
@@ -66,11 +66,17 @@ export default function TopBar() {
               <div className="w-8 h-8 bg-blue-50 rounded-xl flex items-center justify-center flex-shrink-0">
                 <ChatBubbleLeftRightIcon className="w-4 h-4 text-blue-600" />
               </div>
-              <div>
+              <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium text-gray-800">
                   {unreadChat} new {unreadChat === 1 ? 'message' : 'messages'}
                 </p>
-                <p className="text-xs text-gray-400">Team chat</p>
+                {chatSender && chatPreview ? (
+                  <p className="text-xs text-gray-400 truncate">
+                    <span className="font-medium text-gray-500">{chatSender}:</span> {chatPreview}
+                  </p>
+                ) : (
+                  <p className="text-xs text-gray-400">Team chat</p>
+                )}
               </div>
             </Link>
           )}
@@ -83,11 +89,15 @@ export default function TopBar() {
               <div className="w-8 h-8 bg-amber-50 rounded-xl flex items-center justify-center flex-shrink-0">
                 <ClipboardDocumentListIcon className="w-4 h-4 text-amber-600" />
               </div>
-              <div>
+              <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium text-gray-800">
                   {pendingTasks} pending {pendingTasks === 1 ? 'task' : 'tasks'}
                 </p>
-                <p className="text-xs text-gray-400">Needs attention</p>
+                {firstTaskTitle ? (
+                  <p className="text-xs text-gray-400 truncate">{firstTaskTitle}</p>
+                ) : (
+                  <p className="text-xs text-gray-400">Needs attention</p>
+                )}
               </div>
             </Link>
           )}

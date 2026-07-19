@@ -22,8 +22,8 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   const { show: showTutorial, dismiss: dismissTutorial } = useTutorial(user?.id);
   const isProtected = AUTH_ROUTES.some(r => pathname === r || pathname.startsWith(r + '/'));
   const showNav = isProtected && pathname !== '/onboarding' && pathname !== '/scan';
-  const unreadChat   = useUnreadChat();
-  const pendingTasks = usePendingTasks();
+  const { count: unreadChat, preview: chatPreview, senderName: chatSender } = useUnreadChat();
+  const { count: pendingTasks, firstTitle: firstTaskTitle } = usePendingTasks();
 
   useEffect(() => {
     if (loading) return;
@@ -44,7 +44,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   }, [loading, user, isProtected, router, pathname]);
 
   return (
-    <NavDataContext.Provider value={{ unreadChat, pendingTasks }}>
+    <NavDataContext.Provider value={{ unreadChat, pendingTasks, chatPreview, chatSender, firstTaskTitle }}>
       <CapacitorBackHandler />
       {showTutorial && isProtected && !loading && <Tutorial onDismiss={dismissTutorial} />}
       {showNav && <TopBar />}

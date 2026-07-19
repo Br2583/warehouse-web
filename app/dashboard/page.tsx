@@ -1,7 +1,7 @@
 ﻿'use client';
 
 import { useEffect, useState } from 'react';
-import { motion } from 'framer-motion';
+import { motion, useMotionValue, useTransform, animate } from 'framer-motion';
 import {
   ArchiveBoxIcon, ClipboardDocumentListIcon, CheckCircleIcon, TruckIcon,
   ClockIcon, PlayIcon, CheckIcon, PlusIcon, MagnifyingGlassIcon,
@@ -18,6 +18,23 @@ const STATUS_COLORS_LIGHT: Record<string, string> = {
   PENDING:   'bg-amber-50 text-amber-700',
   READY:     'bg-green-50 text-green-700',
   DELIVERED: 'bg-blue-50 text-blue-700',
+};
+
+function CountUp({ value }: { value: number }) {
+  const mv = useMotionValue(0);
+  const display = useTransform(mv, v => Math.round(v).toLocaleString());
+  useEffect(() => {
+    const c = animate(mv, value, { duration: 1.0, ease: [0.16, 1, 0.3, 1] });
+    return c.stop;
+  }, [value, mv]);
+  return <motion.span>{display}</motion.span>;
+}
+
+const CARD_CFG: Record<string, { lightBg: string; accentColor: string; iconBg: string }> = {
+  blue:   { lightBg: '#eff6ff', accentColor: '#1d4ed8', iconBg: 'bg-blue-600' },
+  amber:  { lightBg: '#fffbeb', accentColor: '#b45309', iconBg: 'bg-amber-500' },
+  green:  { lightBg: '#f0fdf4', accentColor: '#15803d', iconBg: 'bg-green-600' },
+  purple: { lightBg: '#f5f3ff', accentColor: '#6d28d9', iconBg: 'bg-purple-600' },
 };
 
 const fadeUp = {
@@ -84,19 +101,6 @@ export default function DashboardPage() {
     { label: 'Delivered', value: stats?.statuses?.DELIVERED ?? 0, icon: TruckIcon, color: 'purple', href: '/search?status=DELIVERED' },
   ];
 
-  const colorMap: Record<string, string> = {
-    blue: 'bg-blue-50 text-blue-600 border-blue-100',
-    amber: 'bg-amber-50 text-amber-600 border-amber-100',
-    green: 'bg-green-50 text-green-600 border-green-100',
-    purple: 'bg-purple-50 text-purple-600 border-purple-100',
-  };
-
-  const iconBg: Record<string, string> = {
-    blue: 'bg-blue-600',
-    amber: 'bg-amber-500',
-    green: 'bg-green-500',
-    purple: 'bg-purple-500',
-  };
 
   // Stats now includes histogram, recent, sla_count — no separate boxes load needed
   const histogramData: { label: string; count: number }[] = stats?.histogram || [];
@@ -131,15 +135,23 @@ export default function DashboardPage() {
               ))
             : overviewCards.map((card, i) => {
                 const Icon = card.icon;
+                const cfg = CARD_CFG[card.color];
                 return (
                   <motion.div key={card.label} custom={i} variants={fadeUp} initial="hidden" animate="show">
                     <Link href={card.href}>
-                      <div className={`bg-white rounded-2xl border p-3.5 md:p-5 hover:shadow-md transition-shadow cursor-pointer ${colorMap[card.color]}`}>
-                        <div className={`w-8 h-8 md:w-10 md:h-10 rounded-xl flex items-center justify-center mb-3 md:mb-4 ${iconBg[card.color]}`}>
-                          <Icon className="w-4 h-4 md:w-5 md:h-5 text-white" />
+                      <div className="bg-white rounded-2xl p-4 md:p-5 hover:shadow-md transition-all cursor-pointer overflow-hidden relative"
+                        style={{ boxShadow: '0 1px 3px rgba(0,0,0,0.06), 0 0 0 1px rgba(0,0,0,0.04)' }}>
+                        <div className="absolute inset-0 rounded-2xl pointer-events-none opacity-50"
+                          style={{ background: `radial-gradient(ellipse at top right, ${cfg.lightBg}, transparent 65%)` }} />
+                        <div className="relative">
+                          <div className={`w-9 h-9 md:w-10 md:h-10 rounded-xl flex items-center justify-center mb-3 md:mb-4 ${cfg.iconBg}`}>
+                            <Icon className="w-4 h-4 md:w-5 md:h-5 text-white" />
+                          </div>
+                          <p className="text-3xl md:text-4xl font-black tracking-tight leading-none" style={{ color: cfg.accentColor }}>
+                            <CountUp value={card.value} />
+                          </p>
+                          <p className="text-[11px] font-semibold text-gray-400 mt-2 uppercase tracking-wide">{card.label}</p>
                         </div>
-                        <p className="text-2xl md:text-3xl font-bold text-gray-900">{card.value}</p>
-                        <p className="text-xs md:text-sm text-gray-500 mt-0.5 md:mt-1">{card.label}</p>
                       </div>
                     </Link>
                   </motion.div>

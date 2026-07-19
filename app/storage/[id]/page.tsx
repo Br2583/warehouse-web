@@ -411,18 +411,49 @@ export default function StorageDetailPage() {
         </AnimatePresence>
 
         {/* Map */}
-        {mapUrl && !editMode && (
+        {!editMode && (
           <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }} className="bg-white rounded-2xl border border-gray-100 overflow-hidden mb-5">
-            <div className="px-5 pt-4 pb-2 flex items-center gap-2">
-              <MapPinIcon className="w-4 h-4 text-blue-600" />
-              <h2 className="text-sm font-semibold text-gray-700">Location</h2>
+            <div className="px-5 pt-4 pb-2 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <MapPinIcon className="w-4 h-4 text-blue-600" />
+                <h2 className="text-sm font-semibold text-gray-700">Location</h2>
+              </div>
+              {mapUrl && (
+                <a
+                  href={`https://www.openstreetmap.org/search?query=${encodeURIComponent([unit?.address, unit?.city, unit?.state].filter(Boolean).join(', '))}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-xs text-blue-500 hover:text-blue-700 transition-colors"
+                >
+                  Open in Maps →
+                </a>
+              )}
             </div>
-            <iframe
-              src={mapUrl}
-              className="w-full h-56 border-0"
-              title="Storage location map"
-              loading="lazy"
-            />
+            {mapUrl ? (
+              <>
+                <iframe
+                  src={mapUrl}
+                  className="w-full h-64 border-0"
+                  title="Storage location map"
+                  loading="lazy"
+                />
+                {(unit?.address || unit?.city) && (
+                  <p className="px-5 py-2 text-xs text-gray-400 truncate">
+                    {[unit.address, unit.city, unit.state].filter(Boolean).join(', ')}
+                  </p>
+                )}
+              </>
+            ) : (
+              <div className="px-5 pb-5 flex items-center gap-3">
+                <div className="w-10 h-10 bg-gray-50 rounded-xl flex items-center justify-center flex-shrink-0">
+                  <MapPinIcon className="w-5 h-5 text-gray-300" />
+                </div>
+                <div>
+                  <p className="text-sm text-gray-400">No address set</p>
+                  {isOwner && <p className="text-xs text-gray-300">Edit this unit to add a location</p>}
+                </div>
+              </div>
+            )}
           </motion.div>
         )}
 
