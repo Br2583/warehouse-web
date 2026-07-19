@@ -207,7 +207,7 @@ export default function StorageDetailPage() {
     return (
       <div className="flex min-h-screen bg-gray-50">
         <Sidebar />
-        <main className="md:ml-64 flex-1 min-w-0 flex items-center justify-center">
+        <main className="md:ml-64 flex-1 min-w-0 flex items-center justify-center topbar-offset">
           <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
         </main>
       </div>
@@ -221,7 +221,7 @@ export default function StorageDetailPage() {
   return (
     <div className="flex min-h-screen bg-gray-50">
       <Sidebar />
-      <main className="md:ml-64 flex-1 min-w-0 p-4 md:p-8 pb-28 md:pb-8 max-w-3xl">
+      <main className="md:ml-64 flex-1 min-w-0 px-4 pb-28 md:px-8 md:pb-8 max-w-3xl topbar-offset">
 
         {/* Header */}
         <div className="flex items-center gap-4 mb-6">

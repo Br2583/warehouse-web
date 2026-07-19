@@ -153,7 +153,7 @@ export default function ChatPage() {
     <div className="flex min-h-screen bg-gray-50">
       <Sidebar />
       <main className="md:ml-64 flex-1 min-w-0 flex flex-col" style={{ height: '100dvh' }}>
-        <div className="p-4 md:p-8 pb-4 border-b border-gray-100 bg-white flex-shrink-0">
+        <div className="px-4 md:px-8 py-4 md:py-6 pb-4 border-b border-gray-100 bg-white flex-shrink-0 topbar-offset">
           <h1 className="text-2xl font-bold text-gray-900">Team Chat</h1>
           <p className="text-gray-500 text-sm mt-1">Internal company communication</p>
         </div>

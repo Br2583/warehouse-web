@@ -51,6 +51,17 @@ button, a, [role="button"] {
   }
 }
 
+/* TopBar offset — mobile: h-14 (56px) + safe area; desktop: h-16 (64px) */
+.topbar-offset {
+  padding-top: calc(3.5rem + env(safe-area-inset-top, 0px));
+}
+
+@media (min-width: 768px) {
+  .topbar-offset {
+    padding-top: 4rem;
+  }
+}
+
 input,
 textarea,
 select {

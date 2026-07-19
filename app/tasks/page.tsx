@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   PlusIcon, XMarkIcon, TrashIcon, CalendarIcon, UserCircleIcon,
@@ -670,16 +671,21 @@ function TaskFormModal({ open, onClose, members, editTask, onSave }: {
 
 // ── Main page ─────────────────────────────────────────────────────────────────
 export default function TasksPage() {
+  return <Suspense><TasksPageInner /></Suspense>;
+}
+
+function TasksPageInner() {
   const { user } = useAuth();
   const isOwner = user?.role === 'owner';
   const { showToast } = useToast();
+  const searchParams = useSearchParams();
 
   const [tasks,    setTasks]    = useState<Task[]>([]);
   const [members,  setMembers]  = useState<Member[]>([]);
   const [loading,  setLoading]  = useState(true);
   const [error,    setError]    = useState('');
   const [view,     setView]     = useState<'kanban' | 'list'>('kanban');
-  const [formOpen, setFormOpen] = useState(false);
+  const [formOpen, setFormOpen] = useState(searchParams.get('new') === '1');
   const [editTask, setEditTask] = useState<Task | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
@@ -767,7 +773,7 @@ export default function TasksPage() {
   return (
     <div className="flex min-h-screen bg-gray-50">
       <Sidebar />
-      <main className="md:ml-64 flex-1 min-w-0 p-4 md:p-8 pb-28 md:pb-8">
+      <main className="md:ml-64 flex-1 min-w-0 px-4 pb-28 md:px-8 md:pb-8 topbar-offset">
 
         {/* Header */}
         <div className="flex items-center justify-between mb-6 gap-4 flex-wrap">

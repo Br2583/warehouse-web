@@ -307,7 +307,7 @@ export default function WarehouseDetailPage() {
   return (
     <div className="flex min-h-screen bg-gray-50">
       <Sidebar />
-      <main className="md:ml-64 flex-1 min-w-0 p-4 md:p-8 pb-28 md:pb-8">
+      <main className="md:ml-64 flex-1 min-w-0 px-4 pb-28 md:px-8 md:pb-8 topbar-offset">
         {/* Header */}
         <div className="flex flex-wrap items-center justify-between gap-3 mb-8">
           <div>

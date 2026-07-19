@@ -3,6 +3,7 @@
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 import MobileNav from './MobileNav';
+import TopBar from './TopBar';
 import Tutorial from './Tutorial';
 import CapacitorBackHandler from './CapacitorBackHandler';
 import { motion } from 'framer-motion';
@@ -12,7 +13,7 @@ import { useUnreadChat } from '@/lib/use-unread-chat';
 import { usePendingTasks } from '@/lib/use-pending-tasks';
 import { NavDataContext } from '@/lib/nav-data-context';
 
-const AUTH_ROUTES = ['/dashboard', '/warehouses', '/search', '/tasks', '/production', '/stats', '/snapshots', '/chat', '/profile', '/storage', '/onboarding', '/deleted', '/scan', '/vault'];
+const AUTH_ROUTES = ['/dashboard', '/warehouses', '/search', '/tasks', '/production', '/stats', '/snapshots', '/chat', '/profile', '/storage', '/onboarding', '/deleted', '/scan', '/vault', '/settings', '/support'];
 
 export default function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -46,12 +47,12 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
     <NavDataContext.Provider value={{ unreadChat, pendingTasks }}>
       <CapacitorBackHandler />
       {showTutorial && isProtected && !loading && <Tutorial onDismiss={dismissTutorial} />}
+      {showNav && <TopBar />}
       <motion.div
         key={pathname}
         initial={{ opacity: 0, y: 6 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.18, ease: 'easeOut' }}
-        className={isProtected ? 'mobile-safe-top' : ''}
       >
         {children}
       </motion.div>

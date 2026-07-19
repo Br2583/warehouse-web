@@ -9,14 +9,14 @@ import {
   HomeIcon, BuildingOffice2Icon, ArchiveBoxIcon, ClipboardDocumentListIcon,
   MagnifyingGlassIcon, ChartBarSquareIcon, CameraIcon, ChatBubbleLeftRightIcon,
   UserCircleIcon, ArrowRightOnRectangleIcon, Bars3Icon, XMarkIcon, LifebuoyIcon,
-  QrCodeIcon,
+  QrCodeIcon, Cog6ToothIcon,
 } from '@heroicons/react/24/outline';
 import {
   HomeIcon as HomeSolid, BuildingOffice2Icon as BuildingSolid, ArchiveBoxIcon as ArchiveSolid,
   ClipboardDocumentListIcon as TasksSolid, MagnifyingGlassIcon as SearchSolid,
   ChartBarSquareIcon as ChartSolid, CameraIcon as CameraSolid,
   ChatBubbleLeftRightIcon as ChatSolid, UserCircleIcon as UserSolid,
-  LifebuoyIcon as LifebuoySolid,
+  LifebuoyIcon as LifebuoySolid, Cog6ToothIcon as CogSolid,
 } from '@heroicons/react/24/solid';
 import { useNavData } from '@/lib/nav-data-context';
 
@@ -31,6 +31,7 @@ const NAV_ITEMS = [
   { href: '/chat',       label: 'Chat',        icon: ChatBubbleLeftRightIcon,   iconActive: ChatSolid },
   { href: '/profile',    label: 'Profile',     icon: UserCircleIcon,            iconActive: UserSolid },
   { href: '/support',    label: 'Support',     icon: LifebuoyIcon,              iconActive: LifebuoySolid },
+  { href: '/settings',   label: 'Settings',    icon: Cog6ToothIcon,             iconActive: CogSolid },
 ];
 
 export default function MobileNav() {
@@ -48,7 +49,14 @@ export default function MobileNav() {
         style={{ bottom: 'calc(1.5rem + var(--safe-area-bottom))' }}
         className="md:hidden fixed right-4 z-[60] w-12 h-12 bg-white border border-gray-200 rounded-2xl shadow-lg flex items-center justify-center active:scale-95 transition-transform"
       >
-        <Bars3Icon className="w-5 h-5 text-gray-700" />
+        <div className="relative">
+          <Bars3Icon className="w-5 h-5 text-gray-700" />
+          {(unreadChat + pendingTasks) > 0 && (
+            <span className="absolute -top-2 -right-2 min-w-[16px] h-4 bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center px-0.5">
+              {(unreadChat + pendingTasks) > 9 ? '9+' : unreadChat + pendingTasks}
+            </span>
+          )}
+        </div>
       </button>
 
       {/* Backdrop */}
@@ -65,24 +73,34 @@ export default function MobileNav() {
           open ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
-        {/* Header */}
-        <div className="p-5 border-b border-gray-100 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 bg-gray-950 rounded-xl flex items-center justify-center flex-shrink-0">
-              <span className="text-white font-black text-[10px] italic leading-none">WM</span>
+        {/* Header — logo + close */}
+        <div className="px-5 pt-5 pb-3 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 bg-gray-950 rounded-xl flex items-center justify-center flex-shrink-0">
+              <span className="text-white font-black text-[9px] italic leading-none">WM</span>
             </div>
-            <div>
-              <p className="font-bold text-gray-900 text-sm leading-tight">Warehouse Manager</p>
-              <p className="text-xs text-gray-400 truncate max-w-[140px]">{user?.company_name || 'Manager'}</p>
-            </div>
+            <p className="font-bold text-gray-900 text-sm">Warehouse</p>
           </div>
           <button
             onClick={() => setOpen(false)}
-            className="w-9 h-9 rounded-xl hover:bg-gray-50 flex items-center justify-center"
+            className="w-8 h-8 rounded-xl hover:bg-gray-50 flex items-center justify-center"
           >
-            <XMarkIcon className="w-5 h-5 text-gray-400" />
+            <XMarkIcon className="w-4 h-4 text-gray-400" />
           </button>
         </div>
+
+        {/* User profile card */}
+        <Link
+          href="/profile"
+          onClick={() => setOpen(false)}
+          className="mx-4 mb-3 p-3 bg-gray-50 rounded-2xl flex items-center gap-3 active:bg-gray-100 transition-colors"
+        >
+          <UserAvatar picture={user?.picture} name={user?.name} size={40} />
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-semibold text-gray-900 truncate">{user?.name}</p>
+            <p className="text-xs text-gray-400 capitalize">{user?.role} · {user?.company_name}</p>
+          </div>
+        </Link>
 
         {/* Scan QR — prominent CTA */}
         <div className="px-4 pt-4 pb-2">
@@ -127,15 +145,8 @@ export default function MobileNav() {
           })}
         </nav>
 
-        {/* User footer */}
+        {/* Footer — sign out */}
         <div className="p-4 border-t border-gray-100">
-          <div className="flex items-center gap-3 mb-3">
-            <UserAvatar picture={user?.picture} name={user?.name} size={36} />
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-semibold text-gray-900 truncate">{user?.name}</p>
-              <p className="text-xs text-gray-400 capitalize">{user?.role}</p>
-            </div>
-          </div>
           <button
             onClick={() => { setOpen(false); logout(); }}
             className="w-full flex items-center gap-2 px-3 py-2.5 text-sm text-red-500 hover:bg-red-50 rounded-xl transition-colors"

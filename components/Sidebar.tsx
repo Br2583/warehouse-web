@@ -2,18 +2,17 @@
 
 import { useAuth } from '@/lib/auth-context';
 import { motion } from 'framer-motion';
-import { UserAvatar } from '@/components/UserAvatar';
 import {
   HomeIcon, BuildingOffice2Icon, ArchiveBoxIcon, ClipboardDocumentListIcon,
   MagnifyingGlassIcon, ChartBarSquareIcon, CameraIcon, ChatBubbleLeftRightIcon,
-  UserCircleIcon, ArrowRightOnRectangleIcon, LifebuoyIcon,
+  UserCircleIcon, LifebuoyIcon, Cog6ToothIcon,
 } from '@heroicons/react/24/outline';
 import {
   HomeIcon as HomeSolid, BuildingOffice2Icon as BuildingSolid, ArchiveBoxIcon as ArchiveSolid,
   ClipboardDocumentListIcon as TasksSolid, MagnifyingGlassIcon as SearchSolid,
   ChartBarSquareIcon as ChartSolid, CameraIcon as CameraSolid,
   ChatBubbleLeftRightIcon as ChatSolid, UserCircleIcon as UserSolid,
-  LifebuoyIcon as LifebuoySolid,
+  LifebuoyIcon as LifebuoySolid, Cog6ToothIcon as CogSolid,
 } from '@heroicons/react/24/solid';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -30,17 +29,18 @@ const navItems = [
   { href: '/chat',       label: 'Chat',       icon: ChatBubbleLeftRightIcon,    iconActive: ChatSolid },
   { href: '/profile',    label: 'Profile',    icon: UserCircleIcon,             iconActive: UserSolid },
   { href: '/support',    label: 'Support',    icon: LifebuoyIcon,               iconActive: LifebuoySolid },
+  { href: '/settings',   label: 'Settings',   icon: Cog6ToothIcon,              iconActive: CogSolid },
 ];
 
 export default function Sidebar() {
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
   const pathname = usePathname();
   const { unreadChat, pendingTasks } = useNavData();
 
   return (
     <div className="hidden md:flex w-64 bg-white border-r border-gray-100 h-screen flex-col shadow-sm fixed left-0 top-0 z-40">
-      {/* Logo */}
-      <div className="p-6 border-b border-gray-100">
+      {/* Logo — aligned with TopBar height (h-16) */}
+      <div className="h-16 px-6 border-b border-gray-100 flex items-center">
         <div className="flex items-center gap-3">
           <div className="w-9 h-9 bg-gray-950 rounded-xl flex items-center justify-center flex-shrink-0">
             <span className="text-white font-black text-[10px] italic leading-none">WM</span>
@@ -87,24 +87,6 @@ export default function Sidebar() {
           );
         })}
       </nav>
-
-      {/* User */}
-      <div className="p-4 border-t border-gray-100">
-        <div className="flex items-center gap-3 mb-3">
-          <UserAvatar picture={user?.picture} name={user?.name} size={32} />
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium text-gray-900 truncate">{user?.name}</p>
-            <p className="text-xs text-gray-400 capitalize">{user?.role}</p>
-          </div>
-        </div>
-        <button
-          onClick={logout}
-          className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-500 hover:bg-red-50 rounded-xl transition-colors"
-        >
-          <ArrowRightOnRectangleIcon className="w-5 h-5" />
-          Sign out
-        </button>
-      </div>
     </div>
   );
 }

@@ -14,7 +14,7 @@ export default function SupportPage() {
   return (
     <div className="flex min-h-screen bg-gray-50">
       <Sidebar />
-      <main className="md:ml-64 flex-1 min-w-0 px-4 md:px-8 pb-28 md:pb-8 pt-6 md:pt-8">
+      <main className="md:ml-64 flex-1 min-w-0 px-4 md:px-8 pb-28 md:pb-8 topbar-offset">
         <div className="max-w-2xl mx-auto">
           {/* Header */}
           <h1 className="text-2xl font-bold text-gray-900 mb-1">Support</h1>
