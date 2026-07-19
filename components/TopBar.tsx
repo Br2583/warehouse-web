@@ -7,8 +7,8 @@ import { UserAvatar } from './UserAvatar';
 import { useNavData } from '@/lib/nav-data-context';
 import Link from 'next/link';
 import {
-  BellIcon, MagnifyingGlassIcon, PlusIcon,
-  UserCircleIcon, UsersIcon, Cog6ToothIcon, ArrowRightOnRectangleIcon,
+  BellIcon, PlusIcon,
+  Cog6ToothIcon, ArrowRightOnRectangleIcon,
   ChatBubbleLeftRightIcon, ClipboardDocumentListIcon,
 } from '@heroicons/react/24/outline';
 import { BellIcon as BellSolid } from '@heroicons/react/24/solid';
@@ -19,7 +19,6 @@ export default function TopBar() {
   const { unreadChat, pendingTasks } = useNavData();
   const [showProfile, setShowProfile] = useState(false);
   const [showNotifs, setShowNotifs] = useState(false);
-  const [search, setSearch] = useState('');
   const [timeStr, setTimeStr] = useState(() =>
     new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
   );
@@ -142,29 +141,9 @@ export default function TopBar() {
       {/* ─── DESKTOP top bar ─── */}
       <div className="hidden md:flex fixed top-0 left-64 right-0 h-16 bg-white border-b border-gray-100 z-30 items-center px-6 gap-4">
         {/* Greeting + clock */}
-        <div className="flex-shrink-0">
+        <div className="flex-1 min-w-0">
           <p className="text-sm font-semibold text-gray-900">Hi, {firstName} 👋</p>
           <p className="text-[11px] text-gray-400">{timeStr}</p>
-        </div>
-
-        {/* Universal search */}
-        <div className="flex-1 max-w-sm mx-4">
-          <div className="relative">
-            <MagnifyingGlassIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
-            <input
-              type="text"
-              value={search}
-              onChange={e => setSearch(e.target.value)}
-              onKeyDown={e => {
-                if (e.key === 'Enter' && search.trim()) {
-                  router.push('/search?q=' + encodeURIComponent(search.trim()));
-                  setSearch('');
-                }
-              }}
-              placeholder="Search vaults, clients..."
-              className="w-full pl-9 pr-4 py-2 bg-gray-50 border border-gray-100 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-300 transition-colors"
-            />
-          </div>
         </div>
 
         {/* Quick add task */}
@@ -179,7 +158,7 @@ export default function TopBar() {
         {/* Bell */}
         {bellBtn}
 
-        {/* Profile dropdown */}
+        {/* Profile dropdown — Settings + Sign out only */}
         <div ref={profileRef} className="relative flex-shrink-0">
           <button
             onClick={() => { setShowProfile(v => !v); setShowNotifs(false); }}
@@ -195,38 +174,19 @@ export default function TopBar() {
           </button>
 
           {showProfile && (
-            <div className="absolute right-0 top-12 w-64 bg-white rounded-2xl shadow-xl border border-gray-100 py-2 z-[70]">
+            <div className="absolute right-0 top-12 w-56 bg-white rounded-2xl shadow-xl border border-gray-100 py-2 z-[70]">
               {/* User header */}
               <div className="px-4 py-3 border-b border-gray-100">
                 <div className="flex items-center gap-3">
-                  <UserAvatar picture={user?.picture} name={user?.name} size={40} />
+                  <UserAvatar picture={user?.picture} name={user?.name} size={38} />
                   <div className="min-w-0">
                     <p className="text-sm font-semibold text-gray-900 truncate">{user?.name}</p>
                     <p className="text-xs text-gray-400 truncate">{user?.email}</p>
-                    <span className="text-[10px] text-blue-600 font-semibold uppercase tracking-wide">
-                      {user?.role}
-                    </span>
                   </div>
                 </div>
               </div>
 
               <div className="py-1">
-                <Link
-                  href="/profile"
-                  onClick={() => setShowProfile(false)}
-                  className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
-                >
-                  <UserCircleIcon className="w-4 h-4 text-gray-400" />
-                  My Profile
-                </Link>
-                <Link
-                  href="/profile?tab=team"
-                  onClick={() => setShowProfile(false)}
-                  className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
-                >
-                  <UsersIcon className="w-4 h-4 text-gray-400" />
-                  My Team
-                </Link>
                 <Link
                   href="/settings"
                   onClick={() => setShowProfile(false)}

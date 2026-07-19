@@ -4,9 +4,9 @@ import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
 import {
-  UserCircleIcon, UsersIcon, DevicePhoneMobileIcon,
+  UsersIcon, DevicePhoneMobileIcon,
   ExclamationTriangleIcon, ArrowRightOnRectangleIcon, ChevronRightIcon,
-  CheckCircleIcon, BuildingOffice2Icon, ShieldCheckIcon,
+  CheckCircleIcon, BuildingOffice2Icon,
 } from '@heroicons/react/24/outline';
 import Sidebar from '@/components/Sidebar';
 import { UserAvatar } from '@/components/UserAvatar';
@@ -155,23 +155,6 @@ export default function SettingsPage() {
                   <ChevronRightIcon className="w-4 h-4" />
                 </div>
               </Link>
-
-              <div className="mt-4 pt-4 border-t border-gray-50 grid grid-cols-1 sm:grid-cols-2 gap-2">
-                <Link href="/profile?section=password" className="flex items-center gap-3 p-3 rounded-xl hover:bg-gray-50 transition-colors">
-                  <ShieldCheckIcon className="w-5 h-5 text-gray-400 flex-shrink-0" />
-                  <div>
-                    <p className="text-sm font-medium text-gray-700">Password &amp; PIN</p>
-                    <p className="text-xs text-gray-400">Change your credentials</p>
-                  </div>
-                </Link>
-                <Link href="/profile?section=avatar" className="flex items-center gap-3 p-3 rounded-xl hover:bg-gray-50 transition-colors">
-                  <UserCircleIcon className="w-5 h-5 text-gray-400 flex-shrink-0" />
-                  <div>
-                    <p className="text-sm font-medium text-gray-700">Profile Photo</p>
-                    <p className="text-xs text-gray-400">Change avatar or photo</p>
-                  </div>
-                </Link>
-              </div>
             </div>
           </motion.div>
 

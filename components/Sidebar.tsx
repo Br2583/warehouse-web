@@ -5,7 +5,7 @@ import { motion } from 'framer-motion';
 import {
   HomeIcon, BuildingOffice2Icon, ArchiveBoxIcon, ClipboardDocumentListIcon,
   MagnifyingGlassIcon, ChartBarSquareIcon, CameraIcon, ChatBubbleLeftRightIcon,
-  UserCircleIcon, LifebuoyIcon, Cog6ToothIcon,
+  UserCircleIcon, LifebuoyIcon, Cog6ToothIcon, ArrowRightOnRectangleIcon,
 } from '@heroicons/react/24/outline';
 import {
   HomeIcon as HomeSolid, BuildingOffice2Icon as BuildingSolid, ArchiveBoxIcon as ArchiveSolid,
@@ -17,6 +17,7 @@ import {
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useNavData } from '@/lib/nav-data-context';
+import { UserAvatar } from '@/components/UserAvatar';
 
 const navItems = [
   { href: '/dashboard',  label: 'Dashboard',  icon: HomeIcon,                   iconActive: HomeSolid },
@@ -33,7 +34,7 @@ const navItems = [
 ];
 
 export default function Sidebar() {
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
   const pathname = usePathname();
   const { unreadChat, pendingTasks } = useNavData();
 
@@ -87,6 +88,27 @@ export default function Sidebar() {
           );
         })}
       </nav>
+
+      {/* User footer */}
+      <div className="p-3 border-t border-gray-100">
+        <Link
+          href="/profile"
+          className="flex items-center gap-3 p-2.5 rounded-xl hover:bg-gray-50 transition-colors group"
+        >
+          <UserAvatar picture={user?.picture} name={user?.name} size={34} />
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-semibold text-gray-800 truncate leading-tight">{user?.name}</p>
+            <p className="text-xs text-gray-400 capitalize truncate">{user?.role}</p>
+          </div>
+        </Link>
+        <button
+          onClick={logout}
+          className="w-full flex items-center gap-2.5 px-2.5 py-2 mt-1 text-sm text-red-500 hover:bg-red-50 rounded-xl transition-colors"
+        >
+          <ArrowRightOnRectangleIcon className="w-4 h-4 flex-shrink-0" />
+          Sign out
+        </button>
+      </div>
     </div>
   );
 }
