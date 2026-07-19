@@ -80,12 +80,7 @@ export default function ProfilePage() {
     setAvatarSaving(true);
     setAvatarError('');
     try {
-      const res = await fetch('/api/profile/avatar', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${pb.authStore.token}` },
-        body: JSON.stringify({ userId: user.id, avatar_base64: avatarValue }),
-      });
-      if (!res.ok) throw new Error((await res.json()).error || 'Failed to update');
+      await pb.collection('users').update(user.id, { avatar_base64: avatarValue || null });
       updatePicture(avatarValue);
       showToast(avatarValue ? 'Avatar updated' : 'Avatar removed');
     } catch (e: any) {
@@ -103,15 +98,8 @@ export default function ProfilePage() {
     setAvatarError('');
     try {
       const dataUrl = await compressAvatar(file);
-      const res = await fetch('/api/profile/avatar', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${pb.authStore.token}` },
-        body: JSON.stringify({ userId: user!.id, avatar_base64: dataUrl }),
-      });
-      if (!res.ok) throw new Error((await res.json()).error || 'Failed to upload');
-      const { avatarUrl } = await res.json();
-      // Use PocketBase file URL if returned; fall back to base64 for immediate display
-      updatePicture(avatarUrl ?? dataUrl);
+      await pb.collection('users').update(user!.id, { avatar_base64: dataUrl });
+      updatePicture(dataUrl);
       showToast('Photo updated');
     } catch (e: any) {
       setAvatarError(e?.message || 'Failed to upload photo');
