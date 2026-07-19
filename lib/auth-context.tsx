@@ -47,12 +47,23 @@ async function buildUser(model: any): Promise<User> {
       company_rejected  = c.rejected  ?? false;
     } catch {}
   }
+  // Priority: icon preset → file upload → legacy base64 → initials
+  let picture: string | undefined;
+  if (model.avatar_base64?.startsWith('avatar:')) {
+    picture = model.avatar_base64;
+  } else if (model.avatar) {
+    const pbBase = (pb.baseUrl ?? '').replace(/\/$/, '');
+    picture = `${pbBase}/api/files/users/${model.id}/${model.avatar}`;
+  } else if (model.avatar_base64) {
+    picture = model.avatar_base64;
+  }
+
   return {
     user_id:           model.id,
     id:                model.id,
     email:             model.email,
     name:              model.name,
-    picture:           model.avatar_base64 || undefined,
+    picture,
     company_id:        model.company_id,
     company_name,
     company_approved,

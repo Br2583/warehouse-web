@@ -109,7 +109,9 @@ export default function ProfilePage() {
         body: JSON.stringify({ userId: user!.id, avatar_base64: dataUrl }),
       });
       if (!res.ok) throw new Error((await res.json()).error || 'Failed to upload');
-      updatePicture(dataUrl);
+      const { avatarUrl } = await res.json();
+      // Use PocketBase file URL if returned; fall back to base64 for immediate display
+      updatePicture(avatarUrl ?? dataUrl);
       showToast('Photo updated');
     } catch (e: any) {
       setAvatarError(e?.message || 'Failed to upload photo');

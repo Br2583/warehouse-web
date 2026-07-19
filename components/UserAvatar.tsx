@@ -49,7 +49,7 @@ export function UserAvatar({ picture, name, size = 36, shape = 'circle', classNa
     );
   }
 
-  if (picture?.startsWith('data:image')) {
+  if (picture?.startsWith('data:image') || picture?.startsWith('http')) {
     return (
       <img
         src={picture}
