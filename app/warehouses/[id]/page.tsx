@@ -420,12 +420,11 @@ export default function WarehouseDetailPage() {
 
             {/* Grid */}
             <div className="bg-white rounded-2xl border border-gray-100 p-2 md:p-6">
-              <div className="overflow-x-auto">
-              <div className="min-w-max">
+              <div>
                 {/* Column headers */}
                 <div className="flex gap-1 md:gap-1.5 mb-1 md:mb-1.5 ml-6 md:ml-8">
                   {activeCols.map(col => (
-                    <div key={col} className="flex-1 text-center text-[9px] md:text-xs font-semibold text-gray-400">{col}</div>
+                    <div key={col} className="flex-1 min-w-0 text-center text-[9px] md:text-xs font-semibold text-gray-400">{col}</div>
                   ))}
                 </div>
 
@@ -449,7 +448,7 @@ export default function WarehouseDetailPage() {
                         >
                           {box ? (
                             <>
-                              <span className="text-[8px] md:text-[10px] font-bold leading-tight w-full px-1 text-center overflow-hidden text-ellipsis whitespace-nowrap">{box.client_name}</span>
+                              <span className="block text-[7px] md:text-[10px] font-bold leading-tight w-full px-0.5 text-center truncate">{box.client_name}</span>
                               <span className="hidden md:block text-[9px] opacity-75 mt-0.5 leading-none">{box.job_type}</span>
                             </>
                           ) : (
@@ -460,7 +459,6 @@ export default function WarehouseDetailPage() {
                     })}
                   </div>
                 ))}
-              </div>
               </div>
             </div>
           </div>
