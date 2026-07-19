@@ -389,10 +389,14 @@ async function routePost(path: string, body: any): Promise<any> {
 
   // ── Company: generate invite code ─────────────────────────────────────────
   if (p === '/api/company/generate-code') {
-    if (!cid) throw new Error('No company');
-    const code = genCode();
-    await pb.collection('companies').update(cid, { invite_code: code });
-    return { invite_code: code };
+    const token = pb.authStore.token;
+    if (!token) throw new Error('Not authenticated');
+    const r = await fetch('/api/company/generate-code', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!r.ok) { const d = await r.json().catch(() => ({})); throw new Error(d.error || 'Failed to generate code'); }
+    return r.json();
   }
 
   // ── Tasks ──────────────────────────────────────────────────────────────────
@@ -521,11 +525,15 @@ async function routePut(path: string, body: any): Promise<any> {
 
   // PUT /api/company/info
   if (p === '/api/company/info') {
-    if (!cid) throw new Error('No company');
-    const c = await pb.collection('companies').getOne(cid);
-    if (c.owner_id !== uid) throw new Error('Only the owner can update company info');
-    const updated = await pb.collection('companies').update(cid, { name: body.name });
-    return { name: updated.name };
+    const token = pb.authStore.token;
+    if (!token) throw new Error('Not authenticated');
+    const r = await fetch('/api/company/info', {
+      method: 'PUT',
+      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: body.name }),
+    });
+    if (!r.ok) { const d = await r.json().catch(() => ({})); throw new Error(d.error || 'Failed to update company'); }
+    return r.json();
   }
 
   // PUT /api/boxes/:id
