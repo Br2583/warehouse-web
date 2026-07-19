@@ -5,14 +5,13 @@ import { motion } from 'framer-motion';
 import {
   HomeIcon, BuildingOffice2Icon, ArchiveBoxIcon, ClipboardDocumentListIcon,
   MagnifyingGlassIcon, ChartBarSquareIcon, CameraIcon, ChatBubbleLeftRightIcon,
-  UserCircleIcon, LifebuoyIcon, Cog6ToothIcon, ArrowRightOnRectangleIcon,
+  Cog6ToothIcon, ArrowRightOnRectangleIcon,
 } from '@heroicons/react/24/outline';
 import {
   HomeIcon as HomeSolid, BuildingOffice2Icon as BuildingSolid, ArchiveBoxIcon as ArchiveSolid,
   ClipboardDocumentListIcon as TasksSolid, MagnifyingGlassIcon as SearchSolid,
   ChartBarSquareIcon as ChartSolid, CameraIcon as CameraSolid,
-  ChatBubbleLeftRightIcon as ChatSolid, UserCircleIcon as UserSolid,
-  LifebuoyIcon as LifebuoySolid, Cog6ToothIcon as CogSolid,
+  ChatBubbleLeftRightIcon as ChatSolid, Cog6ToothIcon as CogSolid,
 } from '@heroicons/react/24/solid';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -28,8 +27,6 @@ const navItems = [
   { href: '/stats',      label: 'Statistics', icon: ChartBarSquareIcon,         iconActive: ChartSolid },
   { href: '/snapshots',  label: 'Snapshots',  icon: CameraIcon,                 iconActive: CameraSolid },
   { href: '/chat',       label: 'Chat',       icon: ChatBubbleLeftRightIcon,    iconActive: ChatSolid },
-  { href: '/profile',    label: 'Profile',    icon: UserCircleIcon,             iconActive: UserSolid },
-  { href: '/support',    label: 'Support',    icon: LifebuoyIcon,               iconActive: LifebuoySolid },
   { href: '/settings',   label: 'Settings',   icon: Cog6ToothIcon,              iconActive: CogSolid },
 ];
 

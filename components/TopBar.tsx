@@ -10,6 +10,7 @@ import {
   BellIcon, PlusIcon,
   Cog6ToothIcon, ArrowRightOnRectangleIcon,
   ChatBubbleLeftRightIcon, ClipboardDocumentListIcon,
+  PencilSquareIcon, UserPlusIcon,
 } from '@heroicons/react/24/outline';
 import { BellIcon as BellSolid } from '@heroicons/react/24/solid';
 
@@ -187,6 +188,24 @@ export default function TopBar() {
               </div>
 
               <div className="py-1">
+                <Link
+                  href="/profile"
+                  onClick={() => setShowProfile(false)}
+                  className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                >
+                  <PencilSquareIcon className="w-4 h-4 text-gray-400" />
+                  Edit Profile
+                </Link>
+                {user?.role === 'owner' && (
+                  <Link
+                    href="/settings#invite"
+                    onClick={() => setShowProfile(false)}
+                    className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                  >
+                    <UserPlusIcon className="w-4 h-4 text-gray-400" />
+                    Invite Codes
+                  </Link>
+                )}
                 <Link
                   href="/settings"
                   onClick={() => setShowProfile(false)}
