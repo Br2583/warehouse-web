@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getPbAdminToken, PB_URL } from '@/lib/pb-admin';
+import { PB_URL } from '@/lib/pb-admin';
 
 const TIMEOUT_MS = 28_000;
 
@@ -31,14 +31,13 @@ export async function POST(req: NextRequest) {
     if (!userId) return NextResponse.json({ error: 'Missing userId' }, { status: 400 });
     if (userId !== authenticatedUserId) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
-    const token = await getPbAdminToken();
     const recordUrl = `${PB_URL}/api/collections/users/records/${userId}`;
 
     // Always save to avatar_base64 (TEXT/SQLite — persists on Railway)
-    // Never use the avatar FILE field (files are ephemeral without a volume)
+    // Use the user's own token — PB updateRule allows users to update their own record
     const res = await pbFetch(recordUrl, {
       method: 'PATCH',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${userToken}` },
       body: JSON.stringify({ avatar_base64: avatar_base64 || null }),
     });
 
