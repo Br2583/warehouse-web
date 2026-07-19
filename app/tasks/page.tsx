@@ -9,6 +9,7 @@ import {
 } from '@heroicons/react/24/outline';
 import Link from 'next/link';
 import Sidebar from '@/components/Sidebar';
+import { SkeletonTaskRow } from '@/components/Skeleton';
 import { UserAvatar } from '@/components/UserAvatar';
 import { api } from '@/lib/api';
 import { useAuth } from '@/lib/auth-context';
@@ -827,8 +828,8 @@ export default function TasksPage() {
 
         {/* Loading */}
         {loading ? (
-          <div className="flex justify-center py-16">
-            <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
+          <div className="space-y-3">
+            {Array.from({ length: 5 }).map((_, i) => <SkeletonTaskRow key={i} />)}
           </div>
 
         /* Empty state */

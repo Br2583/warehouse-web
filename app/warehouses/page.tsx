@@ -7,6 +7,7 @@ import {
   ExclamationCircleIcon,
 } from '@heroicons/react/24/outline';
 import Sidebar from '@/components/Sidebar';
+import { SkeletonWarehouseCard } from '@/components/Skeleton';
 import { pb } from '@/lib/pb';
 import { useAuth } from '@/lib/auth-context';
 import Link from 'next/link';
@@ -163,8 +164,8 @@ export default function WarehousesPage() {
         )}
 
         {loading ? (
-          <div className="flex justify-center py-16">
-            <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {Array.from({ length: 3 }).map((_, i) => <SkeletonWarehouseCard key={i} />)}
           </div>
         ) : warehouses.length === 0 ? (
           <div className="text-center py-16 text-gray-400">

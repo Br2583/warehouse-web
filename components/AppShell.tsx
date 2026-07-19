@@ -5,6 +5,7 @@ import { useEffect } from 'react';
 import MobileNav from './MobileNav';
 import Tutorial from './Tutorial';
 import CapacitorBackHandler from './CapacitorBackHandler';
+import { motion } from 'framer-motion';
 import { useAuth } from '@/lib/auth-context';
 import { useTutorial } from '@/lib/use-tutorial';
 import { useUnreadChat } from '@/lib/use-unread-chat';
@@ -45,9 +46,15 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
     <NavDataContext.Provider value={{ unreadChat, pendingTasks }}>
       <CapacitorBackHandler />
       {showTutorial && isProtected && !loading && <Tutorial onDismiss={dismissTutorial} />}
-      <div className={isProtected ? 'mobile-safe-top' : ''}>
+      <motion.div
+        key={pathname}
+        initial={{ opacity: 0, y: 6 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.18, ease: 'easeOut' }}
+        className={isProtected ? 'mobile-safe-top' : ''}
+      >
         {children}
-      </div>
+      </motion.div>
       {showNav && <MobileNav />}
     </NavDataContext.Provider>
   );

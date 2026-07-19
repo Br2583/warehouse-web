@@ -19,11 +19,20 @@
   }
 }
 
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
 body {
   background: var(--background);
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
   overscroll-behavior: none;
+}
+
+button, a, [role="button"] {
+  -webkit-user-select: none;
+  user-select: none;
 }
 
 :root {
@@ -47,6 +56,7 @@ textarea,
 select {
   color: #111827;
   background-color: #ffffff;
+  font-size: max(16px, 1rem);
 }
 
 input::placeholder,

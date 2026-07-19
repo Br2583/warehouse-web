@@ -12,6 +12,7 @@ import { useAuth } from '@/lib/auth-context';
 import { api } from '@/lib/api';
 import { parseDate, parseDateOpt } from '@/lib/utils';
 import Sidebar from '@/components/Sidebar';
+import { SkeletonDashboardCard } from '@/components/Skeleton';
 import Link from 'next/link';
 const STATUS_COLORS_LIGHT: Record<string, string> = {
   PENDING:   'bg-amber-50 text-amber-700',
@@ -122,24 +123,29 @@ export default function DashboardPage() {
 
         {/* Overview Cards */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 mb-5 md:mb-8">
-          {overviewCards.map((card, i) => {
-            const Icon = card.icon;
-            return (
-              <motion.div key={card.label} custom={i} variants={fadeUp} initial="hidden" animate="show">
-                <Link href={card.href}>
-                  <div className={`bg-white rounded-2xl border p-3.5 md:p-5 hover:shadow-md transition-shadow cursor-pointer ${colorMap[card.color]}`}>
-                    <div className={`w-8 h-8 md:w-10 md:h-10 rounded-xl flex items-center justify-center mb-3 md:mb-4 ${iconBg[card.color]}`}>
-                      <Icon className="w-4 h-4 md:w-5 md:h-5 text-white" />
-                    </div>
-                    <p className="text-2xl md:text-3xl font-bold text-gray-900">
-                      {loading ? '—' : card.value}
-                    </p>
-                    <p className="text-xs md:text-sm text-gray-500 mt-0.5 md:mt-1">{card.label}</p>
-                  </div>
-                </Link>
-              </motion.div>
-            );
-          })}
+          {loading
+            ? Array.from({ length: 4 }).map((_, i) => (
+                <motion.div key={i} custom={i} variants={fadeUp} initial="hidden" animate="show">
+                  <SkeletonDashboardCard />
+                </motion.div>
+              ))
+            : overviewCards.map((card, i) => {
+                const Icon = card.icon;
+                return (
+                  <motion.div key={card.label} custom={i} variants={fadeUp} initial="hidden" animate="show">
+                    <Link href={card.href}>
+                      <div className={`bg-white rounded-2xl border p-3.5 md:p-5 hover:shadow-md transition-shadow cursor-pointer ${colorMap[card.color]}`}>
+                        <div className={`w-8 h-8 md:w-10 md:h-10 rounded-xl flex items-center justify-center mb-3 md:mb-4 ${iconBg[card.color]}`}>
+                          <Icon className="w-4 h-4 md:w-5 md:h-5 text-white" />
+                        </div>
+                        <p className="text-2xl md:text-3xl font-bold text-gray-900">{card.value}</p>
+                        <p className="text-xs md:text-sm text-gray-500 mt-0.5 md:mt-1">{card.label}</p>
+                      </div>
+                    </Link>
+                  </motion.div>
+                );
+              })
+          }
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 mb-5 md:mb-8">
