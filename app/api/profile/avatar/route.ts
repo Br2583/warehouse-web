@@ -60,8 +60,9 @@ export async function POST(req: NextRequest) {
     if (!res.ok) throw new Error(data?.message || 'Failed to update');
 
     // Return PocketBase file URL if a photo was uploaded
+    const collName = data.collectionName || data.collectionId || 'users';
     const avatarUrl = data.avatar
-      ? `${PB_URL}/api/files/users/${userId}/${data.avatar}`
+      ? `${PB_URL}/api/files/${collName}/${userId}/${data.avatar}`
       : null;
 
     return NextResponse.json({ ok: true, avatarUrl });

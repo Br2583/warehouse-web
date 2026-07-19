@@ -52,8 +52,7 @@ async function buildUser(model: any): Promise<User> {
   if (model.avatar_base64?.startsWith('avatar:')) {
     picture = model.avatar_base64;
   } else if (model.avatar) {
-    const pbBase = (pb.baseUrl ?? '').replace(/\/$/, '');
-    picture = `${pbBase}/api/files/users/${model.id}/${model.avatar}`;
+    picture = pb.files.getUrl(model, model.avatar);
   } else if (model.avatar_base64) {
     picture = model.avatar_base64;
   }
