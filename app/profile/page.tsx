@@ -11,6 +11,7 @@ import { AnimatePresence } from 'framer-motion';
 import Sidebar from '@/components/Sidebar';
 import { UserAvatar } from '@/components/UserAvatar';
 import { AVATARS } from '@/lib/avatars';
+import { compressAvatar } from '@/lib/compress-image';
 import { api } from '@/lib/api';
 import { pb } from '@/lib/pb';
 import { useAuth } from '@/lib/auth-context';
@@ -33,6 +34,7 @@ export default function ProfilePage() {
   const [avatarSaving, setAvatarSaving] = useState(false);
   const [avatarError, setAvatarError] = useState('');
   const pickerRef = useRef<HTMLDivElement>(null);
+  const photoInputRef = useRef<HTMLInputElement>(null);
 
   // A-1: Inline name editing
   const [editingName, setEditingName] = useState(false);
@@ -85,9 +87,32 @@ export default function ProfilePage() {
       });
       if (!res.ok) throw new Error((await res.json()).error || 'Failed to update');
       updatePicture(avatarValue);
-      showToast('Icon updated');
+      showToast(avatarValue ? 'Avatar updated' : 'Avatar removed');
     } catch (e: any) {
       setAvatarError(e?.message || 'Failed to update');
+    }
+    setAvatarSaving(false);
+  };
+
+  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+    setPickerOpen(false);
+    setAvatarSaving(true);
+    setAvatarError('');
+    try {
+      const dataUrl = await compressAvatar(file);
+      const res = await fetch('/api/profile/avatar', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${pb.authStore.token}` },
+        body: JSON.stringify({ userId: user!.id, avatar_base64: dataUrl }),
+      });
+      if (!res.ok) throw new Error((await res.json()).error || 'Failed to upload');
+      updatePicture(dataUrl);
+      showToast('Photo updated');
+    } catch (e: any) {
+      setAvatarError(e?.message || 'Failed to upload photo');
     }
     setAvatarSaving(false);
   };
@@ -283,7 +308,25 @@ export default function ProfilePage() {
                         className="absolute left-0 top-[72px] z-30 bg-white rounded-2xl shadow-xl border border-gray-100 p-3"
                         style={{ width: 228 }}
                       >
-                        <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-wide mb-2.5">Choose your icon</p>
+                        <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-wide mb-2.5">Choose avatar</p>
+
+                        {/* Photo upload */}
+                        <button
+                          onClick={() => photoInputRef.current?.click()}
+                          className="w-full flex items-center justify-center gap-2 py-2 mb-2.5 text-xs font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-xl transition-colors"
+                        >
+                          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                          Upload photo
+                        </button>
+                        <input
+                          ref={photoInputRef}
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          onChange={handlePhotoUpload}
+                        />
+
+                        <p className="text-[10px] font-semibold text-gray-300 uppercase tracking-wide mb-1.5">Or pick an icon</p>
                         <div className="grid grid-cols-4 gap-1.5">
                           {AVATARS.map(av => (
                             <button
@@ -304,7 +347,7 @@ export default function ProfilePage() {
                           onClick={() => handleAvatarSelect('')}
                           className="mt-2 w-full py-1.5 text-xs text-gray-400 hover:text-gray-600 hover:bg-gray-50 rounded-lg transition-colors"
                         >
-                          Remove icon
+                          Remove avatar
                         </button>
                       </motion.div>
                     )}
