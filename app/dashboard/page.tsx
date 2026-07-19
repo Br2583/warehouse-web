@@ -152,7 +152,7 @@ export default function DashboardPage() {
           {/* Inventory Status */}
           <motion.div custom={4} variants={fadeUp} initial="hidden" animate="show" className="md:col-span-2 bg-white rounded-2xl border border-gray-100 p-4 md:p-6">
             <h2 className="font-semibold text-gray-900 mb-3 md:mb-5">Inventory Status</h2>
-            <div className="flex gap-4 md:gap-6 mb-3 md:mb-5">
+            <div className="flex flex-wrap gap-2 md:gap-4 mb-3 md:mb-5">
               {[
                 { label: 'Pending', value: pending, color: 'bg-amber-400' },
                 { label: 'Ready', value: ready, color: 'bg-green-400' },
@@ -193,9 +193,9 @@ export default function DashboardPage() {
             {stats?.by_warehouse && (
               <div className="mt-5 pt-5 border-t border-gray-50">
                 <p className="text-xs font-medium text-gray-400 uppercase tracking-wide mb-3">By Warehouse</p>
-                <div className="flex gap-4">
+                <div className="grid grid-cols-2 gap-2">
                   {Object.entries(stats.by_warehouse).map(([whId, count]: any) => (
-                    <div key={whId} className="flex-1 bg-gray-50 rounded-xl p-3 text-center">
+                    <div key={whId} className="bg-gray-50 rounded-xl p-3 text-center">
                       <p className="text-xl font-bold text-gray-900">{count}</p>
                       <p className="text-xs text-gray-400 mt-0.5 truncate">{warehouseNames[whId] || 'Warehouse'}</p>
                     </div>
@@ -260,7 +260,7 @@ export default function DashboardPage() {
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
           {/* E1 — 7-day vault histogram */}
-          <motion.div custom={7} variants={fadeUp} initial="hidden" animate="show" className="md:col-span-2 bg-white rounded-2xl border border-gray-100 p-6">
+          <motion.div custom={7} variants={fadeUp} initial="hidden" animate="show" className="md:col-span-2 bg-white rounded-2xl border border-gray-100 p-4 md:p-6">
             <h2 className="font-semibold text-gray-900 mb-5">Vaults Added — Last 7 Days</h2>
             {!loading && histogramData.every(d => d.count === 0) ? (
               <div className="flex items-center justify-center h-28 text-gray-300 text-sm">No data yet</div>
@@ -280,7 +280,7 @@ export default function DashboardPage() {
           </motion.div>
 
           {/* E6 — SLA widget */}
-          <motion.div custom={8} variants={fadeUp} initial="hidden" animate="show" className="bg-white rounded-2xl border border-gray-100 p-6 flex flex-col">
+          <motion.div custom={8} variants={fadeUp} initial="hidden" animate="show" className="bg-white rounded-2xl border border-gray-100 p-4 md:p-6 flex flex-col">
             <h2 className="font-semibold text-gray-900 mb-2">SLA Alert</h2>
             <p className="text-xs text-gray-400 mb-5">PENDING vaults over 3 days</p>
             <div className="flex-1 flex flex-col items-center justify-center">
@@ -302,7 +302,7 @@ export default function DashboardPage() {
 
         {/* E7 — Recent Activity */}
         {recentBoxes.length > 0 && (
-          <motion.div custom={9} variants={fadeUp} initial="hidden" animate="show" className="bg-white rounded-2xl border border-gray-100 p-6">
+          <motion.div custom={9} variants={fadeUp} initial="hidden" animate="show" className="bg-white rounded-2xl border border-gray-100 p-4 md:p-6">
             <h2 className="font-semibold text-gray-900 mb-5">Recent Activity</h2>
             <div className="space-y-3">
               {recentBoxes.map((box) => {

@@ -420,7 +420,8 @@ export default function WarehouseDetailPage() {
 
             {/* Grid */}
             <div className="bg-white rounded-2xl border border-gray-100 p-2 md:p-6">
-              <div>
+              <div className="overflow-x-auto">
+              <div className="min-w-max">
                 {/* Column headers */}
                 <div className="flex gap-1 md:gap-1.5 mb-1 md:mb-1.5 ml-6 md:ml-8">
                   {activeCols.map(col => (
@@ -459,6 +460,7 @@ export default function WarehouseDetailPage() {
                     })}
                   </div>
                 ))}
+              </div>
               </div>
             </div>
           </div>

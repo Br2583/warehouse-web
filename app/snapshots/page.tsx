@@ -238,31 +238,31 @@ export default function SnapshotsPage() {
               className="bg-white rounded-2xl w-full max-w-4xl shadow-2xl my-4"
             >
               {/* Modal toolbar (hidden on print) */}
-              <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 print:hidden">
-                <h2 className="font-bold text-gray-900">
+              <div className="flex items-center justify-between gap-3 px-4 sm:px-6 py-4 border-b border-gray-100 print:hidden">
+                <h2 className="font-bold text-gray-900 truncate min-w-0">
                   {report.snap.warehouse_name} — {formatSnapDate(report.snap.date)}
                 </h2>
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2 flex-shrink-0">
                   <button
                     onClick={() => { setEmailModal(true); setSendResult(null); }}
-                    className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-xl hover:bg-green-700 transition-colors"
+                    className="flex items-center gap-2 px-3 py-2 bg-green-600 text-white text-sm font-medium rounded-xl hover:bg-green-700 transition-colors"
                   >
-                    <EnvelopeIcon className="w-4 h-4" /> Send Email
+                    <EnvelopeIcon className="w-4 h-4" /><span className="hidden sm:inline">Send Email</span>
                   </button>
                   <button
                     onClick={handlePrint}
-                    className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-xl hover:bg-blue-700 transition-colors"
+                    className="flex items-center gap-2 px-3 py-2 bg-blue-600 text-white text-sm font-medium rounded-xl hover:bg-blue-700 transition-colors"
                   >
-                    <PrinterIcon className="w-4 h-4" /> Print
+                    <PrinterIcon className="w-4 h-4" /><span className="hidden sm:inline">Print</span>
                   </button>
-                  <button onClick={() => setReport(null)} className="text-gray-400 hover:text-gray-600">
+                  <button onClick={() => setReport(null)} className="text-gray-400 hover:text-gray-600 p-1">
                     <XMarkIcon className="w-5 h-5" />
                   </button>
                 </div>
               </div>
 
               {/* Printable content */}
-              <div id="print-report" ref={printRef} className="p-8">
+              <div id="print-report" ref={printRef} className="p-4 sm:p-8">
                 {/* Report header */}
                 <div className="mb-8">
                   <div className="flex items-center justify-between">

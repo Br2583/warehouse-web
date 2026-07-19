@@ -238,7 +238,7 @@ export default function StatsPage() {
         <div className="space-y-6">
 
           {/* ── KPI cards with mini sparklines ── */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {[
               { label: 'Total Vaults', value: total,     color: '#2563eb', lightBg: '#eff6ff', textColor: '#1d4ed8', icon: ArchiveBoxIcon, delay: 0 },
               { label: 'Pending',      value: pending,   color: '#d97706', lightBg: '#fffbeb', textColor: '#b45309', icon: ClockIcon,        delay: 0.07 },

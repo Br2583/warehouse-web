@@ -121,7 +121,7 @@ export default function WarehousesPage() {
           <motion.form
             initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }}
             onSubmit={createWarehouse}
-            className="bg-white rounded-2xl border border-gray-100 p-5 mb-6 flex gap-3"
+            className="bg-white rounded-2xl border border-gray-100 p-5 mb-6 flex flex-col sm:flex-row gap-3"
           >
             <input
               type="text"

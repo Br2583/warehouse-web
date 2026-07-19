@@ -81,7 +81,7 @@ export default function StoragePage() {
               onClick={() => { setShowCreate(s => !s); setCreateError(''); }}
               className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-xl hover:bg-blue-700 transition-colors"
             >
-              <PlusIcon className="w-4 h-4" /> New Storage Unit
+              <PlusIcon className="w-4 h-4" /><span className="hidden sm:inline"> New Storage Unit</span><span className="sm:hidden"> New</span>
             </button>
           )}
         </div>
