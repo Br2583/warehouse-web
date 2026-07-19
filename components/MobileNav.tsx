@@ -42,8 +42,8 @@ export default function MobileNav() {
 
   return (
     <>
-      {/* Hamburger FAB */}
-      <button
+      {/* Hamburger FAB — hidden when drawer is open so it doesn't float above the backdrop */}
+      {!open && <button
         onClick={() => setOpen(true)}
         aria-label="Open navigation"
         style={{ bottom: 'calc(1.5rem + var(--safe-area-bottom))' }}
@@ -57,7 +57,7 @@ export default function MobileNav() {
             </span>
           )}
         </div>
-      </button>
+      </button>}
 
       {/* Backdrop */}
       {open && (

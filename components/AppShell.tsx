@@ -21,7 +21,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   const { user, loading, sessionExpired } = useAuth();
   const { show: showTutorial, dismiss: dismissTutorial } = useTutorial(user?.id);
   const isProtected = AUTH_ROUTES.some(r => pathname === r || pathname.startsWith(r + '/'));
-  const showNav = isProtected && pathname !== '/onboarding';
+  const showNav = isProtected && pathname !== '/onboarding' && pathname !== '/scan';
   const unreadChat   = useUnreadChat();
   const pendingTasks = usePendingTasks();
 

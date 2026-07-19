@@ -20,7 +20,9 @@ export default function TopBar() {
   const [showProfile, setShowProfile] = useState(false);
   const [showNotifs, setShowNotifs] = useState(false);
   const [search, setSearch] = useState('');
-  const [timeStr, setTimeStr] = useState('');
+  const [timeStr, setTimeStr] = useState(() =>
+    new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
+  );
 
   const profileRef = useRef<HTMLDivElement>(null);
   const notifRef = useRef<HTMLDivElement>(null);
