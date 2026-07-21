@@ -1,6 +1,5 @@
 'use client';
 
-import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
@@ -8,8 +7,7 @@ import { UserAvatar } from '@/components/UserAvatar';
 import {
   HomeIcon, BuildingOffice2Icon, ArchiveBoxIcon, ClipboardDocumentListIcon,
   MagnifyingGlassIcon, ChartBarSquareIcon, CameraIcon, ChatBubbleLeftRightIcon,
-  ArrowRightOnRectangleIcon, Bars3Icon, XMarkIcon,
-  QrCodeIcon, Cog6ToothIcon,
+  ArrowRightOnRectangleIcon, XMarkIcon, QrCodeIcon, Cog6ToothIcon,
 } from '@heroicons/react/24/outline';
 import {
   HomeIcon as HomeSolid, BuildingOffice2Icon as BuildingSolid, ArchiveBoxIcon as ArchiveSolid,
@@ -31,36 +29,23 @@ const NAV_ITEMS = [
   { href: '/settings',   label: 'Settings',    icon: Cog6ToothIcon,             iconActive: CogSolid },
 ];
 
-export default function MobileNav() {
-  const [open, setOpen] = useState(false);
+interface MobileNavProps {
+  open: boolean;
+  onClose: () => void;
+}
+
+export default function MobileNav({ open, onClose }: MobileNavProps) {
   const pathname = usePathname();
   const { user, logout } = useAuth();
   const { unreadChat, pendingTasks } = useNavData();
 
   return (
     <>
-      {/* Hamburger FAB — hidden when drawer is open so it doesn't float above the backdrop */}
-      {!open && <button
-        onClick={() => setOpen(true)}
-        aria-label="Open navigation"
-        style={{ bottom: 'calc(1rem + var(--safe-area-bottom))' }}
-        className="md:hidden fixed right-4 z-[60] w-10 h-10 flex items-center justify-center active:scale-95 transition-transform"
-      >
-        <div className="relative">
-          <Bars3Icon className="w-6 h-6 text-gray-600" />
-          {(unreadChat + pendingTasks) > 0 && (
-            <span className="absolute -top-1.5 -right-1.5 min-w-[15px] h-[15px] bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center px-0.5">
-              {(unreadChat + pendingTasks) > 9 ? '9+' : unreadChat + pendingTasks}
-            </span>
-          )}
-        </div>
-      </button>}
-
       {/* Backdrop */}
       {open && (
         <div
           className="md:hidden fixed inset-0 bg-black/40 z-50 backdrop-blur-sm"
-          onClick={() => setOpen(false)}
+          onClick={onClose}
         />
       )}
 
@@ -79,7 +64,7 @@ export default function MobileNav() {
             <p className="font-bold text-gray-900 text-sm">Warehouse</p>
           </div>
           <button
-            onClick={() => setOpen(false)}
+            onClick={onClose}
             className="w-8 h-8 rounded-xl hover:bg-gray-50 flex items-center justify-center"
           >
             <XMarkIcon className="w-4 h-4 text-gray-400" />
@@ -89,7 +74,7 @@ export default function MobileNav() {
         {/* User profile card */}
         <Link
           href="/profile"
-          onClick={() => setOpen(false)}
+          onClick={onClose}
           className="mx-4 mb-3 p-3 bg-gray-50 rounded-2xl flex items-center gap-3 active:bg-gray-100 transition-colors"
         >
           <UserAvatar picture={user?.picture} name={user?.name} size={40} />
@@ -103,7 +88,7 @@ export default function MobileNav() {
         <div className="px-4 pt-4 pb-2">
           <Link
             href="/scan"
-            onClick={() => setOpen(false)}
+            onClick={onClose}
             className="flex items-center gap-3 w-full bg-blue-600 text-white rounded-2xl px-4 py-3.5 font-semibold text-sm active:scale-95 transition-transform"
           >
             <QrCodeIcon className="w-5 h-5 flex-shrink-0" />
@@ -119,7 +104,7 @@ export default function MobileNav() {
             const InactiveIcon = Icon;
             const badge = href === '/chat' ? unreadChat : href === '/tasks' ? pendingTasks : 0;
             return (
-              <Link key={href} href={href} onClick={() => setOpen(false)}>
+              <Link key={href} href={href} onClick={onClose}>
                 <div className={`flex items-center gap-3 px-3 py-3 rounded-xl transition-colors ${
                   active ? 'bg-blue-50 text-blue-600' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-700'
                 }`}>
@@ -145,7 +130,7 @@ export default function MobileNav() {
         {/* Footer — sign out */}
         <div className="p-4 border-t border-gray-100">
           <button
-            onClick={() => { setOpen(false); logout(); }}
+            onClick={() => { onClose(); logout(); }}
             className="w-full flex items-center gap-2 px-3 py-2.5 text-sm text-red-500 hover:bg-red-50 rounded-xl transition-colors"
           >
             <ArrowRightOnRectangleIcon className="w-5 h-5" />

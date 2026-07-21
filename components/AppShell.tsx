@@ -1,7 +1,7 @@
 'use client';
 
 import { usePathname, useRouter } from 'next/navigation';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import MobileNav from './MobileNav';
 import TopBar from './TopBar';
 import Tutorial from './Tutorial';
@@ -24,6 +24,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   const showNav = isProtected && pathname !== '/onboarding' && pathname !== '/scan';
   const { count: unreadChat, preview: chatPreview, senderName: chatSender } = useUnreadChat();
   const { count: pendingTasks, firstTitle: firstTaskTitle } = usePendingTasks();
+  const [navOpen, setNavOpen] = useState(false);
 
   useEffect(() => {
     if (loading) return;
@@ -47,7 +48,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
     <NavDataContext.Provider value={{ unreadChat, pendingTasks, chatPreview, chatSender, firstTaskTitle }}>
       <CapacitorBackHandler />
       {showTutorial && isProtected && !loading && <Tutorial onDismiss={dismissTutorial} />}
-      {showNav && <TopBar />}
+      {showNav && <TopBar onOpenNav={() => setNavOpen(true)} />}
       <motion.div
         key={pathname}
         initial={{ opacity: 0, y: 6 }}
@@ -56,7 +57,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
       >
         {children}
       </motion.div>
-      {showNav && <MobileNav />}
+      {showNav && <MobileNav open={navOpen} onClose={() => setNavOpen(false)} />}
     </NavDataContext.Provider>
   );
 }

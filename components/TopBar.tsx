@@ -10,11 +10,15 @@ import {
   BellIcon, PlusIcon,
   Cog6ToothIcon, ArrowRightOnRectangleIcon,
   ChatBubbleLeftRightIcon, ClipboardDocumentListIcon,
-  PencilSquareIcon, UserPlusIcon,
+  PencilSquareIcon, UserPlusIcon, Bars3Icon,
 } from '@heroicons/react/24/outline';
 import { BellIcon as BellSolid } from '@heroicons/react/24/solid';
 
-export default function TopBar() {
+interface TopBarProps {
+  onOpenNav?: () => void;
+}
+
+export default function TopBar({ onOpenNav }: TopBarProps) {
   const { user, logout } = useAuth();
   const router = useRouter();
   const { unreadChat, pendingTasks, chatPreview, chatSender, firstTaskTitle } = useNavData();
@@ -137,6 +141,17 @@ export default function TopBar() {
         style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}
       >
         <div className="h-14 flex items-center px-4 gap-3">
+          {/* Hamburger — left side, part of the bar */}
+          <button
+            onClick={onOpenNav}
+            aria-label="Open navigation"
+            className="flex-shrink-0 flex flex-col gap-[4.5px] justify-center w-8 h-8 active:opacity-60 transition-opacity"
+          >
+            <span className="block w-5 h-[1.5px] bg-gray-700 rounded-full" />
+            <span className="block w-5 h-[1.5px] bg-gray-700 rounded-full" />
+            <span className="block w-5 h-[1.5px] bg-gray-700 rounded-full" />
+          </button>
+
           <div className="flex-1 min-w-0">
             <p className="text-sm font-semibold text-gray-900 truncate">Hi, {firstName} 👋</p>
             <p className="text-[11px] text-gray-400">{timeStr}</p>
