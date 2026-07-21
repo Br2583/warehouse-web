@@ -56,7 +56,10 @@ export default function MobileNav({ open, onClose }: MobileNavProps) {
         }`}
       >
         {/* Header — logo + close */}
-        <div className="px-5 pt-5 pb-3 flex items-center justify-between">
+        <div
+          className="px-5 pb-3 flex items-center justify-between"
+          style={{ paddingTop: 'calc(1.25rem + env(safe-area-inset-top, 0px))' }}
+        >
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 bg-gray-950 rounded-xl flex items-center justify-center flex-shrink-0">
               <span className="text-white font-black text-[9px] italic leading-none">WM</span>
