@@ -11,6 +11,7 @@ import {
 } from '@heroicons/react/24/outline';
 import { UserAvatar } from '@/components/UserAvatar';
 import { AVATARS } from '@/lib/avatars';
+import { compressAvatar } from '@/lib/compress-image';
 
 const INDUSTRIES = [
   'Warehouse & Logistics',
@@ -48,7 +49,10 @@ export default function OnboardingPage() {
   const [jobTitle, setJobTitle] = useState('');
   const [avatarValue, setAvatarValue] = useState('');
   const [pickerOpen, setPickerOpen] = useState(false);
+  const [avatarUploading, setAvatarUploading] = useState(false);
+  const [avatarError, setAvatarError] = useState('');
   const pickerRef = useRef<HTMLDivElement>(null);
+  const photoInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (user) {
@@ -116,6 +120,22 @@ export default function OnboardingPage() {
     if (e?.status === 403) return 'You do not have permission to do this.';
     if (e?.status === 404) return 'Record not found.';
     return 'Something went wrong. Please try again.';
+  };
+
+  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+    setPickerOpen(false);
+    setAvatarUploading(true);
+    setAvatarError('');
+    try {
+      const dataUrl = await compressAvatar(file);
+      setAvatarValue(dataUrl);
+    } catch (e: any) {
+      setAvatarError(e?.message || 'Failed to upload photo');
+    }
+    setAvatarUploading(false);
   };
 
   const saveProfile = async () => {
@@ -230,23 +250,53 @@ export default function OnboardingPage() {
               {/* Avatar picker */}
               <div className="mb-6" ref={pickerRef}>
                 <label className="block text-[12px] font-semibold text-slate-500 mb-2.5">
-                  Profile icon <span className="font-normal text-slate-300">(optional)</span>
+                  Profile photo <span className="font-normal text-slate-300">(optional)</span>
                 </label>
                 <div className="flex items-center gap-3">
-                  <UserAvatar picture={avatarValue || undefined} name={displayName || user?.name} size={56} shape="square" />
-                  <button
-                    type="button"
-                    onClick={() => setPickerOpen(p => !p)}
-                    className="text-sm text-blue-600 hover:text-blue-700 font-medium"
-                  >
-                    {avatarValue ? 'Change icon' : 'Choose icon'}
-                  </button>
-                  {avatarValue && (
-                    <button type="button" onClick={() => setAvatarValue('')} className="text-sm text-gray-400 hover:text-gray-600">
-                      Remove
+                  <div className="relative">
+                    <UserAvatar picture={avatarValue || undefined} name={displayName || user?.name} size={56} shape="square" />
+                    {avatarUploading && (
+                      <div className="absolute inset-0 bg-white/70 rounded-xl flex items-center justify-center">
+                        <span className="w-4 h-4 border-2 border-blue-300 border-t-blue-600 rounded-full animate-spin" />
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex flex-col gap-1.5">
+                    <button
+                      type="button"
+                      onClick={() => photoInputRef.current?.click()}
+                      className="text-sm text-blue-600 hover:text-blue-700 font-medium flex items-center gap-1.5"
+                    >
+                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+                      </svg>
+                      Upload photo
                     </button>
-                  )}
+                    <button
+                      type="button"
+                      onClick={() => setPickerOpen(p => !p)}
+                      className="text-sm text-gray-500 hover:text-gray-700 font-medium"
+                    >
+                      Choose icon
+                    </button>
+                    {avatarValue && (
+                      <button type="button" onClick={() => setAvatarValue('')} className="text-xs text-gray-400 hover:text-gray-600">
+                        Remove
+                      </button>
+                    )}
+                  </div>
                 </div>
+                <input
+                  ref={photoInputRef}
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={handlePhotoUpload}
+                />
+                {avatarError && (
+                  <p className="mt-1.5 text-xs text-red-500">{avatarError}</p>
+                )}
                 <AnimatePresence>
                   {pickerOpen && (
                     <motion.div

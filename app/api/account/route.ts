@@ -19,10 +19,30 @@ export async function DELETE(req: NextRequest) {
   if (!me?.id) return NextResponse.json({ error: 'Invalid session' }, { status: 401 });
 
   if (me.role === 'owner' && me.company_id) {
-    return NextResponse.json(
-      { error: 'Company owners cannot delete their account. Transfer ownership or disband the company first.' },
-      { status: 400 }
+    // Clear company_id from all other members so they aren't left in limbo
+    const membersRes = await fetch(
+      `${PB_URL}/api/collections/users/records?filter=(company_id="${me.company_id}")&perPage=200&fields=id`,
+      { headers: { Authorization: `Bearer ${adminToken}` } }
     );
+    if (membersRes.ok) {
+      const membersData = await membersRes.json();
+      await Promise.allSettled(
+        (membersData.items || [])
+          .filter((u: any) => u.id !== me.id)
+          .map((u: any) =>
+            fetch(`${PB_URL}/api/collections/users/records/${u.id}`, {
+              method: 'PATCH',
+              headers: { Authorization: `Bearer ${adminToken}`, 'Content-Type': 'application/json' },
+              body: JSON.stringify({ company_id: '' }),
+            })
+          )
+      );
+    }
+    // Delete the company (PocketBase cascades related records)
+    await fetch(`${PB_URL}/api/collections/companies/records/${me.company_id}`, {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${adminToken}` },
+    });
   }
 
   const res = await fetch(`${PB_URL}/api/collections/users/records/${me.id}`, {

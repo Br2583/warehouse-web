@@ -19,12 +19,14 @@ export default function TopBar() {
   const router = useRouter();
   const { unreadChat, pendingTasks, chatPreview, chatSender, firstTaskTitle } = useNavData();
   const [showProfile, setShowProfile] = useState(false);
+  const [showMobileProfile, setShowMobileProfile] = useState(false);
   const [showNotifs, setShowNotifs] = useState(false);
   const [timeStr, setTimeStr] = useState(() =>
     new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
   );
 
   const profileRef = useRef<HTMLDivElement>(null);
+  const mobileProfileRef = useRef<HTMLDivElement>(null);
   const notifRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -39,6 +41,7 @@ export default function TopBar() {
   useEffect(() => {
     const handler = (e: MouseEvent) => {
       if (!profileRef.current?.contains(e.target as Node)) setShowProfile(false);
+      if (!mobileProfileRef.current?.contains(e.target as Node)) setShowMobileProfile(false);
       if (!notifRef.current?.contains(e.target as Node)) setShowNotifs(false);
     };
     document.addEventListener('mousedown', handler);
@@ -139,13 +142,57 @@ export default function TopBar() {
             <p className="text-[11px] text-gray-400">{timeStr}</p>
           </div>
           {bellBtn}
-          <button
-            onClick={() => router.push('/profile')}
-            className="flex-shrink-0 active:opacity-70 transition-opacity"
-            aria-label="My profile"
-          >
-            <UserAvatar picture={user?.picture} name={user?.name} size={34} />
-          </button>
+          <div ref={mobileProfileRef} className="relative flex-shrink-0">
+            <button
+              onClick={() => { setShowMobileProfile(v => !v); setShowNotifs(false); }}
+              className="active:opacity-70 transition-opacity"
+              aria-label="My profile"
+            >
+              <UserAvatar picture={user?.picture} name={user?.name} size={34} />
+            </button>
+
+            {showMobileProfile && (
+              <div className="absolute right-0 top-11 w-56 bg-white rounded-2xl shadow-xl border border-gray-100 py-2 z-[70]">
+                <div className="px-4 py-3 border-b border-gray-100">
+                  <div className="flex items-center gap-3">
+                    <UserAvatar picture={user?.picture} name={user?.name} size={36} />
+                    <div className="min-w-0">
+                      <p className="text-sm font-semibold text-gray-900 truncate">{user?.name}</p>
+                      <p className="text-xs text-gray-400 truncate">{user?.email}</p>
+                    </div>
+                  </div>
+                </div>
+                <div className="py-1">
+                  <Link href="/profile" onClick={() => setShowMobileProfile(false)}
+                    className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 active:bg-gray-50 transition-colors">
+                    <PencilSquareIcon className="w-4 h-4 text-gray-400" />
+                    Edit Profile
+                  </Link>
+                  {user?.role === 'owner' && (
+                    <Link href="/settings#invite" onClick={() => setShowMobileProfile(false)}
+                      className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 active:bg-gray-50 transition-colors">
+                      <UserPlusIcon className="w-4 h-4 text-gray-400" />
+                      Invite Codes
+                    </Link>
+                  )}
+                  <Link href="/settings" onClick={() => setShowMobileProfile(false)}
+                    className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 active:bg-gray-50 transition-colors">
+                    <Cog6ToothIcon className="w-4 h-4 text-gray-400" />
+                    Settings
+                  </Link>
+                </div>
+                <div className="border-t border-gray-100 pt-1">
+                  <button
+                    onClick={() => { setShowMobileProfile(false); logout(); }}
+                    className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-red-500 hover:bg-red-50 active:bg-red-50 transition-colors"
+                  >
+                    <ArrowRightOnRectangleIcon className="w-4 h-4" />
+                    Sign out
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 

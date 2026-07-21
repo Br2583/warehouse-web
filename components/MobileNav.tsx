@@ -43,13 +43,13 @@ export default function MobileNav() {
       {!open && <button
         onClick={() => setOpen(true)}
         aria-label="Open navigation"
-        style={{ bottom: 'calc(1.5rem + var(--safe-area-bottom))' }}
-        className="md:hidden fixed right-4 z-[60] w-12 h-12 bg-white border border-gray-200 rounded-2xl shadow-lg flex items-center justify-center active:scale-95 transition-transform"
+        style={{ bottom: 'calc(1rem + var(--safe-area-bottom))' }}
+        className="md:hidden fixed right-4 z-[60] w-10 h-10 flex items-center justify-center active:scale-95 transition-transform"
       >
         <div className="relative">
-          <Bars3Icon className="w-5 h-5 text-gray-700" />
+          <Bars3Icon className="w-6 h-6 text-gray-600" />
           {(unreadChat + pendingTasks) > 0 && (
-            <span className="absolute -top-2 -right-2 min-w-[16px] h-4 bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center px-0.5">
+            <span className="absolute -top-1.5 -right-1.5 min-w-[15px] h-[15px] bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center px-0.5">
               {(unreadChat + pendingTasks) > 9 ? '9+' : unreadChat + pendingTasks}
             </span>
           )}
