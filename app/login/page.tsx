@@ -8,6 +8,7 @@ import {
 } from '@heroicons/react/24/outline';
 import { pb } from '@/lib/pb';
 import { genCode } from '@/lib/utils';
+import AppFooter from '@/components/AppFooter';
 
 /* ─── Left panel (blue gradient) ─── */
 function AuthLeft({ title, subtitle }: { title: React.ReactNode; subtitle: string }) {
@@ -220,7 +221,8 @@ function LoginForm() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4 md:p-8">
+    <div className="min-h-screen bg-slate-50 flex flex-col">
+      <div className="flex-1 flex items-center justify-center p-4 md:p-8">
       <motion.div
         initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
@@ -407,6 +409,8 @@ function LoginForm() {
           </div>
         </div>
       </motion.div>
+      </div>
+      <AppFooter />
     </div>
   );
 }

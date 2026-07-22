@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { pb } from '@/lib/pb';
+import AppFooter from '@/components/AppFooter';
 import {
   BuildingOffice2Icon,
   ChartBarSquareIcon,
@@ -415,10 +416,7 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ── Footer ── */}
-      <footer className="text-center py-7 border-t border-gray-100 bg-white text-[13px] text-slate-400">
-        Built by <span className="text-blue-600 font-semibold">PixelCore</span> &middot; Warehouse Manager &copy; {new Date().getFullYear()}
-      </footer>
+      <AppFooter />
 
     </div>
   );

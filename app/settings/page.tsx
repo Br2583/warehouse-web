@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
+import AppFooter from '@/components/AppFooter';
 import {
   UsersIcon, DevicePhoneMobileIcon, ExclamationTriangleIcon,
   ArrowRightOnRectangleIcon, ChevronRightIcon, CheckCircleIcon,
@@ -226,7 +227,8 @@ export default function SettingsPage() {
   };
 
   return (
-    <div className="flex min-h-screen bg-gray-50">
+    <div className="flex flex-col min-h-screen bg-gray-50">
+      <div className="flex flex-1">
       <Sidebar />
       <main className="md:ml-64 flex-1 min-w-0 px-4 md:px-8 pb-28 md:pb-8 topbar-offset">
         <div className="max-w-2xl mx-auto">
@@ -606,6 +608,8 @@ export default function SettingsPage() {
           </motion.div>
         </div>
       </main>
+      </div>
+      <AppFooter />
 
       {confirmDelete && (
         <ConfirmModal
