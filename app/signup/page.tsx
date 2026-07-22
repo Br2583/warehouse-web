@@ -50,12 +50,18 @@ export default function SignupPage() {
         role:                 'worker',
         notifications_enabled: false,
       });
-      await fetch('/api/auth/send-verification', {
+      const normalizedEmail = email.trim().toLowerCase();
+      const verifyRes = await fetch('/api/auth/send-verification', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: email.trim().toLowerCase() }),
+        body: JSON.stringify({ email: normalizedEmail }),
       });
-      localStorage.setItem('verify_email', email.trim().toLowerCase());
+      localStorage.setItem('verify_email', normalizedEmail);
+      if (!verifyRes.ok) {
+        localStorage.setItem('verify_email_send_failed', '1');
+      } else {
+        localStorage.removeItem('verify_email_send_failed');
+      }
       router.push('/verify-email');
     } catch (e: any) {
       const msg = e?.response?.data;

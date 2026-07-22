@@ -4,6 +4,15 @@ import type { NextRequest } from 'next/server';
 const SESSION_TIMEOUT_MS = 2 * 60 * 60 * 1000; // 2 hours inactivity
 const ACTIVITY_COOKIE    = 'wm_last_active';
 
+async function isValidAdminSession(value: string | undefined): Promise<boolean> {
+  if (!value) return false;
+  const secret = process.env.ADMIN_SECRET;
+  if (!secret) return false;
+  const hash = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(secret));
+  const hex = [...new Uint8Array(hash)].map(b => b.toString(16).padStart(2, '0')).join('');
+  return value === hex;
+}
+
 const PROTECTED = [
   '/dashboard', '/warehouses', '/search', '/production',
   '/stats', '/snapshots', '/chat', '/deleted', '/profile',
@@ -24,7 +33,7 @@ function setActivityCookie(res: NextResponse): void {
   });
 }
 
-export function proxy(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // 1. Redirect HTTP → HTTPS in production (Railway sets x-forwarded-proto)
@@ -43,7 +52,7 @@ export function proxy(request: NextRequest) {
     !pathname.startsWith('/admin-k9x2m7/login')
   ) {
     const adminSession = request.cookies.get('admin_session')?.value;
-    if (!adminSession) {
+    if (!await isValidAdminSession(adminSession)) {
       return NextResponse.redirect(new URL('/admin-k9x2m7/login', request.url));
     }
   }

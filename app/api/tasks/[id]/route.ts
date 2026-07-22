@@ -53,6 +53,17 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     if (body.status   && !VALID_STATUSES.includes(body.status))      return NextResponse.json({ error: 'Invalid status' },   { status: 400 });
     if (body.type     && !VALID_TYPES.includes(body.type))           return NextResponse.json({ error: 'Invalid type' },     { status: 400 });
     if (body.priority && !VALID_PRIORITIES.includes(body.priority))  return NextResponse.json({ error: 'Invalid priority' }, { status: 400 });
+    // Verify assigned_to belongs to the same company
+    if (body.assigned_to) {
+      const assigneeRes = await fetch(`${PB_URL}/api/collections/users/records/${body.assigned_to}`, {
+        headers: { Authorization: `Bearer ${adminToken}` },
+      });
+      if (!assigneeRes.ok) return NextResponse.json({ error: 'Assigned user not found' }, { status: 400 });
+      const assignee = await assigneeRes.json();
+      if (assignee.company_id !== me.company_id) {
+        return NextResponse.json({ error: 'Cannot assign task to user outside your company' }, { status: 403 });
+      }
+    }
     updateData = {
       title:       body.title,
       type:        body.type,

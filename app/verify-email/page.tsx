@@ -14,8 +14,13 @@ export default function VerifyEmailPage() {
 
   useEffect(() => {
     const saved = localStorage.getItem('verify_email') || '';
-    if (!saved) setError('Email address not found. Please go back and sign up again.');
     setEmail(saved);
+    if (!saved) {
+      setError('Email address not found. Please go back and sign up again.');
+    } else if (localStorage.getItem('verify_email_send_failed')) {
+      setError("We couldn't send the verification email automatically. Click Resend below to try again.");
+      localStorage.removeItem('verify_email_send_failed');
+    }
   }, []);
 
   const resend = async () => {

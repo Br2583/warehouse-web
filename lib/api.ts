@@ -84,12 +84,13 @@ function mapStorage(s: any) {
 
 // Map a PocketBase chat_messages record to the Message shape
 function mapMessage(m: any) {
+  const raw = m.sent_at || m.created || '';
   return {
     id:          m.id,
     sender_name: m.author_name,
     sender_id:   m.author_id,
     text:        m.content,
-    timestamp:   m.created?.replace(' ', 'T') ?? new Date().toISOString(),
+    timestamp:   raw.replace(' ', 'T'),
   };
 }
 
@@ -250,10 +251,10 @@ async function routeGet(path: string): Promise<any> {
     }
     if (!chatCid) return [];
     // Fetch only last 150 messages sorted newest-first, then reverse for display
-    const page = await pb.collection('chat_messages').getList(1, 150, {
+    const page = await pb.collection('chat_messages').getList(1, 500, {
       filter: `company_id="${chatCid}"`,
-      sort: '-created',
-      fields: 'id,author_name,author_id,content,created',
+      sort: '-sent_at,-created',
+      fields: 'id,author_name,author_id,content,sent_at,created',
     });
     return page.items.reverse().map(mapMessage);
   }
@@ -424,7 +425,7 @@ async function routePost(path: string, body: any): Promise<any> {
     if (!chatCid) throw new Error('No company — please rejoin your company from the Profile page');
     const m = await pb.collection('chat_messages').create({
       company_id:  chatCid,
-      author_id:   uid || body.sender_email,
+      author_id:   uid || (() => { throw new Error('Not authenticated'); })(),
       author_name: body.sender_name || pb.authStore.model?.name,
       content:     body.text,
       type:        'text',
@@ -482,6 +483,7 @@ async function routePost(path: string, body: any): Promise<any> {
   if (restoreMatch) {
     if (!cid) throw new Error('No company');
     const dv = await pb.collection('deleted_vaults').getOne(restoreMatch[1]);
+    if (dv.company_id !== cid) throw new Error('Forbidden');
     const vd = (dv.vault_data as any) || {};
     // vault_data was saved with mapped field names (mapVault renames col→column, id→box_id)
     // so we explicitly remap back to PocketBase field names

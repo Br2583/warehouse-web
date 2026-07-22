@@ -152,7 +152,11 @@ function LoginForm() {
           if (company.suspended) { router.replace('/suspended'); return; }
           if (company.rejected)  { router.replace('/rejected');  return; }
           if (!company.approved) { router.replace('/pending');   return; }
-        } catch {}
+        } catch {
+          setError('Could not verify account status. Try again.');
+          setLoading(false);
+          return;
+        }
       }
       if (!model.profile_complete) { router.replace('/onboarding'); return; }
       const returnTo = params.get('returnTo');

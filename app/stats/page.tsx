@@ -61,7 +61,7 @@ function buildTrend(boxes: any[]): { week: string; vaults: number }[] {
     const key = monday.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
     map[key] = (map[key] || 0) + 1;
   });
-  return Object.entries(map).slice(-8).map(([week, vaults]) => ({ week, vaults }));
+  return Object.entries(map).sort((a, b) => new Date(a[0]).getTime() - new Date(b[0]).getTime()).slice(-8).map(([week, vaults]) => ({ week, vaults }));
 }
 
 type Period = '7d' | '30d' | '3m' | 'all';

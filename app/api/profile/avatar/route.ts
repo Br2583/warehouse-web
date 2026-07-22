@@ -29,6 +29,9 @@ export async function POST(req: NextRequest) {
 
     const { userId, avatar_base64 } = await req.json();
     if (!userId) return NextResponse.json({ error: 'Missing userId' }, { status: 400 });
+    if (avatar_base64 && avatar_base64.length > 110_000) {
+      return NextResponse.json({ error: 'Image too large. Please compress before uploading.' }, { status: 413 });
+    }
     if (userId !== authenticatedUserId) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
     const recordUrl = `${PB_URL}/api/collections/users/records/${userId}`;

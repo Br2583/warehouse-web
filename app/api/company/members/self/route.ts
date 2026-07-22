@@ -29,7 +29,7 @@ export async function DELETE(req: NextRequest) {
   const res = await fetch(`${PB_URL}/api/collections/users/records/${me.id}`, {
     method: 'PATCH',
     headers: { Authorization: `Bearer ${adminToken}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ company_id: '', role: 'worker' }),
+    body: JSON.stringify({ company_id: '', role: 'worker', pending_action: '', pending_company_name: '' }),
   });
   if (!res.ok) return NextResponse.json({ error: 'Failed to leave company' }, { status: 500 });
 

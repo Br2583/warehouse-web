@@ -24,7 +24,11 @@ export async function POST(req: NextRequest) {
 
     const token = signToken({ userId: user.id, email: user.email, purpose: 'verify' }, 86400);
     const { subject, html } = verificationEmail(user.name || email, token);
-    await sendEmail({ to: email, toName: user.name, subject, html });
+    try {
+      await sendEmail({ to: email, toName: user.name, subject, html });
+    } catch {
+      return NextResponse.json({ error: 'Could not deliver email. The address may be blocked or invalid.' }, { status: 500 });
+    }
 
     return NextResponse.json({ ok: true });
   } catch (e: any) {

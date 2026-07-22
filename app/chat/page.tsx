@@ -83,7 +83,7 @@ export default function ChatPage() {
         const msg = err?.name === 'AbortError' ? 'Connection timed out — retrying…' : (err?.message || 'Could not load messages');
         setSendError(msg);
       }).finally(() => { clearTimeout(tid); setLoading(false); });
-  }, [user?.company_id, user?.email]);
+  }, [user?.company_id, user?.id]);
 
   useEffect(() => {
     requestNotificationPermission();
@@ -143,7 +143,7 @@ export default function ChatPage() {
         method: 'DELETE',
         headers: token ? { Authorization: `Bearer ${token}` } : {},
       });
-      fetchMessages();
+      await fetchMessages();
     } catch {
       // deletion failed, list stays unchanged
     }

@@ -92,7 +92,9 @@ export default function WarehousesPage() {
           await pb.collection('warehouses').delete(id);
           await fetchWarehouses();
           showToast('Warehouse deleted');
-        } catch {}
+        } catch {
+          showToast('Failed to delete warehouse');
+        }
       },
     });
   };

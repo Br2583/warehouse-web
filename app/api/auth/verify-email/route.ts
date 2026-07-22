@@ -19,6 +19,7 @@ export async function POST(req: NextRequest) {
       },
       body: JSON.stringify({ verified: true }),
     });
+    if (pbRes.status === 404) throw new Error('This verification link has expired or the account no longer exists. Please sign up again or click Resend on the verification page.');
     if (!pbRes.ok) throw new Error('Failed to verify account. Try again.');
 
     return NextResponse.json({ ok: true });

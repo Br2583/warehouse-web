@@ -31,7 +31,7 @@ export async function GET(req: NextRequest) {
     `${PB_URL}/api/collections/tasks/records?filter=${encodeURIComponent(filter)}&sort=-created&perPage=200`,
     { headers: { Authorization: `Bearer ${adminToken}` } }
   );
-  if (!res.ok) return NextResponse.json([], { status: 200 });
+  if (!res.ok) return NextResponse.json({ error: 'Failed to load tasks' }, { status: 502 });
   const data = await res.json();
   return NextResponse.json(data.items || []);
 }
@@ -50,6 +50,7 @@ export async function POST(req: NextRequest) {
 
   const body = await req.json();
 
+  if (!body.title?.trim()) return NextResponse.json({ error: 'Title required' }, { status: 400 });
   const VALID_TYPES     = ['Free', 'Cleaning', 'Restoration', 'Delivery'];
   const VALID_PRIORITIES = ['low', 'normal', 'high', 'urgent'];
   if (body.type     && !VALID_TYPES.includes(body.type))       return NextResponse.json({ error: 'Invalid task type' },     { status: 400 });

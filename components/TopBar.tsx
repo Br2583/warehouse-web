@@ -43,14 +43,31 @@ export default function TopBar({ onOpenNav }: TopBarProps) {
   }, []);
 
   useEffect(() => {
+    if (!showProfile) return;
     const handler = (e: MouseEvent) => {
       if (!profileRef.current?.contains(e.target as Node)) setShowProfile(false);
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [showProfile]);
+
+  useEffect(() => {
+    if (!showMobileProfile) return;
+    const handler = (e: MouseEvent) => {
       if (!mobileProfileRef.current?.contains(e.target as Node)) setShowMobileProfile(false);
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [showMobileProfile]);
+
+  useEffect(() => {
+    if (!showNotifs) return;
+    const handler = (e: MouseEvent) => {
       if (!notifRef.current?.contains(e.target as Node)) setShowNotifs(false);
     };
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
-  }, []);
+  }, [showNotifs]);
 
   const totalNotifs = unreadChat + pendingTasks;
   const firstName = user?.name?.split(' ')[0] ?? 'there';

@@ -22,7 +22,12 @@ export async function POST(req: NextRequest) {
 
     const token = signToken({ userId: user.id, email: user.email, purpose: 'reset' }, 3600);
     const { subject, html } = passwordResetEmail(user.name || email, token);
-    await sendEmail({ to: email, toName: user.name, subject, html });
+    try {
+      await sendEmail({ to: email, toName: user.name, subject, html });
+    } catch {
+      // Don't leak whether the address was deliverable
+      return NextResponse.json({ ok: true });
+    }
 
     return NextResponse.json({ ok: true });
   } catch (e: any) {

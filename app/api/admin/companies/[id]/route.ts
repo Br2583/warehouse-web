@@ -124,14 +124,17 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
     )
   );
   const failures = userDels.filter(r => r.status === 'rejected');
-  if (failures.length > 0 && failures.length === userDels.length && userDels.length > 0) {
-    return NextResponse.json({ error: 'Failed to delete company users' }, { status: 500 });
+  if (failures.length > 0) {
+    return NextResponse.json({ error: 'Failed to delete one or more company users' }, { status: 500 });
   }
 
-  await fetch(`${PB_URL}/api/collections/companies/records/${id}`, {
+  const delCompanyRes = await fetch(`${PB_URL}/api/collections/companies/records/${id}`, {
     method: 'DELETE',
     headers: { Authorization: `Bearer ${adminToken}` },
   });
+  if (!delCompanyRes.ok && delCompanyRes.status !== 204) {
+    return NextResponse.json({ error: 'Failed to delete company' }, { status: 502 });
+  }
 
   if (owner?.email) {
     const email = clientDeletedEmail(owner.name || 'Cliente', company.name);

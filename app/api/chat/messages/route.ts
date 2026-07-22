@@ -56,7 +56,7 @@ export async function GET(req: NextRequest) {
     ]);
 
     const url = req.nextUrl;
-    const perPage = url.searchParams.get('perPage') || '500';
+    const perPage = Math.min(parseInt(url.searchParams.get('perPage') || '500', 10), 500).toString();
     const sort    = url.searchParams.get('sort')    || 'sent_at';
 
     const res = await pbFetch(

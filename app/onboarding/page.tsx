@@ -106,6 +106,7 @@ export default function OnboardingPage() {
   if (user.profile_complete) { router.replace('/dashboard'); return <Spinner />; }
 
   const isOwner = user?.role === 'owner';
+  if (step === 2 && !isOwner) { setStep(1); return <Spinner />; }
   const totalSteps = isOwner ? 2 : 1;
 
   const normalizePbError = (e: any): string => {

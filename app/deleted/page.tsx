@@ -21,7 +21,7 @@ export default function DeletedPage() {
 
   const fetchDeleted = () =>
     api.get('/api/deleted-boxes')
-      .then(setDeleted)
+      .then(data => setDeleted(Array.isArray(data) ? data : []))
       .catch(() => setError('Failed to load deleted vaults. Try again.'))
       .finally(() => setLoading(false));
 
