@@ -263,7 +263,7 @@ export default function Home() {
             </button>
             <button
               onClick={() => router.push('/login')}
-              className="flex items-center justify-center gap-2 px-7 py-3.5 bg-white border-[1.5px] border-gray-300 text-gray-800 rounded-[11px] text-[15px] font-semibold hover:bg-gray-50 hover:border-blue-400 hover:text-blue-600 hover:-translate-y-px transition-all shadow-sm"
+              className="flex items-center justify-center gap-2 px-7 py-3.5 bg-slate-100 text-slate-700 rounded-full text-[15px] font-semibold hover:bg-slate-200 hover:-translate-y-px transition-all"
             >
               Sign In
             </button>
@@ -408,7 +408,7 @@ export default function Home() {
           <p className="text-white/80 text-[17px] mb-9 leading-relaxed">Join thousands of teams already using Warehouse Manager.</p>
           <button
             onClick={() => router.push('/signup')}
-            className="inline-flex items-center gap-2 bg-white text-blue-600 px-8 py-3.5 rounded-[11px] text-[15px] font-bold hover:-translate-y-0.5 active:translate-y-0 transition-all shadow-[0_4px_20px_rgba(0,0,0,.15)] hover:shadow-[0_8px_28px_rgba(0,0,0,.2)]"
+            className="inline-flex items-center gap-2 bg-white text-gray-950 px-8 py-3.5 rounded-full text-[15px] font-bold hover:-translate-y-0.5 active:translate-y-0 transition-all shadow-[0_4px_20px_rgba(0,0,0,.15)] hover:shadow-[0_8px_28px_rgba(0,0,0,.2)]"
           >
             Start for Free
           </button>

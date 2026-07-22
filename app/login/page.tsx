@@ -325,10 +325,10 @@ function LoginForm() {
                     <button
                       key={m}
                       onClick={() => setCompanyMode(m)}
-                      className="flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm font-medium transition-all"
+                      className="flex items-center gap-2 px-3 py-2.5 rounded-full text-sm font-medium transition-all"
                       style={companyMode === m
-                        ? { background: m === 'create' ? '#eff6ff' : '#faf5ff', border: `1.5px solid ${m === 'create' ? '#93c5fd' : '#c4b5fd'}`, color: m === 'create' ? '#2563eb' : '#7c3aed' }
-                        : { background: '#f8fafc', border: '1.5px solid #e2e8f0', color: '#64748b' }}
+                        ? { background: '#0f172a', color: '#fff', border: '1.5px solid #0f172a' }
+                        : { background: '#f1f5f9', color: '#64748b', border: '1.5px solid transparent' }}
                     >
                       {m === 'create' ? <BuildingOffice2Icon className="w-4 h-4 flex-shrink-0" /> : <TicketIcon className="w-4 h-4 flex-shrink-0" />}
                       {m === 'create' ? 'Create' : 'Join'}
