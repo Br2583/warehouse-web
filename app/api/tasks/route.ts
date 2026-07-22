@@ -48,6 +48,17 @@ export async function POST(req: NextRequest) {
   try { adminToken = await getPbAdminToken(); }
   catch { return NextResponse.json({ error: 'Admin auth failed' }, { status: 500 }); }
 
+  // Cross-check: verify the authenticated user is actually the company owner
+  const compRes = await fetch(`${PB_URL}/api/collections/companies/records/${me.company_id}`, {
+    headers: { Authorization: `Bearer ${adminToken}` },
+  });
+  if (compRes.ok) {
+    const comp = await compRes.json();
+    if (comp.owner_id && comp.owner_id !== me.id) {
+      return NextResponse.json({ error: 'Only the company owner can create tasks' }, { status: 403 });
+    }
+  }
+
   const body = await req.json();
 
   if (!body.title?.trim()) return NextResponse.json({ error: 'Title required' }, { status: 400 });

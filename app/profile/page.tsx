@@ -9,7 +9,7 @@ import Sidebar from '@/components/Sidebar';
 import { UserAvatar } from '@/components/UserAvatar';
 import { AVATARS } from '@/lib/avatars';
 import { compressAvatar } from '@/lib/compress-image';
-import { api } from '@/lib/api';
+import { api, getToken } from '@/lib/api';
 import { pb } from '@/lib/pb';
 import { useAuth } from '@/lib/auth-context';
 import { useToast } from '@/lib/toast-context';
@@ -20,6 +20,7 @@ export default function ProfilePage() {
 
   const [company, setCompany] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [isAdmin, setIsAdmin] = useState(false);
 
   // Avatar picker
   const [pickerOpen, setPickerOpen] = useState(false);
@@ -56,6 +57,15 @@ export default function ProfilePage() {
       .then(setCompany)
       .catch(() => {})
       .finally(() => setLoading(false));
+  }, []);
+
+  useEffect(() => {
+    const token = getToken();
+    if (!token) return;
+    fetch('/api/profile/is-admin', { headers: { Authorization: `Bearer ${token}` } })
+      .then(r => r.json())
+      .then(d => setIsAdmin(!!d?.isAdmin))
+      .catch(() => {});
   }, []);
 
   const handleAvatarSelect = async (avatarValue: string) => {
@@ -349,7 +359,7 @@ export default function ProfilePage() {
             )}
 
             {/* ─── Admin Panel (super-admin only) ─── */}
-            {user?.email === process.env.NEXT_PUBLIC_ADMIN_USER_EMAIL && (
+            {isAdmin && (
               <motion.div
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}

@@ -8,9 +8,14 @@ async function isValidAdminSession(value: string | undefined): Promise<boolean> 
   if (!value) return false;
   const secret = process.env.ADMIN_SECRET;
   if (!secret) return false;
-  const hash = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(secret));
-  const hex = [...new Uint8Array(hash)].map(b => b.toString(16).padStart(2, '0')).join('');
-  return value === hex;
+  const enc = new TextEncoder();
+  const now = Math.floor(Date.now() / 86_400_000);
+  for (const bucket of [now, now - 1]) {
+    const hash = await crypto.subtle.digest('SHA-256', enc.encode(secret + bucket));
+    const hex = [...new Uint8Array(hash)].map(b => b.toString(16).padStart(2, '0')).join('');
+    if (value === hex) return true;
+  }
+  return false;
 }
 
 const PROTECTED = [

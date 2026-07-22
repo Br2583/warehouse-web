@@ -4,7 +4,8 @@ import type { NextRequest } from 'next/server';
 export function hashAdminSecret(): string {
   const s = process.env.ADMIN_SECRET;
   if (!s) throw new Error('ADMIN_SECRET env var is required');
-  return createHash('sha256').update(s).digest('hex');
+  const dayBucket = Math.floor(Date.now() / 86_400_000).toString();
+  return createHash('sha256').update(s + dayBucket).digest('hex');
 }
 
 export function isAdminRequest(req: NextRequest): boolean {
