@@ -39,7 +39,15 @@ export default function PendingPage() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
+    <div
+      className="min-h-screen flex items-center justify-center p-4"
+      style={{
+        background: '#f8fafc',
+        backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='90'%3E%3Ctext x='70' y='62' font-family='Impact' font-size='44' font-weight='900' fill='rgba(0%2C0%2C0%2C0.04)' text-anchor='middle' font-style='italic'%3EWM%3C/text%3E%3C/svg%3E")`,
+        backgroundRepeat: 'repeat',
+        backgroundSize: '140px 90px'
+      }}
+    >
       <motion.div
         initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
@@ -47,11 +55,9 @@ export default function PendingPage() {
         className="w-full max-w-sm bg-white rounded-3xl shadow-[0_20px_80px_rgba(0,0,0,.09)] border border-gray-200 p-8 text-center"
       >
         {/* WM Logo */}
-        <div className="flex items-center justify-center gap-2.5 mb-8">
-          <div className="w-8 h-8 bg-gray-950 rounded-[8px] flex items-center justify-center">
-            <span className="text-white font-black text-[9px] italic leading-none">WM</span>
-          </div>
-          <span className="font-bold text-gray-900 text-sm">Warehouse Manager</span>
+        <div className="flex flex-col items-center mb-8">
+          <span className="font-black italic text-gray-950 select-none" style={{ fontSize: '48px', letterSpacing: '-3px', lineHeight: 1 }}>WM</span>
+          <span className="text-[10px] font-semibold text-slate-400 tracking-[2px] uppercase mt-0.5">Warehouse Manager</span>
         </div>
 
         {/* Animated clock icon */}

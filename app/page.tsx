@@ -178,10 +178,8 @@ export default function Home() {
         className={`fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-6 md:px-16 h-[68px] transition-shadow duration-300 ${scrolled ? 'shadow-[0_4px_24px_rgba(0,0,0,0.07)]' : ''}`}
         style={{ background: 'rgba(255,255,255,0.93)', backdropFilter: 'blur(24px)', borderBottom: '1px solid #e2e8f0' }}
       >
-        <a href="#" className="flex items-center gap-2.5 group no-underline">
-          <div className="w-9 h-9 bg-gray-950 rounded-[10px] flex items-center justify-center transition-all duration-200 group-hover:scale-110 group-hover:-rotate-6 shadow-[0_2px_8px_rgba(0,0,0,0.25)]">
-            <span className="text-white font-black text-[10px] italic leading-none tracking-tight">WM</span>
-          </div>
+        <a href="#" className="flex items-center gap-2 group no-underline">
+          <span className="font-black italic text-gray-950 select-none group-hover:scale-105 transition-transform" style={{ fontSize: '30px', letterSpacing: '-1.5px', lineHeight: 1 }}>WM</span>
           <span className="font-bold text-gray-900 text-[15px]">Warehouse Manager</span>
         </a>
 
@@ -308,10 +306,8 @@ export default function Home() {
             <div className="grid md:grid-cols-[190px_1fr] min-h-[280px] md:min-h-[340px]">
               {/* Sidebar */}
               <div className="hidden md:flex flex-col bg-white border-r border-gray-100 p-3 gap-0.5">
-                <div className="flex items-center gap-2 px-2 pb-3 mb-2 border-b border-gray-100">
-                  <div className="w-7 h-7 bg-gray-950 rounded-[7px] flex items-center justify-center">
-                    <span className="text-white font-black text-[7px] italic leading-none">WM</span>
-                  </div>
+                <div className="flex items-center gap-1.5 px-2 pb-3 mb-2 border-b border-gray-100">
+                  <span className="font-black italic text-gray-950 select-none" style={{ fontSize: '16px', letterSpacing: '-0.5px', lineHeight: 1 }}>WM</span>
                   <span className="text-xs font-bold text-gray-900">Warehouse</span>
                 </div>
                 {SIDEBAR_ITEMS.map((item, i) => (
@@ -397,18 +393,25 @@ export default function Home() {
       {/* ── CTA ── */}
       <section
         className="relative px-6 md:px-16 py-20 text-white text-center overflow-hidden"
-        style={{ background: 'linear-gradient(135deg,#1e3a8a,#3b82f6 55%,#6366f1)' }}
+        style={{
+          background: '#0a0a0a',
+          backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='90'%3E%3Ctext x='70' y='62' font-family='Impact' font-size='44' font-weight='900' fill='rgba(255%2C255%2C255%2C0.055)' text-anchor='middle' font-style='italic'%3EWM%3C/text%3E%3C/svg%3E")`,
+          backgroundRepeat: 'repeat',
+          backgroundSize: '140px 90px'
+        }}
       >
-        <div className="absolute rounded-full pointer-events-none" style={{ width: 400, height: 400, top: -150, right: -100, background: 'rgba(255,255,255,.06)' }} />
-        <div className="absolute rounded-full pointer-events-none" style={{ width: 300, height: 300, bottom: -100, left: -80, background: 'rgba(255,255,255,.05)' }} />
+        {/* Ghost WM behind content */}
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none select-none overflow-hidden">
+          <span className="font-black italic" style={{ fontSize: '320px', letterSpacing: '-16px', lineHeight: 1, color: 'rgba(255,255,255,0.03)' }}>WM</span>
+        </div>
         <div className="relative z-10 max-w-2xl mx-auto">
           <h2 className="font-black mb-3" style={{ fontSize: 'clamp(28px,3.5vw,42px)', letterSpacing: '-1px' }}>
             Ready to take control of your inventory?
           </h2>
-          <p className="text-white/80 text-[17px] mb-9 leading-relaxed">Join thousands of teams already using Warehouse Manager.</p>
+          <p className="text-white/70 text-[17px] mb-9 leading-relaxed">Join thousands of teams already using Warehouse Manager.</p>
           <button
             onClick={() => router.push('/signup')}
-            className="inline-flex items-center gap-2 bg-white text-gray-950 px-8 py-3.5 rounded-full text-[15px] font-bold hover:-translate-y-0.5 active:translate-y-0 transition-all shadow-[0_4px_20px_rgba(0,0,0,.15)] hover:shadow-[0_8px_28px_rgba(0,0,0,.2)]"
+            className="inline-flex items-center gap-2 bg-white text-gray-950 px-8 py-3.5 rounded-full text-[15px] font-bold hover:-translate-y-0.5 active:translate-y-0 transition-all shadow-[0_4px_20px_rgba(0,0,0,.3)] hover:shadow-[0_8px_28px_rgba(0,0,0,.4)]"
           >
             Start for Free
           </button>
