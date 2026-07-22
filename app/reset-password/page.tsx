@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { Suspense, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -116,7 +116,7 @@ function ResetPasswordForm() {
                     <input id="rp-email" type="email" value={email} onChange={e => setEmail(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleRequestReset()} placeholder="you@company.com" autoFocus className={iBase} style={iStyle} onFocus={iFocus} onBlur={iBlur} />
                   </div>
                   <button onClick={handleRequestReset} disabled={reqLoading}
-                    className="w-full py-3.5 rounded-[10px] bg-blue-600 text-white font-bold text-sm hover:bg-blue-700 active:translate-y-0 hover:-translate-y-0.5 transition-all shadow-[0_2px_12px_rgba(59,130,246,.3)] disabled:opacity-50 flex items-center justify-center">
+                    className="w-full py-3.5 rounded-full bg-gray-950 text-white font-bold text-sm hover:bg-gray-800 active:translate-y-0 hover:-translate-y-0.5 transition-all shadow-[0_4px_18px_rgba(15,23,42,.18)] disabled:opacity-50 flex items-center justify-center">
                     {reqLoading ? <span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" /> : 'Send Reset Link'}
                   </button>
                 </>
@@ -140,7 +140,7 @@ function ResetPasswordForm() {
                 <input id="rp-confirm" type={showPass ? 'text' : 'password'} value={passwordConfirm} onChange={e => setPasswordConfirm(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleConfirmReset()} placeholder="Repeat password" className={iBase} style={iStyle} onFocus={iFocus} onBlur={iBlur} />
               </div>
               <button onClick={handleConfirmReset} disabled={confirmLoading}
-                className="w-full py-3.5 rounded-[10px] bg-blue-600 text-white font-bold text-sm hover:bg-blue-700 hover:-translate-y-0.5 active:translate-y-0 transition-all shadow-[0_2px_12px_rgba(59,130,246,.3)] disabled:opacity-50 flex items-center justify-center">
+                className="w-full py-3.5 rounded-full bg-gray-950 text-white font-bold text-sm hover:bg-gray-800 hover:-translate-y-0.5 active:translate-y-0 transition-all shadow-[0_4px_18px_rgba(15,23,42,.18)] disabled:opacity-50 flex items-center justify-center">
                 {confirmLoading ? <span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" /> : 'Update Password'}
               </button>
             </>

@@ -239,7 +239,7 @@ export default function TopBar({ onOpenNav }: TopBarProps) {
         {/* Quick add task */}
         <Link
           href="/tasks?new=1"
-          className="flex items-center gap-1.5 px-3.5 py-2 bg-blue-600 text-white text-sm font-medium rounded-xl hover:bg-blue-700 transition-colors flex-shrink-0"
+          className="flex items-center gap-1.5 px-3.5 py-2 bg-gray-950 text-white text-sm font-medium rounded-full hover:bg-gray-800 transition-colors flex-shrink-0"
         >
           <PlusIcon className="w-4 h-4" />
           Add Task

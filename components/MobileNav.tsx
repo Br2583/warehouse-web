@@ -92,7 +92,7 @@ export default function MobileNav({ open, onClose }: MobileNavProps) {
           <Link
             href="/scan"
             onClick={onClose}
-            className="flex items-center gap-3 w-full bg-blue-600 text-white rounded-2xl px-4 py-3.5 font-semibold text-sm active:scale-95 transition-transform"
+            className="flex items-center gap-3 w-full bg-gray-950 text-white rounded-full px-4 py-3.5 font-semibold text-sm active:scale-95 transition-transform"
           >
             <QrCodeIcon className="w-5 h-5 flex-shrink-0" />
             Scan QR Code

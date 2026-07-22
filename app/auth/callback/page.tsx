@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { Suspense, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -58,7 +58,7 @@ function CallbackHandler() {
 
           <button
             onClick={() => { window.location.href = '/verify-email'; }}
-            className="w-full flex items-center justify-center gap-2 py-3.5 rounded-[10px] bg-blue-600 text-white font-bold text-sm hover:bg-blue-700 transition-all shadow-[0_2px_12px_rgba(59,130,246,.3)]"
+            className="w-full flex items-center justify-center gap-2 py-3.5 rounded-full bg-gray-950 text-white font-bold text-sm hover:bg-gray-800 transition-all shadow-[0_4px_18px_rgba(15,23,42,.18)]"
           >
             <ArrowPathIcon className="w-4 h-4" />
             Request a new link

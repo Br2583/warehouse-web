@@ -12,7 +12,7 @@ export default function AdminError({ error, reset }: { error: Error; reset: () =
         )}
         <button
           onClick={reset}
-          className="px-4 py-2 bg-blue-600 text-white rounded-xl text-sm"
+          className="px-4 py-2 bg-gray-950 text-white rounded-full text-sm"
         >
           Reintentar
         </button>

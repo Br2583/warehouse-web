@@ -320,7 +320,7 @@ export default function StorageDetailPage() {
                         className="w-16 border border-gray-200 rounded-lg px-2 py-1 text-sm text-center focus:outline-none focus:ring-2 focus:ring-blue-500" />
                     </div>
                     <button onClick={saveGridConfig}
-                      className="px-3 py-1.5 bg-blue-600 text-white text-xs font-medium rounded-lg hover:bg-blue-700 transition-colors">
+                      className="px-3 py-1.5 bg-gray-950 text-white text-xs font-medium rounded-full hover:bg-gray-800 transition-colors">
                       Apply
                     </button>
                     <button onClick={() => setShowGridConfig(false)} className="text-xs text-gray-400 hover:text-gray-600">Cancel</button>
@@ -400,7 +400,7 @@ export default function StorageDetailPage() {
                     Clear
                   </button>
                   <button onClick={() => saveSlot()} disabled={slotSaving}
-                    className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-blue-600 text-white text-sm font-medium rounded-xl hover:bg-blue-700 disabled:opacity-50 transition-colors">
+                    className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-gray-950 text-white text-sm font-medium rounded-full hover:bg-gray-800 disabled:opacity-50 transition-colors">
                     {slotSaving && <div className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />}
                     Save
                   </button>
@@ -573,7 +573,7 @@ export default function StorageDetailPage() {
           <div className="flex gap-3">
             <button onClick={cancelEdit} className="px-5 py-2.5 text-gray-400 hover:text-gray-600 text-sm transition-colors">Cancel</button>
             <button onClick={save} disabled={saving}
-              className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-blue-600 text-white text-sm font-medium rounded-xl hover:bg-blue-700 disabled:opacity-50 transition-colors">
+              className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-gray-950 text-white text-sm font-medium rounded-full hover:bg-gray-800 disabled:opacity-50 transition-colors">
               {saving && <div className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />}
               Save Changes
             </button>

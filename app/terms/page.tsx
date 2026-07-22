@@ -83,14 +83,28 @@ export default function TermsPage() {
           </section>
 
           <section className="space-y-2">
-            <h3 className="font-semibold text-gray-900">8. Governing Law</h3>
+            <h3 className="font-semibold text-gray-900">8. Third-Party Services &amp; Backups</h3>
+            <p className="text-slate-600 leading-relaxed">
+              The Service relies on third-party providers for functions such as authentication, hosting, and email delivery. We are not responsible for outages, delays, or data issues caused by these providers. We recommend periodically exporting or backing up any data that is critical to your business, as we do not guarantee against data loss arising from technical failures outside our reasonable control.
+            </p>
+          </section>
+
+          <section className="space-y-2">
+            <h3 className="font-semibold text-gray-900">9. Force Majeure</h3>
+            <p className="text-slate-600 leading-relaxed">
+              We will not be held responsible for any failure or delay in the Service resulting from circumstances beyond our reasonable control, including but not limited to internet or infrastructure outages, natural disasters, or actions of third-party providers.
+            </p>
+          </section>
+
+          <section className="space-y-2">
+            <h3 className="font-semibold text-gray-900">10. Governing Law</h3>
             <p className="text-slate-600 leading-relaxed">
               These Terms shall be governed by and construed in accordance with applicable law. Any disputes shall be resolved in the appropriate courts of competent jurisdiction.
             </p>
           </section>
 
           <section className="space-y-2">
-            <h3 className="font-semibold text-gray-900">9. Contact</h3>
+            <h3 className="font-semibold text-gray-900">11. Contact</h3>
             <p className="text-slate-600 leading-relaxed">
               For questions or concerns about these Terms, contact us at:{' '}
               <a href="mailto:noreplywarehousemanager@gmail.com" className="text-blue-600 hover:underline font-medium">

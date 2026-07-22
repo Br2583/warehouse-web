@@ -83,7 +83,7 @@ export default function ScanPage() {
             <p className="text-white/50 text-sm mb-6">{errorMsg}</p>
             <button
               onClick={() => setState('scanning')}
-              className="px-6 py-3 bg-blue-600 text-white rounded-2xl font-semibold text-sm active:scale-95 transition-transform"
+              className="px-6 py-3 bg-gray-950 text-white rounded-full font-semibold text-sm active:scale-95 transition-transform"
             >
               Try again
             </button>

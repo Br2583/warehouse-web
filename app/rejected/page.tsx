@@ -44,7 +44,7 @@ export default function RejectedPage() {
 
           <button
             onClick={logout}
-            className="w-full flex items-center justify-center gap-2 py-3.5 rounded-[10px] bg-gray-100 text-gray-600 font-semibold text-sm hover:bg-gray-200 active:scale-[0.98] transition-all"
+            className="w-full flex items-center justify-center gap-2 py-3.5 rounded-full bg-slate-100 text-slate-700 font-semibold text-sm hover:bg-slate-200 transition-all"
           >
             <ArrowRightOnRectangleIcon className="w-4 h-4" />
             Sign out

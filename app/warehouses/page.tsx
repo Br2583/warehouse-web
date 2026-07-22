@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
@@ -111,7 +111,7 @@ export default function WarehousesPage() {
           {user?.role === 'owner' && (
             <button
               onClick={() => setShowCreate(s => !s)}
-              className="flex items-center gap-2 px-3 py-2 bg-blue-600 text-white text-sm font-medium rounded-xl hover:bg-blue-700 transition-colors flex-shrink-0"
+              className="flex items-center gap-2 px-3 py-2 bg-gray-950 text-white text-sm font-medium rounded-full hover:bg-gray-800 transition-colors flex-shrink-0"
             >
               <PlusIcon className="w-4 h-4" />
               <span className="hidden sm:inline">New Warehouse</span>
@@ -145,7 +145,7 @@ export default function WarehousesPage() {
             <button
               type="submit"
               disabled={creating || !newName.trim()}
-              className="px-5 py-2.5 bg-blue-600 text-white text-sm font-medium rounded-xl hover:bg-blue-700 disabled:opacity-50 transition-colors flex items-center gap-2"
+              className="px-5 py-2.5 bg-gray-950 text-white text-sm font-medium rounded-full hover:bg-gray-800 disabled:opacity-50 transition-colors flex items-center gap-2"
             >
               {creating && <ArrowPathIcon className="w-4 h-4 animate-spin" />}
               Create

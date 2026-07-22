@@ -82,7 +82,7 @@ export default function VaultPrintPage() {
         </button>
         <button
           onClick={() => { if (window.history.length > 1) window.close(); else router.push('/dashboard'); }}
-          className="px-4 py-2 bg-gray-100 text-gray-700 text-sm font-medium rounded-xl hover:bg-gray-200 transition-colors"
+          className="px-4 py-2 bg-slate-100 text-slate-700 text-sm font-medium rounded-full hover:bg-slate-200 transition-colors"
         >
           Close
         </button>

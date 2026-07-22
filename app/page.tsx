@@ -9,7 +9,6 @@ import {
   ChartBarSquareIcon,
   ChatBubbleLeftRightIcon,
   UsersIcon,
-  ArrowRightIcon,
   Bars3Icon,
   XMarkIcon,
 } from '@heroicons/react/24/outline';
@@ -209,7 +208,7 @@ export default function Home() {
             <div className="h-px bg-gray-100 my-1" />
             <button
               onClick={() => { setMenuOpen(false); router.push('/signup'); }}
-              className="flex items-center gap-2.5 w-full px-3.5 py-2.5 rounded-[9px] text-sm font-semibold bg-blue-600 text-white hover:bg-blue-700 transition-colors mt-1"
+              className="flex items-center gap-2.5 w-full px-3.5 py-2.5 rounded-full text-sm font-semibold bg-gray-950 text-white hover:bg-gray-800 transition-colors mt-1"
             >
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg>
               Create Account
@@ -258,9 +257,9 @@ export default function Home() {
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
             <button
               onClick={() => router.push('/signup')}
-              className="flex items-center justify-center gap-2 px-7 py-3.5 bg-blue-600 text-white rounded-[11px] text-[15px] font-bold hover:bg-blue-700 hover:-translate-y-0.5 active:translate-y-0 transition-all shadow-[0_4px_20px_rgba(59,130,246,.35)] hover:shadow-[0_8px_28px_rgba(59,130,246,.45)]"
+              className="flex items-center justify-center gap-2 px-7 py-3.5 bg-gray-950 text-white rounded-full text-[15px] font-bold hover:bg-gray-800 hover:-translate-y-0.5 active:translate-y-0 transition-all shadow-[0_4px_20px_rgba(15,23,42,.22)] hover:shadow-[0_8px_28px_rgba(15,23,42,.32)]"
             >
-              Get Started Free <ArrowRightIcon className="w-4 h-4" />
+              Get Started Free
             </button>
             <button
               onClick={() => router.push('/login')}
@@ -411,7 +410,7 @@ export default function Home() {
             onClick={() => router.push('/signup')}
             className="inline-flex items-center gap-2 bg-white text-blue-600 px-8 py-3.5 rounded-[11px] text-[15px] font-bold hover:-translate-y-0.5 active:translate-y-0 transition-all shadow-[0_4px_20px_rgba(0,0,0,.15)] hover:shadow-[0_8px_28px_rgba(0,0,0,.2)]"
           >
-            Start for Free <ArrowRightIcon className="w-4 h-4" />
+            Start for Free
           </button>
         </div>
       </section>

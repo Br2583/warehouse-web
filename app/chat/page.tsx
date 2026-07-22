@@ -224,7 +224,7 @@ export default function ChatPage() {
             <button
               type="submit"
               disabled={!text.trim() || sending}
-              className="px-4 py-2.5 bg-blue-600 text-white rounded-xl hover:bg-blue-700 disabled:opacity-50 transition-colors flex items-center flex-shrink-0"
+              className="px-4 py-2.5 bg-gray-950 text-white rounded-full hover:bg-gray-800 disabled:opacity-50 transition-colors flex items-center flex-shrink-0"
             >
               {sending
                 ? <span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />

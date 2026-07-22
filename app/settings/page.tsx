@@ -330,7 +330,7 @@ export default function SettingsPage() {
                 <button
                   onClick={generateCode}
                   disabled={generatingCode}
-                  className="flex items-center gap-2 px-4 py-2 text-sm bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors disabled:opacity-50"
+                  className="flex items-center gap-2 px-4 py-2 text-sm bg-gray-950 text-white rounded-full hover:bg-gray-800 transition-colors disabled:opacity-50"
                 >
                   {generatingCode
                     ? <span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
@@ -458,7 +458,7 @@ export default function SettingsPage() {
                       <button
                         onClick={changePassword}
                         disabled={passwordSaving}
-                        className="w-full py-2 text-sm bg-blue-600 text-white rounded-xl hover:bg-blue-700 disabled:opacity-50 transition-colors flex items-center justify-center gap-2"
+                        className="w-full py-2 text-sm bg-gray-950 text-white rounded-full hover:bg-gray-800 disabled:opacity-50 transition-colors flex items-center justify-center gap-2"
                       >
                         {passwordSaving
                           ? <span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />

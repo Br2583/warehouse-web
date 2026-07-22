@@ -657,7 +657,7 @@ function TaskFormModal({ open, onClose, members, editTask, onSave }: {
               <button
                 onClick={submit}
                 disabled={saving}
-                className="w-full py-3 bg-blue-600 text-white text-sm font-semibold rounded-xl hover:bg-blue-700 transition-colors disabled:opacity-50"
+                className="w-full py-3 bg-gray-950 text-white text-sm font-semibold rounded-full hover:bg-gray-800 transition-colors disabled:opacity-50"
               >
                 {saving ? 'Saving…' : editTask ? 'Save Changes' : 'Create Task'}
               </button>
@@ -807,7 +807,7 @@ function TasksPageInner() {
             {isOwner && (
               <button
                 onClick={openNew}
-                className="flex items-center gap-2 px-4 py-2.5 bg-blue-600 text-white text-sm font-semibold rounded-xl hover:bg-blue-700 transition-colors shadow-sm"
+                className="flex items-center gap-2 px-4 py-2.5 bg-gray-950 text-white text-sm font-semibold rounded-full hover:bg-gray-800 transition-colors shadow-sm"
               >
                 <PlusIcon className="w-4 h-4" />
                 <span className="hidden sm:inline">New Task</span>

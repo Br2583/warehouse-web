@@ -206,7 +206,7 @@ export default function VaultForm({
       <button
         type="submit"
         disabled={saving}
-        className="w-full py-3 bg-blue-600 text-white text-sm font-medium rounded-xl hover:bg-blue-700 transition-colors disabled:opacity-50"
+        className="w-full py-3 bg-gray-950 text-white text-sm font-medium rounded-full hover:bg-gray-800 transition-colors disabled:opacity-50"
       >
         {saving ? 'Saving...' : (submitLabel ?? 'Save')}
       </button>

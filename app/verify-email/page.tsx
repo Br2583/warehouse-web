@@ -89,7 +89,7 @@ export default function VerifyEmailPage() {
         <div className="space-y-3">
           <button
             onClick={resend} disabled={loading}
-            className="w-full flex items-center justify-center gap-2 py-3.5 rounded-[10px] bg-blue-600 text-white font-bold text-sm hover:bg-blue-700 active:scale-[0.98] transition-all disabled:opacity-50 shadow-[0_2px_12px_rgba(59,130,246,.3)]"
+            className="w-full flex items-center justify-center gap-2 py-3.5 rounded-full bg-gray-950 text-white font-bold text-sm hover:bg-gray-800 active:scale-[0.98] transition-all disabled:opacity-50 shadow-[0_4px_18px_rgba(15,23,42,.18)]"
           >
             {loading
               ? <span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
@@ -98,7 +98,7 @@ export default function VerifyEmailPage() {
 
           <button
             onClick={() => router.push('/login')}
-            className="w-full flex items-center justify-center gap-2 py-3.5 rounded-[10px] bg-gray-100 text-gray-600 font-semibold text-sm hover:bg-gray-200 active:scale-[0.98] transition-all"
+            className="w-full flex items-center justify-center gap-2 py-3.5 rounded-full bg-slate-100 text-slate-700 font-semibold text-sm hover:bg-slate-200 transition-all"
           >
             <ArrowLeftIcon className="w-4 h-4" />
             Back to Sign In

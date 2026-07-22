@@ -348,7 +348,7 @@ export default function WarehouseDetailPage() {
             </button>
             <button
               onClick={() => { setForm(emptyForm); setShowAdd(true); setSaveError(''); }}
-              className="flex items-center gap-2 px-3 py-2 md:px-4 md:py-2.5 bg-blue-600 text-white text-sm font-medium rounded-xl hover:bg-blue-700 transition-colors"
+              className="flex items-center gap-2 px-3 py-2 md:px-4 md:py-2.5 bg-gray-950 text-white text-sm font-medium rounded-full hover:bg-gray-800 transition-colors"
             >
               <PlusIcon className="w-4 h-4" /><span className="hidden sm:inline">Add Vault</span><span className="sm:hidden">Add</span>
             </button>
@@ -370,7 +370,7 @@ export default function WarehouseDetailPage() {
                   className="w-20 border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
               </div>
               <button onClick={saveGridSize} disabled={gridSaving}
-                className="px-4 py-2 text-sm bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors disabled:opacity-50">
+                className="px-4 py-2 text-sm bg-gray-950 text-white rounded-full hover:bg-gray-800 transition-colors disabled:opacity-50">
                 {gridSaving ? 'Saving...' : 'Apply'}
               </button>
               <button onClick={() => setShowGridEdit(false)} className="px-4 py-2 text-sm text-gray-500 border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors">Cancel</button>

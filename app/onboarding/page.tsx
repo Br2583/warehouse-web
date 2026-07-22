@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
@@ -374,7 +374,7 @@ export default function OnboardingPage() {
               <button
                 onClick={saveProfile}
                 disabled={saving || !displayName.trim()}
-                className="mt-6 w-full flex items-center justify-center gap-2 py-3.5 rounded-[10px] bg-blue-600 text-white font-bold text-sm hover:bg-blue-700 hover:-translate-y-0.5 active:translate-y-0 transition-all shadow-[0_2px_12px_rgba(59,130,246,.3)] disabled:opacity-50"
+                className="mt-6 w-full flex items-center justify-center gap-2 py-3.5 rounded-full bg-gray-950 text-white font-bold text-sm hover:bg-gray-800 hover:-translate-y-0.5 active:translate-y-0 transition-all shadow-[0_4px_18px_rgba(15,23,42,.18)] disabled:opacity-50"
               >
                 {saving
                   ? <span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
@@ -476,7 +476,7 @@ export default function OnboardingPage() {
                 <button
                   onClick={saveCompany}
                   disabled={saving || !companyName.trim()}
-                  className="flex-1 flex items-center justify-center gap-2 py-3.5 rounded-[10px] bg-blue-600 text-white font-bold text-sm hover:bg-blue-700 hover:-translate-y-0.5 active:translate-y-0 transition-all shadow-[0_2px_12px_rgba(59,130,246,.3)] disabled:opacity-50"
+                  className="flex-1 flex items-center justify-center gap-2 py-3.5 rounded-full bg-gray-950 text-white font-bold text-sm hover:bg-gray-800 hover:-translate-y-0.5 active:translate-y-0 transition-all shadow-[0_4px_18px_rgba(15,23,42,.18)] disabled:opacity-50"
                 >
                   {saving
                     ? <span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />

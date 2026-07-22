@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -79,7 +79,7 @@ export default function StoragePage() {
           {isOwner && (
             <button
               onClick={() => { setShowCreate(s => !s); setCreateError(''); }}
-              className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-xl hover:bg-blue-700 transition-colors"
+              className="flex items-center gap-2 px-4 py-2 bg-gray-950 text-white text-sm font-medium rounded-full hover:bg-gray-800 transition-colors"
             >
               <PlusIcon className="w-4 h-4" /><span className="hidden sm:inline"> New Storage Unit</span><span className="sm:hidden"> New</span>
             </button>
@@ -173,7 +173,7 @@ export default function StoragePage() {
                 <div className="md:col-span-2 flex gap-3 justify-end">
                   <button type="button" onClick={() => setShowCreate(false)} className="px-4 py-2 text-gray-400 hover:text-gray-600 text-sm">Cancel</button>
                   <button type="submit" disabled={saving || !form.unit_name.trim()}
-                    className="flex items-center gap-2 px-5 py-2 bg-blue-600 text-white text-sm font-medium rounded-xl hover:bg-blue-700 disabled:opacity-50 transition-colors">
+                    className="flex items-center gap-2 px-5 py-2 bg-gray-950 text-white text-sm font-medium rounded-full hover:bg-gray-800 disabled:opacity-50 transition-colors">
                     {saving && <ArrowPathIcon className="w-4 h-4 animate-spin" />}
                     Create & Open
                   </button>
