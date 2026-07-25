@@ -399,6 +399,9 @@ export default function LandingHero() {
 
         {/* Right — app mockup */}
         <div className="app-wrap" id="appWrap">
+          {/* Mobile scroll-pass overlay: sits on top of the frame on mobile so
+              finger touches scroll the page instead of getting trapped inside */}
+          <div className="mob-scroll-glass" aria-hidden="true" />
           <div className="app-glow" />
           <div className="app-frame" id="appFrame">
             {/* Browser bar */}

@@ -349,14 +349,21 @@ html{scroll-behavior:smooth}
   /* Remove the ::after glow that bleeds outside hero on mobile */
   .hero::after{display:none}
 
-  /* ── SCROLL FIX ──
-     Inner scrollable containers steal touch events and block page scroll.
-     On mobile the frame is display-only, so disable overflow + enforce pan-y
-     so every touch on the frame passes through to the page scroller. */
-  .app-frame{touch-action:pan-y}
-  .app-body,.app-main,.screen{touch-action:pan-y;overflow:hidden}
-  .chat-full-body,.srch-results-wrap,.vault-detail{overflow:hidden;touch-action:pan-y}
-  .wh-grid-wrap{touch-action:pan-y}
+}
+
+/* Mobile scroll-pass glass: transparent overlay on top of the app frame.
+   Because it has no scrollable content and touch-action:pan-y, every touch
+   on the frame immediately maps to page scroll — nothing gets trapped inside. */
+.mob-scroll-glass{display:none}
+@media(max-width:767px){
+  .mob-scroll-glass{
+    display:block;
+    position:absolute;
+    inset:0;
+    z-index:50;
+    touch-action:pan-y;
+    background:transparent;
+  }
 }
 
 @media(min-width:1024px){.hbody{padding-left:72px;gap:60px}.h-copy{flex:0 0 380px}.app-wrap{padding:60px 32px 60px 0}}
