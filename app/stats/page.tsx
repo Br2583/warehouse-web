@@ -198,7 +198,7 @@ export default function StatsPage() {
   return (
     <div className="flex min-h-screen bg-gray-50">
       <Sidebar />
-      <main className="md:ml-64 flex-1 min-w-0 px-4 pb-28 md:px-8 md:pb-8 topbar-offset">
+      <main className="md:ml-64 flex-1 min-w-0 px-4 pb-8 md:px-8 md:pb-8 topbar-offset">
 
         {/* Header */}
         <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} className="mb-8 -mx-4 md:-mx-8 px-4 md:px-8 py-6 relative overflow-hidden">

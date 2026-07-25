@@ -230,7 +230,7 @@ export default function SettingsPage() {
     <div className="flex flex-col min-h-screen bg-gray-50">
       <div className="flex flex-1">
       <Sidebar />
-      <main className="md:ml-64 flex-1 min-w-0 px-4 md:px-8 pb-28 md:pb-8 topbar-offset">
+      <main className="md:ml-64 flex-1 min-w-0 px-4 md:px-8 pb-8 md:pb-8 topbar-offset">
         <div className="max-w-2xl mx-auto">
           <motion.h1
             initial={{ opacity: 0, y: -8 }}

@@ -211,7 +211,7 @@ export default function ChatPage() {
               {sendError}
             </div>
           )}
-          <form onSubmit={send} className="p-4 pb-24 md:pb-4 flex gap-3">
+          <form onSubmit={send} className="p-4 pb-6 md:pb-4 flex gap-3">
             <input
               type="text"
               placeholder="Type a message..."

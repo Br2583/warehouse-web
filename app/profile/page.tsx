@@ -143,7 +143,7 @@ export default function ProfilePage() {
   return (
     <div className="flex min-h-screen bg-gray-50">
       <Sidebar />
-      <main className="md:ml-64 flex-1 min-w-0 px-4 pb-24 md:px-8 md:pb-8 topbar-offset">
+      <main className="md:ml-64 flex-1 min-w-0 px-4 pb-8 md:px-8 md:pb-8 topbar-offset">
         <div className="max-w-xl">
           <div className="mb-8">
             <h1 className="text-2xl font-bold text-gray-900">Profile</h1>

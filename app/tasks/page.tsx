@@ -773,7 +773,7 @@ function TasksPageInner() {
   return (
     <div className="flex min-h-screen bg-gray-50">
       <Sidebar />
-      <main className="md:ml-64 flex-1 min-w-0 px-4 pb-28 md:px-8 md:pb-8 topbar-offset">
+      <main className="md:ml-64 flex-1 min-w-0 px-4 pb-8 md:px-8 md:pb-8 topbar-offset">
 
         {/* Header */}
         <div className="flex items-center justify-between mb-6 gap-4 flex-wrap">
