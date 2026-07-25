@@ -1,24 +1,16 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { pb } from '@/lib/pb';
 import AppFooter from '@/components/AppFooter';
+import LandingHero from '@/components/LandingHero';
 import {
   BuildingOffice2Icon,
   ChartBarSquareIcon,
   ChatBubbleLeftRightIcon,
   UsersIcon,
-  Bars3Icon,
-  XMarkIcon,
 } from '@heroicons/react/24/outline';
-
-const PHRASES = [
-  'Inventory & Records Management.',
-  'Secure Warehouse Storage.',
-  'Real-Time Vault Tracking.',
-  'Trusted Warehouse Services.',
-];
 
 const FEATURES = [
   {
@@ -62,212 +54,18 @@ const BAR_HEIGHTS = [40, 65, 35, 80, 55, 90, 70];
 
 export default function Home() {
   const router = useRouter();
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const [menuOpen, setMenuOpen] = useState(false);
-  const [scrolled, setScrolled] = useState(false);
-  const [cursorX, setCursorX] = useState(-500);
-  const [cursorY, setCursorY] = useState(-500);
-  const [displayed, setDisplayed] = useState('');
-  const [phraseIdx, setPhraseIdx] = useState(0);
-  const [typing, setTyping] = useState(true);
 
-  // Redirect if logged in + pre-warm PocketBase for faster login
+  // Redirect if already logged in + pre-warm PocketBase
   useEffect(() => {
     if (pb.authStore.isValid) { router.replace('/dashboard'); return; }
     fetch('/api/ping').catch(() => {});
   }, [router]);
 
-  // Typewriter
-  useEffect(() => {
-    const phrase = PHRASES[phraseIdx];
-    let t: ReturnType<typeof setTimeout>;
-    if (typing) {
-      if (displayed.length < phrase.length) {
-        t = setTimeout(() => setDisplayed(phrase.slice(0, displayed.length + 1)), 55);
-      } else {
-        t = setTimeout(() => setTyping(false), 2400);
-      }
-    } else {
-      if (displayed.length > 0) {
-        t = setTimeout(() => setDisplayed(displayed.slice(0, -1)), 28);
-      } else {
-        setPhraseIdx(i => (i + 1) % PHRASES.length);
-        setTyping(true);
-      }
-    }
-    return () => clearTimeout(t);
-  }, [displayed, typing, phraseIdx]);
-
-  // Scroll shadow
-  useEffect(() => {
-    const h = () => setScrolled(window.scrollY > 8);
-    window.addEventListener('scroll', h);
-    return () => window.removeEventListener('scroll', h);
-  }, []);
-
-  // Cursor glow
-  useEffect(() => {
-    const h = (e: MouseEvent) => { setCursorX(e.clientX); setCursorY(e.clientY); };
-    window.addEventListener('mousemove', h);
-    return () => window.removeEventListener('mousemove', h);
-  }, []);
-
-  // Close dropdown on outside click
-  useEffect(() => {
-    if (!menuOpen) return;
-    const h = (e: MouseEvent) => {
-      if (!(e.target as Element).closest('#wm-nav-wrap')) setMenuOpen(false);
-    };
-    document.addEventListener('click', h);
-    return () => document.removeEventListener('click', h);
-  }, [menuOpen]);
-
-  // Particle canvas
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-    let raf: number;
-    const resize = () => { canvas.width = innerWidth; canvas.height = innerHeight; };
-    resize();
-    window.addEventListener('resize', resize);
-    const pts = Array.from({ length: 48 }, () => ({
-      x: Math.random() * innerWidth,
-      y: Math.random() * innerHeight,
-      vx: (Math.random() - 0.5) * 0.22,
-      vy: (Math.random() - 0.5) * 0.22,
-      r: Math.random() * 1.4 + 0.4,
-    }));
-    const loop = () => {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      pts.forEach((p, i) => {
-        pts.slice(i + 1).forEach(q => {
-          const d = Math.hypot(p.x - q.x, p.y - q.y);
-          if (d < 140) {
-            ctx.beginPath(); ctx.moveTo(p.x, p.y); ctx.lineTo(q.x, q.y);
-            ctx.strokeStyle = `rgba(59,130,246,${0.07 * (1 - d / 140)})`;
-            ctx.lineWidth = 0.65; ctx.stroke();
-          }
-        });
-        ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
-        ctx.fillStyle = 'rgba(59,130,246,0.1)'; ctx.fill();
-        p.x += p.vx; p.y += p.vy;
-        if (p.x < 0) p.x = canvas.width; if (p.x > canvas.width) p.x = 0;
-        if (p.y < 0) p.y = canvas.height; if (p.y > canvas.height) p.y = 0;
-      });
-      raf = requestAnimationFrame(loop);
-    };
-    loop();
-    return () => { cancelAnimationFrame(raf); window.removeEventListener('resize', resize); };
-  }, []);
-
   return (
     <div className="min-h-screen bg-white text-gray-900 overflow-x-hidden">
-      {/* Particle canvas */}
-      <canvas ref={canvasRef} className="fixed inset-0 z-0 pointer-events-none opacity-30" />
 
-      {/* Cursor glow */}
-      <div
-        className="fixed inset-0 z-0 pointer-events-none"
-        style={{ background: `radial-gradient(480px circle at ${cursorX}px ${cursorY}px, rgba(59,130,246,0.07), transparent 70%)` }}
-      />
-
-      {/* ── Navbar ── */}
-      <nav
-        className={`fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-6 md:px-16 h-[68px] transition-shadow duration-300 ${scrolled ? 'shadow-[0_4px_24px_rgba(0,0,0,0.07)]' : ''}`}
-        style={{ background: 'rgba(255,255,255,0.93)', backdropFilter: 'blur(24px)', borderBottom: '1px solid #e2e8f0' }}
-      >
-        <a href="#" className="flex items-center gap-2 group no-underline">
-          <span className="font-black italic text-gray-950 select-none group-hover:scale-105 transition-transform" style={{ fontSize: '30px', letterSpacing: '-1.5px', lineHeight: 1 }}>WM</span>
-          <span className="font-bold text-gray-900 text-[15px]">Warehouse Manager</span>
-        </a>
-
-        <div className="relative" id="wm-nav-wrap">
-          <button
-            onClick={() => setMenuOpen(v => !v)}
-            className={`w-11 h-11 rounded-[10px] flex items-center justify-center transition-all duration-200 border ${menuOpen ? 'bg-gray-50 border-blue-500' : 'border-gray-300 hover:bg-gray-50 hover:border-blue-400'}`}
-          >
-            {menuOpen
-              ? <XMarkIcon className="w-[18px] h-[18px] text-gray-700" />
-              : <Bars3Icon className="w-[18px] h-[18px] text-gray-700" />}
-          </button>
-
-          <div
-            className={`absolute top-[calc(100%+10px)] right-0 bg-white border border-gray-200 rounded-2xl shadow-[0_8px_32px_rgba(0,0,0,0.1)] p-2 min-w-[200px] transition-all duration-200 origin-top-right ${menuOpen ? 'opacity-100 scale-100 pointer-events-auto' : 'opacity-0 scale-95 pointer-events-none'}`}
-          >
-            <button
-              onClick={() => { setMenuOpen(false); router.push('/login'); }}
-              className="flex items-center gap-2.5 w-full px-3.5 py-2.5 rounded-[9px] text-sm font-medium text-slate-500 hover:bg-gray-50 hover:text-gray-900 transition-colors"
-            >
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 3h4a2 2 0 012 2v14a2 2 0 01-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
-              Sign In
-            </button>
-            <div className="h-px bg-gray-100 my-1" />
-            <button
-              onClick={() => { setMenuOpen(false); router.push('/signup'); }}
-              className="flex items-center gap-2.5 w-full px-3.5 py-2.5 rounded-full text-sm font-semibold bg-gray-950 text-white hover:bg-gray-800 transition-colors mt-1"
-            >
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg>
-              Create Account
-            </button>
-          </div>
-        </div>
-      </nav>
-
-      {/* ── Hero ── */}
-      <section
-        className="relative flex flex-col items-center justify-center text-center px-6 md:px-12 pt-[68px] overflow-hidden"
-        style={{ minHeight: '100svh', background: 'linear-gradient(180deg,#fff 0%,#f8fafc 100%)' }}
-      >
-        {/* Orbs */}
-        <div className="absolute rounded-full pointer-events-none" style={{ width: 700, height: 700, top: -220, left: 'calc(50% - 350px)', background: 'radial-gradient(circle,rgba(59,130,246,.07),transparent 70%)', animation: 'orbFloat 9s ease-in-out infinite' }} />
-        <div className="absolute rounded-full pointer-events-none" style={{ width: 360, height: 360, bottom: -80, left: -80, background: 'radial-gradient(circle,rgba(99,102,241,.05),transparent 70%)', animation: 'orbFloat2 11s ease-in-out infinite reverse' }} />
-        <div className="absolute rounded-full pointer-events-none" style={{ width: 280, height: 280, bottom: 0, right: -60, background: 'radial-gradient(circle,rgba(59,130,246,.04),transparent 70%)', animation: 'orbFloat2 13s ease-in-out infinite' }} />
-
-        <div className="relative z-10 max-w-3xl mx-auto py-16 md:py-24">
-          {/* Badge */}
-          <div
-            className="inline-flex items-center gap-2 bg-blue-50 border border-blue-200 text-blue-600 px-3.5 py-[5px] rounded-full text-xs font-semibold mb-5 cursor-default hover:shadow-[0_4px_16px_rgba(59,130,246,.2)] hover:scale-[1.03] transition-all"
-          >
-            <span className="w-1.5 h-1.5 rounded-full bg-blue-500 flex-shrink-0" style={{ animation: 'bdotPulse 2s ease-in-out infinite' }} />
-            Warehouse Management Platform
-          </div>
-
-          {/* Title */}
-          <h1 className="font-black leading-[1.02] mb-4" style={{ fontSize: 'clamp(44px,6vw,80px)', letterSpacing: '-3px' }}>
-            Smarter inventory,<br />
-            <span style={{ background: 'linear-gradient(135deg,#3b82f6,#6366f1)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>
-              faster results.
-            </span>
-          </h1>
-
-          {/* Typewriter */}
-          <div className="h-7 flex items-center justify-center gap-1 mb-4">
-            <span className="text-slate-500 text-base md:text-lg">{displayed}</span>
-            <span className="inline-block w-0.5 h-5 bg-blue-400 animate-pulse" />
-          </div>
-
-          <p className="text-slate-500 text-[17px] leading-[1.7] max-w-xl mx-auto mb-9">
-            Real-time inventory tracking, team collaboration and live analytics — all in one platform built for modern warehouses.
-          </p>
-
-          <div className="flex flex-col sm:flex-row gap-3 justify-center">
-            <button
-              onClick={() => router.push('/signup')}
-              className="flex items-center justify-center gap-2 px-7 py-3.5 bg-gray-950 text-white rounded-full text-[15px] font-bold hover:bg-gray-800 hover:-translate-y-0.5 active:translate-y-0 transition-all shadow-[0_4px_20px_rgba(15,23,42,.22)] hover:shadow-[0_8px_28px_rgba(15,23,42,.32)]"
-            >
-              Get Started Free
-            </button>
-            <button
-              onClick={() => router.push('/login')}
-              className="flex items-center justify-center gap-2 px-7 py-3.5 bg-slate-100 text-slate-700 rounded-full text-[15px] font-semibold hover:bg-slate-200 hover:-translate-y-px transition-all"
-            >
-              Sign In
-            </button>
-          </div>
-        </div>
-      </section>
+      {/* ── Hero (new Manifesto design) ── */}
+      <LandingHero />
 
       {/* ── Platform preview ── */}
       <section className="px-6 md:px-16 py-16 md:py-20" style={{ background: '#f8fafc' }}>
@@ -367,7 +165,7 @@ export default function Home() {
       </section>
 
       {/* ── Features ── */}
-      <section className="px-6 md:px-16 pb-16 md:pb-20" style={{ background: '#f8fafc' }}>
+      <section id="features" className="px-6 md:px-16 pb-16 md:pb-20" style={{ background: '#f8fafc' }}>
         <div className="max-w-5xl mx-auto">
           <div className="text-[11px] font-semibold text-blue-600 tracking-[1.5px] uppercase mb-2.5">Features</div>
           <h2 className="font-extrabold text-gray-900 mb-8" style={{ fontSize: 'clamp(28px,3vw,44px)', letterSpacing: '-1px' }}>
@@ -392,6 +190,7 @@ export default function Home() {
 
       {/* ── CTA ── */}
       <section
+        id="about"
         className="relative px-6 md:px-16 py-20 text-white text-center overflow-hidden"
         style={{
           background: '#0a0a0a',
@@ -400,7 +199,6 @@ export default function Home() {
           backgroundSize: '140px 90px'
         }}
       >
-        {/* Ghost WM behind content */}
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none select-none overflow-hidden">
           <span className="font-black italic" style={{ fontSize: '320px', letterSpacing: '-16px', lineHeight: 1, color: 'rgba(255,255,255,0.03)' }}>WM</span>
         </div>
@@ -410,15 +208,17 @@ export default function Home() {
           </h2>
           <p className="text-white/70 text-[17px] mb-9 leading-relaxed">Join thousands of teams already using Warehouse Manager.</p>
           <button
-            onClick={() => router.push('/signup')}
+            onClick={() => router.push('/login')}
             className="inline-flex items-center gap-2 bg-white text-gray-950 px-8 py-3.5 rounded-full text-[15px] font-bold hover:-translate-y-0.5 active:translate-y-0 transition-all shadow-[0_4px_20px_rgba(0,0,0,.3)] hover:shadow-[0_8px_28px_rgba(0,0,0,.4)]"
           >
-            Start for Free
+            Get Access
           </button>
         </div>
       </section>
 
-      <AppFooter />
+      <div id="contact">
+        <AppFooter />
+      </div>
 
     </div>
   );
