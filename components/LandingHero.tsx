@@ -12,7 +12,9 @@ export default function LandingHero() {
   useEffect(() => {
     if (!menuOpen) return;
     const h = (e: MouseEvent) => {
-      if (!(e.target as Element).closest('#lh-nav')) setMenuOpen(false);
+      const t = e.target as Element;
+      // also exclude .mob-dd so clicks inside the dropdown don't close it before link fires
+      if (!t.closest('#lh-nav') && !t.closest('.mob-dd')) setMenuOpen(false);
     };
     document.addEventListener('mousedown', h);
     return () => document.removeEventListener('mousedown', h);
@@ -202,6 +204,8 @@ export default function LandingHero() {
     }
     const gridWrap=document.getElementById('whGrid');
     if(gridWrap)gridWrap.addEventListener('click',handleGridClick);
+    // store ref for cleanup
+    const gridWrapRef = gridWrap;
 
     /* ═══ AUTO-ANIMATE ═══ */
     function animateRandom(){
@@ -324,6 +328,7 @@ export default function LandingHero() {
       iids.forEach(clearInterval);
       if(tourTimer)clearTimeout(tourTimer);
       if(toastTimer)clearTimeout(toastTimer);
+      if(gridWrapRef)gridWrapRef.removeEventListener('click',handleGridClick);
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
