@@ -184,7 +184,7 @@ export default function VaultForm({
                 <button
                   type="button"
                   onClick={() => onRemovePhoto(idx)}
-                  className="absolute top-1 right-1 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                  className="absolute top-1 right-1 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center md:opacity-0 md:group-hover:opacity-100 transition-opacity"
                 >
                   <XMarkIcon className="w-3 h-3" />
                 </button>

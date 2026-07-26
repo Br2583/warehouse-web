@@ -40,14 +40,14 @@ export default function AppFooter() {
           <p className="text-[13px] text-white/45 leading-[1.7] mb-6">
             Inventory management, vault tracking, and team coordination — built for restoration, moving, and storage companies.
           </p>
-          <div className="space-y-3">
-            <div className="flex items-center gap-2.5">
+          <div className="space-y-1">
+            <div className="flex items-center gap-2.5 py-2">
               <MapPinIcon className="w-4 h-4 text-white/25 flex-shrink-0" />
               <span className="text-[13px] text-white/55">Los Angeles, California</span>
             </div>
             <a
               href="mailto:noreplywarehousemanager@gmail.com"
-              className="flex items-center gap-2.5 group"
+              className="flex items-center gap-2.5 group py-2"
             >
               <EnvelopeIcon className="w-4 h-4 text-white/25 flex-shrink-0" />
               <span className="text-[13px] text-white/55 group-hover:text-white transition-colors">
@@ -56,7 +56,7 @@ export default function AppFooter() {
             </a>
             <a
               href="tel:+17142178029"
-              className="flex items-center gap-2.5 group"
+              className="flex items-center gap-2.5 group py-2"
             >
               <PhoneIcon className="w-4 h-4 text-white/25 flex-shrink-0" />
               <span className="text-[13px] text-white/55 group-hover:text-white transition-colors">
@@ -82,12 +82,12 @@ export default function AppFooter() {
         {/* Navigation */}
         <div>
           <h4 className="text-xs font-semibold text-white/40 uppercase tracking-widest mb-5">Navigation</h4>
-          <ul className="space-y-3">
+          <ul className="space-y-1">
             {LINKS.map(({ label, href }) => (
               <li key={href}>
                 <Link
                   href={href}
-                  className="text-[13px] text-white/50 hover:text-white transition-colors"
+                  className="text-[13px] text-white/50 hover:text-white transition-colors py-2 block"
                 >
                   {label}
                 </Link>
@@ -103,7 +103,7 @@ export default function AppFooter() {
           <p className="text-[12px] text-white/25">
             &copy; {new Date().getFullYear()} PixelCore &mdash; Warehouse Manager. All rights reserved.
           </p>
-          <Link href="/terms" className="text-[12px] text-white/25 hover:text-white/55 transition-colors">
+          <Link href="/terms" className="text-[12px] text-white/25 hover:text-white/55 transition-colors py-2 px-1">
             Terms &amp; Conditions
           </Link>
         </div>
