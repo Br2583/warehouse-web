@@ -626,12 +626,14 @@ export default function StatsPage() {
                 ))}
               </div>
               <div className="overflow-y-auto overflow-x-auto flex-1">
-                <table className="w-full min-w-[560px] text-sm">
+                <table className="w-full min-w-[320px] text-sm">
                   <thead className="sticky top-0 bg-white border-b border-gray-100">
                     <tr>
-                      {['Position', 'Job Type', 'Warehouse', 'Packer', 'Status'].map(h => (
-                        <th key={h} className="text-left text-xs font-semibold text-gray-400 uppercase tracking-wide px-6 py-3">{h}</th>
-                      ))}
+                      <th className="text-left text-xs font-semibold text-gray-400 uppercase tracking-wide px-4 py-3">Position</th>
+                      <th className="text-left text-xs font-semibold text-gray-400 uppercase tracking-wide px-4 py-3">Job Type</th>
+                      <th className="hidden md:table-cell text-left text-xs font-semibold text-gray-400 uppercase tracking-wide px-4 py-3">Warehouse</th>
+                      <th className="hidden md:table-cell text-left text-xs font-semibold text-gray-400 uppercase tracking-wide px-4 py-3">Packer</th>
+                      <th className="text-left text-xs font-semibold text-gray-400 uppercase tracking-wide px-4 py-3">Status</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -641,11 +643,11 @@ export default function StatsPage() {
                       const pos = box.row && box.column ? `${box.row}${box.column} L${box.level}` : box.position || '—';
                       return (
                         <tr key={box.box_id || i} className="border-b border-gray-50 hover:bg-gray-50 transition-colors">
-                          <td className="px-6 py-3 font-semibold text-gray-900">{pos}</td>
-                          <td className="px-6 py-3"><div className="flex items-center gap-1.5"><div className="w-2 h-2 rounded-full" style={{ backgroundColor: JOB_COLORS[box.job_type] || '#9ca3af' }} /><span className="text-gray-600">{box.job_type || '—'}</span></div></td>
-                          <td className="px-6 py-3 text-gray-500"><div className="flex items-center gap-1"><BuildingOffice2Icon className="w-3.5 h-3.5" />{whNames[box.warehouse_id] || '—'}</div></td>
-                          <td className="px-6 py-3 text-gray-500">{box.packer || '—'}</td>
-                          <td className="px-6 py-3"><span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${cfg.bg} ${cfg.text}`}>{cfg.label}</span></td>
+                          <td className="px-4 py-3 font-semibold text-gray-900">{pos}</td>
+                          <td className="px-4 py-3"><div className="flex items-center gap-1.5"><div className="w-2 h-2 rounded-full" style={{ backgroundColor: JOB_COLORS[box.job_type] || '#9ca3af' }} /><span className="text-gray-600">{box.job_type || '—'}</span></div></td>
+                          <td className="hidden md:table-cell px-4 py-3 text-gray-500"><div className="flex items-center gap-1"><BuildingOffice2Icon className="w-3.5 h-3.5" />{whNames[box.warehouse_id] || '—'}</div></td>
+                          <td className="hidden md:table-cell px-4 py-3 text-gray-500">{box.packer || '—'}</td>
+                          <td className="px-4 py-3"><span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${cfg.bg} ${cfg.text}`}>{cfg.label}</span></td>
                         </tr>
                       );
                     })}

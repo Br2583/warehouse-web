@@ -177,7 +177,7 @@ export default function VaultForm({
       <div>
         <label className="block text-xs text-gray-500 mb-2">Photos (max 6)</label>
         {value.photos.length > 0 && (
-          <div className="grid grid-cols-3 gap-2 mb-2">
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mb-2">
             {value.photos.map((src, idx) => (
               <div key={idx} className="relative group">
                 <img src={src} alt="" className="w-full h-20 object-cover rounded-xl" />

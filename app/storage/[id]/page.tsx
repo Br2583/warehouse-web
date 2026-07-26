@@ -255,7 +255,7 @@ export default function StorageDetailPage() {
               <CameraIcon className="w-8 h-8" />
             </div>
           ) : (
-            <div className="grid grid-cols-3 gap-2">
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
               {photos.map((src, i) => (
                 <div key={i} className="relative group aspect-square rounded-xl overflow-hidden cursor-pointer" onClick={() => setLightbox(i)}>
                   <img src={src} alt={`photo-${i}`} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200" />
@@ -355,7 +355,7 @@ export default function StorageDetailPage() {
                       >
                         <span>{String.fromCharCode(65 + ri)}{ci + 1}</span>
                         {slot?.occupied && slot.client && (
-                          <span className="text-[7px] leading-none text-blue-100 truncate w-8 text-center">{slot.client.split(' ')[0]}</span>
+                          <span className="hidden md:block text-[7px] leading-none text-blue-100 truncate w-8 text-center">{slot.client.split(' ')[0]}</span>
                         )}
                       </button>
                     );

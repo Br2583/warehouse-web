@@ -188,8 +188,8 @@ export default function ChatPage() {
                   {isMe && (
                     confirmDeleteId === msg.id ? (
                       <div className="flex flex-col gap-1 mt-2 flex-shrink-0">
-                        <button onClick={() => { deleteMsg(msg.id); setConfirmDeleteId(null); }} className="text-[10px] text-red-500 hover:text-red-700 font-semibold leading-tight">Delete</button>
-                        <button onClick={() => setConfirmDeleteId(null)} className="text-[10px] text-gray-400 hover:text-gray-600 leading-tight">Cancel</button>
+                        <button onClick={() => { deleteMsg(msg.id); setConfirmDeleteId(null); }} className="text-xs text-red-500 hover:text-red-700 font-semibold py-1.5 px-2 rounded-lg hover:bg-red-50 transition-colors">Delete</button>
+                        <button onClick={() => setConfirmDeleteId(null)} className="text-xs text-gray-400 hover:text-gray-600 py-1.5 px-2 rounded-lg hover:bg-gray-50 transition-colors">Cancel</button>
                       </div>
                     ) : (
                       <button onClick={() => setConfirmDeleteId(msg.id)} className="text-gray-300 hover:text-red-400 transition-colors mt-2 flex-shrink-0">
