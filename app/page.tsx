@@ -78,9 +78,9 @@ export default function Home() {
                 Your warehouse,<br />at a glance
               </h2>
             </div>
-            <div className="flex divide-x divide-gray-200">
+            <div className="grid grid-cols-2 gap-5 md:flex md:divide-x md:divide-gray-200 md:gap-0">
               {[{ num: '10K+', lbl: 'Active Users' }, { num: '99%', lbl: 'Uptime SLA' }, { num: '50+', lbl: 'Countries' }, { num: '500+', lbl: 'Warehouses' }].map(s => (
-                <div key={s.lbl} className="text-center px-5 first:pl-0 last:pr-0 cursor-default group">
+                <div key={s.lbl} className="text-center md:px-5 md:first:pl-0 md:last:pr-0 cursor-default group">
                   <div className="text-3xl md:text-[40px] font-black tracking-[-2px] leading-none text-gray-900 group-hover:text-blue-600 transition-colors">{s.num}</div>
                   <div className="text-[11px] text-slate-400 mt-1.5 font-medium tracking-[.3px]">{s.lbl}</div>
                 </div>

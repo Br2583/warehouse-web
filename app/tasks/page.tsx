@@ -137,7 +137,7 @@ function TaskCard({ task, members, isOwner, onStatus, onDelete, onEdit }: {
           <p className="text-sm font-semibold text-gray-900 leading-snug line-clamp-2">{task.title}</p>
         </div>
         {isOwner && (
-          <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
+          <div className="flex items-center gap-0.5 md:opacity-0 md:group-hover:opacity-100 transition-opacity flex-shrink-0">
             <button onClick={() => onEdit(task)} title="Edit"
               className="p-1 text-gray-300 hover:text-blue-500 hover:bg-blue-50 rounded-lg transition-colors">
               <PencilIcon className="w-3.5 h-3.5" />

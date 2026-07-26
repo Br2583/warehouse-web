@@ -223,15 +223,15 @@ function SearchContent() {
               <div className="text-center py-16 text-gray-400 text-sm">No vaults match your search</div>
             ) : (
               <div className="bg-white rounded-2xl border border-gray-100 overflow-x-auto">
-                <table className="w-full min-w-[560px]">
+                <table className="w-full min-w-[320px]">
                   <thead>
                     <tr className="border-b border-gray-50">
-                      <th className="text-left text-xs font-medium text-gray-400 uppercase tracking-wide px-6 py-4">Position</th>
-                      <th className="text-left text-xs font-medium text-gray-400 uppercase tracking-wide px-6 py-4">Client</th>
-                      <th className="text-left text-xs font-medium text-gray-400 uppercase tracking-wide px-6 py-4">Job Type</th>
-                      <th className="text-left text-xs font-medium text-gray-400 uppercase tracking-wide px-6 py-4">Warehouse</th>
-                      <th className="text-left text-xs font-medium text-gray-400 uppercase tracking-wide px-6 py-4">Packer</th>
-                      <th className="text-left text-xs font-medium text-gray-400 uppercase tracking-wide px-6 py-4">Status</th>
+                      <th className="text-left text-xs font-medium text-gray-400 uppercase tracking-wide px-4 py-4">Position</th>
+                      <th className="text-left text-xs font-medium text-gray-400 uppercase tracking-wide px-4 py-4">Client</th>
+                      <th className="hidden md:table-cell text-left text-xs font-medium text-gray-400 uppercase tracking-wide px-4 py-4">Job Type</th>
+                      <th className="hidden md:table-cell text-left text-xs font-medium text-gray-400 uppercase tracking-wide px-4 py-4">Warehouse</th>
+                      <th className="hidden md:table-cell text-left text-xs font-medium text-gray-400 uppercase tracking-wide px-4 py-4">Packer</th>
+                      <th className="text-left text-xs font-medium text-gray-400 uppercase tracking-wide px-4 py-4">Status</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -244,17 +244,17 @@ function SearchContent() {
                         className="border-b border-gray-50 hover:bg-gray-50 transition-colors cursor-pointer"
                         onClick={() => router.push(`/warehouses/${box.warehouse_id}?vault=${box.box_id}`)}
                       >
-                        <td className="px-6 py-4 text-sm font-semibold text-gray-900">{box.position}</td>
-                        <td className="px-6 py-4 text-sm text-gray-700">{box.client_name}</td>
-                        <td className="px-6 py-4 text-sm text-gray-500">{box.job_type}</td>
-                        <td className="px-6 py-4">
+                        <td className="px-4 py-4 text-sm font-semibold text-gray-900">{box.position}</td>
+                        <td className="px-4 py-4 text-sm text-gray-700 max-w-[130px] truncate">{box.client_name}</td>
+                        <td className="hidden md:table-cell px-4 py-4 text-sm text-gray-500">{box.job_type}</td>
+                        <td className="hidden md:table-cell px-4 py-4">
                           <span className="flex items-center gap-1 text-sm text-gray-500">
                             <BuildingOffice2Icon className="w-3.5 h-3.5 flex-shrink-0" />
                             {whName(box.warehouse_id)}
                           </span>
                         </td>
-                        <td className="px-6 py-4 text-sm text-gray-500">{box.packer || '—'}</td>
-                        <td className="px-6 py-4">
+                        <td className="hidden md:table-cell px-4 py-4 text-sm text-gray-500">{box.packer || '—'}</td>
+                        <td className="px-4 py-4">
                           <span className={`text-xs font-medium px-2.5 py-1 rounded-full ${STATUS_COLORS[box.estado || box.status] || 'bg-gray-100 text-gray-600'}`}>
                             {box.estado || box.status}
                           </span>

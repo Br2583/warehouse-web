@@ -322,7 +322,7 @@ export default function SnapshotsPage() {
                                 <span className="text-xs text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">{levelBoxes.length} vaults</span>
                               </div>
 
-                              <div className="border border-gray-200 rounded-xl overflow-x-auto">
+                              <div className="relative"><div className="pointer-events-none absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-white to-transparent z-10 md:hidden rounded-r-xl" /><div className="border border-gray-200 rounded-xl overflow-x-auto">
                                 <table className="w-full min-w-[480px] text-xs">
                                   <thead>
                                     <tr className="bg-gray-50 border-b border-gray-200">
@@ -364,6 +364,7 @@ export default function SnapshotsPage() {
                                   </tbody>
                                 </table>
                               </div>
+                            </div>
                             </div>
                           );
                         });

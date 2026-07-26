@@ -448,7 +448,7 @@ export default function WarehouseDetailPage() {
                         >
                           {box ? (
                             <>
-                              <span className="block text-[7px] md:text-[10px] font-bold leading-tight w-full px-0.5 text-center truncate">{box.client_name}</span>
+                              <span className="hidden md:block text-[10px] font-bold leading-tight w-full px-0.5 text-center truncate">{box.client_name}</span>
                               <span className="hidden md:block text-[9px] opacity-75 mt-0.5 leading-none">{box.job_type}</span>
                             </>
                           ) : (
@@ -476,15 +476,15 @@ export default function WarehouseDetailPage() {
               />
             </div>
             <div className="bg-white rounded-2xl border border-gray-100 overflow-x-auto">
-              <table className="w-full min-w-[620px]">
+              <table className="w-full min-w-[320px]">
                 <thead>
                   <tr className="border-b border-gray-50">
                     <th className="text-left text-xs font-medium text-gray-400 uppercase tracking-wide px-4 py-4">Position</th>
                     <th className="text-left text-xs font-medium text-gray-400 uppercase tracking-wide px-4 py-4">Client</th>
-                    <th className="text-left text-xs font-medium text-gray-400 uppercase tracking-wide px-4 py-4">Job Type</th>
-                    <th className="text-left text-xs font-medium text-gray-400 uppercase tracking-wide px-4 py-4">Packer</th>
+                    <th className="hidden md:table-cell text-left text-xs font-medium text-gray-400 uppercase tracking-wide px-4 py-4">Job Type</th>
+                    <th className="hidden md:table-cell text-left text-xs font-medium text-gray-400 uppercase tracking-wide px-4 py-4">Packer</th>
                     <th className="text-left text-xs font-medium text-gray-400 uppercase tracking-wide px-4 py-4">Status</th>
-                    <th className="text-left text-xs font-medium text-gray-400 uppercase tracking-wide px-4 py-4">Photos</th>
+                    <th className="hidden md:table-cell text-left text-xs font-medium text-gray-400 uppercase tracking-wide px-4 py-4">Photos</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -497,16 +497,16 @@ export default function WarehouseDetailPage() {
                       onClick={() => selectVault(box)}
                       className="border-b border-gray-50 hover:bg-gray-50 cursor-pointer transition-colors"
                     >
-                      <td className="px-6 py-4 text-sm font-medium text-gray-900">{box.position}</td>
-                      <td className="px-6 py-4 text-sm text-gray-700">{box.client_name}</td>
-                      <td className="px-6 py-4 text-sm text-gray-500">{box.job_type}</td>
-                      <td className="px-6 py-4 text-sm text-gray-500">{box.packer || '—'}</td>
-                      <td className="px-6 py-4">
+                      <td className="px-4 py-4 text-sm font-medium text-gray-900">{box.position}</td>
+                      <td className="px-4 py-4 text-sm text-gray-700 max-w-[140px] truncate">{box.client_name}</td>
+                      <td className="hidden md:table-cell px-4 py-4 text-sm text-gray-500">{box.job_type}</td>
+                      <td className="hidden md:table-cell px-4 py-4 text-sm text-gray-500">{box.packer || '—'}</td>
+                      <td className="px-4 py-4">
                         <span className={`text-xs font-medium px-2.5 py-1 rounded-full ${STATUS_COLORS[boxStatus(box)] || 'bg-gray-100 text-gray-600'}`}>
                           {boxStatus(box)}
                         </span>
                       </td>
-                      <td className="px-6 py-4 text-sm text-gray-500">
+                      <td className="hidden md:table-cell px-4 py-4 text-sm text-gray-500">
                         {box.photos?.length > 0 ? (
                           <span className="flex items-center gap-1"><CameraIcon className="w-3.5 h-3.5" />{box.photos.length}</span>
                         ) : '—'}
