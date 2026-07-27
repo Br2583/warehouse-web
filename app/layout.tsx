@@ -5,6 +5,7 @@ import { AuthProvider } from "@/lib/auth-context";
 import AppShell from "@/components/AppShell";
 import { ToastProvider } from "@/lib/toast-context";
 import ToastContainer from "@/components/ToastContainer";
+import CapacitorInit from "@/components/CapacitorInit";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -13,7 +14,7 @@ export const viewport: Viewport = {
   initialScale: 1,
   maximumScale: 1,
   viewportFit: "cover",
-  themeColor: "#2563eb",
+  themeColor: "#ffffff",
 };
 
 export const metadata: Metadata = {
@@ -36,6 +37,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className={`${inter.className} bg-gray-50`}>
         <AuthProvider>
           <ToastProvider>
+            <CapacitorInit />
             <AppShell>
               {children}
             </AppShell>

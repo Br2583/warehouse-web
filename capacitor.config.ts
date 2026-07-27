@@ -1,4 +1,5 @@
 import { CapacitorConfig } from '@capacitor/cli';
+import { KeyboardResize } from '@capacitor/keyboard';
 
 const config: CapacitorConfig = {
   appId: 'com.pixelcore.warehousemanager',
@@ -11,7 +12,17 @@ const config: CapacitorConfig = {
     androidScheme: 'https',
   },
   android: {
-    backgroundColor: '#0f0f0f',
+    backgroundColor: '#ffffff',
+  },
+  plugins: {
+    Keyboard: {
+      resize: KeyboardResize.Body,
+      resizeOnFullScreen: true,
+    },
+    StatusBar: {
+      style: 'DARK',
+      backgroundColor: '#ffffff',
+    },
   },
 };
 
