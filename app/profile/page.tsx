@@ -41,6 +41,35 @@ export default function ProfilePage() {
   const [companySaving, setCompanySaving] = useState(false);
   const [companyError, setCompanyError] = useState('');
 
+  // Push notification test
+  const [pushTesting, setPushTesting] = useState(false);
+  const [pushResult, setPushResult] = useState<{ ok: boolean; message: string } | null>(null);
+  const [isNative, setIsNative] = useState(false);
+
+  useEffect(() => {
+    import('@capacitor/core').then(({ Capacitor }) => {
+      setIsNative(Capacitor.isNativePlatform());
+    }).catch(() => {});
+  }, []);
+
+  const testPush = async () => {
+    setPushTesting(true);
+    setPushResult(null);
+    try {
+      const token = pb.authStore.token;
+      const res = await fetch('/api/notifications/test', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await res.json();
+      setPushResult({ ok: data.ok ?? res.ok, message: data.message || 'Unknown response' });
+    } catch {
+      setPushResult({ ok: false, message: 'Request failed — check network' });
+    } finally {
+      setPushTesting(false);
+    }
+  };
+
   useEffect(() => {
     if (!pickerOpen) return;
     const handler = (e: MouseEvent) => {
@@ -359,6 +388,31 @@ export default function ProfilePage() {
             )}
 
             {/* ─── Admin Panel (super-admin only) ─── */}
+            {/* ─── Push Notifications ─── */}
+            {isNative && (
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.12 }}
+                className="bg-white rounded-2xl border border-gray-100 p-6"
+              >
+                <h3 className="font-semibold text-gray-900 mb-1">Push Notifications</h3>
+                <p className="text-xs text-gray-400 mb-4">Test if this device is registered to receive notifications.</p>
+                <button
+                  onClick={testPush}
+                  disabled={pushTesting}
+                  className="px-4 py-2 text-sm bg-blue-600 text-white rounded-xl hover:bg-blue-700 disabled:opacity-50 transition-colors"
+                >
+                  {pushTesting ? 'Sending...' : 'Send Test Notification'}
+                </button>
+                {pushResult && (
+                  <p className={`mt-3 text-sm font-medium ${pushResult.ok ? 'text-green-600' : 'text-red-500'}`}>
+                    {pushResult.ok ? '✅' : '❌'} {pushResult.message}
+                  </p>
+                )}
+              </motion.div>
+            )}
+
             {isAdmin && (
               <motion.div
                 initial={{ opacity: 0, y: 10 }}
