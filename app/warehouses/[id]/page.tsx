@@ -448,6 +448,7 @@ export default function WarehouseDetailPage() {
                         >
                           {box ? (
                             <>
+                              <span className="block md:hidden text-[11px] font-bold leading-none text-center">{box.client_name?.charAt(0) || '?'}</span>
                               <span className="hidden md:block text-[10px] font-bold leading-tight w-full px-0.5 text-center truncate">{box.client_name}</span>
                               <span className="hidden md:block text-[9px] opacity-75 mt-0.5 leading-none">{box.job_type}</span>
                             </>
