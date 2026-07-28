@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getPbAdminToken, PB_URL } from '@/lib/pb-admin';
+import { sendPush, getTokensForCompany } from '@/lib/push';
 
 const TIMEOUT_MS = 28_000;
 
@@ -119,6 +120,18 @@ export async function POST(req: NextRequest) {
     });
     const msg = await res.json();
     if (!res.ok) throw new Error(msg?.message || 'Failed to send message');
+
+    // Push notification to all company members (except sender) — fire and forget
+    getTokensForCompany(companyId, record.id, adminToken, PB_URL).then(tokens => {
+      const senderName = record.name?.split(' ')[0] || 'Someone';
+      const preview = body.text.trim().slice(0, 60);
+      return sendPush(tokens, {
+        title: `${senderName} in Team Chat`,
+        body: preview.length < body.text.trim().length ? preview + '…' : preview,
+        route: '/chat',
+        tag: 'chat',
+      });
+    }).catch(() => {});
 
     return NextResponse.json({
       id:          msg.id,

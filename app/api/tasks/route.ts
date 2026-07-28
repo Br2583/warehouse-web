@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getPbAdminToken, PB_URL } from '@/lib/pb-admin';
 import { sendEmail, taskAssignedEmail } from '@/lib/email';
+import { sendPush, getTokensForUser } from '@/lib/push';
 
 async function verifyUser(token: string) {
   const res = await fetch(`${PB_URL}/api/collections/users/auth-refresh`, {
@@ -125,8 +126,17 @@ export async function POST(req: NextRequest) {
           );
           await sendEmail({ to: worker.email, toName: worker.name, subject, html });
         }
+
+        // Push notification to assigned worker's device(s)
+        const pushTokens = await getTokensForUser(body.assigned_to, adminToken, PB_URL);
+        await sendPush(pushTokens, {
+          title: 'New Task Assigned',
+          body: `${owner.name || 'Owner'}: ${body.title}`,
+          route: '/tasks',
+          tag: 'task_assigned',
+        });
       }
-    } catch { /* email failure should never break task creation */ }
+    } catch { /* notification failure should never break task creation */ }
   }
 
   return NextResponse.json(created);
