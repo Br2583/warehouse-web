@@ -130,7 +130,7 @@ export async function POST(req: NextRequest) {
         body: preview.length < body.text.trim().length ? preview + '…' : preview,
         route: '/chat',
         tag: 'chat',
-      });
+      }, PB_URL, adminToken);
     }).catch(() => {});
 
     return NextResponse.json({

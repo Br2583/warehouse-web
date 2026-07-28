@@ -12,10 +12,7 @@ async function saveTokenToBackend(token: string, platform: string): Promise<bool
   try {
     const res = await fetch('/api/notifications/token', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${authToken}`,
-      },
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${authToken}` },
       body: JSON.stringify({ token, platform }),
     });
     return res.ok;
@@ -42,17 +39,13 @@ async function initPushNotifications(platform: string) {
     const permStatus = await PushNotifications.requestPermissions();
     if (permStatus.receive !== 'granted') return;
 
-    await PushNotifications.register();
-
+    // Add listeners BEFORE calling register() to avoid missing the event
     PushNotifications.addListener('registration', async (token) => {
-      // Always persist the token locally so we can retry after login
       localStorage.setItem(FCM_TOKEN_KEY, token.value);
       localStorage.setItem(FCM_PLATFORM_KEY, platform);
 
-      // Try to save immediately (works if user is already logged in)
       const saved = await saveTokenToBackend(token.value, platform);
 
-      // If not saved yet (user not logged in), pb.authStore.onChange will handle it
       if (!saved) {
         const unsub = pb.authStore.onChange(async () => {
           if (!pb.authStore.isValid) return;
@@ -69,8 +62,14 @@ async function initPushNotifications(platform: string) {
       }
     });
 
+    PushNotifications.addListener('registrationError', () => {
+      // Token registration failed — clear any cached token so next open tries fresh
+      localStorage.removeItem(FCM_TOKEN_KEY);
+      localStorage.removeItem(FCM_PLATFORM_KEY);
+    });
+
     PushNotifications.addListener('pushNotificationReceived', (_notification) => {
-      // App is in foreground — in-app badges already handle unread counts
+      // Foreground — in-app badges handle unread counts
     });
 
     PushNotifications.addListener('pushNotificationActionPerformed', (action) => {
@@ -79,6 +78,8 @@ async function initPushNotifications(platform: string) {
         window.location.href = route;
       }
     });
+
+    await PushNotifications.register();
 
   } catch {
     // Push notifications not available in this environment
@@ -104,9 +105,7 @@ export default function CapacitorInit() {
         const { Keyboard } = await import('@capacitor/keyboard');
         await Keyboard.setAccessoryBarVisible({ isVisible: false });
 
-        await initPushNotifications(platform);
-
-        // Retry saving any pending FCM token (e.g. app was opened after a previous login)
+        // Retry pending token first (user opened app after a login)
         const pendingToken = localStorage.getItem(FCM_TOKEN_KEY);
         const pendingPlatform = localStorage.getItem(FCM_PLATFORM_KEY) || platform;
         if (pendingToken && pb.authStore.isValid) {
@@ -116,6 +115,8 @@ export default function CapacitorInit() {
             localStorage.removeItem(FCM_PLATFORM_KEY);
           }
         }
+
+        await initPushNotifications(platform);
 
       } catch {
         // Not in native Capacitor context

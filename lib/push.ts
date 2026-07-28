@@ -33,27 +33,56 @@ async function getFCMAccessToken(): Promise<string> {
   return token;
 }
 
-export async function sendPush(tokens: string[], payload: PushPayload): Promise<void> {
+async function deleteStaleToken(token: string, pbUrl: string, adminToken: string) {
+  try {
+    const res = await fetch(
+      `${pbUrl}/api/collections/device_tokens/records?filter=${encodeURIComponent(`token="${token}"`)}&perPage=1`,
+      { headers: { Authorization: `Bearer ${adminToken}` } }
+    );
+    if (!res.ok) return;
+    const data = await res.json();
+    for (const record of data.items || []) {
+      await fetch(`${pbUrl}/api/collections/device_tokens/records/${record.id}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${adminToken}` },
+      });
+    }
+  } catch { /* best effort */ }
+}
+
+export async function sendPush(
+  tokens: string[],
+  payload: PushPayload,
+  pbUrl?: string,
+  adminToken?: string
+): Promise<void> {
   if (!process.env.FIREBASE_SERVICE_ACCOUNT_JSON || tokens.length === 0) return;
   try {
     const accessToken = await getFCMAccessToken();
-    const sends = tokens.map(token =>
-      fetch(FCM_V1_URL, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${accessToken}`,
-        },
-        body: JSON.stringify({
-          message: {
-            token,
-            notification: { title: payload.title, body: payload.body },
-            data: payload.route ? { route: payload.route } : {},
-            android: { priority: 'high', notification: { sound: 'default', channel_id: 'warehouse-high', notification_priority: 'PRIORITY_MAX', visibility: 'PUBLIC' } },
-          },
-        }),
-      }).catch(() => {})
-    );
+    const sends = tokens.map(async token => {
+      try {
+        const res = await fetch(FCM_V1_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` },
+          body: JSON.stringify({
+            message: {
+              token,
+              notification: { title: payload.title, body: payload.body },
+              data: payload.route ? { route: payload.route } : {},
+              android: { priority: 'high', notification: { sound: 'default', channel_id: 'warehouse-high', notification_priority: 'PRIORITY_MAX', visibility: 'PUBLIC' } },
+            },
+          }),
+        });
+        if (!res.ok && pbUrl && adminToken) {
+          const err = await res.json().catch(() => ({}));
+          const code = err?.error?.details?.[0]?.errorCode;
+          if (code === 'UNREGISTERED' || code === 'INVALID_ARGUMENT') {
+            // Token is stale — remove it so the app re-registers on next open
+            await deleteStaleToken(token, pbUrl, adminToken);
+          }
+        }
+      } catch { /* ignore individual send failures */ }
+    });
     await Promise.all(sends);
   } catch {
     // Push failures never break the main API response

@@ -134,7 +134,7 @@ export async function POST(req: NextRequest) {
           body: `${owner.name || 'Owner'}: ${body.title}`,
           route: '/tasks',
           tag: 'task_assigned',
-        });
+        }, PB_URL, adminToken);
       }
     } catch { /* notification failure should never break task creation */ }
   }

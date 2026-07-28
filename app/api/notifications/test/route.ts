@@ -31,7 +31,7 @@ export async function POST(req: NextRequest) {
     title: '✅ Notifications working!',
     body: 'Warehouse Manager push notifications are configured correctly.',
     route: '/dashboard',
-  });
+  }, PB_URL, adminToken);
 
   return NextResponse.json({
     ok: true,
