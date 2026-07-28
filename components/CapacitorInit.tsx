@@ -21,6 +21,29 @@ async function saveTokenToBackend(token: string, platform: string): Promise<bool
   }
 }
 
+// Retry every intervalMs for up to maxAttempts, stopping as soon as it succeeds.
+// Returns a cleanup function to cancel.
+function startTokenRetry(fcmToken: string, platform: string): () => void {
+  let attempts = 0;
+  const MAX = 12; // 12 × 5s = 60s total window
+  const INTERVAL = 5000;
+
+  const id = setInterval(async () => {
+    attempts++;
+    if (attempts > MAX) { clearInterval(id); return; }
+    if (!pb.authStore.isValid) return;
+
+    const ok = await saveTokenToBackend(fcmToken, platform);
+    if (ok) {
+      localStorage.removeItem(FCM_TOKEN_KEY);
+      localStorage.removeItem(FCM_PLATFORM_KEY);
+      clearInterval(id);
+    }
+  }, INTERVAL);
+
+  return () => clearInterval(id);
+}
+
 async function initPushNotifications(platform: string) {
   try {
     const { PushNotifications } = await import('@capacitor/push-notifications');
@@ -41,31 +64,39 @@ async function initPushNotifications(platform: string) {
     const permStatus = await PushNotifications.requestPermissions();
     if (permStatus.receive !== 'granted') return;
 
-    // Add listeners BEFORE calling register() to avoid missing the event
+    // Listeners BEFORE register() to avoid missing the event
     PushNotifications.addListener('registration', async (token) => {
-      localStorage.setItem(FCM_TOKEN_KEY, token.value);
+      const fcmToken = token.value;
+      localStorage.setItem(FCM_TOKEN_KEY, fcmToken);
       localStorage.setItem(FCM_PLATFORM_KEY, platform);
 
-      const saved = await saveTokenToBackend(token.value, platform);
-
-      if (!saved) {
-        const unsub = pb.authStore.onChange(async () => {
-          if (!pb.authStore.isValid) return;
-          const ok = await saveTokenToBackend(token.value, platform);
-          if (ok) {
-            localStorage.removeItem(FCM_TOKEN_KEY);
-            localStorage.removeItem(FCM_PLATFORM_KEY);
-            unsub();
-          }
-        });
-      } else {
-        localStorage.removeItem(FCM_TOKEN_KEY);
-        localStorage.removeItem(FCM_PLATFORM_KEY);
+      // First attempt immediately
+      if (pb.authStore.isValid) {
+        const ok = await saveTokenToBackend(fcmToken, platform);
+        if (ok) {
+          localStorage.removeItem(FCM_TOKEN_KEY);
+          localStorage.removeItem(FCM_PLATFORM_KEY);
+          return;
+        }
       }
+
+      // Start retry loop — handles both "auth not ready yet" and transient failures
+      const stopRetry = startTokenRetry(fcmToken, platform);
+
+      // Also hook into future auth changes (covers first-time login flow)
+      const unsub = pb.authStore.onChange(async () => {
+        if (!pb.authStore.isValid) return;
+        const ok = await saveTokenToBackend(fcmToken, platform);
+        if (ok) {
+          localStorage.removeItem(FCM_TOKEN_KEY);
+          localStorage.removeItem(FCM_PLATFORM_KEY);
+          stopRetry();
+          unsub();
+        }
+      });
     });
 
     PushNotifications.addListener('registrationError', () => {
-      // Token registration failed — clear any cached token so next open tries fresh
       localStorage.removeItem(FCM_TOKEN_KEY);
       localStorage.removeItem(FCM_PLATFORM_KEY);
     });
@@ -107,14 +138,21 @@ export default function CapacitorInit() {
         const { Keyboard } = await import('@capacitor/keyboard');
         await Keyboard.setAccessoryBarVisible({ isVisible: false });
 
-        // Retry pending token first (user opened app after a login)
+        // Retry any pending token from a previous session
         const pendingToken = localStorage.getItem(FCM_TOKEN_KEY);
         const pendingPlatform = localStorage.getItem(FCM_PLATFORM_KEY) || platform;
-        if (pendingToken && pb.authStore.isValid) {
-          const ok = await saveTokenToBackend(pendingToken, pendingPlatform);
-          if (ok) {
-            localStorage.removeItem(FCM_TOKEN_KEY);
-            localStorage.removeItem(FCM_PLATFORM_KEY);
+        if (pendingToken) {
+          if (pb.authStore.isValid) {
+            const ok = await saveTokenToBackend(pendingToken, pendingPlatform);
+            if (ok) {
+              localStorage.removeItem(FCM_TOKEN_KEY);
+              localStorage.removeItem(FCM_PLATFORM_KEY);
+            }
+          }
+          // Whether it saved or not, also start a retry loop to catch cases where
+          // auth hasn't been fully restored by the time this effect runs
+          if (localStorage.getItem(FCM_TOKEN_KEY)) {
+            startTokenRetry(pendingToken, pendingPlatform);
           }
         }
 
