@@ -49,7 +49,7 @@ export async function sendPush(tokens: string[], payload: PushPayload): Promise<
             token,
             notification: { title: payload.title, body: payload.body },
             data: payload.route ? { route: payload.route } : {},
-            android: { priority: 'high', notification: { sound: 'default' } },
+            android: { priority: 'high', notification: { sound: 'default', channel_id: 'warehouse-high', notification_priority: 'PRIORITY_MAX', visibility: 'PUBLIC' } },
           },
         }),
       }).catch(() => {})

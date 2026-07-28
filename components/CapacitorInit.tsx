@@ -28,6 +28,17 @@ async function initPushNotifications(platform: string) {
   try {
     const { PushNotifications } = await import('@capacitor/push-notifications');
 
+    if (platform === 'android') {
+      await PushNotifications.createChannel({
+        id: 'warehouse-high',
+        name: 'Warehouse Notifications',
+        importance: 5,
+        vibration: true,
+        sound: 'default',
+        visibility: 1,
+      });
+    }
+
     const permStatus = await PushNotifications.requestPermissions();
     if (permStatus.receive !== 'granted') return;
 
