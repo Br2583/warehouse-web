@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "822236269339",
+    "project_id": "warehouse-manager-e09dc",
+    "storage_bucket": "warehouse-manager-e09dc.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:822236269339:android:3825be0d5ea7f0028e61be",
+        "android_client_info": {
+          "package_name": "com.pixelcore.warehousemanager"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBwY_B48yuWE22FNBsOcmk7rwqlQUB1WZQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

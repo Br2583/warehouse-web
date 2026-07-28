@@ -1,58 +1,65 @@
-/**
- * Server-side FCM push notification sender (legacy HTTP API).
- * Requires FCM_SERVER_KEY in .env.local (from Firebase Console > Project Settings > Cloud Messaging).
- *
- * Called from API routes when events occur (task assigned, chat message, etc.)
- */
+import { GoogleAuth } from 'google-auth-library';
 
-const FCM_URL = 'https://fcm.googleapis.com/fcm/send';
+const FCM_V1_URL = 'https://fcm.googleapis.com/v1/projects/warehouse-manager-e09dc/messages:send';
 
 export interface PushPayload {
   title: string;
   body: string;
-  route?: string;        // Deep link — e.g. "/tasks", "/chat"
-  tag?: string;          // Collapse key (only show latest notification of same tag)
+  route?: string;
+  tag?: string;
 }
 
-/**
- * Send a push notification to one or more device tokens.
- * Silently swallows errors so it never breaks the main API response.
- */
+let _cachedToken: { value: string; expiresAt: number } | null = null;
+
+async function getFCMAccessToken(): Promise<string> {
+  const now = Date.now();
+  if (_cachedToken && now < _cachedToken.expiresAt) return _cachedToken.value;
+
+  const raw = process.env.FIREBASE_SERVICE_ACCOUNT_JSON;
+  if (!raw) throw new Error('FIREBASE_SERVICE_ACCOUNT_JSON not set');
+
+  const credentials = JSON.parse(raw);
+  const auth = new GoogleAuth({
+    credentials,
+    scopes: ['https://www.googleapis.com/auth/firebase.messaging'],
+  });
+  const client = await auth.getClient();
+  const tokenResponse = await client.getAccessToken();
+  const token = tokenResponse.token;
+  if (!token) throw new Error('Failed to obtain FCM access token');
+
+  // Cache for 50 minutes (tokens last 60 min)
+  _cachedToken = { value: token, expiresAt: now + 50 * 60 * 1000 };
+  return token;
+}
+
 export async function sendPush(tokens: string[], payload: PushPayload): Promise<void> {
-  const serverKey = process.env.FCM_SERVER_KEY;
-  if (!serverKey || tokens.length === 0) return;
-
-  const notification = {
-    title: payload.title,
-    body: payload.body,
-    sound: 'default',
-  };
-
-  const data: Record<string, string> = {};
-  if (payload.route) data.route = payload.route;
-
-  const body = tokens.length === 1
-    ? { to: tokens[0], notification, data, android: { priority: 'high' } }
-    : { registration_ids: tokens, notification, data, android: { priority: 'high' }, collapse_key: payload.tag };
-
+  if (!process.env.FIREBASE_SERVICE_ACCOUNT_JSON || tokens.length === 0) return;
   try {
-    await fetch(FCM_URL, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `key=${serverKey}`,
-      },
-      body: JSON.stringify(body),
-    });
+    const accessToken = await getFCMAccessToken();
+    const sends = tokens.map(token =>
+      fetch(FCM_V1_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${accessToken}`,
+        },
+        body: JSON.stringify({
+          message: {
+            token,
+            notification: { title: payload.title, body: payload.body },
+            data: payload.route ? { route: payload.route } : {},
+            android: { priority: 'high', notification: { sound: 'default' } },
+          },
+        }),
+      }).catch(() => {})
+    );
+    await Promise.all(sends);
   } catch {
-    // Push failures should never break main API
+    // Push failures never break the main API response
   }
 }
 
-/**
- * Get all FCM tokens for a user (they might have multiple devices).
- * Looks up the device_tokens collection in PocketBase.
- */
 export async function getTokensForUser(
   userId: string,
   adminToken: string,
@@ -71,9 +78,6 @@ export async function getTokensForUser(
   }
 }
 
-/**
- * Get all FCM tokens for a company (for broadcast notifications).
- */
 export async function getTokensForCompany(
   companyId: string,
   excludeUserId: string,
