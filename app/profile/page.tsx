@@ -41,9 +41,10 @@ export default function ProfilePage() {
   const [companySaving, setCompanySaving] = useState(false);
   const [companyError, setCompanyError] = useState('');
 
-  // Push notification test
+  // Push notification diagnostics
   const [pushTesting, setPushTesting] = useState(false);
   const [pushResult, setPushResult] = useState<{ ok: boolean; message: string } | null>(null);
+  const [pushLog, setPushLog] = useState<string[]>([]);
   const [isNative, setIsNative] = useState(false);
 
   useEffect(() => {
@@ -55,6 +56,8 @@ export default function ProfilePage() {
   const testPush = async () => {
     setPushTesting(true);
     setPushResult(null);
+    setPushLog([]);
+    const log = (msg: string) => setPushLog(prev => [...prev, msg]);
     try {
       const token = pb.authStore.token;
       const res = await fetch('/api/notifications/test', {
@@ -65,6 +68,72 @@ export default function ProfilePage() {
       setPushResult({ ok: data.ok ?? res.ok, message: data.message || 'Unknown response' });
     } catch {
       setPushResult({ ok: false, message: 'Request failed — check network' });
+    } finally {
+      setPushTesting(false);
+    }
+  };
+
+  const runDiagnostics = async () => {
+    setPushTesting(true);
+    setPushResult(null);
+    setPushLog([]);
+    const log = (msg: string) => setPushLog(prev => [...prev, msg]);
+    try {
+      const { Capacitor } = await import('@capacitor/core');
+      log(`isNativePlatform: ${Capacitor.isNativePlatform()}`);
+      log(`platform: ${Capacitor.getPlatform()}`);
+
+      const { PushNotifications } = await import('@capacitor/push-notifications');
+      log('PushNotifications plugin: loaded');
+
+      const permStatus = await PushNotifications.requestPermissions();
+      log(`permission: ${permStatus.receive}`);
+
+      if (permStatus.receive !== 'granted') {
+        log('BLOCKED: permission not granted');
+        setPushResult({ ok: false, message: `Permission: ${permStatus.receive}` });
+        return;
+      }
+
+      log('Calling register()...');
+      await PushNotifications.register();
+      log('register() called — waiting for token (15s)...');
+
+      await new Promise<void>((resolve) => {
+        const timeout = setTimeout(() => {
+          log('TIMEOUT: FCM did not respond in 15s');
+          resolve();
+        }, 15000);
+
+        PushNotifications.addListener('registration', async (fcmToken) => {
+          clearTimeout(timeout);
+          log(`FCM token: ${fcmToken.value.slice(0, 40)}...`);
+          log(`authStore valid: ${pb.authStore.isValid}`);
+          const authToken = pb.authStore.token;
+          if (authToken) {
+            const saveRes = await fetch('/api/notifications/token', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${authToken}` },
+              body: JSON.stringify({ token: fcmToken.value, platform: 'android' }),
+            });
+            log(`backend save: ${saveRes.ok ? 'OK ' + saveRes.status : 'FAILED ' + saveRes.status}`);
+          } else {
+            log('authStore empty — not logged in');
+          }
+          resolve();
+        });
+
+        PushNotifications.addListener('registrationError', (err) => {
+          clearTimeout(timeout);
+          log(`registrationError: ${JSON.stringify(err)}`);
+          resolve();
+        });
+      });
+
+      setPushResult({ ok: true, message: 'Diagnostics complete — check log below' });
+    } catch (e: any) {
+      log(`Exception: ${e?.message || String(e)}`);
+      setPushResult({ ok: false, message: 'Exception occurred' });
     } finally {
       setPushTesting(false);
     }
@@ -398,13 +467,31 @@ export default function ProfilePage() {
               >
                 <h3 className="font-semibold text-gray-900 mb-1">Push Notifications</h3>
                 <p className="text-xs text-gray-400 mb-4">Test if this device is registered to receive notifications.</p>
-                <button
-                  onClick={testPush}
-                  disabled={pushTesting}
-                  className="px-4 py-2 text-sm bg-blue-600 text-white rounded-xl hover:bg-blue-700 disabled:opacity-50 transition-colors"
-                >
-                  {pushTesting ? 'Sending...' : 'Send Test Notification'}
-                </button>
+                <div className="flex gap-2 flex-wrap">
+                  <button
+                    onClick={testPush}
+                    disabled={pushTesting}
+                    className="px-4 py-2 text-sm bg-blue-600 text-white rounded-xl hover:bg-blue-700 disabled:opacity-50 transition-colors"
+                  >
+                    {pushTesting ? 'Working...' : 'Send Test Notification'}
+                  </button>
+                  <button
+                    onClick={runDiagnostics}
+                    disabled={pushTesting}
+                    className="px-4 py-2 text-sm bg-gray-800 text-white rounded-xl hover:bg-gray-700 disabled:opacity-50 transition-colors"
+                  >
+                    {pushTesting ? 'Running...' : 'Run Diagnostics'}
+                  </button>
+                </div>
+                {pushLog.length > 0 && (
+                  <div className="mt-3 p-3 bg-gray-900 rounded-xl text-xs font-mono space-y-1">
+                    {pushLog.map((line, i) => (
+                      <div key={i} className={line.includes('FAILED') || line.includes('TIMEOUT') || line.includes('BLOCKED') || line.includes('Exception') ? 'text-red-400' : line.includes('OK') || line.includes('token:') ? 'text-green-400' : 'text-gray-300'}>
+                        {line}
+                      </div>
+                    ))}
+                  </div>
+                )}
                 {pushResult && (
                   <p className={`mt-3 text-sm font-medium ${pushResult.ok ? 'text-green-600' : 'text-red-500'}`}>
                     {pushResult.ok ? '✅' : '❌'} {pushResult.message}
