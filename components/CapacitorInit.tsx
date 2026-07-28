@@ -26,14 +26,16 @@ async function initPushNotifications(platform: string) {
     const { PushNotifications } = await import('@capacitor/push-notifications');
 
     if (platform === 'android') {
-      await PushNotifications.createChannel({
-        id: 'warehouse-high',
-        name: 'Warehouse Notifications',
-        importance: 5,
-        vibration: true,
-        sound: 'default',
-        visibility: 1,
-      });
+      try {
+        await PushNotifications.createChannel({
+          id: 'warehouse-high',
+          name: 'Warehouse Notifications',
+          importance: 5,
+          vibration: true,
+          sound: 'default',
+          visibility: 1,
+        });
+      } catch { /* channel already exists — ignore */ }
     }
 
     const permStatus = await PushNotifications.requestPermissions();
