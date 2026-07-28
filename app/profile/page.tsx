@@ -482,6 +482,17 @@ export default function ProfilePage() {
                   >
                     {pushTesting ? 'Running...' : 'Run Diagnostics'}
                   </button>
+                  <button
+                    onClick={() => {
+                      const keys = ['fcm_dbg_init_at', 'fcm_dbg_reg_at', 'fcm_dbg_auth_valid', 'fcm_dbg_save_result', 'pending_fcm_token'];
+                      const lines = keys.map(k => `${k}: ${localStorage.getItem(k) ?? '(empty)'}`);
+                      setPushLog(lines);
+                      setPushResult({ ok: true, message: 'FCM state from last app open' });
+                    }}
+                    className="px-4 py-2 text-sm bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition-colors"
+                  >
+                    Check FCM State
+                  </button>
                 </div>
                 {pushLog.length > 0 && (
                   <div className="mt-3 p-3 bg-gray-900 rounded-xl text-xs font-mono space-y-1">
