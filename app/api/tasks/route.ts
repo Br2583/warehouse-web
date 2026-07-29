@@ -29,7 +29,7 @@ export async function GET(req: NextRequest) {
     : `company_id="${me.company_id}" && assigned_to="${me.id}"`;
 
   const res = await fetch(
-    `${PB_URL}/api/collections/tasks/records?filter=${encodeURIComponent(filter)}&sort=-created&perPage=200`,
+    `${PB_URL}/api/collections/tasks/records?filter=${encodeURIComponent(filter)}&sort=-created&perPage=500`,
     { headers: { Authorization: `Bearer ${adminToken}` } }
   );
   if (!res.ok) return NextResponse.json({ error: 'Failed to load tasks' }, { status: 502 });

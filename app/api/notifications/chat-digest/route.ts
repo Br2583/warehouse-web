@@ -25,10 +25,9 @@ export async function POST(req: NextRequest) {
   const companyCache: Record<string, string> = {};
   let sent = 0;
 
-  for (const user of users) {
-    if (!user.email || !user.company_id) continue;
+  async function processUser(user: any): Promise<boolean> {
+    if (!user.email || !user.company_id) return false;
 
-    // Fall back to 2 hours ago if never notified
     const since = user.chat_notified_at
       ? user.chat_notified_at
       : new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString();
@@ -38,12 +37,12 @@ export async function POST(req: NextRequest) {
       `${PB_URL}/api/collections/chat_messages/records?perPage=3&sort=-sent_at&filter=${encodeURIComponent(filter)}&fields=author_name,content`,
       { headers: { Authorization: `Bearer ${adminToken}` } },
     );
-    if (!msgRes.ok) continue;
+    if (!msgRes.ok) return false;
     const msgData = await msgRes.json();
     const totalCount: number = msgData.totalItems ?? 0;
-    if (totalCount === 0) continue;
+    if (totalCount === 0) return false;
 
-    // Resolve company name (cached per run)
+    // Company name resolved serially to avoid cache races in concurrent batch
     if (!companyCache[user.company_id]) {
       try {
         const compRes = await fetch(
@@ -59,7 +58,6 @@ export async function POST(req: NextRequest) {
     }
     const companyName = companyCache[user.company_id];
 
-    // 3 most recent messages as preview (reverse to show oldest first)
     const previews: { sender: string; text: string }[] = (msgData.items || [])
       .reverse()
       .map((m: any) => ({ sender: m.author_name || 'Someone', text: m.content || '' }));
@@ -72,15 +70,24 @@ export async function POST(req: NextRequest) {
         previews,
       );
       await sendEmail({ to: user.email, toName: user.name, subject, html });
-      sent++;
 
-      // Update cursor so next run only sees newer messages
       await fetch(`${PB_URL}/api/collections/users/records/${user.id}`, {
         method: 'PATCH',
         headers: { Authorization: `Bearer ${adminToken}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({ chat_notified_at: new Date().toISOString() }),
       });
-    } catch { /* single user failure should not stop the loop */ }
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  // Process in batches of 10 to avoid saturating PB with serial requests
+  const BATCH = 10;
+  for (let i = 0; i < users.length; i += BATCH) {
+    const batch = users.slice(i, i + BATCH);
+    const results = await Promise.allSettled(batch.map(processUser));
+    sent += results.filter(r => r.status === 'fulfilled' && r.value).length;
   }
 
   return NextResponse.json({ ok: true, sent, total: users.length });
