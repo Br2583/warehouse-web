@@ -51,9 +51,10 @@ export async function POST(req: NextRequest) {
 
   await ensureDeviceTokensCollection(adminToken);
 
+  const safeToken = token.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
   // Upsert: check if this user+token combo already exists
   const existing = await fetch(
-    `${PB_URL}/api/collections/device_tokens/records?filter=${encodeURIComponent(`user_id="${me.id}" && token="${token}"`)}`,
+    `${PB_URL}/api/collections/device_tokens/records?filter=${encodeURIComponent(`user_id="${me.id}" && token="${safeToken}"`)}`,
     { headers: { Authorization: `Bearer ${adminToken}` } }
   );
   const existingData = existing.ok ? await existing.json() : { items: [] };
@@ -93,8 +94,9 @@ export async function DELETE(req: NextRequest) {
   try { adminToken = await getPbAdminToken(); }
   catch { return NextResponse.json({ error: 'Admin auth failed' }, { status: 500 }); }
 
+  const safeTokenDel = token.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
   const existing = await fetch(
-    `${PB_URL}/api/collections/device_tokens/records?filter=${encodeURIComponent(`user_id="${me.id}" && token="${token}"`)}`,
+    `${PB_URL}/api/collections/device_tokens/records?filter=${encodeURIComponent(`user_id="${me.id}" && token="${safeTokenDel}"`)}`,
     { headers: { Authorization: `Bearer ${adminToken}` } }
   );
   const existingData = existing.ok ? await existing.json() : { items: [] };

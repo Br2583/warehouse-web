@@ -7,6 +7,12 @@ const TIMEOUT_MS = 28_000;
 const _rateLimitMap = new Map<string, { count: number; resetAt: number }>();
 function checkRateLimit(userId: string): boolean {
   const now = Date.now();
+  // Clean up expired entries to prevent unbounded growth
+  if (_rateLimitMap.size > 1000) {
+    for (const [key, val] of _rateLimitMap) {
+      if (now > val.resetAt) _rateLimitMap.delete(key);
+    }
+  }
   const entry = _rateLimitMap.get(userId);
   if (!entry || now > entry.resetAt) {
     _rateLimitMap.set(userId, { count: 1, resetAt: now + 60_000 });

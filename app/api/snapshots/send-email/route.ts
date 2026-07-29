@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { sendEmail, snapshotReportEmail } from '@/lib/email';
-
-const PB_URL = process.env.NEXT_PUBLIC_PB_URL || 'https://pocketbase-production-e699.up.railway.app';
+import { PB_URL } from '@/lib/pb-admin';
 
 async function getAuthenticatedUser(req: NextRequest): Promise<{ id: string; email: string; company_id: string } | null> {
   const token = (req.headers.get('authorization') || '').replace('Bearer ', '').trim();

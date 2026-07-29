@@ -35,8 +35,9 @@ async function getFCMAccessToken(): Promise<string> {
 
 async function deleteStaleToken(token: string, pbUrl: string, adminToken: string) {
   try {
+    const safeToken = token.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
     const res = await fetch(
-      `${pbUrl}/api/collections/device_tokens/records?filter=${encodeURIComponent(`token="${token}"`)}&perPage=1`,
+      `${pbUrl}/api/collections/device_tokens/records?filter=${encodeURIComponent(`token="${safeToken}"`)}&perPage=1`,
       { headers: { Authorization: `Bearer ${adminToken}` } }
     );
     if (!res.ok) return;

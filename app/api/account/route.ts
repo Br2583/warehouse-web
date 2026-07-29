@@ -39,10 +39,13 @@ export async function DELETE(req: NextRequest) {
       );
     }
     // Delete the company (PocketBase cascades related records)
-    await fetch(`${PB_URL}/api/collections/companies/records/${me.company_id}`, {
+    const compDelRes = await fetch(`${PB_URL}/api/collections/companies/records/${me.company_id}`, {
       method: 'DELETE',
       headers: { Authorization: `Bearer ${adminToken}` },
     });
+    if (!compDelRes.ok && compDelRes.status !== 204) {
+      return NextResponse.json({ error: 'Failed to delete company' }, { status: 500 });
+    }
   }
 
   const res = await fetch(`${PB_URL}/api/collections/users/records/${me.id}`, {
