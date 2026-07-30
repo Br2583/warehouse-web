@@ -11,15 +11,26 @@ export async function POST(req: NextRequest) {
     if (payload.purpose !== 'verify') throw new Error('Wrong token type');
 
     const adminToken = await getPbAdminToken();
+
+    // Durable replay check — works across all Railway processes/dynos.
+    // If verified was set AFTER this token was issued, the token was already consumed.
+    const userRes = await fetch(`${PB_URL}/api/collections/users/records/${payload.userId}`, {
+      headers: { Authorization: `Bearer ${adminToken}` },
+    });
+    if (userRes.status === 404) throw new Error('This verification link has expired or the account no longer exists. Please sign up again or click Resend on the verification page.');
+    if (!userRes.ok) throw new Error('Failed to verify account. Try again.');
+    const userRecord = await userRes.json();
+    const tokenIssuedMs = (payload.iat as number) * 1000;
+    const userUpdatedMs = new Date(userRecord.updated).getTime();
+    if (userRecord.verified === true && userUpdatedMs > tokenIssuedMs + 5000) {
+      throw new Error('This email is already verified. You can sign in now.');
+    }
+
     const pbRes = await fetch(`${PB_URL}/api/collections/users/records/${payload.userId}`, {
       method: 'PATCH',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${adminToken}`,
-      },
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${adminToken}` },
       body: JSON.stringify({ verified: true }),
     });
-    if (pbRes.status === 404) throw new Error('This verification link has expired or the account no longer exists. Please sign up again or click Resend on the verification page.');
     if (!pbRes.ok) throw new Error('Failed to verify account. Try again.');
 
     return NextResponse.json({ ok: true });
