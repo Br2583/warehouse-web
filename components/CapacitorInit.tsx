@@ -138,44 +138,49 @@ async function initPushNotifications(platform: string) {
 export default function CapacitorInit() {
   useEffect(() => {
     const init = async () => {
+      // Marker written before any try-catch — if missing, the component never mounted
+      localStorage.setItem('fcm_dbg_component_mounted', new Date().toISOString());
+
+      const { Capacitor } = await import('@capacitor/core');
+      if (!Capacitor.isNativePlatform()) return;
+
+      const platform = Capacitor.getPlatform();
+
+      // StatusBar + Keyboard in their own try-catch — must NOT block push init
       try {
-        const { Capacitor } = await import('@capacitor/core');
-        if (!Capacitor.isNativePlatform()) return;
-
-        const platform = Capacitor.getPlatform();
-
         const { StatusBar, Style } = await import('@capacitor/status-bar');
         await StatusBar.setStyle({ style: Style.Dark });
         if (platform === 'android') {
           await StatusBar.setBackgroundColor({ color: '#ffffff' });
           await StatusBar.setOverlaysWebView({ overlay: false });
         }
-
         const { Keyboard } = await import('@capacitor/keyboard');
         await Keyboard.setAccessoryBarVisible({ isVisible: false });
+      } catch { /* UI plugins optional — never block push */ }
 
-        // Retry any pending token from a previous session
-        const pendingToken = localStorage.getItem(FCM_TOKEN_KEY);
-        const pendingPlatform = localStorage.getItem(FCM_PLATFORM_KEY) || platform;
-        if (pendingToken) {
-          if (pb.authStore.isValid) {
-            const ok = await saveTokenToBackend(pendingToken, pendingPlatform);
-            if (ok) {
-              localStorage.removeItem(FCM_TOKEN_KEY);
-              localStorage.removeItem(FCM_PLATFORM_KEY);
-            }
-          }
-          // Whether it saved or not, also start a retry loop to catch cases where
-          // auth hasn't been fully restored by the time this effect runs
-          if (localStorage.getItem(FCM_TOKEN_KEY)) {
-            startTokenRetry(pendingToken, pendingPlatform);
+      // Retry any pending token from a previous session
+      const pendingToken = localStorage.getItem(FCM_TOKEN_KEY);
+      const pendingPlatform = localStorage.getItem(FCM_PLATFORM_KEY) || platform;
+      if (pendingToken) {
+        if (pb.authStore.isValid) {
+          const ok = await saveTokenToBackend(pendingToken, pendingPlatform);
+          if (ok) {
+            localStorage.removeItem(FCM_TOKEN_KEY);
+            localStorage.removeItem(FCM_PLATFORM_KEY);
           }
         }
+        // Whether it saved or not, also start a retry loop to catch cases where
+        // auth hasn't been fully restored by the time this effect runs
+        if (localStorage.getItem(FCM_TOKEN_KEY)) {
+          startTokenRetry(pendingToken, pendingPlatform);
+        }
+      }
 
+      // Push init in its own try-catch with debug output
+      try {
         await initPushNotifications(platform);
-
-      } catch {
-        // Not in native Capacitor context
+      } catch (e) {
+        localStorage.setItem('fcm_dbg_outer_error', String(e));
       }
     };
 
