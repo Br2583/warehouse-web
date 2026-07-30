@@ -92,7 +92,7 @@ export default function VaultPrintPage() {
           {isNative ? 'Open in Browser' : 'Print / Save PDF'}
         </button>
         <button
-          onClick={() => { if (window.history.length > 1) window.close(); else router.push('/dashboard'); }}
+          onClick={() => { window.opener ? window.close() : router.push('/dashboard'); }}
           className="px-4 py-2 bg-slate-100 text-slate-700 text-sm font-medium rounded-full hover:bg-slate-200 transition-colors"
         >
           Close

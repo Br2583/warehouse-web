@@ -15,7 +15,7 @@ export async function POST(req: NextRequest) {
 
   // Fetch all users with an email (up to 500 — adjust perPage if company grows)
   const usersRes = await fetch(
-    `${PB_URL}/api/collections/users/records?perPage=500&fields=id,email,name,company_id,chat_notified_at`,
+    `${PB_URL}/api/collections/users/records?perPage=500&fields=id,email,name,company_id,chat_notified_at,notifications_enabled`,
     { headers: { Authorization: `Bearer ${adminToken}` } },
   );
   if (!usersRes.ok) return NextResponse.json({ error: 'Failed to fetch users' }, { status: 500 });
@@ -27,6 +27,7 @@ export async function POST(req: NextRequest) {
 
   async function processUser(user: any): Promise<boolean> {
     if (!user.email || !user.company_id) return false;
+    if (!user.notifications_enabled) return false;
 
     const since = user.chat_notified_at
       ? user.chat_notified_at

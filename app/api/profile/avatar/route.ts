@@ -27,6 +27,12 @@ export async function POST(req: NextRequest) {
     const refreshData = await refreshRes.json();
     const authenticatedUserId = refreshData.record?.id;
 
+    // Reject oversized payloads before buffering the body
+    const contentLength = parseInt(req.headers.get('content-length') || '0', 10);
+    if (contentLength > 150_000) {
+      return NextResponse.json({ error: 'Image too large. Please compress before uploading.' }, { status: 413 });
+    }
+
     const { userId, avatar_base64 } = await req.json();
     if (!userId) return NextResponse.json({ error: 'Missing userId' }, { status: 400 });
     if (avatar_base64 && avatar_base64.length > 110_000) {

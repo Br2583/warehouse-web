@@ -37,6 +37,12 @@ export async function POST(req: NextRequest) {
     if (!warehouseName) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
+    if (vaults !== undefined && !Array.isArray(vaults)) {
+      return NextResponse.json({ error: 'Invalid vaults data' }, { status: 400 });
+    }
+    if (Array.isArray(vaults) && vaults.length > 5000) {
+      return NextResponse.json({ error: 'Report too large' }, { status: 400 });
+    }
 
     const { subject, html } = snapshotReportEmail({ warehouseName, date, total, pending, ready, delivered, vaults });
     await sendEmail({ to, subject, html });
