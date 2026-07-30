@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
-const SESSION_TIMEOUT_MS = 2 * 60 * 60 * 1000; // 2 hours inactivity
+const SESSION_TIMEOUT_MS = 30 * 24 * 60 * 60 * 1000; // 30 days inactivity
 const ACTIVITY_COOKIE    = 'wm_last_active';
 
 async function isValidAdminSession(value: string | undefined): Promise<boolean> {
@@ -34,7 +34,7 @@ function setActivityCookie(res: NextResponse): void {
     httpOnly: true,
     secure:   process.env.NODE_ENV === 'production',
     sameSite: 'lax',
-    maxAge:   60 * 60 * 24, // 24h max age; actual 2h check is done in code
+    maxAge:   60 * 60 * 24 * 30, // 30-day sliding window
     path:     '/',
   });
 }

@@ -96,7 +96,14 @@ export default function SnapshotsPage() {
     }
   };
 
-  const handlePrint = () => window.print();
+  const handlePrint = async () => {
+    const isNative = !!(window as any).Capacitor?.isNativePlatform?.();
+    if (isNative && navigator.share) {
+      try { await navigator.share({ title: 'Inventory Report', url: window.location.href }); } catch {}
+    } else {
+      window.print();
+    }
+  };
 
   const sendEmail = async () => {
     if (!report || !user?.email) return;
