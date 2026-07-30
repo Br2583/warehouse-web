@@ -1,4 +1,7 @@
 html{scroll-behavior:smooth}
+
+/* Hide web nav in Capacitor Android app */
+.native-app .lh-nav,.native-app .mob-dd{display:none!important}
 .nav-links a,.mob-lnk{text-decoration:none;color:inherit}
 
 /* ═══ HERO ═══ */
