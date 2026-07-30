@@ -69,7 +69,7 @@ function mapStorage(s: any) {
     address:     s.address || '',
     city:        s.city || '',
     state:       s.state || '',
-    client_name: s.expand?.client_id?.name || s.client_id || '',
+    client_name: s.client_name || '',
     capacity:    s.capacity || '',
     access_code: s.access_code || '',
     status:      s.status || 'AVAILABLE',
@@ -310,8 +310,7 @@ async function routeGet(path: string): Promise<any> {
     if (!cid) return [];
     const items = await pb.collection('storage_units').getFullList({
       filter: `company_id="${cid}"`,
-      fields: 'id,unit_name,address,city,state,client_id,capacity,access_code,status,notes,photos,company_id,created,slots,grid_rows,grid_cols',
-      expand: 'client_id',
+      fields: 'id,unit_name,address,city,state,client_name,capacity,access_code,status,notes,photos,company_id,created,slots,grid_rows,grid_cols',
     });
     return items
       .sort((a: any, b: any) => a.created < b.created ? 1 : -1)
@@ -447,7 +446,7 @@ async function routePost(path: string, body: any): Promise<any> {
       address:     body.address || '',
       city:        body.city || '',
       state:       body.state || '',
-      client_id:   body.client_name || '',
+      client_name: body.client_name || '',
       capacity:    body.capacity || '',
       access_code: body.access_code || '',
       status:      body.status || 'AVAILABLE',
@@ -576,7 +575,7 @@ async function routePut(path: string, body: any): Promise<any> {
       address:     body.address || '',
       city:        body.city || '',
       state:       body.state || '',
-      client_id:   body.client_name || '',
+      client_name: body.client_name || '',
       capacity:    body.capacity || '',
       access_code: body.access_code || '',
       status:      body.status || 'AVAILABLE',
