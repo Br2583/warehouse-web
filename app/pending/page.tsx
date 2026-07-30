@@ -15,7 +15,7 @@ export default function PendingPage() {
   useEffect(() => {
     const check = async () => {
       if (redirecting.current) return;
-      if (!pb.authStore.isValid) { window.location.href = '/login'; return; }
+      if (!pb.authStore.isValid) { router.replace('/login'); return; }
       if (!pb.authStore.model?.company_id) return;
       try {
         const company = await pb.collection('companies').getOne(pb.authStore.model.company_id);
@@ -28,7 +28,7 @@ export default function PendingPage() {
           redirecting.current = true;
           await pb.collection('users').authRefresh();
           await refreshUser();
-          window.location.href = '/onboarding';
+          router.replace('/onboarding');
         }
       } catch {}
     };

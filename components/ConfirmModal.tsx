@@ -13,14 +13,18 @@ interface Props {
 
 export default function ConfirmModal({ message, onConfirm, onCancel, confirmLabel = 'Delete' }: Props) {
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const handleConfirm = async () => {
     setLoading(true);
+    setError(null);
     try {
       await onConfirm();
+      onCancel();
+    } catch (e: any) {
+      setError(e?.message || 'Something went wrong. Try again.');
     } finally {
       setLoading(false);
-      onCancel();
     }
   };
 
@@ -47,6 +51,9 @@ export default function ConfirmModal({ message, onConfirm, onCancel, confirmLabe
             </div>
             <p className="text-gray-800 text-sm leading-relaxed pt-2">{message}</p>
           </div>
+          {error && (
+            <p className="text-red-600 text-xs mb-4 bg-red-50 rounded-lg px-3 py-2">{error}</p>
+          )}
           <div className="flex gap-3 justify-end">
             <button
               onClick={onCancel}

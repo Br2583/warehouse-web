@@ -4,7 +4,7 @@ import { useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { ShieldExclamationIcon, ArrowRightOnRectangleIcon, EnvelopeIcon } from '@heroicons/react/24/outline';
 import { useAuth } from '@/lib/auth-context';
-import { api } from '@/lib/api';
+import { pb } from '@/lib/pb';
 import { useRouter } from 'next/navigation';
 
 export default function SuspendedPage() {
@@ -15,7 +15,7 @@ export default function SuspendedPage() {
     if (!user?.company_id) return;
     const check = async () => {
       try {
-        const company = await api.get(`/api/companies/${user.company_id}`);
+        const company = await pb.collection('companies').getOne(user.company_id!);
         if (!company.suspended && company.approved && !company.rejected) {
           router.replace('/dashboard');
         }

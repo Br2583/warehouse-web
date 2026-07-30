@@ -24,23 +24,31 @@ export async function DELETE(req: NextRequest) {
   catch { return NextResponse.json({ error: 'Admin auth failed' }, { status: 500 }); }
 
   const filter = encodeURIComponent(`company_id="${me.company_id}"`);
-  const listRes = await fetch(
-    `${PB_URL}/api/collections/tasks/records?filter=${filter}&perPage=500&fields=id`,
-    { headers: { Authorization: `Bearer ${adminToken}` } },
-  );
-  if (!listRes.ok) return NextResponse.json({ error: 'Failed to fetch tasks' }, { status: 500 });
+  let allIds: string[] = [];
+  let page = 1;
+  while (true) {
+    const listRes = await fetch(
+      `${PB_URL}/api/collections/tasks/records?filter=${filter}&perPage=500&page=${page}&fields=id`,
+      { headers: { Authorization: `Bearer ${adminToken}` } },
+    );
+    if (!listRes.ok) return NextResponse.json({ error: 'Failed to fetch tasks' }, { status: 500 });
+    const data = await listRes.json();
+    const ids = (data.items as { id: string }[] || []).map(t => t.id);
+    allIds = allIds.concat(ids);
+    if (ids.length < 500) break;
+    page++;
+  }
 
-  const { items } = await listRes.json();
-  if (!items?.length) return NextResponse.json({ deleted: 0 });
+  if (!allIds.length) return NextResponse.json({ deleted: 0 });
 
   await Promise.allSettled(
-    (items as { id: string }[]).map(t =>
-      fetch(`${PB_URL}/api/collections/tasks/records/${t.id}`, {
+    allIds.map(id =>
+      fetch(`${PB_URL}/api/collections/tasks/records/${id}`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${adminToken}` },
       }),
     ),
   );
 
-  return NextResponse.json({ deleted: items.length });
+  return NextResponse.json({ deleted: allIds.length });
 }

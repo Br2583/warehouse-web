@@ -199,6 +199,14 @@ async function routeGet(path: string): Promise<any> {
     return whs.map(w => ({ id: w.id, name: w.name, address: w.address }));
   }
 
+  // GET /api/warehouses/:id
+  const whMatch = p.match(/^\/api\/warehouses\/([^/]+)$/);
+  if (whMatch) {
+    const w = await pb.collection('warehouses').getOne(whMatch[1]);
+    if (w.company_id !== cid) throw new Error('Forbidden');
+    return { id: w.id, name: w.name, address: w.address };
+  }
+
   // ── Stats ──────────────────────────────────────────────────────────────────
   if (p === '/api/stats/global') return buildStats();
 

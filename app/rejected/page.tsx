@@ -41,7 +41,7 @@ export default function RejectedPage() {
 
         <div className="space-y-3">
           <a
-            href="mailto:noreplywarehousemanager@gmail.com"
+            href={`mailto:${process.env.NEXT_PUBLIC_SUPPORT_EMAIL || 'support@managerwarehouse.cc'}`}
             className="w-full flex items-center justify-center gap-2 py-3.5 rounded-full bg-red-600 text-white font-bold text-sm hover:bg-red-700 active:scale-[0.98] transition-all shadow-[0_2px_12px_rgba(239,68,68,.3)]"
           >
             <EnvelopeIcon className="w-4 h-4" />

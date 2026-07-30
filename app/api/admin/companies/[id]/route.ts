@@ -114,14 +114,15 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
   const usersData = await usersRes.json();
   const owner = (usersData.items || []).find((u: any) => u.id === company.owner_id);
 
-  // Delete users first; tolerate individual failures but stop if all fail
+  // Delete users first; treat both network errors and HTTP errors as failures
   const userDels = await Promise.allSettled(
-    (usersData.items || []).map((u: any) =>
-      fetch(`${PB_URL}/api/collections/users/records/${u.id}`, {
+    (usersData.items || []).map(async (u: any) => {
+      const res = await fetch(`${PB_URL}/api/collections/users/records/${u.id}`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${adminToken}` },
-      })
-    )
+      });
+      if (!res.ok && res.status !== 204) throw new Error(`Failed to delete user ${u.id}: HTTP ${res.status}`);
+    })
   );
   const failures = userDels.filter(r => r.status === 'rejected');
   if (failures.length > 0) {

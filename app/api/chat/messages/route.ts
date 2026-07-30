@@ -96,6 +96,7 @@ export async function POST(req: NextRequest) {
 
     const body = await req.json();
     if (!body.text?.trim()) return NextResponse.json({ error: 'Message text is required' }, { status: 400 });
+    if (body.text.trim().length > 4000) return NextResponse.json({ error: 'Message too long (max 4000 characters)' }, { status: 400 });
 
     const refreshRes = await pbFetch(`${PB_URL}/api/collections/users/auth-refresh`, {
       method: 'POST',

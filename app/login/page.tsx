@@ -155,7 +155,7 @@ function LoginForm() {
       }
       if (!model.profile_complete) { router.replace('/onboarding'); return; }
       const returnTo = params.get('returnTo');
-      router.replace(returnTo && returnTo.startsWith('/') ? returnTo : '/dashboard');
+      router.replace(returnTo && returnTo.startsWith('/') && !returnTo.startsWith('//') ? returnTo : '/dashboard');
     } catch (e: any) {
       setError(e?.status === 400 ? 'Incorrect email or password.' : (e?.message || 'Sign in failed. Try again.'));
       setLoading(false);
@@ -239,7 +239,7 @@ function LoginForm() {
           {/* Banners */}
           {!bannerDismissed && sessionExpired && !error && (
             <div className="flex items-center gap-2 bg-amber-50 border border-amber-200 text-amber-700 text-sm px-4 py-3 rounded-xl mb-4">
-              <span className="flex-1">⏱ Your session expired after 2 hours of inactivity. Sign in again.</span>
+              <span className="flex-1">⏱ Your session has expired. Sign in again to continue.</span>
               <button onClick={() => setBannerDismissed(true)} className="text-amber-400 hover:text-amber-600 text-lg leading-none flex-shrink-0">✕</button>
             </div>
           )}
