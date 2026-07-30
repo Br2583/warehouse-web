@@ -78,6 +78,14 @@ body {
   }
 }
 
+/* Native app: overlay:false means webview already starts below status bar — no safe-area needed */
+.native-app .topbar-safe {
+  padding-top: 0 !important;
+}
+.native-app .topbar-offset {
+  padding-top: 3.5rem !important;
+}
+
 input,
 textarea,
 select {

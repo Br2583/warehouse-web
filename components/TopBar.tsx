@@ -154,7 +154,7 @@ export default function TopBar({ onOpenNav }: TopBarProps) {
     <>
       {/* ─── MOBILE top bar ─── */}
       <div
-        className="md:hidden fixed top-0 inset-x-0 z-40 bg-white border-b border-gray-100"
+        className="topbar-safe md:hidden fixed top-0 inset-x-0 z-40 bg-white border-b border-gray-100"
         style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}
       >
         <div className="h-14 flex items-center px-4 gap-3">
