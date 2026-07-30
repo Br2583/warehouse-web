@@ -282,7 +282,10 @@ async function routeGet(path: string): Promise<any> {
     if (warehouseId) filter += ` && warehouse_id="${sf(warehouseId)}"`;
     if (packer)      filter += ` && packer~"${sf(packer)}"`;
     if (q2)          filter += ` && (client_name~"${sf(q2)}" || packer~"${sf(q2)}" || position~"${sf(q2)}" || comments~"${sf(q2)}" || job_type~"${sf(q2)}")`;
-    const items = await pb.collection('vaults').getFullList({ filter });
+    const items = await pb.collection('vaults').getFullList({
+      filter,
+      fields: 'id,warehouse_id,row,col,level,position,client_name,client_id,job_type,vault_status,content_type,room_location,packer,comments,estado,qr_token,company_id,created',
+    });
     return items
       .sort((a: any, b: any) => a.created < b.created ? 1 : -1)
       .map(mapVault);
@@ -464,7 +467,10 @@ async function routePost(path: string, body: any): Promise<any> {
     const warehouseRef = snapCreateMatch[1];
     let filter = `company_id="${cid}"`;
     if (warehouseRef && warehouseRef !== 'all') filter += ` && warehouse_id="${warehouseRef}"`;
-    const vaults = await pb.collection('vaults').getFullList({ filter });
+    const vaults = await pb.collection('vaults').getFullList({
+      filter,
+      fields: 'id,warehouse_id,row,col,level,position,client_name,client_id,job_type,vault_status,content_type,room_location,packer,comments,estado,qr_token,company_id,created',
+    });
     const warehouses = await pb.collection('warehouses').getFullList({ filter: `company_id="${cid}"` });
     const wh = warehouses.find(w => w.id === warehouseRef);
     const s = await pb.collection('snapshots').create({
