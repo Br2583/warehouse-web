@@ -1,6 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getPbAdminToken, PB_URL } from '@/lib/pb-admin';
 import { sendEmail, taskStatusEmail } from '@/lib/email';
+import { sendPush, getTokensForUser } from '@/lib/push';
+
+function fmtStatus(s: string): string {
+  return s === 'IN_PROGRESS' ? 'In Progress' : s.charAt(0) + s.slice(1).toLowerCase();
+}
 
 async function verifyUser(token: string) {
   const res = await fetch(`${PB_URL}/api/collections/users/auth-refresh`, {
@@ -87,7 +92,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
   if (!updateRes.ok) return NextResponse.json({ error: 'Failed to update task' }, { status: 500 });
   const updated = await updateRes.json();
 
-  // Notify owner when a worker changes the status
+  // Worker changes status → notify owner (email + push)
   if (me.role !== 'owner' && body.status && body.status !== task.status && task.created_by) {
     try {
       const [ownerRes, workerRes] = await Promise.all([
@@ -109,10 +114,32 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
             task.status,
             body.status,
           );
-          await sendEmail({ to: owner.email, toName: owner.name, subject, html });
+          sendEmail({ to: owner.email, toName: owner.name, subject, html }).catch(() => {});
+        }
+        const ownerTokens = await getTokensForUser(owner.id, adminToken, PB_URL);
+        if (ownerTokens.length > 0) {
+          sendPush(ownerTokens, {
+            title: 'Task Updated',
+            body: `${worker.name || 'A worker'} marked "${task.title}" as ${fmtStatus(body.status)}`,
+            route: '/tasks',
+          }, PB_URL, adminToken).catch(() => {});
         }
       }
-    } catch { /* email failure should never break the task update */ }
+    } catch { /* notifications never break the task update */ }
+  }
+
+  // Owner changes status → notify assigned worker via push
+  if (me.role === 'owner' && body.status && body.status !== task.status && task.assigned_to && task.assigned_to !== me.id) {
+    try {
+      const workerTokens = await getTokensForUser(task.assigned_to, adminToken, PB_URL);
+      if (workerTokens.length > 0) {
+        sendPush(workerTokens, {
+          title: 'Task Updated',
+          body: `Your task "${task.title}" was marked as ${fmtStatus(body.status)}`,
+          route: '/tasks',
+        }, PB_URL, adminToken).catch(() => {});
+      }
+    } catch { /* push failure never breaks the update */ }
   }
 
   return NextResponse.json(updated);
