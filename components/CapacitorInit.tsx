@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { pb } from '@/lib/pb';
 
 const FCM_TOKEN_KEY = 'pending_fcm_token';
@@ -115,10 +116,25 @@ async function initPushNotifications(platform: string) {
 }
 
 export default function CapacitorInit() {
+  const router = useRouter();
+
   useEffect(() => {
     const init = async () => {
       const { Capacitor } = await import('@capacitor/core');
       if (!Capacitor.isNativePlatform()) return;
+
+      // Deep link handler — opens the scanned QR path inside the app
+      try {
+        const { App } = await import('@capacitor/app');
+        App.addListener('appUrlOpen', (event) => {
+          try {
+            const url = new URL(event.url);
+            if (url.hostname === 'managerwarehouse.cc') {
+              router.push(url.pathname + url.search);
+            }
+          } catch { /* malformed URL */ }
+        });
+      } catch { /* App plugin not available */ }
 
       const platform = Capacitor.getPlatform();
 
