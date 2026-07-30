@@ -178,7 +178,6 @@ export default function ChatPage() {
           <div className="flex items-center justify-between gap-4">
             <div>
               <h1 className="text-2xl font-bold text-gray-900">Team Chat</h1>
-              <p className="text-gray-500 text-sm mt-1">Internal company communication</p>
             </div>
             {isOwner && messages.length > 0 && (
               <button

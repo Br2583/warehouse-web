@@ -89,8 +89,7 @@ function SearchContent() {
       <Sidebar />
       <main className="md:ml-64 flex-1 min-w-0 px-4 pb-8 md:px-8 md:pb-8 topbar-offset">
         <div className="mb-6">
-          <h1 className="text-2xl font-bold text-gray-900">Global Search</h1>
-          <p className="text-gray-500 text-sm mt-1">Search across all warehouses</p>
+          <h1 className="text-2xl font-bold text-gray-900">Search</h1>
         </div>
 
         {/* Search bar */}

@@ -106,7 +106,6 @@ export default function WarehousesPage() {
         <div className="flex items-center justify-between mb-6 md:mb-8">
           <div>
             <h1 className="text-xl md:text-2xl font-bold text-gray-900">Warehouses</h1>
-            <p className="text-gray-500 text-sm mt-1">Select a warehouse to manage its inventory</p>
           </div>
           {user?.role === 'owner' && (
             <button

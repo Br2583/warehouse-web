@@ -157,7 +157,6 @@ export default function SnapshotsPage() {
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6 md:mb-8">
             <div>
               <h1 className="text-xl md:text-2xl font-bold text-gray-900">Snapshots</h1>
-              <p className="text-gray-500 text-sm mt-1">Daily inventory records - click to view & print</p>
             </div>
             <div className="flex gap-2 flex-wrap">
               {warehouses.map(wh => (

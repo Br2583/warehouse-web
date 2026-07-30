@@ -148,7 +148,6 @@ export default function ProfilePage() {
         <div className="max-w-xl">
           <div className="mb-8">
             <h1 className="text-2xl font-bold text-gray-900">Profile</h1>
-            <p className="text-sm text-gray-400 mt-1">Your personal information</p>
           </div>
 
           <div className="space-y-4">

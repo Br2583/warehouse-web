@@ -2,6 +2,8 @@ html{scroll-behavior:smooth}
 
 /* Hide web nav in Capacitor Android app */
 .native-app .lh-nav,.native-app .mob-dd{display:none!important}
+/* Compensate for hidden nav: add status-bar safe area + breathing room */
+.native-app .hbody{padding-top:calc(env(safe-area-inset-top,24px) + 24px)!important}
 .nav-links a,.mob-lnk{text-decoration:none;color:inherit}
 
 /* ═══ HERO ═══ */
