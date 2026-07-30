@@ -11,30 +11,6 @@ async function verifyUser(token: string) {
   return record as { id: string; company_id: string } | null;
 }
 
-async function ensureDeviceTokensCollection(adminToken: string) {
-  // Check if collection exists
-  const check = await fetch(`${PB_URL}/api/collections/device_tokens`, {
-    headers: { Authorization: `Bearer ${adminToken}` },
-  });
-  if (check.ok) return;
-
-  // Create collection
-  await fetch(`${PB_URL}/api/collections`, {
-    method: 'POST',
-    headers: { Authorization: `Bearer ${adminToken}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      name: 'device_tokens',
-      type: 'base',
-      fields: [
-        { name: 'user_id',    type: 'text', required: true },
-        { name: 'company_id', type: 'text', required: true },
-        { name: 'token',      type: 'text', required: true },
-        { name: 'platform',   type: 'text' },
-      ],
-    }),
-  });
-}
-
 export async function POST(req: NextRequest) {
   const authHeader = req.headers.get('Authorization')?.replace('Bearer ', '').trim();
   if (!authHeader) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -48,8 +24,6 @@ export async function POST(req: NextRequest) {
   let adminToken: string;
   try { adminToken = await getPbAdminToken(); }
   catch { return NextResponse.json({ error: 'Admin auth failed' }, { status: 500 }); }
-
-  await ensureDeviceTokensCollection(adminToken);
 
   const safeToken = token.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
   // Upsert: check if this user+token combo already exists
