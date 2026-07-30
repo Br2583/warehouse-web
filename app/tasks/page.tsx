@@ -687,8 +687,10 @@ function TasksPageInner() {
   const [view,     setView]     = useState<'kanban' | 'list'>('kanban');
   const [formOpen, setFormOpen] = useState(searchParams.get('new') === '1');
   const [editTask, setEditTask] = useState<Task | null>(null);
-  const [deleteId, setDeleteId] = useState<string | null>(null);
-  const [deleting, setDeleting] = useState(false);
+  const [deleteId, setDeleteId]     = useState<string | null>(null);
+  const [deleting, setDeleting]     = useState(false);
+  const [clearAll, setClearAll]     = useState(false);
+  const [clearingAll, setClearingAll] = useState(false);
 
   const loadTasks = async () => {
     try {
@@ -740,6 +742,24 @@ function TasksPageInner() {
     } finally {
       setDeleting(false);
       setDeleteId(null);
+    }
+  };
+
+  const handleDeleteAll = async () => {
+    setClearingAll(true);
+    try {
+      const token = pb.authStore.token;
+      await fetch('/api/tasks/all', {
+        method: 'DELETE',
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
+      setTasks([]);
+      showToast('All tasks deleted');
+    } catch {
+      setError('Failed to delete all tasks');
+    } finally {
+      setClearingAll(false);
+      setClearAll(false);
     }
   };
 
@@ -803,6 +823,15 @@ function TasksPageInner() {
                   <span>List</span>
                 </button>
               </div>
+            )}
+            {isOwner && tasks.length > 0 && (
+              <button
+                onClick={() => setClearAll(true)}
+                className="flex items-center gap-2 px-4 py-2.5 bg-red-50 text-red-600 text-sm font-semibold rounded-full hover:bg-red-100 transition-colors border border-red-100"
+              >
+                <TrashIcon className="w-4 h-4" />
+                <span className="hidden sm:inline">Clear All</span>
+              </button>
             )}
             {isOwner && (
               <button
@@ -906,6 +935,33 @@ function TasksPageInner() {
         editTask={editTask}
         onSave={handleSave}
       />
+
+      {/* Clear all confirm */}
+      <AnimatePresence>
+        {clearAll && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/30">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="bg-white rounded-2xl p-6 w-full max-w-sm shadow-xl"
+            >
+              <h3 className="font-bold text-gray-900 mb-2">Delete all tasks?</h3>
+              <p className="text-sm text-gray-500 mb-5">This will permanently delete all {tasks.length} tasks. This cannot be undone.</p>
+              <div className="flex gap-3">
+                <button onClick={() => setClearAll(false)}
+                  className="flex-1 py-2.5 border border-gray-200 text-gray-600 text-sm font-medium rounded-xl hover:bg-gray-50 transition-colors">
+                  Cancel
+                </button>
+                <button onClick={handleDeleteAll} disabled={clearingAll}
+                  className="flex-1 py-2.5 bg-red-600 text-white text-sm font-semibold rounded-xl hover:bg-red-700 transition-colors disabled:opacity-50">
+                  {clearingAll ? 'Deleting…' : 'Delete All'}
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
 
       {/* Delete confirm */}
       <AnimatePresence>

@@ -31,6 +31,7 @@ function formatTime(ts: string): string {
 
 export default function ChatPage() {
   const { user } = useAuth();
+  const isOwner = user?.role === 'owner';
   const [messages, setMessages] = useState<Message[]>([]);
   const [members, setMembers]   = useState<{ user_id: string; name: string; picture?: string }[]>([]);
   const [text, setText] = useState('');
@@ -38,6 +39,8 @@ export default function ChatPage() {
   const [sendError, setSendError] = useState('');
   const [sending, setSending] = useState(false);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+  const [confirmClear, setConfirmClear] = useState(false);
+  const [clearing, setClearing] = useState(false);
   const lastCountRef = useRef(-1);
   const containerRef = useRef<HTMLDivElement>(null);
   const isAtBottomRef = useRef(true);
@@ -136,6 +139,24 @@ export default function ChatPage() {
     }
   };
 
+  const clearChat = async () => {
+    setClearing(true);
+    try {
+      const token = getToken();
+      await fetch('/api/chat/messages/all', {
+        method: 'DELETE',
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
+      setMessages([]);
+      lastCountRef.current = 0;
+    } catch {
+      setSendError('Failed to clear chat');
+    } finally {
+      setClearing(false);
+      setConfirmClear(false);
+    }
+  };
+
   const deleteMsg = async (id: string) => {
     const token = getToken();
     try {
@@ -154,8 +175,21 @@ export default function ChatPage() {
       <Sidebar />
       <main className="md:ml-64 flex-1 min-w-0 flex flex-col" style={{ height: '100dvh' }}>
         <div className="px-4 md:px-8 py-4 md:py-6 pb-4 border-b border-gray-100 bg-white flex-shrink-0 topbar-offset">
-          <h1 className="text-2xl font-bold text-gray-900">Team Chat</h1>
-          <p className="text-gray-500 text-sm mt-1">Internal company communication</p>
+          <div className="flex items-center justify-between gap-4">
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900">Team Chat</h1>
+              <p className="text-gray-500 text-sm mt-1">Internal company communication</p>
+            </div>
+            {isOwner && messages.length > 0 && (
+              <button
+                onClick={() => setConfirmClear(true)}
+                className="flex items-center gap-2 px-3 py-2 bg-red-50 text-red-600 text-sm font-semibold rounded-xl hover:bg-red-100 transition-colors border border-red-100 flex-shrink-0"
+              >
+                <TrashIcon className="w-4 h-4" />
+                <span className="hidden sm:inline">Clear Chat</span>
+              </button>
+            )}
+          </div>
         </div>
 
         <div ref={containerRef} onScroll={onScroll} className="flex-1 overflow-y-auto p-4 md:p-6 space-y-4">
@@ -233,6 +267,26 @@ export default function ChatPage() {
           </form>
         </div>
       </main>
+
+      {/* Clear chat confirm */}
+      {confirmClear && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/30">
+          <div className="bg-white rounded-2xl p-6 w-full max-w-sm shadow-xl">
+            <h3 className="font-bold text-gray-900 mb-2">Clear all messages?</h3>
+            <p className="text-sm text-gray-500 mb-5">This will permanently delete all {messages.length} messages for everyone in the company. This cannot be undone.</p>
+            <div className="flex gap-3">
+              <button onClick={() => setConfirmClear(false)}
+                className="flex-1 py-2.5 border border-gray-200 text-gray-600 text-sm font-medium rounded-xl hover:bg-gray-50 transition-colors">
+                Cancel
+              </button>
+              <button onClick={clearChat} disabled={clearing}
+                className="flex-1 py-2.5 bg-red-600 text-white text-sm font-semibold rounded-xl hover:bg-red-700 transition-colors disabled:opacity-50">
+                {clearing ? 'Clearing…' : 'Clear All'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
