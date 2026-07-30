@@ -78,12 +78,12 @@ body {
   }
 }
 
-/* Native app: overlay:false means webview already starts below status bar — no safe-area needed */
+/* Native app: cap safe-area to 28px max (Android status bar) — env() can report inflated values */
 .native-app .topbar-safe {
-  padding-top: 0 !important;
+  padding-top: clamp(0px, env(safe-area-inset-top, 0px), 28px) !important;
 }
 .native-app .topbar-offset {
-  padding-top: 3.5rem !important;
+  padding-top: calc(3.5rem + clamp(0px, env(safe-area-inset-top, 0px), 28px)) !important;
 }
 
 input,
