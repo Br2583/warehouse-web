@@ -6,12 +6,6 @@ import { pb } from '@/lib/pb';
 const FCM_TOKEN_KEY = 'pending_fcm_token';
 const FCM_PLATFORM_KEY = 'pending_fcm_platform';
 
-// Debug keys — read by the profile diagnostics panel
-const DBG_INIT_AT = 'fcm_dbg_init_at';
-const DBG_REG_AT = 'fcm_dbg_reg_at';
-const DBG_AUTH_VALID = 'fcm_dbg_auth_valid';
-const DBG_SAVE_RESULT = 'fcm_dbg_save_result';
-
 async function saveTokenToBackend(token: string, platform: string): Promise<boolean> {
   const authToken = pb.authStore.token;
   if (!authToken) return false;
@@ -64,42 +58,31 @@ async function initPushNotifications(platform: string) {
           sound: 'default',
           visibility: 1,
         });
-      } catch { /* channel already exists — ignore */ }
+      } catch { /* channel already exists */ }
     }
-
-    localStorage.setItem(DBG_INIT_AT, new Date().toISOString());
 
     const permStatus = await PushNotifications.requestPermissions();
-    if (permStatus.receive !== 'granted') {
-      localStorage.setItem(DBG_SAVE_RESULT, 'permission-denied:' + permStatus.receive);
-      return;
-    }
+    // 'prompt' means not yet decided — Android will show the dialog and we get the result.
+    // If still not granted after the dialog, we bail silently and retry on next app open.
+    if (permStatus.receive !== 'granted') return;
 
-    // Listeners BEFORE register() to avoid missing the event
     PushNotifications.addListener('registration', async (token) => {
       const fcmToken = token.value;
       localStorage.setItem(FCM_TOKEN_KEY, fcmToken);
       localStorage.setItem(FCM_PLATFORM_KEY, platform);
-      localStorage.setItem(DBG_REG_AT, new Date().toISOString());
-      localStorage.setItem(DBG_AUTH_VALID, String(pb.authStore.isValid));
 
-      // First attempt immediately
       if (pb.authStore.isValid) {
         const ok = await saveTokenToBackend(fcmToken, platform);
-        localStorage.setItem(DBG_SAVE_RESULT, ok ? 'saved-immediately' : 'save-failed-retrying');
         if (ok) {
           localStorage.removeItem(FCM_TOKEN_KEY);
           localStorage.removeItem(FCM_PLATFORM_KEY);
           return;
         }
-      } else {
-        localStorage.setItem(DBG_SAVE_RESULT, 'auth-not-valid-at-registration');
       }
 
-      // Start retry loop — handles both "auth not ready yet" and transient failures
+      // Auth not ready or save failed — retry loop + onChange covers both cases
       const stopRetry = startTokenRetry(fcmToken, platform);
 
-      // Also hook into future auth changes (covers first-time login flow)
       const unsub = pb.authStore.onChange(async () => {
         if (!pb.authStore.isValid) return;
         const ok = await saveTokenToBackend(fcmToken, platform);
@@ -115,10 +98,6 @@ async function initPushNotifications(platform: string) {
     PushNotifications.addListener('registrationError', () => {
       localStorage.removeItem(FCM_TOKEN_KEY);
       localStorage.removeItem(FCM_PLATFORM_KEY);
-    });
-
-    PushNotifications.addListener('pushNotificationReceived', (_notification) => {
-      // Foreground — in-app badges handle unread counts
     });
 
     PushNotifications.addListener('pushNotificationActionPerformed', (action) => {
@@ -138,9 +117,6 @@ async function initPushNotifications(platform: string) {
 export default function CapacitorInit() {
   useEffect(() => {
     const init = async () => {
-      // Marker written before any try-catch — if missing, the component never mounted
-      localStorage.setItem('fcm_dbg_component_mounted', new Date().toISOString());
-
       const { Capacitor } = await import('@capacitor/core');
       if (!Capacitor.isNativePlatform()) return;
 
@@ -158,7 +134,7 @@ export default function CapacitorInit() {
         await Keyboard.setAccessoryBarVisible({ isVisible: false });
       } catch { /* UI plugins optional — never block push */ }
 
-      // Retry any pending token from a previous session
+      // Retry any pending token from a previous session before calling register() again
       const pendingToken = localStorage.getItem(FCM_TOKEN_KEY);
       const pendingPlatform = localStorage.getItem(FCM_PLATFORM_KEY) || platform;
       if (pendingToken) {
@@ -169,19 +145,12 @@ export default function CapacitorInit() {
             localStorage.removeItem(FCM_PLATFORM_KEY);
           }
         }
-        // Whether it saved or not, also start a retry loop to catch cases where
-        // auth hasn't been fully restored by the time this effect runs
         if (localStorage.getItem(FCM_TOKEN_KEY)) {
           startTokenRetry(pendingToken, pendingPlatform);
         }
       }
 
-      // Push init in its own try-catch with debug output
-      try {
-        await initPushNotifications(platform);
-      } catch (e) {
-        localStorage.setItem('fcm_dbg_outer_error', String(e));
-      }
+      await initPushNotifications(platform);
     };
 
     init();
