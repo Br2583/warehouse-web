@@ -424,21 +424,17 @@ async function routePost(path: string, body: any): Promise<any> {
 
   // ── Chat ───────────────────────────────────────────────────────────────────
   if (p === '/api/chat/messages') {
-    // company_id might be missing from the cached model — fetch fresh if needed
-    let chatCid = cid;
-    if (!chatCid && uid) {
-      const freshUser = await pb.collection('users').getOne(uid);
-      chatCid = freshUser.company_id;
-    }
-    if (!chatCid) throw new Error('No company — please rejoin your company from the Profile page');
-    const m = await pb.collection('chat_messages').create({
-      company_id:  chatCid,
-      author_id:   uid || (() => { throw new Error('Not authenticated'); })(),
-      author_name: body.sender_name || pb.authStore.model?.name,
-      content:     body.text,
-      type:        'text',
+    // Route through the HTTP handler so the 30 msg/min rate limit is enforced.
+    const pbToken = pb.authStore.token;
+    if (!pbToken) throw new Error('Not authenticated');
+    const r = await fetch('/api/chat/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${pbToken}` },
+      body: JSON.stringify({ text: body.text, sender_name: body.sender_name }),
     });
-    return mapMessage(m);
+    const data = await r.json();
+    if (!r.ok) throw new Error((data as any).error || 'Failed to send message');
+    return data;
   }
 
   // ── Storage Units ─────────────────────────────────────────────────────────
@@ -529,7 +525,9 @@ async function routePut(path: string, body: any): Promise<any> {
   // PUT /api/profile
   if (p === '/api/profile') {
     if (!uid) throw new Error('Not authenticated');
-    const u = await pb.collection('users').update(uid, { name: body.name });
+    if (!body.name?.trim()) throw new Error('Name is required');
+    if (body.name.trim().length > 100) throw new Error('Name must be 100 characters or fewer');
+    const u = await pb.collection('users').update(uid, { name: body.name.trim() });
     return { name: u.name };
   }
 

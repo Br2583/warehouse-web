@@ -12,7 +12,14 @@ export function isAdminRequest(req: NextRequest): boolean {
   const cookie = req.cookies.get('admin_session')?.value;
   if (!cookie) return false;
   try {
-    return cookie === hashAdminSecret();
+    const s = process.env.ADMIN_SECRET;
+    if (!s) return false;
+    const now = Math.floor(Date.now() / 86_400_000);
+    for (const bucket of [now, now - 1]) {
+      const hash = createHash('sha256').update(s + bucket).digest('hex');
+      if (cookie === hash) return true;
+    }
+    return false;
   } catch {
     return false;
   }

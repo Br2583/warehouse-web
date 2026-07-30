@@ -58,6 +58,8 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     if (body.status   && !VALID_STATUSES.includes(body.status))      return NextResponse.json({ error: 'Invalid status' },   { status: 400 });
     if (body.type     && !VALID_TYPES.includes(body.type))           return NextResponse.json({ error: 'Invalid type' },     { status: 400 });
     if (body.priority && !VALID_PRIORITIES.includes(body.priority))  return NextResponse.json({ error: 'Invalid priority' }, { status: 400 });
+    if (body.title && body.title.trim().length > 200) return NextResponse.json({ error: 'Title must be 200 characters or fewer' }, { status: 400 });
+    if (body.notes && body.notes.length > 2000) return NextResponse.json({ error: 'Notes must be 2000 characters or fewer' }, { status: 400 });
     // Verify assigned_to belongs to the same company
     if (body.assigned_to) {
       const assigneeRes = await fetch(`${PB_URL}/api/collections/users/records/${body.assigned_to}`, {

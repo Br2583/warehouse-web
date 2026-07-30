@@ -8,6 +8,7 @@ export async function PUT(req: NextRequest) {
 
   const body = await req.json().catch(() => ({}));
   if (!body.name?.trim()) return NextResponse.json({ error: 'Name is required' }, { status: 400 });
+  if (body.name.trim().length > 100) return NextResponse.json({ error: 'Company name must be 100 characters or fewer' }, { status: 400 });
 
   let adminToken: string;
   try { adminToken = await getPbAdminToken(); }

@@ -63,6 +63,8 @@ export async function POST(req: NextRequest) {
   const body = await req.json();
 
   if (!body.title?.trim()) return NextResponse.json({ error: 'Title required' }, { status: 400 });
+  if (body.title.trim().length > 200) return NextResponse.json({ error: 'Title must be 200 characters or fewer' }, { status: 400 });
+  if (body.notes && body.notes.length > 2000) return NextResponse.json({ error: 'Notes must be 2000 characters or fewer' }, { status: 400 });
   const VALID_TYPES     = ['Free', 'Cleaning', 'Restoration', 'Delivery'];
   const VALID_PRIORITIES = ['low', 'normal', 'high', 'urgent'];
   if (body.type     && !VALID_TYPES.includes(body.type))       return NextResponse.json({ error: 'Invalid task type' },     { status: 400 });
