@@ -85,6 +85,9 @@ export default function ProfilePage() {
 
       const { PushNotifications } = await import('@capacitor/push-notifications');
       log('PushNotifications plugin: loaded');
+      // Clear any existing listeners (from CapacitorInit) before adding diagnostic ones
+      // to prevent the registration event from firing multiple times and saving duplicate tokens
+      await PushNotifications.removeAllListeners();
 
       const permStatus = await PushNotifications.requestPermissions();
       log(`permission: ${permStatus.receive}`);
