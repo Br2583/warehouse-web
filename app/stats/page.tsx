@@ -16,8 +16,8 @@ import {
 } from 'recharts';
 import { STATUS_COLORS_HEX } from '@/lib/constants';
 
-const JOB_COLORS: Record<string, string> = { Fire: '#ef4444', Water: '#3b82f6', Moving: '#a855f7', Storage: '#6b7280' };
-const JOB_TEXT: Record<string, string>   = { Fire: 'bg-red-100 text-red-700', Water: 'bg-blue-100 text-blue-700', Moving: 'bg-purple-100 text-purple-700', Storage: 'bg-gray-100 text-gray-600' };
+const JOB_COLORS: Record<string, string> = { Fire: '#ef4444', Water: '#3b82f6', Mold: '#10b981', Moving: '#a855f7', Storage: '#6b7280' };
+const JOB_TEXT: Record<string, string>   = { Fire: 'bg-red-100 text-red-700', Water: 'bg-blue-100 text-blue-700', Mold: 'bg-emerald-100 text-emerald-700', Moving: 'bg-purple-100 text-purple-700', Storage: 'bg-gray-100 text-gray-600' };
 
 const STATUS_CFG: Record<string, { label: string; color: string; bg: string; text: string; border: string; icon: any }> = {
   PENDING:   { label: 'Pending',   color: '#f59e0b', bg: 'bg-amber-50',   text: 'text-amber-700',  border: 'border-amber-200',  icon: ClockIcon },
@@ -633,7 +633,7 @@ export default function StatsPage() {
                       <th className="text-left text-xs font-semibold text-gray-400 uppercase tracking-wide px-4 py-3">Job Type</th>
                       <th className="hidden md:table-cell text-left text-xs font-semibold text-gray-400 uppercase tracking-wide px-4 py-3">Warehouse</th>
                       <th className="hidden md:table-cell text-left text-xs font-semibold text-gray-400 uppercase tracking-wide px-4 py-3">Packer</th>
-                      <th className="text-left text-xs font-semibold text-gray-400 uppercase tracking-wide px-4 py-3">Status</th>
+                      <th className="text-left text-xs font-semibold text-gray-400 uppercase tracking-wide px-4 py-3">Job Status</th>
                     </tr>
                   </thead>
                   <tbody>

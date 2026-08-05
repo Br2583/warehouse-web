@@ -2,7 +2,7 @@
 
 import { CameraIcon, XMarkIcon } from '@heroicons/react/24/outline';
 
-const JOB_TYPES       = ['Fire', 'Water', 'Moving', 'Storage'];
+const JOB_TYPES       = ['Fire', 'Water', 'Mold', 'Moving', 'Storage'];
 const CONTENTS_TYPES  = ['Boxes', 'Furniture', 'Both'];
 const ROOM_LOCATIONS  = ['Kitchen', 'Patio', 'Living Room', 'Family Room', 'Dining Room', 'Bathroom', 'Bedroom 1', 'Bedroom 2', 'Bedroom 3'];
 const VAULT_STATUSES  = ['Total Loss', 'Needs Cleaning', 'Ready to Go', 'Storage Only'];
@@ -131,7 +131,7 @@ export default function VaultForm({
 
       {/* Vault Status */}
       <div>
-        <label className="block text-xs text-gray-500 mb-2">Vault Status {mode === 'add' ? '(multi)' : ''}</label>
+        <label className="block text-xs text-gray-500 mb-2">Condition {mode === 'add' ? '(multi)' : ''}</label>
         <div className="flex flex-wrap gap-2">
           {VAULT_STATUSES.map(s => (
             <button type="button" key={s} onClick={() => set({ vault_status: toggle(value.vault_status, s) })} className={chip(value.vault_status.includes(s))}>{s}</button>
@@ -153,7 +153,7 @@ export default function VaultForm({
 
       {/* Status */}
       <div>
-        <label className="block text-xs text-gray-500 mb-2">Status</label>
+        <label className="block text-xs text-gray-500 mb-2">Job Status</label>
         <div className="flex gap-2">
           {['PENDING', 'READY', 'DELIVERED'].map(s => (
             <button type="button" key={s} onClick={() => set({ status: s })} className={chip(value.status === s)}>{s}</button>

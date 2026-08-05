@@ -10,7 +10,7 @@ import { api } from '@/lib/api';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { STATUS_COLORS } from '@/lib/constants';
 
-const JOB_TYPES = ['Fire', 'Water', 'Moving', 'Storage'];
+const JOB_TYPES = ['Fire', 'Water', 'Mold', 'Moving', 'Storage'];
 const STATUSES  = ['PENDING', 'READY', 'DELIVERED'];
 
 function SearchContent() {
@@ -138,7 +138,7 @@ function SearchContent() {
               <div className="bg-white border border-gray-100 rounded-2xl p-4 mb-4 grid grid-cols-2 md:grid-cols-4 gap-3">
                 {/* Status */}
                 <div>
-                  <label className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1.5 block">Status</label>
+                  <label className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1.5 block">Job Status</label>
                   <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)}
                     className="w-full px-3 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white">
                     <option value="">All statuses</option>
@@ -230,7 +230,7 @@ function SearchContent() {
                       <th className="hidden md:table-cell text-left text-xs font-medium text-gray-400 uppercase tracking-wide px-4 py-4">Job Type</th>
                       <th className="hidden md:table-cell text-left text-xs font-medium text-gray-400 uppercase tracking-wide px-4 py-4">Warehouse</th>
                       <th className="hidden md:table-cell text-left text-xs font-medium text-gray-400 uppercase tracking-wide px-4 py-4">Packer</th>
-                      <th className="text-left text-xs font-medium text-gray-400 uppercase tracking-wide px-4 py-4">Status</th>
+                      <th className="text-left text-xs font-medium text-gray-400 uppercase tracking-wide px-4 py-4">Job Status</th>
                     </tr>
                   </thead>
                   <tbody>

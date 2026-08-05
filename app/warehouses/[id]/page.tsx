@@ -488,7 +488,7 @@ export default function WarehouseDetailPage() {
                     <th className="text-left text-xs font-medium text-gray-400 uppercase tracking-wide px-4 py-4">Client</th>
                     <th className="hidden md:table-cell text-left text-xs font-medium text-gray-400 uppercase tracking-wide px-4 py-4">Job Type</th>
                     <th className="hidden md:table-cell text-left text-xs font-medium text-gray-400 uppercase tracking-wide px-4 py-4">Packer</th>
-                    <th className="text-left text-xs font-medium text-gray-400 uppercase tracking-wide px-4 py-4">Status</th>
+                    <th className="text-left text-xs font-medium text-gray-400 uppercase tracking-wide px-4 py-4">Job Status</th>
                     <th className="hidden md:table-cell text-left text-xs font-medium text-gray-400 uppercase tracking-wide px-4 py-4">Photos</th>
                   </tr>
                 </thead>
@@ -551,9 +551,9 @@ export default function WarehouseDetailPage() {
                     ['Job Type', selected.job_type],
                     ['Content Type', selected.content_type || '—'],
                     ['Packer', selected.packer || '—'],
-                    ['Status', boxStatus(selected)],
+                    ['Job Status', boxStatus(selected)],
                     ['Comments', selected.comments || '—'],
-                    ['Vault Status', selected.vault_status?.join(', ') || '—'],
+                    ['Condition', selected.vault_status?.join(', ') || '—'],
                     ['Room Location', selected.room_location?.join(', ') || '—'],
                   ].map(([label, value]) => (
                     <div key={label} className="flex gap-3">
