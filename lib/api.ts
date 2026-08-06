@@ -513,6 +513,7 @@ async function routePost(path: string, body: any): Promise<any> {
       room_location: vd.room_location || [],
       vault_status:  vd.vault_status || [],
       packer:        vd.packer,
+      pack_date:     vd.pack_date || '',
       photos:        vd.photos || [],
       comments:      vd.comments,
       estado:        vd.estado || 'PENDING',

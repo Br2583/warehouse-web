@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { CameraIcon, XMarkIcon } from '@heroicons/react/24/outline';
 import { api } from '@/lib/api';
+import { useAuth } from '@/lib/auth-context';
 
 const JOB_TYPES       = ['Fire', 'Water', 'Mold', 'Moving', 'Storage'];
 const CONTENTS_TYPES  = ['Boxes', 'Furniture', 'Both'];
@@ -66,14 +67,21 @@ export default function VaultForm({
   value, onChange, mode, positionLabel, error, saving, submitLabel, onSubmit, onPhotos, onRemovePhoto,
 }: Props) {
   const set = (patch: Partial<VaultFormData>) => onChange({ ...value, ...patch });
+  const { user } = useAuth();
   const [members, setMembers] = useState<{ user_id: string; name: string }[]>([]);
 
   useEffect(() => {
     api.get('/api/company/members')
       .then((data: any) => {
-        if (Array.isArray(data)) setMembers(data);
+        if (Array.isArray(data)) {
+          setMembers(data);
+          if (mode === 'add' && !value.packer && user?.name) {
+            onChange({ ...value, packer: user.name });
+          }
+        }
       })
       .catch(() => {});
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const selectedPackers = parsePackers(value.packer);
