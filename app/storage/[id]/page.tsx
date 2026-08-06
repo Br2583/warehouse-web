@@ -500,6 +500,11 @@ export default function StorageDetailPage() {
                     className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
                 </div>
                 <div>
+                  <label className="block text-xs text-gray-500 mb-1">Intake Date</label>
+                  <input type="date" value={form.intake_date || ''} onChange={e => setForm((f: any) => ({ ...f, intake_date: e.target.value }))}
+                    className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                </div>
+                <div>
                   <label className="block text-xs text-gray-500 mb-2">Status</label>
                   <div className="flex gap-2">
                     {STATUSES.map(s => (
@@ -525,6 +530,7 @@ export default function StorageDetailPage() {
                 { label: 'Address',      value: [unit?.address, unit?.city, unit?.state].filter(Boolean).join(', ') || '—' },
                 { label: 'Client',       value: unit?.client_name || '—' },
                 { label: 'Capacity',     value: unit?.capacity || '—' },
+                { label: 'Intake Date',  value: unit?.intake_date || '—' },
                 { label: 'Notes',        value: unit?.notes || '—' },
               ].map(({ label, value }) => (
                 <div key={label} className="flex justify-between text-sm gap-4">

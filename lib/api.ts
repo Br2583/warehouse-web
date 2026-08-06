@@ -48,6 +48,7 @@ function mapVault(v: any) {
     content_type: v.content_type,
     room_location: v.room_location || [],
     packer:       v.packer,
+    pack_date:    v.pack_date || '',
     photos:       v.photos || [],
     comments:     v.comments,
     estado:       v.estado,
@@ -75,6 +76,7 @@ function mapStorage(s: any) {
     status:      s.status || 'AVAILABLE',
     photos,
     notes:       s.notes || '',
+    intake_date: s.intake_date || '',
     created:     s.created,
     slots:       s.slots || {},
     grid_rows:   s.grid_rows || 4,
@@ -179,7 +181,7 @@ async function routeGet(path: string): Promise<any> {
     const filter = warehouseId ? `company_id="${cid}" && warehouse_id="${sf(warehouseId)}"` : `company_id="${cid}"`;
     const items = await pb.collection('vaults').getFullList({
       filter,
-      fields: 'id,warehouse_id,row,col,level,position,client_name,client_id,job_type,vault_status,content_type,room_location,packer,comments,estado,qr_token,company_id,created',
+      fields: 'id,warehouse_id,row,col,level,position,client_name,client_id,job_type,vault_status,content_type,room_location,packer,pack_date,comments,estado,qr_token,company_id,created',
     });
     return items.map(mapVault).sort((a: any, b: any) => a.created < b.created ? -1 : 1);
   }
@@ -284,7 +286,7 @@ async function routeGet(path: string): Promise<any> {
     if (q2)          filter += ` && (client_name~"${sf(q2)}" || packer~"${sf(q2)}" || position~"${sf(q2)}" || comments~"${sf(q2)}" || job_type~"${sf(q2)}")`;
     const items = await pb.collection('vaults').getFullList({
       filter,
-      fields: 'id,warehouse_id,row,col,level,position,client_name,client_id,job_type,vault_status,content_type,room_location,packer,comments,estado,qr_token,company_id,created',
+      fields: 'id,warehouse_id,row,col,level,position,client_name,client_id,job_type,vault_status,content_type,room_location,packer,pack_date,comments,estado,qr_token,company_id,created',
     });
     return items
       .sort((a: any, b: any) => a.created < b.created ? 1 : -1)
@@ -313,7 +315,7 @@ async function routeGet(path: string): Promise<any> {
     if (!cid) return [];
     const items = await pb.collection('storage_units').getFullList({
       filter: `company_id="${cid}"`,
-      fields: 'id,unit_name,address,city,state,client_name,capacity,access_code,status,notes,photos,company_id,created,slots,grid_rows,grid_cols',
+      fields: 'id,unit_name,address,city,state,client_name,capacity,access_code,status,notes,intake_date,photos,company_id,created,slots,grid_rows,grid_cols',
     });
     return items
       .sort((a: any, b: any) => a.created < b.created ? 1 : -1)
@@ -389,6 +391,7 @@ async function routePost(path: string, body: any): Promise<any> {
       room_location: body.room_location || [],
       vault_status:  body.vault_status || [],
       packer:       body.packer,
+      pack_date:    body.pack_date || '',
       photos:       body.photos || [],
       comments:     body.comments,
       estado:       body.estado || body.status || 'PENDING',
@@ -455,6 +458,7 @@ async function routePost(path: string, body: any): Promise<any> {
       status:      body.status || 'AVAILABLE',
       photos:      body.photos || [],
       notes:       body.notes || '',
+      intake_date: body.intake_date || '',
       created_by:  uid,
     });
     return mapStorage(s);
@@ -563,6 +567,7 @@ async function routePut(path: string, body: any): Promise<any> {
       room_location: body.room_location || [],
       vault_status:  body.vault_status || [],
       packer:       body.packer,
+      pack_date:    body.pack_date,
       photos:       body.photos || [],
       comments:     body.comments,
       estado:       body.estado || body.status,
@@ -587,6 +592,7 @@ async function routePut(path: string, body: any): Promise<any> {
       status:      body.status || 'AVAILABLE',
       photos:      body.photos || [],
       notes:       body.notes || '',
+      intake_date: body.intake_date ?? undefined,
       slots:       body.slots ?? undefined,
       grid_rows:   body.grid_rows ?? undefined,
       grid_cols:   body.grid_cols ?? undefined,

@@ -31,17 +31,19 @@ interface Box {
   content_type: string;
   room_location: string[];
   packer: string;
+  pack_date: string;
   photos: string[];
   comments: string;
   estado: string;
   status: string;
+  created: string;
 }
 
 
 const ROWS    = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J'];
 const COLUMNS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11];
 
-const emptyForm: VaultFormData = {
+const emptyForm = (): VaultFormData => ({
   client_name:   '',
   row:           'A',
   column:        1,
@@ -51,10 +53,11 @@ const emptyForm: VaultFormData = {
   room_location: [],
   vault_status:  [],
   packer:        '',
+  pack_date:     new Date().toISOString().split('T')[0],
   status:        'PENDING',
   comments:      '',
   photos:        [],
-};
+});
 
 
 
@@ -146,6 +149,7 @@ export default function WarehouseDetailPage() {
       room_location: box.room_location || [],
       vault_status:  box.vault_status || [],
       packer:        box.packer || '',
+      pack_date:     box.pack_date || new Date().toISOString().split('T')[0],
       status:        box.estado || box.status || 'PENDING',
       comments:      box.comments || '',
       photos:        box.photos || [],
@@ -245,7 +249,7 @@ export default function WarehouseDetailPage() {
         photos: form.photos,
       });
       setShowAdd(false);
-      setForm(emptyForm);
+      setForm(emptyForm());
       fetchBoxes();
       showToast('Vault created');
     } catch (err: any) {
@@ -299,7 +303,7 @@ export default function WarehouseDetailPage() {
     boxes.find(b => b.row === row && Number(b.column) === col && Number(b.level) === level);
 
   const openAddAtPosition = (row: string, col: number, level: number) => {
-    setForm({ ...emptyForm, row, column: col, level });
+    setForm({ ...emptyForm(), row, column: col, level });
     setSaveError('');
     setShowAdd(true);
   };
@@ -347,7 +351,7 @@ export default function WarehouseDetailPage() {
               <QrCodeIcon className="w-4 h-4" /><span className="hidden sm:inline">Scan QR</span>
             </button>
             <button
-              onClick={() => { setForm(emptyForm); setShowAdd(true); setSaveError(''); }}
+              onClick={() => { setForm(emptyForm()); setShowAdd(true); setSaveError(''); }}
               className="flex items-center gap-2 px-3 py-2 md:px-4 md:py-2.5 bg-gray-950 text-white text-sm font-medium rounded-full hover:bg-gray-800 transition-colors"
             >
               <PlusIcon className="w-4 h-4" /><span className="hidden sm:inline">Add Vault</span><span className="sm:hidden">Add</span>
@@ -551,6 +555,8 @@ export default function WarehouseDetailPage() {
                     ['Job Type', selected.job_type],
                     ['Content Type', selected.content_type || '—'],
                     ['Packer', selected.packer || '—'],
+                    ['Pack Date', selected.pack_date || '—'],
+                    ['Pack Time', selected.created ? new Date(selected.created).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }) : '—'],
                     ['Job Status', boxStatus(selected)],
                     ['Comments', selected.comments || '—'],
                     ['Condition', selected.vault_status?.join(', ') || '—'],

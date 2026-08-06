@@ -1,6 +1,8 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import { CameraIcon, XMarkIcon } from '@heroicons/react/24/outline';
+import { api } from '@/lib/api';
 
 const JOB_TYPES       = ['Fire', 'Water', 'Mold', 'Moving', 'Storage'];
 const CONTENTS_TYPES  = ['Boxes', 'Furniture', 'Both'];
@@ -16,6 +18,7 @@ export interface VaultFormData {
   room_location: string[];
   vault_status: string[];
   packer: string;
+  pack_date: string;
   status: string;
   comments: string;
   photos: string[];
@@ -48,10 +51,32 @@ function toggle(arr: string[], val: string) {
   return arr.includes(val) ? arr.filter(x => x !== val) : [...arr, val];
 }
 
+function parsePackers(packer: string): string[] {
+  return packer.split(',').map(s => s.trim()).filter(Boolean);
+}
+
+function togglePacker(current: string, name: string): string {
+  const parts = parsePackers(current);
+  const exists = parts.includes(name);
+  const next = exists ? parts.filter(p => p !== name) : [...parts, name];
+  return next.join(', ');
+}
+
 export default function VaultForm({
   value, onChange, mode, positionLabel, error, saving, submitLabel, onSubmit, onPhotos, onRemovePhoto,
 }: Props) {
   const set = (patch: Partial<VaultFormData>) => onChange({ ...value, ...patch });
+  const [members, setMembers] = useState<{ user_id: string; name: string }[]>([]);
+
+  useEffect(() => {
+    api.get('/api/company/members')
+      .then((data: any) => {
+        if (Array.isArray(data)) setMembers(data);
+      })
+      .catch(() => {});
+  }, []);
+
+  const selectedPackers = parsePackers(value.packer);
 
   return (
     <form onSubmit={onSubmit} className="space-y-4">
@@ -129,7 +154,7 @@ export default function VaultForm({
         </div>
       </div>
 
-      {/* Vault Status */}
+      {/* Vault Status / Condition */}
       <div>
         <label className="block text-xs text-gray-500 mb-2">Condition {mode === 'add' ? '(multi)' : ''}</label>
         <div className="flex flex-wrap gap-2">
@@ -137,6 +162,18 @@ export default function VaultForm({
             <button type="button" key={s} onClick={() => set({ vault_status: toggle(value.vault_status, s) })} className={chip(value.vault_status.includes(s))}>{s}</button>
           ))}
         </div>
+      </div>
+
+      {/* Pack Date */}
+      <div>
+        <label className="block text-xs text-gray-500 mb-1">Pack Date <span className="text-red-500">*</span></label>
+        <input
+          type="date"
+          required
+          value={value.pack_date}
+          onChange={e => set({ pack_date: e.target.value })}
+          className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+        />
       </div>
 
       {/* Packer */}
@@ -149,9 +186,30 @@ export default function VaultForm({
           onChange={e => set({ packer: e.target.value })}
           className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
         />
+        {members.length > 0 && (
+          <div className="flex flex-wrap gap-1.5 mt-2">
+            {members.map(m => {
+              const active = selectedPackers.includes(m.name);
+              return (
+                <button
+                  type="button"
+                  key={m.user_id}
+                  onClick={() => set({ packer: togglePacker(value.packer, m.name) })}
+                  className={`px-2.5 py-1 text-xs rounded-full border transition-colors ${
+                    active
+                      ? 'bg-blue-600 text-white border-blue-600'
+                      : 'border-gray-200 text-gray-500 hover:border-blue-300'
+                  }`}
+                >
+                  {m.name}
+                </button>
+              );
+            })}
+          </div>
+        )}
       </div>
 
-      {/* Status */}
+      {/* Job Status */}
       <div>
         <label className="block text-xs text-gray-500 mb-2">Job Status</label>
         <div className="flex gap-2">

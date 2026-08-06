@@ -30,7 +30,7 @@ export default function StoragePage() {
   const [showCreate, setShowCreate] = useState(false);
   const [saving, setSaving] = useState(false);
   const [createError, setCreateError] = useState('');
-  const [form, setForm] = useState({ unit_name: '', address: '', city: '', state: '', client_name: '', capacity: '', access_code: '', status: 'AVAILABLE', notes: '', photos: [] as string[] });
+  const [form, setForm] = useState({ unit_name: '', address: '', city: '', state: '', client_name: '', capacity: '', access_code: '', status: 'AVAILABLE', notes: '', intake_date: new Date().toISOString().split('T')[0], photos: [] as string[] });
 
   const handleCreatePhotos = async (files: FileList | null) => {
     if (!files) return;
@@ -60,7 +60,7 @@ export default function StoragePage() {
     try {
       const created = await api.post('/api/storage', form);
       setShowCreate(false);
-      setForm({ unit_name: '', address: '', city: '', state: '', client_name: '', capacity: '', access_code: '', status: 'AVAILABLE', notes: '', photos: [] });
+      setForm({ unit_name: '', address: '', city: '', state: '', client_name: '', capacity: '', access_code: '', status: 'AVAILABLE', notes: '', intake_date: new Date().toISOString().split('T')[0], photos: [] });
       router.push(`/storage/${created.id}`);
     } catch (e: any) {
       setCreateError(e?.message || 'Failed to create storage unit');
@@ -137,6 +137,12 @@ export default function StoragePage() {
                   <label className="block text-xs text-gray-500 mb-1">Access Code (optional)</label>
                   <input type="text" placeholder="Gate or door code" value={form.access_code}
                     onChange={e => setForm(f => ({ ...f, access_code: e.target.value }))}
+                    className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                </div>
+                <div>
+                  <label className="block text-xs text-gray-500 mb-1">Intake Date</label>
+                  <input type="date" value={form.intake_date}
+                    onChange={e => setForm(f => ({ ...f, intake_date: e.target.value }))}
                     className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
                 </div>
                 {/* Photo upload */}
