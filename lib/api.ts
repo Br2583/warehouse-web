@@ -177,8 +177,11 @@ async function routeGet(path: string): Promise<any> {
   // ── Boxes / Vaults ─────────────────────────────────────────────────────────
   if (p === '/api/boxes') {
     if (!cid) return [];
-    const warehouseId = q.get('warehouse_id');
-    const filter = warehouseId ? `company_id="${cid}" && warehouse_id="${sf(warehouseId)}"` : `company_id="${cid}"`;
+    const warehouseId  = q.get('warehouse_id');
+    const clientFilter = q.get('client_name');
+    let filter = `company_id="${cid}"`;
+    if (warehouseId)  filter += ` && warehouse_id="${sf(warehouseId)}"`;
+    if (clientFilter) filter += ` && client_name="${sf(clientFilter)}"`;
     const items = await pb.collection('vaults').getFullList({
       filter,
       fields: 'id,warehouse_id,row,col,level,position,client_name,client_id,job_type,vault_status,content_type,room_location,packer,pack_date,comments,estado,qr_token,company_id,created',
