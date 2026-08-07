@@ -664,7 +664,7 @@ export default function WarehouseDetailPage() {
                   mode="edit"
                   value={editForm}
                   onChange={setEditForm}
-                  positionLabel={`WH${warehouseId} · Row ${selected.row} · Col ${selected.column} · ${selected.level === 1 ? 'Lower (L1)' : 'Upper (L2)'}`}
+                  positionLabel={`${warehouseName || 'Warehouse'} · Row ${selected.row} · Col ${selected.column} · ${selected.level === 1 ? 'Lower (L1)' : 'Upper (L2)'}`}
                   error={editError}
                   saving={editSaving}
                   submitLabel="Save Changes"
@@ -698,7 +698,7 @@ export default function WarehouseDetailPage() {
                   mode="add"
                   value={form}
                   onChange={setForm}
-                  positionLabel={`WH${warehouseId} · Row ${form.row} · Col ${form.column} · ${form.level === 1 ? 'Lower (L1)' : 'Upper (L2)'}`}
+                  positionLabel={`${warehouseName || 'Warehouse'} · Row ${form.row} · Col ${form.column} · ${form.level === 1 ? 'Lower (L1)' : 'Upper (L2)'}`}
                   error={saveError}
                   saving={saving}
                   submitLabel="Create Vault"
