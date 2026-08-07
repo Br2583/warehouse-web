@@ -158,8 +158,8 @@ export default function StatsPage() {
   }, [filteredBoxes, whNames]);
 
   const recentVaults = useMemo(() =>
-    [...filteredBoxes].sort((a, b) => a.created < b.created ? 1 : -1).slice(0, 6),
-  [filteredBoxes]);
+    [...boxes].sort((a, b) => a.created < b.created ? 1 : -1).slice(0, 6),
+  [boxes]);
 
   const clientList = useMemo(() => {
     const map: Record<string, { count: number; byJob: Record<string, number>; byStatus: Record<string, number>; byCondition: Record<string, number> }> = {};
@@ -214,8 +214,8 @@ export default function StatsPage() {
                 <h1 className="text-2xl font-bold text-gray-900">Analytics</h1>
               </div>
               <p className="text-gray-500 text-sm ml-[52px]">
-                {total > 0
-                  ? `${total.toLocaleString()} vault${total !== 1 ? 's' : ''} · ${PERIOD_LABELS[period]}`
+                {boxes.length > 0
+                  ? `${total.toLocaleString()} vault${total !== 1 ? 's' : ''} · ${PERIOD_LABELS[period]}${total === 0 ? ` · ${boxes.length} total` : ''}`
                   : 'Real-time inventory intelligence'}
               </p>
             </div>
@@ -239,6 +239,14 @@ export default function StatsPage() {
             <ExclamationCircleIcon className="w-4 h-4 flex-shrink-0" />
             <span className="flex-1">{loadError}</span>
             <button onClick={() => { setLoadError(null); window.location.reload(); }} className="text-xs font-medium text-red-600 hover:text-red-800 underline">Retry</button>
+          </div>
+        )}
+
+        {!loadError && total === 0 && boxes.length > 0 && period !== 'all' && (
+          <div className="flex items-center gap-3 bg-amber-50 border border-amber-100 text-amber-700 text-sm px-4 py-3 rounded-xl mb-4">
+            <ExclamationCircleIcon className="w-4 h-4 flex-shrink-0" />
+            <span className="flex-1">No vaults were added in the last {PERIOD_LABELS[period].toLowerCase()}. Your {boxes.length} vault{boxes.length !== 1 ? 's' : ''} are older than this period.</span>
+            <button onClick={() => setPeriod('all')} className="text-xs font-semibold text-amber-700 hover:text-amber-900 underline whitespace-nowrap">Show All time</button>
           </div>
         )}
 
@@ -440,7 +448,7 @@ export default function StatsPage() {
             style={{ boxShadow: '0 1px 4px rgba(0,0,0,0.04)' }}
           >
             <h2 className="font-bold text-gray-900 mb-1">Recent Vaults</h2>
-            <p className="text-xs text-gray-400 mb-4">Last added to inventory</p>
+            <p className="text-xs text-gray-400 mb-4">Last added to inventory · all time</p>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               {recentVaults.length === 0 && <p className="text-sm text-gray-300 text-center py-8 col-span-2">No vaults yet</p>}
               {recentVaults.map((box, i) => {
