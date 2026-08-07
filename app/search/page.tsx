@@ -12,25 +12,31 @@ import { STATUS_COLORS } from '@/lib/constants';
 
 const JOB_TYPES = ['Fire', 'Water', 'Mold', 'Moving', 'Storage'];
 const STATUSES  = ['PENDING', 'READY', 'DELIVERED'];
+const STORAGE_STATUS_COLORS: Record<string, string> = {
+  Available:   'bg-green-100 text-green-700',
+  Occupied:    'bg-blue-100 text-blue-700',
+  Maintenance: 'bg-amber-100 text-amber-700',
+};
 
 function SearchContent() {
   const searchParams = useSearchParams();
   const statusFilter = searchParams.get('status');
   const router = useRouter();
 
-  const [query, setQuery]         = useState('');
-  const [results, setResults]     = useState<any[]>([]);
-  const [loading, setLoading]     = useState(false);
-  const [searched, setSearched]   = useState(false);
-  const [warehouses, setWarehouses] = useState<{ id: string; name: string }[]>([]);
-  const [showFilters, setShowFilters] = useState(false);
-  const [searchError, setSearchError] = useState<string | null>(null);
+  const [query, setQuery]                     = useState('');
+  const [results, setResults]                 = useState<any[]>([]);
+  const [storageResults, setStorageResults]   = useState<any[]>([]);
+  const [loading, setLoading]                 = useState(false);
+  const [searched, setSearched]               = useState(false);
+  const [warehouses, setWarehouses]           = useState<{ id: string; name: string }[]>([]);
+  const [showFilters, setShowFilters]         = useState(false);
+  const [searchError, setSearchError]         = useState<string | null>(null);
 
   // Filters
-  const [filterStatus, setFilterStatus]   = useState(statusFilter || '');
-  const [filterJob, setFilterJob]         = useState('');
+  const [filterStatus, setFilterStatus]       = useState(statusFilter || '');
+  const [filterJob, setFilterJob]             = useState('');
   const [filterWarehouse, setFilterWarehouse] = useState('');
-  const [filterPacker, setFilterPacker]   = useState('');
+  const [filterPacker, setFilterPacker]       = useState('');
 
   const activeFilters = [filterStatus, filterJob, filterWarehouse, filterPacker].filter(Boolean).length;
 
@@ -43,21 +49,38 @@ function SearchContent() {
       .catch(() => {});
   }, []);
 
-  const buildUrl = (q: string) => {
-    const params = new URLSearchParams();
-    if (q) params.set('q', q);
-    if (filterStatus) params.set('status', filterStatus);
-    if (filterJob) params.set('job_type', filterJob);
-    if (filterWarehouse) params.set('warehouse_id', filterWarehouse);
-    if (filterPacker) params.set('packer', filterPacker);
-    return `/api/search/global?${params.toString()}`;
-  };
-
   useEffect(() => {
     if (!statusFilter) return;
     setFilterStatus(statusFilter);
     runSearch('', statusFilter);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [statusFilter]);
+
+  // Live search — fires on query change with 300ms debounce, min 2 chars
+  useEffect(() => {
+    if (query.length < 2) return;
+    const params = new URLSearchParams();
+    params.set('q', query);
+    if (filterStatus)    params.set('status', filterStatus);
+    if (filterJob)       params.set('job_type', filterJob);
+    if (filterWarehouse) params.set('warehouse_id', filterWarehouse);
+    if (filterPacker)    params.set('packer', filterPacker);
+    const t = setTimeout(async () => {
+      setLoading(true);
+      setSearched(true);
+      setSearchError(null);
+      try {
+        const data = await api.get(`/api/search/global?${params.toString()}`);
+        setResults(Array.isArray(data) ? data : (data?.vaults ?? []));
+        setStorageResults(Array.isArray(data) ? [] : (data?.storageUnits ?? []));
+      } catch {
+        setResults([]); setStorageResults([]);
+        setSearchError('Search failed. Please try again.');
+      } finally { setLoading(false); }
+    }, 300);
+    return () => clearTimeout(t);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [query]);
 
   const runSearch = async (q = query, st = filterStatus) => {
     setLoading(true);
@@ -65,15 +88,18 @@ function SearchContent() {
     setSearchError(null);
     try {
       const params = new URLSearchParams();
-      if (q) params.set('q', q);
-      if (st) params.set('status', st);
-      if (filterJob) params.set('job_type', filterJob);
+      if (q)             params.set('q', q);
+      if (st)            params.set('status', st);
+      if (filterJob)     params.set('job_type', filterJob);
       if (filterWarehouse) params.set('warehouse_id', filterWarehouse);
-      if (filterPacker) params.set('packer', filterPacker);
+      if (filterPacker)  params.set('packer', filterPacker);
       const data = await api.get(`/api/search/global?${params.toString()}`);
-      setResults(Array.isArray(data) ? data : []);
-    } catch { setResults([]); setSearchError('Search failed. Please try again.'); }
-    finally { setLoading(false); }
+      setResults(Array.isArray(data) ? data : (data?.vaults ?? []));
+      setStorageResults(Array.isArray(data) ? [] : (data?.storageUnits ?? []));
+    } catch {
+      setResults([]); setStorageResults([]);
+      setSearchError('Search failed. Please try again.');
+    } finally { setLoading(false); }
   };
 
   const handleSearch = (e: React.FormEvent) => { e.preventDefault(); runSearch(); };
@@ -83,6 +109,12 @@ function SearchContent() {
   };
 
   const whName = (wid: string) => warehouses.find(w => w.id === wid)?.name || wid;
+
+  const formatDate = (d: string) => {
+    if (!d) return '—';
+    try { return new Date(d + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }); }
+    catch { return d; }
+  };
 
   return (
     <div className="flex min-h-screen bg-gray-50">
@@ -136,7 +168,6 @@ function SearchContent() {
               className="overflow-hidden"
             >
               <div className="bg-white border border-gray-100 rounded-2xl p-4 mb-4 grid grid-cols-2 md:grid-cols-4 gap-3">
-                {/* Status */}
                 <div>
                   <label className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1.5 block">Job Status</label>
                   <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)}
@@ -145,8 +176,6 @@ function SearchContent() {
                     {STATUSES.map(s => <option key={s} value={s}>{s}</option>)}
                   </select>
                 </div>
-
-                {/* Job Type */}
                 <div>
                   <label className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1.5 block">Job Type</label>
                   <select value={filterJob} onChange={e => setFilterJob(e.target.value)}
@@ -155,8 +184,6 @@ function SearchContent() {
                     {JOB_TYPES.map(j => <option key={j} value={j}>{j}</option>)}
                   </select>
                 </div>
-
-                {/* Warehouse */}
                 <div>
                   <label className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1.5 block">Warehouse</label>
                   <select value={filterWarehouse} onChange={e => setFilterWarehouse(e.target.value)}
@@ -165,8 +192,6 @@ function SearchContent() {
                     {warehouses.map(w => <option key={w.id} value={w.id}>{w.name}</option>)}
                   </select>
                 </div>
-
-                {/* Packer */}
                 <div>
                   <label className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1.5 block">Packer</label>
                   <input
@@ -175,7 +200,6 @@ function SearchContent() {
                     className="w-full px-3 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
-
                 {activeFilters > 0 && (
                   <div className="col-span-2 md:col-span-4 flex justify-end">
                     <button onClick={clearFilters} className="flex items-center gap-1.5 text-xs text-red-500 hover:text-red-700 font-medium">
@@ -203,67 +227,129 @@ function SearchContent() {
         )}
 
         {!loading && searched && (
-          <div>
-            <div className="flex items-center justify-between mb-4">
-              <p className="text-sm text-gray-500">
-                <span className="font-semibold text-gray-900">{results.length}</span> vault{results.length !== 1 ? 's' : ''} found
-              </p>
-              {results.length > 0 && (
-                <div className="flex gap-2 flex-wrap">
-                  {filterStatus && <span className="text-xs bg-amber-100 text-amber-700 px-2.5 py-1 rounded-full font-medium">{filterStatus}</span>}
-                  {filterJob    && <span className="text-xs bg-blue-100 text-blue-700 px-2.5 py-1 rounded-full font-medium">{filterJob}</span>}
-                  {filterWarehouse && <span className="text-xs bg-gray-100 text-gray-700 px-2.5 py-1 rounded-full font-medium">{whName(filterWarehouse)}</span>}
-                  {filterPacker && <span className="text-xs bg-purple-100 text-purple-700 px-2.5 py-1 rounded-full font-medium">Packer: {filterPacker}</span>}
+          <div className="space-y-8">
+
+            {/* ── Vaults ─────────────────────────────────────────────────────── */}
+            <div>
+              <div className="flex items-center justify-between mb-4">
+                <p className="text-sm text-gray-500">
+                  <span className="font-semibold text-gray-900">{results.length}</span> vault{results.length !== 1 ? 's' : ''} found
+                </p>
+                {results.length > 0 && (
+                  <div className="flex gap-2 flex-wrap">
+                    {filterStatus    && <span className="text-xs bg-amber-100 text-amber-700 px-2.5 py-1 rounded-full font-medium">{filterStatus}</span>}
+                    {filterJob       && <span className="text-xs bg-blue-100 text-blue-700 px-2.5 py-1 rounded-full font-medium">{filterJob}</span>}
+                    {filterWarehouse && <span className="text-xs bg-gray-100 text-gray-700 px-2.5 py-1 rounded-full font-medium">{whName(filterWarehouse)}</span>}
+                    {filterPacker    && <span className="text-xs bg-purple-100 text-purple-700 px-2.5 py-1 rounded-full font-medium">Packer: {filterPacker}</span>}
+                  </div>
+                )}
+              </div>
+
+              {results.length === 0 ? (
+                <div className="text-center py-12 text-gray-400 text-sm">No vaults match your search</div>
+              ) : (
+                <div className="bg-white rounded-2xl border border-gray-100 overflow-x-auto">
+                  <table className="w-full min-w-[320px]">
+                    <thead>
+                      <tr className="border-b border-gray-50">
+                        <th className="text-left text-xs font-medium text-gray-400 uppercase tracking-wide px-4 py-4">Client</th>
+                        <th className="text-left text-xs font-medium text-gray-400 uppercase tracking-wide px-4 py-4">Position</th>
+                        <th className="hidden md:table-cell text-left text-xs font-medium text-gray-400 uppercase tracking-wide px-4 py-4">Job Type</th>
+                        <th className="hidden md:table-cell text-left text-xs font-medium text-gray-400 uppercase tracking-wide px-4 py-4">Warehouse</th>
+                        <th className="hidden md:table-cell text-left text-xs font-medium text-gray-400 uppercase tracking-wide px-4 py-4">Condition</th>
+                        <th className="text-left text-xs font-medium text-gray-400 uppercase tracking-wide px-4 py-4">Job Status</th>
+                        <th className="hidden md:table-cell text-left text-xs font-medium text-gray-400 uppercase tracking-wide px-4 py-4">Pack Date</th>
+                        <th className="hidden md:table-cell text-left text-xs font-medium text-gray-400 uppercase tracking-wide px-4 py-4">Packer</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {results.map((box, i) => (
+                        <motion.tr
+                          key={box.box_id}
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          transition={{ delay: Math.min(i * 0.03, 0.4) }}
+                          className="border-b border-gray-50 hover:bg-gray-50 transition-colors cursor-pointer"
+                          onClick={() => router.push(`/warehouses/${box.warehouse_id}?vault=${box.box_id}`)}
+                        >
+                          <td className="px-4 py-4 text-sm text-gray-700 max-w-[130px] truncate">{box.client_name}</td>
+                          <td className="px-4 py-4 text-sm font-semibold text-gray-900">{box.position}</td>
+                          <td className="hidden md:table-cell px-4 py-4 text-sm text-gray-500">{box.job_type || '—'}</td>
+                          <td className="hidden md:table-cell px-4 py-4">
+                            <span className="flex items-center gap-1 text-sm text-gray-500">
+                              <BuildingOffice2Icon className="w-3.5 h-3.5 flex-shrink-0" />
+                              {whName(box.warehouse_id)}
+                            </span>
+                          </td>
+                          <td className="hidden md:table-cell px-4 py-4 text-sm text-gray-500">
+                            {Array.isArray(box.vault_status) && box.vault_status.length > 0
+                              ? box.vault_status.join(', ')
+                              : '—'}
+                          </td>
+                          <td className="px-4 py-4">
+                            <span className={`text-xs font-medium px-2.5 py-1 rounded-full ${STATUS_COLORS[box.estado || box.status] || 'bg-gray-100 text-gray-600'}`}>
+                              {box.estado || box.status}
+                            </span>
+                          </td>
+                          <td className="hidden md:table-cell px-4 py-4 text-sm text-gray-500">{formatDate(box.pack_date)}</td>
+                          <td className="hidden md:table-cell px-4 py-4 text-sm text-gray-500">{box.packer || '—'}</td>
+                        </motion.tr>
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
               )}
             </div>
 
-            {results.length === 0 ? (
-              <div className="text-center py-16 text-gray-400 text-sm">No vaults match your search</div>
-            ) : (
-              <div className="bg-white rounded-2xl border border-gray-100 overflow-x-auto">
-                <table className="w-full min-w-[320px]">
-                  <thead>
-                    <tr className="border-b border-gray-50">
-                      <th className="text-left text-xs font-medium text-gray-400 uppercase tracking-wide px-4 py-4">Position</th>
-                      <th className="text-left text-xs font-medium text-gray-400 uppercase tracking-wide px-4 py-4">Client</th>
-                      <th className="hidden md:table-cell text-left text-xs font-medium text-gray-400 uppercase tracking-wide px-4 py-4">Job Type</th>
-                      <th className="hidden md:table-cell text-left text-xs font-medium text-gray-400 uppercase tracking-wide px-4 py-4">Warehouse</th>
-                      <th className="hidden md:table-cell text-left text-xs font-medium text-gray-400 uppercase tracking-wide px-4 py-4">Packer</th>
-                      <th className="text-left text-xs font-medium text-gray-400 uppercase tracking-wide px-4 py-4">Job Status</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {results.map((box, i) => (
-                      <motion.tr
-                        key={box.box_id}
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        transition={{ delay: Math.min(i * 0.03, 0.4) }}
-                        className="border-b border-gray-50 hover:bg-gray-50 transition-colors cursor-pointer"
-                        onClick={() => router.push(`/warehouses/${box.warehouse_id}?vault=${box.box_id}`)}
-                      >
-                        <td className="px-4 py-4 text-sm font-semibold text-gray-900">{box.position}</td>
-                        <td className="px-4 py-4 text-sm text-gray-700 max-w-[130px] truncate">{box.client_name}</td>
-                        <td className="hidden md:table-cell px-4 py-4 text-sm text-gray-500">{box.job_type}</td>
-                        <td className="hidden md:table-cell px-4 py-4">
-                          <span className="flex items-center gap-1 text-sm text-gray-500">
-                            <BuildingOffice2Icon className="w-3.5 h-3.5 flex-shrink-0" />
-                            {whName(box.warehouse_id)}
-                          </span>
-                        </td>
-                        <td className="hidden md:table-cell px-4 py-4 text-sm text-gray-500">{box.packer || '—'}</td>
-                        <td className="px-4 py-4">
-                          <span className={`text-xs font-medium px-2.5 py-1 rounded-full ${STATUS_COLORS[box.estado || box.status] || 'bg-gray-100 text-gray-600'}`}>
-                            {box.estado || box.status}
-                          </span>
-                        </td>
-                      </motion.tr>
-                    ))}
-                  </tbody>
-                </table>
+            {/* ── Storage Units ───────────────────────────────────────────────── */}
+            {storageResults.length > 0 && (
+              <div>
+                <div className="flex items-center gap-3 mb-4">
+                  <h2 className="text-sm font-semibold text-gray-700">Storage Units</h2>
+                  <span className="text-sm text-gray-500">
+                    <span className="font-semibold text-gray-900">{storageResults.length}</span> found
+                  </span>
+                </div>
+                <div className="bg-white rounded-2xl border border-gray-100 overflow-x-auto">
+                  <table className="w-full min-w-[320px]">
+                    <thead>
+                      <tr className="border-b border-gray-50">
+                        <th className="text-left text-xs font-medium text-gray-400 uppercase tracking-wide px-4 py-4">Client</th>
+                        <th className="text-left text-xs font-medium text-gray-400 uppercase tracking-wide px-4 py-4">Unit Name</th>
+                        <th className="hidden md:table-cell text-left text-xs font-medium text-gray-400 uppercase tracking-wide px-4 py-4">City / State</th>
+                        <th className="text-left text-xs font-medium text-gray-400 uppercase tracking-wide px-4 py-4">Status</th>
+                        <th className="hidden md:table-cell text-left text-xs font-medium text-gray-400 uppercase tracking-wide px-4 py-4">Intake Date</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {storageResults.map((su, i) => (
+                        <motion.tr
+                          key={su.id}
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          transition={{ delay: Math.min(i * 0.03, 0.4) }}
+                          className="border-b border-gray-50 hover:bg-gray-50 transition-colors cursor-pointer"
+                          onClick={() => router.push(`/storage/${su.id}`)}
+                        >
+                          <td className="px-4 py-4 text-sm text-gray-700 max-w-[130px] truncate">{su.client_name || '—'}</td>
+                          <td className="px-4 py-4 text-sm font-semibold text-gray-900">{su.unit_name || '—'}</td>
+                          <td className="hidden md:table-cell px-4 py-4 text-sm text-gray-500">
+                            {[su.city, su.state].filter(Boolean).join(', ') || '—'}
+                          </td>
+                          <td className="px-4 py-4">
+                            <span className={`text-xs font-medium px-2.5 py-1 rounded-full ${STORAGE_STATUS_COLORS[su.status] || 'bg-gray-100 text-gray-600'}`}>
+                              {su.status || '—'}
+                            </span>
+                          </td>
+                          <td className="hidden md:table-cell px-4 py-4 text-sm text-gray-500">{formatDate(su.intake_date)}</td>
+                        </motion.tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               </div>
             )}
+
           </div>
         )}
 

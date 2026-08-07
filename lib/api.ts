@@ -280,7 +280,7 @@ async function routeGet(path: string): Promise<any> {
     const warehouseId = q.get('warehouse_id') || '';
     const packer      = q.get('packer') || '';
     const hasFilter   = q2 || status || jobType || warehouseId || packer;
-    if (!cid || !hasFilter) return [];
+    if (!cid || !hasFilter) return { vaults: [], storageUnits: [] };
     let filter = `company_id="${cid}"`;
     if (status)      filter += ` && estado="${sf(status)}"`;
     if (jobType)     filter += ` && job_type="${sf(jobType)}"`;
@@ -291,9 +291,30 @@ async function routeGet(path: string): Promise<any> {
       filter,
       fields: 'id,warehouse_id,row,col,level,position,client_name,client_id,job_type,vault_status,content_type,room_location,packer,pack_date,comments,estado,qr_token,company_id,created',
     });
-    return items
+    const vaults = items
       .sort((a: any, b: any) => a.created < b.created ? 1 : -1)
       .map(mapVault);
+    let storageUnits: any[] = [];
+    if (q2) {
+      const storageItems = await pb.collection('storage_units').getFullList({
+        filter: `company_id="${cid}" && (client_name~"${sf(q2)}" || unit_name~"${sf(q2)}" || address~"${sf(q2)}" || notes~"${sf(q2)}")`,
+        fields: 'id,unit_name,client_name,address,city,state,status,intake_date,created',
+      });
+      storageUnits = storageItems
+        .sort((a: any, b: any) => a.created < b.created ? 1 : -1)
+        .map((s: any) => ({
+          id:          s.id,
+          unit_name:   s.unit_name,
+          client_name: s.client_name,
+          address:     s.address,
+          city:        s.city,
+          state:       s.state,
+          status:      s.status,
+          intake_date: s.intake_date || '',
+          created:     s.created,
+        }));
+    }
+    return { vaults, storageUnits };
   }
 
   // ── Snapshots ──────────────────────────────────────────────────────────────
