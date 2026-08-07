@@ -4,10 +4,12 @@ import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { QRCodeSVG } from 'qrcode.react';
 import { api } from '@/lib/api';
+import { useAuth } from '@/lib/auth-context';
 
 export default function VaultPrintPage() {
   const { id } = useParams();
   const router = useRouter();
+  const { user } = useAuth();
   const [vault, setVault] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -24,14 +26,12 @@ export default function VaultPrintPage() {
     api.get(`/api/boxes/${id}`)
       .then(async (v) => {
         setVault(v);
-        // Warehouse name
         if (v.warehouse_id) {
           try {
             const wh = await api.get(`/api/warehouses/${v.warehouse_id}`);
             if (wh?.name) setWarehouseName(wh.name);
           } catch {}
         }
-        // N of M: vaults of the same client, ordered by created (ascending — api.ts sorts this way)
         if (v.client_name) {
           try {
             const clientVaults: any[] = await api.get(
@@ -63,26 +63,25 @@ export default function VaultPrintPage() {
   const pos = vault.position || `${vault.row}${vault.column}-L${vault.level}`;
   const levelNum = Number(vault.level);
   const levelLabel = levelNum === 1 ? 'LOWER' : levelNum === 2 ? 'UPPER' : `L${levelNum}`;
+  const companyName = user?.company_name || 'Warehouse Manager';
   const title = `Vault ${pos} — ${vault.client_name || 'No Client'}`;
 
-  // Type of Loss checkboxes
   const jobType = vault.job_type || '';
   const TYPE_OF_LOSS = [
-    { label: 'Fire Loss',     match: 'Fire'    },
-    { label: 'Water Loss',    match: 'Water'   },
-    { label: 'Mold',          match: 'Mold'    },
-    { label: 'Moving',        match: 'Moving'  },
-    { label: 'Storage Only',  match: 'Storage' },
+    { label: 'Fire Loss',    match: 'Fire'    },
+    { label: 'Water Loss',   match: 'Water'   },
+    { label: 'Mold',         match: 'Mold'    },
+    { label: 'Moving',       match: 'Moving'  },
+    { label: 'Storage Only', match: 'Storage' },
   ];
 
-  // Condition checkboxes
   const vaultStatus: string[] = Array.isArray(vault.vault_status) ? vault.vault_status : [];
   const CONDITIONS = [
-    { label: 'To be Cleaned',         match: 'Needs Cleaning'  },
-    { label: 'Cleaning Complete',      match: 'Ready to Go'     },
-    { label: 'Total Loss Contents',    match: 'Total Loss'      },
-    { label: 'TL – Client wants',      match: '__never__'       },
-    { label: 'Textiles',               match: '__never__'       },
+    { label: 'To be Cleaned',      match: 'Needs Cleaning' },
+    { label: 'Cleaning Complete',  match: 'Ready to Go'    },
+    { label: 'Total Loss Contents',match: 'Total Loss'     },
+    { label: 'TL – Client wants',  match: '__never__'      },
+    { label: 'Textiles',           match: '__never__'      },
   ];
 
   const STATUS_LABEL: Record<string, string> = {
@@ -101,7 +100,16 @@ export default function VaultPrintPage() {
       <style>{`
         @media print {
           @page { size: letter; margin: 0.5in; }
-          body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+          /* Hide entire app shell — show only the label */
+          body * { visibility: hidden !important; }
+          #vault-print-label, #vault-print-label * { visibility: visible !important; }
+          #vault-print-label {
+            position: fixed !important;
+            top: 0 !important; left: 0 !important;
+            width: 100% !important;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+          }
           .no-print { display: none !important; }
         }
         body { background: #f1f5f9; margin: 0; font-family: system-ui, -apple-system, sans-serif; }
@@ -132,26 +140,19 @@ export default function VaultPrintPage() {
         </button>
       </div>
 
-      {/* Label wrapper */}
+      {/* Label — gets id so print CSS can isolate it */}
       <div className="min-h-screen flex items-center justify-center p-6">
-        <div className="bg-white w-full max-w-2xl shadow-xl print:shadow-none print:max-w-none" style={{ fontFamily: 'system-ui, sans-serif' }}>
+        <div id="vault-print-label" className="bg-white w-full max-w-2xl shadow-xl print:shadow-none print:max-w-none border border-gray-200" style={{ fontFamily: 'system-ui, sans-serif' }}>
 
-          {/* ─── Top strip ─── */}
-          <div className="bg-gray-950 text-white px-5 py-3 flex items-center justify-between">
-            <div className="flex items-center gap-2.5">
-              <div className="w-7 h-7 bg-white rounded flex items-center justify-center">
-                <span className="text-gray-950 font-black text-[9px] italic leading-none">WM</span>
-              </div>
-              <div>
-                <p className="text-[10px] font-medium text-gray-400 uppercase tracking-widest leading-none">Archive Contents Restoration</p>
-                <p className="text-xs font-bold text-white leading-tight">Warehouse Manager</p>
-              </div>
+          {/* ─── Header: company + position ─── */}
+          <div className="px-5 py-4 flex items-center justify-between border-b-2 border-gray-900">
+            <div>
+              <p className="text-[10px] uppercase tracking-widest text-gray-400 font-medium leading-none mb-0.5">Archive Contents Restoration</p>
+              <p className="text-base font-black text-gray-900 leading-tight">{companyName}</p>
             </div>
-            <div className="text-right">
-              <div className="inline-flex flex-col items-end">
-                <span className="text-lg font-black tracking-tight leading-none">{pos}</span>
-                <span className="text-[10px] text-gray-400 font-medium tracking-widest uppercase">{levelLabel}</span>
-              </div>
+            <div className="text-right border-2 border-gray-900 rounded-lg px-3 py-2">
+              <p className="text-xl font-black tracking-tight leading-none text-gray-900">{pos}</p>
+              <p className="text-[10px] font-bold tracking-widest uppercase text-gray-500 mt-0.5">{levelLabel}</p>
             </div>
           </div>
 
@@ -179,7 +180,6 @@ export default function VaultPrintPage() {
 
           {/* ─── Checkboxes ─── */}
           <div className="grid grid-cols-2 gap-0 border-b border-gray-200">
-            {/* Type of Loss */}
             <div className="px-5 py-4 border-r border-gray-200">
               <p className="text-[10px] uppercase tracking-widest text-gray-500 font-semibold mb-3">Type of Loss</p>
               <div className="space-y-2.5">
@@ -194,8 +194,6 @@ export default function VaultPrintPage() {
                 })}
               </div>
             </div>
-
-            {/* Condition */}
             <div className="px-5 py-4">
               <p className="text-[10px] uppercase tracking-widest text-gray-500 font-semibold mb-3">Condition</p>
               <div className="space-y-2.5">
@@ -232,12 +230,10 @@ export default function VaultPrintPage() {
             </div>
           </div>
 
-          {/* ─── Footer meta ─── */}
+          {/* ─── Footer ─── */}
           <div className="px-5 py-3 bg-gray-50 flex flex-wrap gap-x-4 gap-y-1 items-center">
-            {warehouseName && (
-              <span className="text-xs text-gray-500">{warehouseName}</span>
-            )}
-            <span className="text-xs text-gray-400">·</span>
+            {warehouseName && <span className="text-xs text-gray-500">{warehouseName}</span>}
+            {warehouseName && <span className="text-xs text-gray-400">·</span>}
             <span className="text-xs text-gray-500">{STATUS_LABEL[status] || status}</span>
             <span className="text-xs text-gray-400">·</span>
             <span className="text-xs text-gray-500">{vault.content_type || vault.contents_type || '—'}</span>
@@ -247,7 +243,7 @@ export default function VaultPrintPage() {
                 <span className="text-xs text-gray-500">{vault.job_type}</span>
               </>
             )}
-            <span className="ml-auto text-[9px] text-gray-300 break-all hidden md:block">{qrUrl}</span>
+            <span className="ml-auto text-[9px] text-gray-300 break-all hidden print:block">{qrUrl}</span>
           </div>
 
         </div>
