@@ -130,7 +130,7 @@ export default function WarehouseDetailPage() {
     setShowQR(false);
     setLoadingPhotos(true);
     api.get(`/api/boxes/${found.box_id}`)
-      .then(full => { if (full?.photos) setSelected(prev => prev ? { ...prev, photos: full.photos } : prev); })
+      .then(full => { if (full) setSelected(prev => prev ? { ...prev, ...full } : prev); })
       .catch(() => {})
       .finally(() => setLoadingPhotos(false));
   }, [boxes, searchParams]);
@@ -259,14 +259,14 @@ export default function WarehouseDetailPage() {
     }
   };
 
-  // Open a vault and lazy-load its photos
+  // Open a vault and lazy-load full data (photos + all fields like pack_date)
   const selectVault = useCallback(async (box: Box) => {
     setSelected(box);
     setShowQR(false);
     setLoadingPhotos(true);
     try {
       const full = await api.get(`/api/boxes/${box.box_id}`);
-      if (full?.photos) setSelected(prev => prev ? { ...prev, photos: full.photos } : prev);
+      if (full) setSelected(prev => prev ? { ...prev, ...full } : prev);
     } catch {}
     setLoadingPhotos(false);
   }, []);
