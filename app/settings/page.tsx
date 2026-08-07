@@ -23,7 +23,7 @@ const card = 'bg-white rounded-2xl border border-gray-100 p-6 mb-4';
 const sectionTitle = 'text-xs font-semibold text-gray-400 uppercase tracking-wider mb-4';
 
 export default function SettingsPage() {
-  const { user, logout } = useAuth();
+  const { user, logout, canManage } = useAuth();
   const { showToast } = useToast();
   const isOwner = user?.role === 'owner';
 
@@ -298,7 +298,7 @@ export default function SettingsPage() {
                           <p className="text-xs text-gray-400 truncate">{m.email}</p>
                         </div>
                         <span className="text-xs text-gray-400 capitalize flex-shrink-0">{m.role}</span>
-                        {isOwner && m.user_id !== user?.id && m.role !== 'owner' && (
+                        {canManage && m.user_id !== user?.id && m.role !== 'owner' && (
                           <button
                             onClick={() => removeMember(m.user_id)}
                             disabled={removingId === m.user_id}
@@ -319,8 +319,8 @@ export default function SettingsPage() {
             </div>
           </motion.div>
 
-          {/* ─── Invite Codes (owner only) ─── */}
-          {isOwner && (
+          {/* ─── Invite Codes (owner + manager) ─── */}
+          {canManage && (
             <motion.div id="invite" custom={2} variants={fade} initial="hidden" animate="show">
               <p className={sectionTitle}>Invite Codes</p>
               <div className={card}>
@@ -377,7 +377,7 @@ export default function SettingsPage() {
           )}
 
           {/* ─── Security ─── */}
-          <motion.div custom={isOwner ? 3 : 2} variants={fade} initial="hidden" animate="show">
+          <motion.div custom={canManage ? 3 : 2} variants={fade} initial="hidden" animate="show">
             <p className={sectionTitle}>Security</p>
             <div className={card}>
               <div className="flex items-center justify-between">
@@ -473,7 +473,7 @@ export default function SettingsPage() {
           </motion.div>
 
           {/* ─── Support ─── */}
-          <motion.div custom={isOwner ? 4 : 3} variants={fade} initial="hidden" animate="show">
+          <motion.div custom={canManage ? 4 : 3} variants={fade} initial="hidden" animate="show">
             <p className={sectionTitle}>Support</p>
             <div className={card}>
               <Link href="/support" className="flex items-center gap-3 group">
@@ -490,7 +490,7 @@ export default function SettingsPage() {
           </motion.div>
 
           {/* ─── Install App ─── */}
-          <motion.div custom={isOwner ? 5 : 4} variants={fade} initial="hidden" animate="show">
+          <motion.div custom={canManage ? 5 : 4} variants={fade} initial="hidden" animate="show">
             <p className={sectionTitle}>Install App</p>
             <div className={card}>
               <div className="flex items-start gap-4">
@@ -543,7 +543,7 @@ export default function SettingsPage() {
           </motion.div>
 
           {/* ─── Danger Zone ─── */}
-          <motion.div custom={isOwner ? 6 : 5} variants={fade} initial="hidden" animate="show">
+          <motion.div custom={canManage ? 6 : 5} variants={fade} initial="hidden" animate="show">
             <p className={sectionTitle}>Danger Zone</p>
             <div className="bg-white rounded-2xl border border-red-100 p-6 mb-4">
               <div className="flex items-start gap-3 mb-5">

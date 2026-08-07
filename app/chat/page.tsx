@@ -30,8 +30,7 @@ function formatTime(ts: string): string {
 }
 
 export default function ChatPage() {
-  const { user } = useAuth();
-  const isOwner = user?.role === 'owner';
+  const { user, canManage } = useAuth();
   const [messages, setMessages] = useState<Message[]>([]);
   const [members, setMembers]   = useState<{ user_id: string; name: string; picture?: string }[]>([]);
   const [text, setText] = useState('');
@@ -179,7 +178,7 @@ export default function ChatPage() {
             <div>
               <h1 className="text-2xl font-bold text-gray-900">Team Chat</h1>
             </div>
-            {isOwner && messages.length > 0 && (
+            {canManage && messages.length > 0 && (
               <button
                 onClick={() => setConfirmClear(true)}
                 className="flex items-center gap-2 px-3 py-2 bg-red-50 text-red-600 text-sm font-semibold rounded-xl hover:bg-red-100 transition-colors border border-red-100 flex-shrink-0"

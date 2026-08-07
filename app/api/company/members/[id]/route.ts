@@ -88,8 +88,8 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
   const { record: me } = await meRes.json();
   if (!me?.id || !me.company_id) return NextResponse.json({ error: 'Invalid session' }, { status: 401 });
 
-  // Only owners can remove members
-  if (me.role !== 'owner') return NextResponse.json({ error: 'Only the company owner can remove members' }, { status: 403 });
+  // Only owners and managers can remove members
+  if (me.role !== 'owner' && me.role !== 'manager') return NextResponse.json({ error: 'Only the company owner or a manager can remove members' }, { status: 403 });
 
   // Cannot remove yourself
   if (me.id === targetUserId) return NextResponse.json({ error: 'Cannot remove yourself' }, { status: 400 });

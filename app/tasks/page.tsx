@@ -675,8 +675,8 @@ export default function TasksPage() {
 }
 
 function TasksPageInner() {
-  const { user } = useAuth();
-  const isOwner = user?.role === 'owner';
+  const { user, canManage } = useAuth();
+  const isOwner = canManage;
   const { showToast } = useToast();
   const searchParams = useSearchParams();
 
