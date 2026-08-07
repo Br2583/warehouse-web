@@ -20,7 +20,7 @@ const STATUS_CONFIG: Record<string, { color: string; label: string }> = {
 };
 
 export default function StoragePage() {
-  const { user, canManage } = useAuth();
+  const { canManage } = useAuth();
   const router = useRouter();
 
   const [units, setUnits] = useState<any[]>([]);

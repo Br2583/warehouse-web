@@ -44,7 +44,7 @@ async function geocode(address: string, city: string, state: string): Promise<st
 export default function StorageDetailPage() {
   const { id } = useParams();
   const router = useRouter();
-  const { user, canManage } = useAuth();
+  const { canManage } = useAuth();
   const fileRef = useRef<HTMLInputElement>(null);
 
   const [unit, setUnit] = useState<any>(null);
