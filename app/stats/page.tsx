@@ -1,9 +1,10 @@
 'use client';
 
 import { useEffect, useState, useMemo } from 'react';
-import { motion, AnimatePresence, useMotionValue, useTransform, animate } from 'framer-motion';
+import { useRouter } from 'next/navigation';
+import { motion, useMotionValue, useTransform, animate } from 'framer-motion';
 import {
-  MagnifyingGlassIcon, XMarkIcon, BuildingOffice2Icon, ChevronRightIcon,
+  BuildingOffice2Icon, ChevronRightIcon,
   ArchiveBoxIcon, ClockIcon, CheckCircleIcon, TruckIcon,
   ArrowTrendingUpIcon, UserGroupIcon, ExclamationCircleIcon,
 } from '@heroicons/react/24/outline';
@@ -48,13 +49,11 @@ function ChartTooltip({ active, payload }: any) {
   );
 }
 
-// Build weekly vault creation trend from raw boxes
 function buildTrend(boxes: any[]): { week: string; vaults: number }[] {
   const map: Record<string, number> = {};
   boxes.forEach(b => {
     const d = new Date(b.created?.includes('T') ? b.created : (b.created || '').replace(' ', 'T') + 'Z');
     if (isNaN(d.getTime())) return;
-    // Get Monday of that week
     const day = d.getDay();
     const diff = d.getDate() - day + (day === 0 ? -6 : 1);
     const monday = new Date(d); monday.setDate(diff);
@@ -89,27 +88,20 @@ function filterByPeriod(boxes: any[], period: Period): any[] {
 }
 
 export default function StatsPage() {
-  const [stats, setStats]     = useState<any>(null);
+  const router = useRouter();
   const [boxes, setBoxes]     = useState<any[]>([]);
   const [whNames, setWhNames] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [period, setPeriod]   = useState<Period>('all');
-  const [search, setSearch]   = useState('');
-  const [sortBy, setSortBy]   = useState<'count' | 'name'>('count');
-  const [selectedClient, setSelectedClient] = useState<string | null>(null);
-  const [clientPage, setClientPage] = useState(0);
-  const PAGE_SIZE = 50;
 
   useEffect(() => {
     const load = async () => {
       try {
-        const [gs, ab, whs] = await Promise.allSettled([
-          api.get('/api/stats/global'),
+        const [ab, whs] = await Promise.allSettled([
           api.get('/api/boxes'),
           api.get('/api/warehouses'),
         ]);
-        if (gs.status === 'fulfilled') setStats(gs.value);
         if (ab.status === 'fulfilled') {
           const d = ab.value;
           setBoxes(Array.isArray(d) ? d : d?.boxes || []);
@@ -120,7 +112,7 @@ export default function StatsPage() {
           arr.forEach((w: any) => { map[w.warehouse_id || w.id] = w.name; });
           setWhNames(map);
         }
-        if ([gs, ab, whs].every(r => r.status === 'rejected')) {
+        if ([ab, whs].every(r => r.status === 'rejected')) {
           setLoadError('Failed to load stats. Try again.');
         }
       } finally { setLoading(false); }
@@ -130,7 +122,6 @@ export default function StatsPage() {
 
   const filteredBoxes = useMemo(() => filterByPeriod(boxes, period), [boxes, period]);
 
-  // When period changes, reset client selection
   const total     = filteredBoxes.length;
   const pending   = filteredBoxes.filter(b => (b.estado || b.status || 'PENDING') === 'PENDING').length;
   const ready     = filteredBoxes.filter(b => (b.estado || b.status || '') === 'READY').length;
@@ -159,32 +150,26 @@ export default function StatsPage() {
     return Object.entries(map).map(([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value);
   }, [filteredBoxes, whNames]);
 
-  const clientStats = useMemo(() => {
-    const map: Record<string, { total: number; byJob: Record<string, number>; byStatus: Record<string, number> }> = {};
-    filteredBoxes.forEach(box => {
-      const name = (box.client_name || 'Unknown').trim();
-      if (!map[name]) map[name] = { total: 0, byJob: {}, byStatus: {} };
-      map[name].total++;
-      map[name].byJob[box.job_type || 'Unknown'] = (map[name].byJob[box.job_type || 'Unknown'] || 0) + 1;
-      const st = box.estado || box.status || 'PENDING';
-      map[name].byStatus[st] = (map[name].byStatus[st] || 0) + 1;
-    });
-    return map;
-  }, [filteredBoxes]);
-
-  const clientList = useMemo(() => {
-    let list = Object.entries(clientStats).map(([name, data]) => ({ name, ...data }));
-    if (search) list = list.filter(c => c.name.toLowerCase().includes(search.toLowerCase()));
-    return list.sort((a, b) => sortBy === 'count' ? b.total - a.total : a.name.localeCompare(b.name));
-  }, [clientStats, search, sortBy]);
-
-  const clientVolts = useMemo(() =>
-    selectedClient ? filteredBoxes.filter(b => (b.client_name || 'Unknown').trim() === selectedClient) : [],
-  [selectedClient, filteredBoxes]);
-
   const recentVaults = useMemo(() =>
     [...filteredBoxes].sort((a, b) => a.created < b.created ? 1 : -1).slice(0, 6),
   [filteredBoxes]);
+
+  const clientList = useMemo(() => {
+    const map: Record<string, { count: number; byJob: Record<string, number> }> = {};
+    filteredBoxes.forEach(b => {
+      const name = (b.client_name || 'Unknown').trim();
+      if (!map[name]) map[name] = { count: 0, byJob: {} };
+      map[name].count++;
+      map[name].byJob[b.job_type || 'Unknown'] = (map[name].byJob[b.job_type || 'Unknown'] || 0) + 1;
+    });
+    return Object.entries(map)
+      .map(([name, d]) => ({
+        name,
+        count: d.count,
+        topJob: Object.entries(d.byJob).sort((a, b) => b[1] - a[1])[0]?.[0] || '',
+      }))
+      .sort((a, b) => b.count - a.count);
+  }, [filteredBoxes]);
 
   if (loading) return (
     <div className="flex min-h-screen bg-gray-50">
@@ -222,7 +207,7 @@ export default function StatsPage() {
               {(['7d', '30d', '3m', 'all'] as Period[]).map(p => (
                 <button
                   key={p}
-                  onClick={() => { setPeriod(p); setSelectedClient(null); }}
+                  onClick={() => setPeriod(p)}
                   className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-all ${period === p ? 'bg-blue-600 text-white shadow-sm' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'}`}
                 >
                   {PERIOD_LABELS[p]}
@@ -242,7 +227,7 @@ export default function StatsPage() {
 
         <div className="space-y-6">
 
-          {/* ── KPI cards with mini sparklines ── */}
+          {/* ── KPI cards ── */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {[
               { label: 'Total Vaults', value: total,     color: '#2563eb', lightBg: '#eff6ff', textColor: '#1d4ed8', icon: ArchiveBoxIcon, delay: 0 },
@@ -256,9 +241,7 @@ export default function StatsPage() {
                 className="bg-white rounded-2xl border border-gray-100 p-5 overflow-hidden relative"
                 style={{ boxShadow: '0 1px 3px rgba(0,0,0,0.05), 0 0 0 1px rgba(0,0,0,0.03)' }}
               >
-                {/* Background accent */}
                 <div className="absolute inset-0 opacity-30 rounded-2xl" style={{ background: `radial-gradient(ellipse at top right, ${lightBg}, transparent 70%)` }} />
-
                 <div className="relative">
                   <div className="flex items-center justify-between mb-3">
                     <div className="w-8 h-8 rounded-xl flex items-center justify-center" style={{ backgroundColor: lightBg }}>
@@ -270,13 +253,10 @@ export default function StatsPage() {
                       </span>
                     )}
                   </div>
-
                   <p className="text-3xl font-black text-gray-900 tracking-tight leading-none">
                     <CountUp value={value} delay={delay * 1000} />
                   </p>
                   <p className="text-xs font-semibold text-gray-400 mt-1.5 uppercase tracking-wide">{label}</p>
-
-                  {/* Mini bar */}
                   {total > 0 && (
                     <div className="mt-3 h-1.5 bg-gray-100 rounded-full overflow-hidden">
                       <motion.div
@@ -294,7 +274,6 @@ export default function StatsPage() {
           {/* ── Trend + Pie row ── */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
 
-            {/* Vault creation trend — 2/3 width */}
             <motion.div
               initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.28 }}
               className="md:col-span-2 bg-white rounded-2xl border border-gray-100 p-6"
@@ -326,7 +305,6 @@ export default function StatsPage() {
               )}
             </motion.div>
 
-            {/* Status Donut — 1/3 width */}
             <motion.div
               initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.34 }}
               className="bg-white rounded-2xl border border-gray-100 p-6"
@@ -374,7 +352,6 @@ export default function StatsPage() {
           {/* ── Job type bar + Warehouse load ── */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
 
-            {/* Job type */}
             <motion.div
               initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }}
               className="bg-white rounded-2xl border border-gray-100 p-6"
@@ -399,7 +376,6 @@ export default function StatsPage() {
               )}
             </motion.div>
 
-            {/* Warehouse load */}
             <motion.div
               initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.46 }}
               className="bg-white rounded-2xl border border-gray-100 p-6"
@@ -440,142 +416,90 @@ export default function StatsPage() {
             </motion.div>
           </div>
 
-          {/* ── Recent Vaults + Top Clients ── */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-
-            {/* Recent vaults */}
-            <motion.div
-              initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.52 }}
-              className="bg-white rounded-2xl border border-gray-100 p-6"
-              style={{ boxShadow: '0 1px 4px rgba(0,0,0,0.04)' }}
-            >
-              <h2 className="font-bold text-gray-900 mb-1">Recent Vaults</h2>
-              <p className="text-xs text-gray-400 mb-4">Last added to inventory</p>
-              <div className="space-y-3">
-                {recentVaults.length === 0 && <p className="text-sm text-gray-300 text-center py-8">No vaults yet</p>}
-                {recentVaults.map((box, i) => {
-                  const status = box.estado || box.status || 'PENDING';
-                  const cfg = STATUS_CFG[status] || { label: status, bg: 'bg-gray-100', text: 'text-gray-600' };
-                  return (
-                    <motion.div
-                      key={box.box_id} initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.05 }}
-                      className="flex items-center gap-3"
-                    >
-                      <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 font-bold text-xs"
-                        style={{ backgroundColor: JOB_COLORS[box.job_type] + '18', color: JOB_COLORS[box.job_type] || '#6b7280' }}>
-                        {(box.client_name || '?')[0].toUpperCase()}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-semibold text-gray-900 truncate">{box.client_name || '—'}</p>
-                        <p className="text-xs text-gray-400">{box.position} · {box.job_type}</p>
-                      </div>
-                      <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full flex-shrink-0 ${cfg.bg} ${cfg.text}`}>
-                        {cfg.label}
-                      </span>
-                    </motion.div>
-                  );
-                })}
-              </div>
-            </motion.div>
-
-            {/* Top clients */}
-            <motion.div
-              initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.56 }}
-              className="bg-white rounded-2xl border border-gray-100 p-6"
-              style={{ boxShadow: '0 1px 4px rgba(0,0,0,0.04)' }}
-            >
-              <div className="flex items-center gap-2 mb-1">
-                <UserGroupIcon className="w-4 h-4 text-gray-400" />
-                <h2 className="font-bold text-gray-900">Top Clients</h2>
-              </div>
-              <p className="text-xs text-gray-400 mb-4">By vault count</p>
-              <div className="space-y-3">
-                {clientList.length === 0 && <p className="text-sm text-gray-300 text-center py-8">No clients yet</p>}
-                {clientList.slice(0, 6).map((client, i) => {
-                  const maxVal = clientList[0]?.total || 1;
-                  const pct = (client.total / maxVal) * 100;
-                  return (
-                    <div key={client.name}>
-                      <div className="flex items-center justify-between mb-1">
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs font-bold text-gray-400 w-4">{i + 1}</span>
-                          <p className="text-sm font-semibold text-gray-900 truncate max-w-[140px]">{client.name}</p>
-                        </div>
-                        <span className="text-sm font-bold text-gray-900">{client.total}</span>
-                      </div>
-                      <div className="ml-6 h-1.5 bg-gray-100 rounded-full overflow-hidden">
-                        <motion.div
-                          initial={{ width: 0 }} animate={{ width: `${pct}%` }}
-                          transition={{ duration: 0.7, delay: 0.65 + i * 0.06 }}
-                          className="h-full rounded-full bg-gradient-to-r from-blue-500 to-indigo-500"
-                        />
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </motion.div>
-          </div>
-
-          {/* ── Full client table ── */}
+          {/* ── Recent Vaults (full width) ── */}
           <motion.div
-            initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.6 }}
+            initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.52 }}
             className="bg-white rounded-2xl border border-gray-100 p-6"
             style={{ boxShadow: '0 1px 4px rgba(0,0,0,0.04)' }}
           >
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5">
-              <div>
-                <h2 className="font-bold text-gray-900">All Clients</h2>
-                <p className="text-xs text-gray-400 mt-0.5">{clientList.length} clients · {filteredBoxes.length} vaults</p>
-              </div>
-              <div className="flex items-center gap-2 flex-wrap">
-                <div className="flex bg-gray-100 rounded-xl overflow-hidden text-xs">
-                  <button onClick={() => setSortBy('count')} className={`px-3 py-2 font-medium transition-colors ${sortBy === 'count' ? 'bg-blue-600 text-white' : 'text-gray-500 hover:text-gray-700'}`}>Most vaults</button>
-                  <button onClick={() => setSortBy('name')} className={`px-3 py-2 font-medium transition-colors ${sortBy === 'name' ? 'bg-blue-600 text-white' : 'text-gray-500 hover:text-gray-700'}`}>A–Z</button>
-                </div>
-                <div className="relative">
-                  <MagnifyingGlassIcon className="absolute left-3 top-2 w-3.5 h-3.5 text-gray-400" />
-                  <input placeholder="Search client..." value={search} onChange={e => setSearch(e.target.value)}
-                    className="pl-8 pr-3 py-1.5 text-xs border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 w-40" />
-                </div>
-              </div>
+            <h2 className="font-bold text-gray-900 mb-1">Recent Vaults</h2>
+            <p className="text-xs text-gray-400 mb-4">Last added to inventory</p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              {recentVaults.length === 0 && <p className="text-sm text-gray-300 text-center py-8 col-span-2">No vaults yet</p>}
+              {recentVaults.map((box, i) => {
+                const status = box.estado || box.status || 'PENDING';
+                const cfg = STATUS_CFG[status] || { label: status, bg: 'bg-gray-100', text: 'text-gray-600' };
+                return (
+                  <motion.div
+                    key={box.box_id} initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.05 }}
+                    className="flex items-center gap-3"
+                  >
+                    <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 font-bold text-xs"
+                      style={{ backgroundColor: JOB_COLORS[box.job_type] + '18', color: JOB_COLORS[box.job_type] || '#6b7280' }}>
+                      {(box.client_name || '?')[0].toUpperCase()}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold text-gray-900 truncate">{box.client_name || '—'}</p>
+                      <p className="text-xs text-gray-400">{box.position} · {box.job_type}</p>
+                    </div>
+                    <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full flex-shrink-0 ${cfg.bg} ${cfg.text}`}>
+                      {cfg.label}
+                    </span>
+                  </motion.div>
+                );
+              })}
             </div>
+          </motion.div>
+
+          {/* ── Vaults per Client ── */}
+          <motion.div
+            initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.58 }}
+            className="bg-white rounded-2xl border border-gray-100 p-6"
+            style={{ boxShadow: '0 1px 4px rgba(0,0,0,0.04)' }}
+          >
+            <div className="flex items-center gap-2 mb-1">
+              <UserGroupIcon className="w-4 h-4 text-gray-400" />
+              <h2 className="font-bold text-gray-900">Vaults per Client</h2>
+            </div>
+            <p className="text-xs text-gray-400 mb-5">
+              {clientList.length} client{clientList.length !== 1 ? 's' : ''} · {filteredBoxes.length} vault{filteredBoxes.length !== 1 ? 's' : ''} · {PERIOD_LABELS[period]}
+            </p>
             {clientList.length === 0 ? (
-              <p className="text-center py-8 text-gray-400 text-sm">No clients found</p>
+              <div className="text-sm text-gray-300 text-center py-8">No clients yet</div>
             ) : (
               <div className="space-y-1">
                 {clientList.map((client, i) => {
-                  const maxClient = clientList[0]?.total || 1;
-                  const pct = (client.total / maxClient) * 100;
-                  const topStatus = Object.entries(client.byStatus).sort((a, b) => b[1] - a[1])[0]?.[0] || 'PENDING';
-                  const stCfg = STATUS_CFG[topStatus] || STATUS_CFG.PENDING;
+                  const maxCount = clientList[0]?.count || 1;
+                  const pct = (client.count / maxCount) * 100;
                   return (
                     <motion.div
                       key={client.name}
-                      initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.015 }}
-                      onClick={() => { setSelectedClient(client.name); setClientPage(0); }}
-                      className="group flex items-center gap-4 px-4 py-3.5 rounded-xl hover:bg-gray-50 cursor-pointer transition-all"
+                      initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.02 }}
+                      onClick={() => router.push(`/search?q=${encodeURIComponent(client.name)}`)}
+                      className="group flex items-center gap-3 px-3 py-3 rounded-xl hover:bg-gray-50 cursor-pointer transition-all"
                     >
-                      <div className="w-9 h-9 bg-gradient-to-br from-blue-100 to-indigo-100 rounded-xl flex items-center justify-center flex-shrink-0">
-                        <span className="text-sm font-bold text-blue-600">{client.name[0].toUpperCase()}</span>
+                      <div className="w-8 h-8 bg-gradient-to-br from-blue-100 to-indigo-100 rounded-xl flex items-center justify-center flex-shrink-0">
+                        <span className="text-xs font-bold text-blue-600">{client.name[0]?.toUpperCase()}</span>
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between mb-1.5">
-                          <p className="text-sm font-semibold text-gray-900 truncate">{client.name}</p>
-                          <div className="flex items-center gap-2 ml-2 flex-shrink-0">
-                            <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${stCfg.bg} ${stCfg.text}`}>{stCfg.label}</span>
-                            <span className="text-sm font-bold text-gray-900">{client.total}</span>
+                          <div className="flex items-center gap-2 min-w-0">
+                            <p className="text-sm font-semibold text-gray-900 truncate">{client.name}</p>
+                            {client.topJob && (
+                              <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full flex-shrink-0 ${JOB_TEXT[client.topJob] || 'bg-gray-100 text-gray-600'}`}>
+                                {client.topJob}
+                              </span>
+                            )}
                           </div>
+                          <span className="text-sm font-bold text-gray-900 ml-2 flex-shrink-0">{client.count}</span>
                         </div>
-                        <div className="w-full bg-gray-100 rounded-full h-1.5 overflow-hidden">
-                          <motion.div initial={{ width: 0 }} animate={{ width: `${pct}%` }} transition={{ duration: 0.7, delay: 0.6 + i * 0.02 }}
-                            className="h-full rounded-full bg-blue-500" />
+                        <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                          <motion.div
+                            initial={{ width: 0 }} animate={{ width: `${pct}%` }}
+                            transition={{ duration: 0.7, delay: 0.65 + i * 0.03 }}
+                            className="h-full rounded-full bg-gradient-to-r from-blue-500 to-indigo-500"
+                          />
                         </div>
-                      </div>
-                      <div className="hidden md:flex items-center gap-1 flex-shrink-0">
-                        {Object.entries(client.byJob).slice(0, 2).map(([job]) => (
-                          <span key={job} className={`text-[10px] font-medium px-2 py-0.5 rounded-full ${JOB_TEXT[job] || 'bg-gray-100 text-gray-600'}`}>{job}</span>
-                        ))}
                       </div>
                       <ChevronRightIcon className="w-4 h-4 text-gray-300 group-hover:text-blue-500 transition-colors flex-shrink-0" />
                     </motion.div>
@@ -584,89 +508,9 @@ export default function StatsPage() {
               </div>
             )}
           </motion.div>
+
         </div>
       </main>
-
-      {/* Client detail modal */}
-      <AnimatePresence>
-        {selectedClient && (
-          <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={() => setSelectedClient(null)}>
-            <motion.div
-              initial={{ opacity: 0, scale: 0.96, y: 8 }} animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.96, y: 8 }} transition={{ type: 'spring', stiffness: 320, damping: 28 }}
-              className="bg-white rounded-2xl w-full max-w-2xl shadow-2xl max-h-[85vh] flex flex-col"
-              onClick={e => e.stopPropagation()}
-            >
-              <div className="flex items-center justify-between px-6 py-5 border-b border-gray-100">
-                <div className="flex items-center gap-3">
-                  <div className="w-11 h-11 bg-gradient-to-br from-blue-100 to-indigo-200 rounded-xl flex items-center justify-center">
-                    <span className="text-lg font-black text-blue-600">{selectedClient[0].toUpperCase()}</span>
-                  </div>
-                  <div>
-                    <h2 className="text-lg font-bold text-gray-900">{selectedClient}</h2>
-                    <p className="text-sm text-gray-400">{clientVolts.length} vault{clientVolts.length !== 1 ? 's' : ''}</p>
-                  </div>
-                </div>
-                <button onClick={() => setSelectedClient(null)} className="text-gray-400 hover:text-gray-600 p-1">
-                  <XMarkIcon className="w-5 h-5" />
-                </button>
-              </div>
-              <div className="px-6 py-3 flex gap-2 flex-wrap border-b border-gray-50">
-                {Object.entries(clientVolts.reduce((acc: any, b) => {
-                  const st = b.estado || b.status || 'PENDING';
-                  acc[st] = (acc[st] || 0) + 1; return acc;
-                }, {})).map(([st, count]: any) => {
-                  const cfg = STATUS_CFG[st];
-                  return cfg ? <span key={st} className={`text-xs font-semibold px-3 py-1 rounded-full ${cfg.bg} ${cfg.text}`}>{cfg.label}: {count}</span> : null;
-                })}
-                {Object.entries(clientVolts.reduce((acc: any, b) => {
-                  const j = b.job_type || 'Unknown'; acc[j] = (acc[j] || 0) + 1; return acc;
-                }, {})).map(([job, count]: any) => (
-                  <span key={job} className={`text-xs font-semibold px-3 py-1 rounded-full ${JOB_TEXT[job] || 'bg-gray-100 text-gray-600'}`}>{job}: {count}</span>
-                ))}
-              </div>
-              <div className="overflow-y-auto overflow-x-auto flex-1">
-                <table className="w-full min-w-[320px] text-sm">
-                  <thead className="sticky top-0 bg-white border-b border-gray-100">
-                    <tr>
-                      <th className="text-left text-xs font-semibold text-gray-400 uppercase tracking-wide px-4 py-3">Position</th>
-                      <th className="text-left text-xs font-semibold text-gray-400 uppercase tracking-wide px-4 py-3">Job Type</th>
-                      <th className="hidden md:table-cell text-left text-xs font-semibold text-gray-400 uppercase tracking-wide px-4 py-3">Warehouse</th>
-                      <th className="hidden md:table-cell text-left text-xs font-semibold text-gray-400 uppercase tracking-wide px-4 py-3">Packer</th>
-                      <th className="text-left text-xs font-semibold text-gray-400 uppercase tracking-wide px-4 py-3">Job Status</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {clientVolts.slice(clientPage * PAGE_SIZE, (clientPage + 1) * PAGE_SIZE).map((box, i) => {
-                      const status = box.estado || box.status || 'PENDING';
-                      const cfg = STATUS_CFG[status] || { label: status, bg: 'bg-gray-100', text: 'text-gray-600' };
-                      const pos = box.row && box.column ? `${box.row}${box.column} L${box.level}` : box.position || '—';
-                      return (
-                        <tr key={box.box_id || i} className="border-b border-gray-50 hover:bg-gray-50 transition-colors">
-                          <td className="px-4 py-3 font-semibold text-gray-900">{pos}</td>
-                          <td className="px-4 py-3"><div className="flex items-center gap-1.5"><div className="w-2 h-2 rounded-full" style={{ backgroundColor: JOB_COLORS[box.job_type] || '#9ca3af' }} /><span className="text-gray-600">{box.job_type || '—'}</span></div></td>
-                          <td className="hidden md:table-cell px-4 py-3 text-gray-500"><div className="flex items-center gap-1"><BuildingOffice2Icon className="w-3.5 h-3.5" />{whNames[box.warehouse_id] || '—'}</div></td>
-                          <td className="hidden md:table-cell px-4 py-3 text-gray-500">{box.packer || '—'}</td>
-                          <td className="px-4 py-3"><span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${cfg.bg} ${cfg.text}`}>{cfg.label}</span></td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-                {clientVolts.length > PAGE_SIZE && (
-                  <div className="flex items-center justify-between px-6 py-3 border-t border-gray-100 text-sm">
-                    <span className="text-gray-400">{clientPage * PAGE_SIZE + 1}–{Math.min((clientPage + 1) * PAGE_SIZE, clientVolts.length)} of {clientVolts.length}</span>
-                    <div className="flex gap-2">
-                      <button onClick={() => setClientPage(p => Math.max(0, p - 1))} disabled={clientPage === 0} className="px-3 py-1 rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-50 disabled:opacity-40">Previous</button>
-                      <button onClick={() => setClientPage(p => p + 1)} disabled={(clientPage + 1) * PAGE_SIZE >= clientVolts.length} className="px-3 py-1 rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-50 disabled:opacity-40">Next</button>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
     </div>
   );
 }

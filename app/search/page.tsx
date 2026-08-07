@@ -23,7 +23,7 @@ function SearchContent() {
   const statusFilter = searchParams.get('status');
   const router = useRouter();
 
-  const [query, setQuery]                     = useState('');
+  const [query, setQuery]                     = useState(searchParams.get('q') || '');
   const [results, setResults]                 = useState<any[]>([]);
   const [storageResults, setStorageResults]   = useState<any[]>([]);
   const [loading, setLoading]                 = useState(false);
