@@ -20,9 +20,8 @@ const STATUS_CONFIG: Record<string, { color: string; label: string }> = {
 };
 
 export default function StoragePage() {
-  const { user } = useAuth();
+  const { user, canManage } = useAuth();
   const router = useRouter();
-  const isOwner = user?.role === 'owner';
 
   const [units, setUnits] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -75,7 +74,7 @@ export default function StoragePage() {
           <div>
             <h1 className="text-2xl font-bold text-gray-900">Storage</h1>
           </div>
-          {isOwner && (
+          {canManage && (
             <button
               onClick={() => { setShowCreate(s => !s); setCreateError(''); }}
               className="flex items-center gap-2 px-4 py-2 bg-gray-950 text-white text-sm font-medium rounded-full hover:bg-gray-800 transition-colors"
@@ -204,7 +203,7 @@ export default function StoragePage() {
           <div className="text-center py-16 text-gray-400">
             <ArchiveBoxIcon className="w-12 h-12 mx-auto mb-3 opacity-30" />
             <p className="font-medium">No storage units yet</p>
-            {isOwner && <p className="text-sm mt-1">Create your first storage unit to get started</p>}
+            {canManage && <p className="text-sm mt-1">Create your first storage unit to get started</p>}
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">

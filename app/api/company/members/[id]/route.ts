@@ -1,6 +1,70 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getPbAdminToken, PB_URL } from '@/lib/pb-admin';
 
+export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const authHeader = req.headers.get('Authorization') || '';
+  const userToken  = authHeader.replace('Bearer ', '').trim();
+  if (!userToken) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+  const { id: targetUserId } = await params;
+  const body = await req.json().catch(() => ({}));
+  const newRole = body.role;
+  if (newRole !== 'manager' && newRole !== 'worker') {
+    return NextResponse.json({ error: 'role must be "manager" or "worker"' }, { status: 400 });
+  }
+
+  let adminToken: string;
+  try { adminToken = await getPbAdminToken(); }
+  catch { return NextResponse.json({ error: 'Admin auth failed' }, { status: 500 }); }
+
+  // Verify requester is owner
+  const meRes = await fetch(`${PB_URL}/api/collections/users/auth-refresh`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${userToken}` },
+  });
+  if (!meRes.ok) return NextResponse.json({ error: 'Invalid session' }, { status: 401 });
+  const { record: me } = await meRes.json();
+  if (!me?.id || !me.company_id) return NextResponse.json({ error: 'Invalid session' }, { status: 401 });
+  if (me.role !== 'owner') return NextResponse.json({ error: 'Only the company owner can change roles' }, { status: 403 });
+
+  // Cannot change own role
+  if (me.id === targetUserId) return NextResponse.json({ error: 'Cannot change your own role' }, { status: 400 });
+
+  // Fetch target
+  const targetRes = await fetch(`${PB_URL}/api/collections/users/records/${targetUserId}`, {
+    headers: { Authorization: `Bearer ${adminToken}` },
+  });
+  if (!targetRes.ok) return NextResponse.json({ error: 'Member not found' }, { status: 404 });
+  const target = await targetRes.json();
+
+  if (target.company_id !== me.company_id) return NextResponse.json({ error: 'Member not in your company' }, { status: 403 });
+  if (target.role === 'owner') return NextResponse.json({ error: 'Cannot change the owner role' }, { status: 400 });
+
+  // If promoting to manager, check max 5 managers
+  if (newRole === 'manager') {
+    const managersRes = await fetch(
+      `${PB_URL}/api/collections/users/records?filter=company_id%3D%22${me.company_id}%22%20%26%26%20role%3D%22manager%22&perPage=10&fields=id`,
+      { headers: { Authorization: `Bearer ${adminToken}` } }
+    );
+    if (managersRes.ok) {
+      const managersData = await managersRes.json();
+      if ((managersData.totalItems ?? managersData.items?.length ?? 0) >= 5) {
+        return NextResponse.json({ error: 'Maximum 5 managers per company' }, { status: 400 });
+      }
+    }
+  }
+
+  // Update role
+  const updateRes = await fetch(`${PB_URL}/api/collections/users/records/${targetUserId}`, {
+    method: 'PATCH',
+    headers: { Authorization: `Bearer ${adminToken}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ role: newRole }),
+  });
+  if (!updateRes.ok) return NextResponse.json({ error: 'Failed to update role' }, { status: 500 });
+
+  return NextResponse.json({ ok: true, role: newRole });
+}
+
 export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const authHeader = req.headers.get('Authorization') || '';
   const userToken  = authHeader.replace('Bearer ', '').trim();

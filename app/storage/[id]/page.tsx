@@ -44,8 +44,7 @@ async function geocode(address: string, city: string, state: string): Promise<st
 export default function StorageDetailPage() {
   const { id } = useParams();
   const router = useRouter();
-  const { user } = useAuth();
-  const isOwner = user?.role === 'owner';
+  const { user, canManage } = useAuth();
   const fileRef = useRef<HTMLInputElement>(null);
 
   const [unit, setUnit] = useState<any>(null);
@@ -238,7 +237,7 @@ export default function StorageDetailPage() {
                 <CheckIcon className="w-4 h-4" /> Saved
               </motion.span>
             )}
-            {isOwner && !editMode && (
+            {canManage && !editMode && (
               <button onClick={startEdit}
                 className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-600 bg-white border border-gray-200 rounded-xl hover:border-blue-400 hover:text-blue-600 transition-colors">
                 <PencilIcon className="w-4 h-4" /> Edit
@@ -293,7 +292,7 @@ export default function StorageDetailPage() {
                 <h2 className="text-sm font-semibold text-gray-700">Position Map</h2>
                 <span className="text-xs text-gray-400">{gridRows}×{gridCols}</span>
               </div>
-              {isOwner && (
+              {canManage && (
                 <button onClick={() => { setGridConfigForm({ rows: gridRows, cols: gridCols }); setShowGridConfig(s => !s); }}
                   className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-blue-600 transition-colors px-2 py-1 rounded-lg hover:bg-blue-50">
                   <AdjustmentsHorizontalIcon className="w-3.5 h-3.5" /> Configure
@@ -450,7 +449,7 @@ export default function StorageDetailPage() {
                 </div>
                 <div>
                   <p className="text-sm text-gray-400">No address set</p>
-                  {isOwner && <p className="text-xs text-gray-300">Edit this unit to add a location</p>}
+                  {canManage && <p className="text-xs text-gray-300">Edit this unit to add a location</p>}
                 </div>
               </div>
             )}
@@ -584,7 +583,7 @@ export default function StorageDetailPage() {
               Save Changes
             </button>
           </div>
-        ) : isOwner && (
+        ) : canManage && (
           <button onClick={deleteUnit}
             className="flex items-center gap-2 px-4 py-2 text-sm text-red-500 hover:bg-red-50 rounded-xl transition-colors">
             <TrashIcon className="w-4 h-4" /> Delete Storage Unit

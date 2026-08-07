@@ -11,8 +11,7 @@ import ConfirmModal from '@/components/ConfirmModal';
 import { parseDateOpt } from '@/lib/utils';
 
 export default function DeletedPage() {
-  const { user } = useAuth();
-  const isOwner = user?.role === 'owner';
+  const { user, canManage } = useAuth();
   const [deleted, setDeleted] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -109,7 +108,7 @@ export default function DeletedPage() {
                       <p className="text-xs text-gray-400">{box.deleted_at ? parseDateOpt(box.deleted_at)?.toLocaleDateString() ?? '-' : '-'}</p>
                     </div>
                   </div>
-                  {isOwner && (
+                  {canManage && (
                     <div className="flex gap-2 mt-3">
                       <button onClick={() => restore(box.id)}
                         className="flex-1 flex items-center justify-center gap-1 text-xs text-green-600 bg-green-50 hover:bg-green-100 px-3 py-2 rounded-xl transition-colors font-medium">
@@ -152,13 +151,13 @@ export default function DeletedPage() {
                       <td className="px-6 py-4 text-sm text-gray-400">{box.deleted_at ? parseDateOpt(box.deleted_at)?.toLocaleDateString() ?? '-' : '-'}</td>
                       <td className="px-6 py-4">
                         <div className="flex gap-2">
-                          {isOwner && (
+                          {canManage && (
                             <button onClick={() => restore(box.id)}
                               className="flex items-center gap-1 text-xs text-green-600 hover:bg-green-50 px-2.5 py-1.5 rounded-lg transition-colors">
                               <ArrowPathIcon className="w-3 h-3" /> Restore
                             </button>
                           )}
-                          {isOwner && (
+                          {canManage && (
                             <button onClick={() => permDelete(box.id)}
                               className="flex items-center gap-1 text-xs text-red-500 hover:bg-red-50 px-2.5 py-1.5 rounded-lg transition-colors">
                               <TrashIcon className="w-3 h-3" /> Permanently Delete

@@ -23,6 +23,9 @@ export interface User {
 
 interface AuthContextType {
   user: User | null;
+  isOwner: boolean;
+  isManager: boolean;
+  canManage: boolean;
   loading: boolean;
   sessionExpired: boolean;
   logout: () => Promise<void>;
@@ -136,8 +139,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUser(prev => prev ? { ...prev, picture } : prev);
   };
 
+  const isOwner   = user?.role === 'owner';
+  const isManager = user?.role === 'manager';
+  const canManage = !!(isOwner || isManager);
+
   return (
-    <AuthContext.Provider value={{ user, loading, sessionExpired, logout, refreshUser, setUserFromLogin, updatePicture }}>
+    <AuthContext.Provider value={{ user, isOwner, isManager, canManage, loading, sessionExpired, logout, refreshUser, setUserFromLogin, updatePicture }}>
       {children}
     </AuthContext.Provider>
   );

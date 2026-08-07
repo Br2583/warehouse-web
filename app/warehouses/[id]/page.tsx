@@ -12,6 +12,7 @@ import Sidebar from '@/components/Sidebar';
 import VaultForm, { VaultFormData } from '@/components/VaultForm';
 import QRScanner from '@/components/QRScanner';
 import { api } from '@/lib/api';
+import { useAuth } from '@/lib/auth-context';
 import { useToast } from '@/lib/toast-context';
 import { useParams, useSearchParams } from 'next/navigation';
 import { compressImage } from '@/lib/compress-image';
@@ -64,6 +65,7 @@ const emptyForm = (): VaultFormData => ({
 export default function WarehouseDetailPage() {
   const { id } = useParams();
   const searchParams = useSearchParams();
+  const { canManage } = useAuth();
   const { showToast } = useToast();
   const warehouseId = id as string;
   const [warehouseName, setWarehouseName] = useState('');
@@ -322,14 +324,16 @@ export default function WarehouseDetailPage() {
           </div>
           <div className="flex items-center gap-2">
             {/* Grid size button */}
-            <button
-              onClick={() => { setGridRowsInput(warehouseRows); setGridColsInput(warehouseCols); setShowGridEdit(v => !v); }}
-              className={`flex items-center gap-1.5 px-3 py-2 text-sm border rounded-xl transition-colors ${showGridEdit ? 'bg-gray-100 border-gray-300 text-gray-700' : 'bg-white border-gray-200 text-gray-500 hover:text-gray-700'}`}
-              title="Edit grid dimensions"
-            >
-              <Cog6ToothIcon className="w-4 h-4" />
-              <span className="hidden sm:inline text-xs">{warehouseRows}×{warehouseCols}</span>
-            </button>
+            {canManage && (
+              <button
+                onClick={() => { setGridRowsInput(warehouseRows); setGridColsInput(warehouseCols); setShowGridEdit(v => !v); }}
+                className={`flex items-center gap-1.5 px-3 py-2 text-sm border rounded-xl transition-colors ${showGridEdit ? 'bg-gray-100 border-gray-300 text-gray-700' : 'bg-white border-gray-200 text-gray-500 hover:text-gray-700'}`}
+                title="Edit grid dimensions"
+              >
+                <Cog6ToothIcon className="w-4 h-4" />
+                <span className="hidden sm:inline text-xs">{warehouseRows}×{warehouseCols}</span>
+              </button>
+            )}
             {/* View toggle */}
             <div className="flex bg-white border border-gray-200 rounded-xl overflow-hidden">
               <button
@@ -352,12 +356,14 @@ export default function WarehouseDetailPage() {
             >
               <QrCodeIcon className="w-4 h-4" /><span className="hidden sm:inline">Scan QR</span>
             </button>
-            <button
-              onClick={() => { setForm(emptyForm()); setShowAdd(true); setSaveError(''); }}
-              className="flex items-center gap-2 px-3 py-2 md:px-4 md:py-2.5 bg-gray-950 text-white text-sm font-medium rounded-full hover:bg-gray-800 transition-colors"
-            >
-              <PlusIcon className="w-4 h-4" /><span className="hidden sm:inline">Add Vault</span><span className="sm:hidden">Add</span>
-            </button>
+            {canManage && (
+              <button
+                onClick={() => { setForm(emptyForm()); setShowAdd(true); setSaveError(''); }}
+                className="flex items-center gap-2 px-3 py-2 md:px-4 md:py-2.5 bg-gray-950 text-white text-sm font-medium rounded-full hover:bg-gray-800 transition-colors"
+              >
+                <PlusIcon className="w-4 h-4" /><span className="hidden sm:inline">Add Vault</span><span className="sm:hidden">Add</span>
+              </button>
+            )}
           </div>
         </div>
 
@@ -624,20 +630,22 @@ export default function WarehouseDetailPage() {
                   )}
                 </div>
 
-                <div className="flex gap-3 mt-4">
-                  <button
-                    onClick={() => openEdit(selected)}
-                    className="flex items-center gap-2 px-4 py-2 text-sm text-blue-600 hover:bg-blue-50 rounded-xl transition-colors font-medium"
-                  >
-                    <PencilIcon className="w-4 h-4" /> Edit
-                  </button>
-                  <button
-                    onClick={() => deleteBox(selected.box_id)}
-                    className="flex items-center gap-2 px-4 py-2 text-sm text-red-600 hover:bg-red-50 rounded-xl transition-colors"
-                  >
-                    <TrashIcon className="w-4 h-4" /> Delete
-                  </button>
-                </div>
+                {canManage && (
+                  <div className="flex gap-3 mt-4">
+                    <button
+                      onClick={() => openEdit(selected)}
+                      className="flex items-center gap-2 px-4 py-2 text-sm text-blue-600 hover:bg-blue-50 rounded-xl transition-colors font-medium"
+                    >
+                      <PencilIcon className="w-4 h-4" /> Edit
+                    </button>
+                    <button
+                      onClick={() => deleteBox(selected.box_id)}
+                      className="flex items-center gap-2 px-4 py-2 text-sm text-red-600 hover:bg-red-50 rounded-xl transition-colors"
+                    >
+                      <TrashIcon className="w-4 h-4" /> Delete
+                    </button>
+                  </div>
+                )}
               </motion.div>
             </div>
           )}

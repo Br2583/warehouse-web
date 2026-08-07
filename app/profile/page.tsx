@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   PencilSquareIcon, ExclamationCircleIcon, ShieldCheckIcon,
+  UserGroupIcon, ArrowUpIcon, ArrowDownIcon,
 } from '@heroicons/react/24/outline';
 import Sidebar from '@/components/Sidebar';
 import { UserAvatar } from '@/components/UserAvatar';
@@ -41,6 +42,12 @@ export default function ProfilePage() {
   const [companySaving, setCompanySaving] = useState(false);
   const [companyError, setCompanyError] = useState('');
 
+  // Team Roles (owner only)
+  const [members, setMembers] = useState<any[]>([]);
+  const [membersLoading, setMembersLoading] = useState(false);
+  const [roleChangingId, setRoleChangingId] = useState<string | null>(null);
+  const [roleError, setRoleError] = useState('');
+
 
   useEffect(() => {
     if (!pickerOpen) return;
@@ -68,6 +75,39 @@ export default function ProfilePage() {
       .then(d => setIsAdmin(!!d?.isAdmin))
       .catch(() => {});
   }, []);
+
+  const isOwner = company?.is_owner;
+
+  useEffect(() => {
+    if (!isOwner) return;
+    setMembersLoading(true);
+    api.get('/api/company/members')
+      .then((data: any[]) => setMembers(Array.isArray(data) ? data : []))
+      .catch(() => {})
+      .finally(() => setMembersLoading(false));
+  }, [isOwner]);
+
+  const changeRole = async (memberId: string, newRole: 'manager' | 'worker') => {
+    const token = getToken();
+    if (!token) return;
+    setRoleChangingId(memberId);
+    setRoleError('');
+    try {
+      const res = await fetch(`/api/company/members/${memberId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ role: newRole }),
+      });
+      const data = await res.json();
+      if (!res.ok) { setRoleError(data.error || 'Failed to update role'); return; }
+      setMembers(prev => prev.map(m => m.user_id === memberId ? { ...m, role: newRole } : m));
+      showToast(newRole === 'manager' ? 'Promoted to Manager' : 'Demoted to Worker');
+    } catch {
+      setRoleError('Failed to update role');
+    } finally {
+      setRoleChangingId(null);
+    }
+  };
 
   const handleAvatarSelect = async (avatarValue: string) => {
     if (!user) return;
@@ -138,8 +178,6 @@ export default function ProfilePage() {
     }
     setCompanySaving(false);
   };
-
-  const isOwner = company?.is_owner;
 
   return (
     <div className="flex min-h-screen bg-gray-50">
@@ -358,11 +396,89 @@ export default function ProfilePage() {
               </motion.div>
             )}
 
-            {isAdmin && (
+            {/* ─── Team Roles (owner only) ─── */}
+            {isOwner && (
               <motion.div
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.12 }}
+                className="bg-white rounded-2xl border border-gray-100 p-6"
+              >
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-2">
+                    <UserGroupIcon className="w-4 h-4 text-blue-500" />
+                    <h3 className="font-semibold text-gray-900">Team Roles</h3>
+                  </div>
+                  <span className="text-xs text-gray-400 bg-gray-50 px-2.5 py-1 rounded-full">
+                    Managers: {members.filter(m => m.role === 'manager').length}/5
+                  </span>
+                </div>
+
+                {roleError && (
+                  <div className="flex items-center gap-2 bg-red-50 border border-red-100 text-red-700 text-sm rounded-xl px-3 py-2 mb-3">
+                    <ExclamationCircleIcon className="w-4 h-4 flex-shrink-0" />
+                    <span className="flex-1">{roleError}</span>
+                    <button onClick={() => setRoleError('')} className="text-red-400 hover:text-red-600">×</button>
+                  </div>
+                )}
+
+                {membersLoading ? (
+                  <div className="space-y-2.5">
+                    {[1, 2, 3].map(i => <div key={i} className="h-10 bg-gray-50 rounded-xl animate-pulse" />)}
+                  </div>
+                ) : (
+                  <div className="space-y-2.5">
+                    {members.filter(m => m.role !== 'owner').map(m => {
+                      const managerCount = members.filter(x => x.role === 'manager').length;
+                      const canPromote = m.role === 'worker' && managerCount < 5;
+                      return (
+                        <div key={m.user_id} className="flex items-center gap-3">
+                          <UserAvatar picture={m.picture} name={m.name} size={32} />
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium text-gray-900 truncate">{m.name}</p>
+                            <p className="text-xs text-gray-400 capitalize">{m.role}</p>
+                          </div>
+                          {m.role === 'worker' ? (
+                            <button
+                              onClick={() => changeRole(m.user_id, 'manager')}
+                              disabled={!canPromote || roleChangingId === m.user_id}
+                              title={canPromote ? 'Promote to Manager' : 'Maximum 5 managers reached'}
+                              className="flex items-center gap-1 text-xs text-blue-600 hover:bg-blue-50 px-2.5 py-1.5 rounded-lg transition-colors disabled:opacity-40 disabled:cursor-not-allowed flex-shrink-0"
+                            >
+                              {roleChangingId === m.user_id
+                                ? <span className="w-3 h-3 border-2 border-blue-300 border-t-blue-600 rounded-full animate-spin block" />
+                                : <><ArrowUpIcon className="w-3 h-3" /> Promote</>
+                              }
+                            </button>
+                          ) : (
+                            <button
+                              onClick={() => changeRole(m.user_id, 'worker')}
+                              disabled={roleChangingId === m.user_id}
+                              title="Demote to Worker"
+                              className="flex items-center gap-1 text-xs text-amber-600 hover:bg-amber-50 px-2.5 py-1.5 rounded-lg transition-colors disabled:opacity-40 flex-shrink-0"
+                            >
+                              {roleChangingId === m.user_id
+                                ? <span className="w-3 h-3 border-2 border-amber-300 border-t-amber-600 rounded-full animate-spin block" />
+                                : <><ArrowDownIcon className="w-3 h-3" /> Demote</>
+                              }
+                            </button>
+                          )}
+                        </div>
+                      );
+                    })}
+                    {members.filter(m => m.role !== 'owner').length === 0 && (
+                      <p className="text-sm text-gray-400 text-center py-2">No team members yet</p>
+                    )}
+                  </div>
+                )}
+              </motion.div>
+            )}
+
+            {isAdmin && (
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.16 }}
                 className="bg-white rounded-2xl border border-gray-100 p-6"
               >
                 <div className="flex items-center gap-2 mb-1">
