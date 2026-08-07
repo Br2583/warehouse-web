@@ -60,7 +60,10 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     headers: { Authorization: `Bearer ${adminToken}`, 'Content-Type': 'application/json' },
     body: JSON.stringify({ role: newRole }),
   });
-  if (!updateRes.ok) return NextResponse.json({ error: 'Failed to update role' }, { status: 500 });
+  if (!updateRes.ok) {
+    const errBody = await updateRes.json().catch(() => ({}));
+    return NextResponse.json({ error: 'Failed to update role', detail: errBody }, { status: 500 });
+  }
 
   return NextResponse.json({ ok: true, role: newRole });
 }
