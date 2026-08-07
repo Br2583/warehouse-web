@@ -89,18 +89,21 @@ function filterByPeriod(boxes: any[], period: Period): any[] {
 
 export default function StatsPage() {
   const router = useRouter();
-  const [boxes, setBoxes]     = useState<any[]>([]);
-  const [whNames, setWhNames] = useState<Record<string, string>>({});
-  const [loading, setLoading] = useState(true);
-  const [loadError, setLoadError] = useState<string | null>(null);
-  const [period, setPeriod]   = useState<Period>('all');
+  const [boxes, setBoxes]           = useState<any[]>([]);
+  const [whNames, setWhNames]       = useState<Record<string, string>>({});
+  const [storageUnits, setStorageUnits] = useState<any[]>([]);
+  const [loading, setLoading]       = useState(true);
+  const [loadError, setLoadError]   = useState<string | null>(null);
+  const [period, setPeriod]         = useState<Period>('all');
+  const [expandedClient, setExpandedClient] = useState<string | null>(null);
 
   useEffect(() => {
     const load = async () => {
       try {
-        const [ab, whs] = await Promise.allSettled([
+        const [ab, whs, st] = await Promise.allSettled([
           api.get('/api/boxes'),
           api.get('/api/warehouses'),
+          api.get('/api/storage'),
         ]);
         if (ab.status === 'fulfilled') {
           const d = ab.value;
@@ -111,6 +114,10 @@ export default function StatsPage() {
           const map: Record<string, string> = {};
           arr.forEach((w: any) => { map[w.warehouse_id || w.id] = w.name; });
           setWhNames(map);
+        }
+        if (st.status === 'fulfilled') {
+          const arr: any[] = Array.isArray(st.value) ? st.value : st.value?.units || [];
+          setStorageUnits(arr);
         }
         if ([ab, whs].every(r => r.status === 'rejected')) {
           setLoadError('Failed to load stats. Try again.');
@@ -155,21 +162,31 @@ export default function StatsPage() {
   [filteredBoxes]);
 
   const clientList = useMemo(() => {
-    const map: Record<string, { count: number; byJob: Record<string, number> }> = {};
+    const map: Record<string, { count: number; byJob: Record<string, number>; byStatus: Record<string, number>; byCondition: Record<string, number> }> = {};
     filteredBoxes.forEach(b => {
       const name = (b.client_name || 'Unknown').trim();
-      if (!map[name]) map[name] = { count: 0, byJob: {} };
+      if (!map[name]) map[name] = { count: 0, byJob: {}, byStatus: {}, byCondition: {} };
       map[name].count++;
       map[name].byJob[b.job_type || 'Unknown'] = (map[name].byJob[b.job_type || 'Unknown'] || 0) + 1;
+      const st = b.estado || b.status || 'PENDING';
+      map[name].byStatus[st] = (map[name].byStatus[st] || 0) + 1;
+      (Array.isArray(b.vault_status) ? b.vault_status : []).forEach((c: string) => {
+        map[name].byCondition[c] = (map[name].byCondition[c] || 0) + 1;
+      });
     });
     return Object.entries(map)
       .map(([name, d]) => ({
         name,
         count: d.count,
         topJob: Object.entries(d.byJob).sort((a, b) => b[1] - a[1])[0]?.[0] || '',
+        byStatus: d.byStatus,
+        byCondition: d.byCondition,
+        storageList: storageUnits.filter(s =>
+          (s.client_name || '').trim().toLowerCase() === name.toLowerCase()
+        ),
       }))
       .sort((a, b) => b.count - a.count);
-  }, [filteredBoxes]);
+  }, [filteredBoxes, storageUnits]);
 
   if (loading) return (
     <div className="flex min-h-screen bg-gray-50">
@@ -471,38 +488,154 @@ export default function StatsPage() {
                 {clientList.map((client, i) => {
                   const maxCount = clientList[0]?.count || 1;
                   const pct = (client.count / maxCount) * 100;
+                  const isExpanded = expandedClient === client.name;
                   return (
-                    <motion.div
-                      key={client.name}
-                      initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.02 }}
-                      onClick={() => router.push(`/search?q=${encodeURIComponent(client.name)}`)}
-                      className="group flex items-center gap-3 px-3 py-3 rounded-xl hover:bg-gray-50 cursor-pointer transition-all"
-                    >
-                      <div className="w-8 h-8 bg-gradient-to-br from-blue-100 to-indigo-100 rounded-xl flex items-center justify-center flex-shrink-0">
-                        <span className="text-xs font-bold text-blue-600">{client.name[0]?.toUpperCase()}</span>
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center justify-between mb-1.5">
-                          <div className="flex items-center gap-2 min-w-0">
-                            <p className="text-sm font-semibold text-gray-900 truncate">{client.name}</p>
-                            {client.topJob && (
-                              <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full flex-shrink-0 ${JOB_TEXT[client.topJob] || 'bg-gray-100 text-gray-600'}`}>
-                                {client.topJob}
-                              </span>
-                            )}
+                    <div key={client.name}>
+                      {/* Collapsed row */}
+                      <motion.div
+                        initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.02 }}
+                        onClick={() => setExpandedClient(isExpanded ? null : client.name)}
+                        className="group flex items-center gap-3 px-3 py-3 rounded-xl hover:bg-gray-50 cursor-pointer transition-all"
+                      >
+                        <div className="w-8 h-8 bg-gradient-to-br from-blue-100 to-indigo-100 rounded-xl flex items-center justify-center flex-shrink-0">
+                          <span className="text-xs font-bold text-blue-600">{client.name[0]?.toUpperCase()}</span>
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center justify-between mb-1.5">
+                            <div className="flex items-center gap-2 min-w-0">
+                              <p className="text-sm font-semibold text-gray-900 truncate">{client.name}</p>
+                              {client.topJob && (
+                                <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full flex-shrink-0 ${JOB_TEXT[client.topJob] || 'bg-gray-100 text-gray-600'}`}>
+                                  {client.topJob}
+                                </span>
+                              )}
+                            </div>
+                            <span className="text-xs text-gray-400 ml-2 flex-shrink-0">
+                              {client.count} vault{client.count !== 1 ? 's' : ''}
+                              {client.storageList.length > 0 ? ` · ${client.storageList.length} storage` : ''}
+                            </span>
                           </div>
-                          <span className="text-sm font-bold text-gray-900 ml-2 flex-shrink-0">{client.count}</span>
+                          <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                            <motion.div
+                              initial={{ width: 0 }} animate={{ width: `${pct}%` }}
+                              transition={{ duration: 0.7, delay: 0.65 + i * 0.03 }}
+                              className="h-full rounded-full bg-gradient-to-r from-blue-500 to-indigo-500"
+                            />
+                          </div>
                         </div>
-                        <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
-                          <motion.div
-                            initial={{ width: 0 }} animate={{ width: `${pct}%` }}
-                            transition={{ duration: 0.7, delay: 0.65 + i * 0.03 }}
-                            className="h-full rounded-full bg-gradient-to-r from-blue-500 to-indigo-500"
-                          />
-                        </div>
-                      </div>
-                      <ChevronRightIcon className="w-4 h-4 text-gray-300 group-hover:text-blue-500 transition-colors flex-shrink-0" />
-                    </motion.div>
+                        <motion.div animate={{ rotate: isExpanded ? 90 : 0 }} transition={{ duration: 0.2 }}>
+                          <ChevronRightIcon className={`w-4 h-4 flex-shrink-0 transition-colors ${isExpanded ? 'text-blue-500' : 'text-gray-300 group-hover:text-blue-400'}`} />
+                        </motion.div>
+                      </motion.div>
+
+                      {/* Expanded panel */}
+                      {isExpanded && (
+                        <motion.div
+                          initial={{ opacity: 0, height: 0 }}
+                          animate={{ opacity: 1, height: 'auto' }}
+                          transition={{ duration: 0.2 }}
+                          className="mx-3 mb-2 overflow-hidden"
+                        >
+                          <div className="p-4 bg-gray-50 rounded-xl border border-gray-100">
+                            {/* 2-col: Status + Condition */}
+                            <div className="grid grid-cols-2 gap-6 mb-4">
+                              {/* By Status */}
+                              <div>
+                                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2.5">By Status</p>
+                                <div className="space-y-2">
+                                  {[
+                                    { key: 'PENDING',   label: 'Pending',   color: '#f59e0b' },
+                                    { key: 'READY',     label: 'Ready',     color: '#22c55e' },
+                                    { key: 'DELIVERED', label: 'Delivered', color: '#3b82f6' },
+                                  ].map(({ key, label, color }) => {
+                                    const val = client.byStatus[key] || 0;
+                                    if (val === 0) return null;
+                                    return (
+                                      <div key={key}>
+                                        <div className="flex items-center justify-between mb-1">
+                                          <span className="text-xs text-gray-500">{label}</span>
+                                          <span className="text-xs font-bold text-gray-900">{val}</span>
+                                        </div>
+                                        <div className="h-1.5 bg-white rounded-full overflow-hidden border border-gray-100">
+                                          <div
+                                            className="h-full rounded-full transition-all"
+                                            style={{ width: `${(val / client.count) * 100}%`, backgroundColor: color }}
+                                          />
+                                        </div>
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                              </div>
+
+                              {/* By Condition */}
+                              <div>
+                                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2.5">By Condition</p>
+                                {Object.keys(client.byCondition).length === 0 ? (
+                                  <p className="text-xs text-gray-300">No conditions tagged</p>
+                                ) : (
+                                  <div className="space-y-2">
+                                    {Object.entries(client.byCondition)
+                                      .sort((a, b) => b[1] - a[1])
+                                      .map(([cond, val]) => (
+                                        <div key={cond}>
+                                          <div className="flex items-center justify-between mb-1">
+                                            <span className="text-xs text-gray-500 truncate">{cond}</span>
+                                            <span className="text-xs font-bold text-gray-900 ml-1">{val}</span>
+                                          </div>
+                                          <div className="h-1.5 bg-white rounded-full overflow-hidden border border-gray-100">
+                                            <div
+                                              className="h-full rounded-full bg-violet-400"
+                                              style={{ width: `${(val / client.count) * 100}%` }}
+                                            />
+                                          </div>
+                                        </div>
+                                      ))}
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+
+                            {/* Storage units */}
+                            {client.storageList.length > 0 && (
+                              <div className="border-t border-gray-200 pt-3 mb-3">
+                                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2">
+                                  Storage Units ({client.storageList.length})
+                                </p>
+                                <div className="space-y-1">
+                                  {client.storageList.map((s: any) => (
+                                    <button
+                                      key={s.id}
+                                      onClick={(e) => { e.stopPropagation(); router.push(`/storage/${s.id}`); }}
+                                      className="w-full flex items-center gap-2 text-left px-2 py-1.5 rounded-lg hover:bg-white transition-colors group/s"
+                                    >
+                                      <BuildingOffice2Icon className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
+                                      <span className="text-xs font-medium text-gray-700 truncate flex-1">{s.unit_name || 'Unnamed'}</span>
+                                      {(s.city || s.state) && (
+                                        <span className="text-[10px] text-gray-400 flex-shrink-0">{[s.city, s.state].filter(Boolean).join(', ')}</span>
+                                      )}
+                                      {s.status && (
+                                        <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-gray-100 text-gray-500 flex-shrink-0">{s.status}</span>
+                                      )}
+                                      <ChevronRightIcon className="w-3 h-3 text-gray-300 group-hover/s:text-blue-400 flex-shrink-0" />
+                                    </button>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+
+                            {/* View all vaults link */}
+                            <button
+                              onClick={(e) => { e.stopPropagation(); router.push(`/search?q=${encodeURIComponent(client.name)}`); }}
+                              className="flex items-center gap-1 text-xs font-semibold text-blue-600 hover:text-blue-800 transition-colors"
+                            >
+                              View all vaults
+                              <ChevronRightIcon className="w-3 h-3" />
+                            </button>
+                          </div>
+                        </motion.div>
+                      )}
+                    </div>
                   );
                 })}
               </div>
