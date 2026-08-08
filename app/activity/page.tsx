@@ -76,7 +76,7 @@ function InitialAvatar({ name }: { name: string }) {
 }
 
 export default function ActivityPage() {
-  const { canManage } = useAuth();
+  const { canManage, loading: authLoading } = useAuth();
   const router = useRouter();
 
   const [items, setItems]       = useState<ActivityItem[]>([]);
@@ -91,8 +91,9 @@ export default function ActivityPage() {
   const [totalItems, setTotalItems] = useState(0);
 
   useEffect(() => {
-    if (canManage === false) router.replace('/dashboard');
-  }, [canManage, router]);
+    if (authLoading) return;
+    if (!canManage) router.replace('/dashboard');
+  }, [canManage, authLoading, router]);
 
   useEffect(() => {
     api.get('/api/company/members').then((ms: any[]) => setMembers(ms)).catch(() => {});

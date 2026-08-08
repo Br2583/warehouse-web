@@ -382,6 +382,8 @@ async function routeGet(path: string): Promise<any> {
   // ── Activity Log ──────────────────────────────────────────────────────────
   if (p === '/api/activity') {
     if (!cid) return { items: [], totalPages: 0, totalItems: 0, page: 1 };
+    const actRole = pb.authStore.model?.role as string | undefined;
+    if (actRole !== 'owner' && actRole !== 'manager') return { items: [], totalPages: 0, totalItems: 0, page: 1 };
     const pageNum  = Number(q.get('page') || '1');
     const perPage  = Number(q.get('perPage') || '25');
     const period   = q.get('period') || '';
@@ -761,9 +763,8 @@ async function routePut(path: string, body: any): Promise<any> {
     });
     const data = await r.json();
     if (!r.ok) throw new Error((data as any).error || 'Failed to update task');
-    const action = body.status ? 'EDITED' : 'EDITED';
     const statusSuffix = body.status ? ` → ${body.status}` : '';
-    logActivity({ action, entity_type: 'task', entity_id: taskMatch[1], entity_label: `Task: ${(data as any).title || body.title || '—'}${statusSuffix}` });
+    logActivity({ action: 'EDITED', entity_type: 'task', entity_id: taskMatch[1], entity_label: `Task: ${(data as any).title || body.title || '—'}${statusSuffix}` });
     return data;
   }
 
