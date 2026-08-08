@@ -814,15 +814,16 @@ async function routeDelete(path: string): Promise<any> {
     const vaultId = boxMatch[1];
     const v = await pb.collection('vaults').getOne(vaultId);
     if (v.company_id !== cid) throw new Error('Forbidden');
-    logActivity({ action: 'DELETED', entity_type: 'vault', entity_id: vaultId, entity_label: `Vault ${v.position || `${v.row}${v.col}-L${v.level}`} · ${v.client_name || '—'}` });
-    if (cid) {
-      await pb.collection('deleted_vaults').create({
-        company_id: cid,
-        vault_data: mapVault(v),
-        deleted_by: userId() || '',
-        reason: 'manual',
-      });
-    }
+    const position = v.position || `${v.row}${v.col}-L${v.level}`;
+    // Create deleted_vaults record FIRST so we get its ID for the activity log
+    const deletedRecord = cid ? await pb.collection('deleted_vaults').create({
+      company_id: cid,
+      vault_data: mapVault(v),
+      deleted_by: userId() || '',
+      reason: 'manual',
+    }) : null;
+    // Store deleted_vaults record ID so the Restore button can call the restore endpoint directly
+    logActivity({ action: 'DELETED', entity_type: 'vault', entity_id: deletedRecord?.id || vaultId, entity_label: `Vault ${position} · ${v.client_name || '—'}` });
     await pb.collection('vaults').delete(vaultId);
     return null;
   }

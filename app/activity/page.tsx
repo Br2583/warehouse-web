@@ -5,7 +5,7 @@ import { motion } from 'framer-motion';
 import {
   ClipboardDocumentListIcon, PlusCircleIcon, PencilSquareIcon,
   TrashIcon, ArrowPathIcon, ArrowsRightLeftIcon, ExclamationCircleIcon,
-  FunnelIcon, ArrowUturnLeftIcon,
+  FunnelIcon, ArrowUturnLeftIcon, ArrowUpTrayIcon,
 } from '@heroicons/react/24/outline';
 import Sidebar from '@/components/Sidebar';
 import { api } from '@/lib/api';
@@ -91,8 +91,9 @@ export default function ActivityPage() {
   const [totalPages, setTotalPages] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
 
-  // Revert state
+  // Revert / Restore state
   const [revertConfirm, setRevertConfirm] = useState<ActivityItem | null>(null);
+  const [restoreConfirm, setRestoreConfirm] = useState<ActivityItem | null>(null);
   const [reverting, setReverting] = useState(false);
   const [revertResult, setRevertResult] = useState<{ id: string; ok: boolean; msg: string } | null>(null);
 
@@ -134,9 +135,8 @@ export default function ActivityPage() {
     setReverting(true);
     try {
       await api.put(`/api/activity/${revertConfirm.id}/revert`, {});
-      setRevertResult({ id: revertConfirm.id, ok: true, msg: 'Vault reverted successfully.' });
+      setRevertResult({ id: revertConfirm.id, ok: true, msg: 'Vault reverted to its previous state.' });
       setRevertConfirm(null);
-      // Refresh feed so the new "reverted" entry appears
       fetchActivity(1, false);
     } catch (e: any) {
       setRevertResult({ id: revertConfirm.id, ok: false, msg: e?.message || 'Failed to revert. Try again.' });
@@ -146,8 +146,27 @@ export default function ActivityPage() {
     }
   }
 
+  async function handleRestore() {
+    if (!restoreConfirm) return;
+    setReverting(true);
+    try {
+      await api.post(`/api/boxes/restore/${restoreConfirm.entity_id}`, {});
+      setRevertResult({ id: restoreConfirm.id, ok: true, msg: 'Vault restored to inventory.' });
+      setRestoreConfirm(null);
+      fetchActivity(1, false);
+    } catch (e: any) {
+      setRevertResult({ id: restoreConfirm.id, ok: false, msg: e?.message || 'Failed to restore. The vault may have already been restored or permanently deleted.' });
+      setRestoreConfirm(null);
+    } finally {
+      setReverting(false);
+    }
+  }
+
   const canRevert = (item: ActivityItem) =>
     canManage && item.action === 'EDITED' && item.entity_type === 'vault' && !!item.before_data;
+
+  const canRestore = (item: ActivityItem) =>
+    canManage && item.action === 'DELETED' && item.entity_type === 'vault';
 
   return (
     <div className="flex min-h-screen bg-gray-50">
@@ -239,7 +258,8 @@ export default function ActivityPage() {
               const cfg = ACTION_CONFIG[item.action] || ACTION_CONFIG.EDITED;
               const ActionIcon = cfg.Icon;
               const href = entityHref(item);
-              const showRevert = canRevert(item);
+              const showRevert  = canRevert(item);
+              const showRestore = canRestore(item);
               return (
                 <motion.div
                   key={item.id}
@@ -263,6 +283,16 @@ export default function ActivityPage() {
                       </div>
                       <span className="text-xs text-gray-400 flex-shrink-0 ml-2">{timeAgo(item.created)}</span>
                     </Link>
+                    {showRestore && (
+                      <button
+                        onClick={() => { setRevertResult(null); setRestoreConfirm(item); }}
+                        title="Restore this vault back to inventory"
+                        className="flex-shrink-0 flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium text-green-700 bg-green-50 border border-green-200 rounded-lg hover:bg-green-100 transition-colors opacity-0 group-hover:opacity-100"
+                      >
+                        <ArrowUpTrayIcon className="w-3.5 h-3.5" />
+                        Restore
+                      </button>
+                    )}
                     {showRevert && (
                       <button
                         onClick={() => { setRevertResult(null); setRevertConfirm(item); }}
@@ -294,6 +324,44 @@ export default function ActivityPage() {
           </div>
         )}
       </main>
+
+      {/* Restore confirm modal */}
+      {restoreConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
+          <div className="bg-white rounded-2xl shadow-xl p-6 w-full max-w-sm">
+            <div className="flex items-start gap-3 mb-4">
+              <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0">
+                <ArrowUpTrayIcon className="w-5 h-5 text-green-600" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-gray-900 text-sm">Restore this vault?</h3>
+                <p className="text-xs text-gray-500 mt-1">
+                  The vault will be moved back to active inventory in its original warehouse and position.
+                </p>
+                <p className="text-xs font-medium text-gray-700 mt-2 bg-gray-50 rounded-lg px-3 py-2 truncate">
+                  {restoreConfirm.entity_label}
+                </p>
+              </div>
+            </div>
+            <div className="flex gap-2 justify-end">
+              <button
+                onClick={() => setRestoreConfirm(null)}
+                className="px-4 py-2 text-sm text-gray-600 bg-gray-100 rounded-xl hover:bg-gray-200 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleRestore}
+                disabled={reverting}
+                className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-xl hover:bg-green-700 disabled:opacity-50 transition-colors"
+              >
+                {reverting && <ArrowPathIcon className="w-3.5 h-3.5 animate-spin" />}
+                {reverting ? 'Restoring…' : 'Restore'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Revert confirm modal */}
       {revertConfirm && (
