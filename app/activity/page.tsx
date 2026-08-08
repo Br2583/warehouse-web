@@ -150,7 +150,7 @@ export default function ActivityPage() {
     if (!restoreConfirm) return;
     setReverting(true);
     try {
-      await api.post(`/api/boxes/restore/${restoreConfirm.entity_id}`, {});
+      await api.post(`/api/deleted-boxes/${restoreConfirm.entity_id}/restore`, {});
       setRevertResult({ id: restoreConfirm.id, ok: true, msg: 'Vault restored to inventory.' });
       setRestoreConfirm(null);
       fetchActivity(1, false);
