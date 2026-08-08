@@ -20,6 +20,7 @@ function logActivity(data: {
   entity_type: 'vault' | 'storage' | 'task';
   entity_id: string;
   entity_label: string;
+  before_data?: Record<string, any>;
 }) {
   const cid  = companyId();
   const uid  = userId();
@@ -33,6 +34,7 @@ function logActivity(data: {
     entity_type:  data.entity_type,
     entity_id:    data.entity_id,
     entity_label: data.entity_label,
+    before_data:  data.before_data ? JSON.stringify(data.before_data) : '',
   }).catch(() => {});
 }
 
@@ -401,7 +403,7 @@ async function routeGet(path: string): Promise<any> {
     const result = await pb.collection('activity_logs').getList(pageNum, perPage, {
       filter,
       sort: '-created',
-      fields: 'id,user_id,user_name,action,entity_type,entity_id,entity_label,created',
+      fields: 'id,user_id,user_name,action,entity_type,entity_id,entity_label,created,before_data',
     });
     return { items: result.items, totalPages: result.totalPages, totalItems: result.totalItems, page: result.page };
   }
@@ -639,6 +641,7 @@ async function routePut(path: string, body: any): Promise<any> {
     const existing = await pb.collection('vaults').getOne(boxMatch[1]);
     if (existing.company_id !== cid) throw new Error('Forbidden');
     validatePhotos(body.photos);
+    const beforeSnapshot = mapVault(existing);
     const v = await pb.collection('vaults').update(boxMatch[1], {
       client_name:  body.client_name,
       client_id:    body.client_id,
@@ -652,7 +655,7 @@ async function routePut(path: string, body: any): Promise<any> {
       comments:     body.comments,
       estado:       body.estado || body.status,
     });
-    logActivity({ action: 'EDITED', entity_type: 'vault', entity_id: v.id, entity_label: `Vault ${v.row}${v.col}-L${v.level} · ${v.client_name || '—'}` });
+    logActivity({ action: 'EDITED', entity_type: 'vault', entity_id: v.id, entity_label: `Vault ${v.row}${v.col}-L${v.level} · ${v.client_name || '—'}`, before_data: beforeSnapshot });
     return mapVault(v);
   }
 
@@ -749,6 +752,35 @@ async function routePut(path: string, body: any): Promise<any> {
     await pb.collection('vaults').update(vaultId, { warehouse_id, row, col: destCol, level: destLevel, position: newPosition });
     logActivity({ action: 'MOVED', entity_type: 'vault', entity_id: vaultId, entity_label: `Vault ${source.position || `${source.row}${source.col}-L${source.level}`} → ${newPosition}` });
     return { moved: true, swapped: false };
+  }
+
+  // POST /api/activity/:id/revert — undo a vault edit using stored before_data
+  const revertMatch = p.match(/^\/api\/activity\/([^/]+)\/revert$/);
+  if (revertMatch) {
+    const actId = revertMatch[1];
+    const log = await pb.collection('activity_logs').getOne(actId);
+    if (log.company_id !== cid) throw new Error('Forbidden');
+    if (log.action !== 'EDITED' || log.entity_type !== 'vault') throw new Error('Can only revert vault edits');
+    if (!log.before_data) throw new Error('No snapshot available for this action');
+    let prev: Record<string, any>;
+    try { prev = JSON.parse(log.before_data); } catch { throw new Error('Snapshot data is corrupted'); }
+    try { await pb.collection('vaults').getOne(log.entity_id, { fields: 'id,company_id' }); }
+    catch { throw new Error('This vault has been deleted and cannot be reverted'); }
+    await pb.collection('vaults').update(log.entity_id, {
+      client_name:   prev.client_name,
+      client_id:     prev.client_id,
+      job_type:      prev.job_type,
+      content_type:  prev.content_type,
+      room_location: prev.room_location || [],
+      vault_status:  prev.vault_status || [],
+      packer:        prev.packer,
+      pack_date:     prev.pack_date,
+      photos:        prev.photos || [],
+      comments:      prev.comments,
+      estado:        prev.estado,
+    });
+    logActivity({ action: 'EDITED', entity_type: 'vault', entity_id: log.entity_id, entity_label: `Vault ${prev.position || '—'} · ${prev.client_name || '—'} (reverted)` });
+    return { success: true };
   }
 
   // PUT /api/tasks/:id

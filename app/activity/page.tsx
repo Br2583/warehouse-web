@@ -5,7 +5,7 @@ import { motion } from 'framer-motion';
 import {
   ClipboardDocumentListIcon, PlusCircleIcon, PencilSquareIcon,
   TrashIcon, ArrowPathIcon, ArrowsRightLeftIcon, ExclamationCircleIcon,
-  FunnelIcon,
+  FunnelIcon, ArrowUturnLeftIcon,
 } from '@heroicons/react/24/outline';
 import Sidebar from '@/components/Sidebar';
 import { api } from '@/lib/api';
@@ -21,6 +21,7 @@ interface ActivityItem {
   entity_type: 'vault' | 'storage' | 'task';
   entity_id: string;
   entity_label: string;
+  before_data?: string;
   created: string;
 }
 
@@ -90,6 +91,11 @@ export default function ActivityPage() {
   const [totalPages, setTotalPages] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
 
+  // Revert state
+  const [revertConfirm, setRevertConfirm] = useState<ActivityItem | null>(null);
+  const [reverting, setReverting] = useState(false);
+  const [revertResult, setRevertResult] = useState<{ id: string; ok: boolean; msg: string } | null>(null);
+
   useEffect(() => {
     if (authLoading) return;
     if (!canManage) router.replace('/dashboard');
@@ -122,6 +128,26 @@ export default function ActivityPage() {
   useEffect(() => {
     fetchActivity(1, false);
   }, [fetchActivity]);
+
+  async function handleRevert() {
+    if (!revertConfirm) return;
+    setReverting(true);
+    try {
+      await api.put(`/api/activity/${revertConfirm.id}/revert`, {});
+      setRevertResult({ id: revertConfirm.id, ok: true, msg: 'Vault reverted successfully.' });
+      setRevertConfirm(null);
+      // Refresh feed so the new "reverted" entry appears
+      fetchActivity(1, false);
+    } catch (e: any) {
+      setRevertResult({ id: revertConfirm.id, ok: false, msg: e?.message || 'Failed to revert. Try again.' });
+      setRevertConfirm(null);
+    } finally {
+      setReverting(false);
+    }
+  }
+
+  const canRevert = (item: ActivityItem) =>
+    canManage && item.action === 'EDITED' && item.entity_type === 'vault' && !!item.before_data;
 
   return (
     <div className="flex min-h-screen bg-gray-50">
@@ -169,6 +195,18 @@ export default function ActivityPage() {
           )}
         </div>
 
+        {/* Revert result banner */}
+        {revertResult && (
+          <div className={`flex items-center gap-3 text-sm px-4 py-3 rounded-xl mb-4 ${
+            revertResult.ok
+              ? 'bg-green-50 border border-green-100 text-green-700'
+              : 'bg-red-50 border border-red-100 text-red-700'
+          }`}>
+            <span className="flex-1">{revertResult.msg}</span>
+            <button onClick={() => setRevertResult(null)} className="text-xs font-medium underline">Dismiss</button>
+          </div>
+        )}
+
         {/* Error */}
         {loadError && (
           <div className="flex items-center gap-3 bg-red-50 border border-red-100 text-red-700 text-sm px-4 py-3 rounded-xl mb-4">
@@ -201,6 +239,7 @@ export default function ActivityPage() {
               const cfg = ACTION_CONFIG[item.action] || ACTION_CONFIG.EDITED;
               const ActionIcon = cfg.Icon;
               const href = entityHref(item);
+              const showRevert = canRevert(item);
               return (
                 <motion.div
                   key={item.id}
@@ -208,8 +247,8 @@ export default function ActivityPage() {
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: Math.min(i * 0.03, 0.3) }}
                 >
-                  <Link href={href}>
-                    <div className="flex items-center gap-3 px-4 py-3.5 hover:bg-gray-50 transition-colors cursor-pointer group">
+                  <div className="flex items-center gap-3 px-4 py-3.5 hover:bg-gray-50 transition-colors group">
+                    <Link href={href} className="flex items-center gap-3 flex-1 min-w-0 cursor-pointer">
                       <InitialAvatar name={item.user_name} />
                       <div className="flex-1 min-w-0">
                         <div className="flex flex-wrap items-baseline gap-x-1.5 gap-y-0.5">
@@ -223,8 +262,18 @@ export default function ActivityPage() {
                         <p className="text-xs text-gray-500 truncate mt-0.5">{item.entity_label}</p>
                       </div>
                       <span className="text-xs text-gray-400 flex-shrink-0 ml-2">{timeAgo(item.created)}</span>
-                    </div>
-                  </Link>
+                    </Link>
+                    {showRevert && (
+                      <button
+                        onClick={() => { setRevertResult(null); setRevertConfirm(item); }}
+                        title="Revert vault to its previous state"
+                        className="flex-shrink-0 flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium text-amber-700 bg-amber-50 border border-amber-200 rounded-lg hover:bg-amber-100 transition-colors opacity-0 group-hover:opacity-100"
+                      >
+                        <ArrowUturnLeftIcon className="w-3.5 h-3.5" />
+                        Revert
+                      </button>
+                    )}
+                  </div>
                 </motion.div>
               );
             })}
@@ -245,6 +294,44 @@ export default function ActivityPage() {
           </div>
         )}
       </main>
+
+      {/* Revert confirm modal */}
+      {revertConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
+          <div className="bg-white rounded-2xl shadow-xl p-6 w-full max-w-sm">
+            <div className="flex items-start gap-3 mb-4">
+              <div className="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center flex-shrink-0">
+                <ArrowUturnLeftIcon className="w-5 h-5 text-amber-600" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-gray-900 text-sm">Revert this vault?</h3>
+                <p className="text-xs text-gray-500 mt-1">
+                  This will restore the vault to the state it was in before this edit. The current data will be overwritten.
+                </p>
+                <p className="text-xs font-medium text-gray-700 mt-2 bg-gray-50 rounded-lg px-3 py-2 truncate">
+                  {revertConfirm.entity_label}
+                </p>
+              </div>
+            </div>
+            <div className="flex gap-2 justify-end">
+              <button
+                onClick={() => setRevertConfirm(null)}
+                className="px-4 py-2 text-sm text-gray-600 bg-gray-100 rounded-xl hover:bg-gray-200 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleRevert}
+                disabled={reverting}
+                className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-white bg-amber-500 rounded-xl hover:bg-amber-600 disabled:opacity-50 transition-colors"
+              >
+                {reverting && <ArrowPathIcon className="w-3.5 h-3.5 animate-spin" />}
+                {reverting ? 'Reverting…' : 'Revert'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
