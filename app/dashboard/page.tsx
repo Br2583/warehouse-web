@@ -5,7 +5,8 @@ import { motion, useMotionValue, useTransform, animate } from 'framer-motion';
 import {
   ArchiveBoxIcon, ClipboardDocumentListIcon, CheckCircleIcon, TruckIcon,
   ClockIcon, PlayIcon, CheckIcon, PlusIcon, MagnifyingGlassIcon,
-  ChatBubbleLeftRightIcon, ExclamationTriangleIcon,
+  ChatBubbleLeftRightIcon, ExclamationTriangleIcon, PlusCircleIcon,
+  PencilSquareIcon, TrashIcon, ArrowPathIcon, ArrowsRightLeftIcon,
 } from '@heroicons/react/24/outline';
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import { useAuth } from '@/lib/auth-context';
@@ -46,12 +47,31 @@ const fadeUp = {
 };
 
 
+const ACTIVITY_ACTION_CFG: Record<string, { color: string; bg: string; label: string; Icon: any }> = {
+  CREATED:  { color: 'text-green-700',  bg: 'bg-green-100',  label: 'created',  Icon: PlusCircleIcon },
+  EDITED:   { color: 'text-blue-700',   bg: 'bg-blue-100',   label: 'edited',   Icon: PencilSquareIcon },
+  DELETED:  { color: 'text-red-700',    bg: 'bg-red-100',    label: 'deleted',  Icon: TrashIcon },
+  RESTORED: { color: 'text-amber-700',  bg: 'bg-amber-100',  label: 'restored', Icon: ArrowPathIcon },
+  MOVED:    { color: 'text-purple-700', bg: 'bg-purple-100', label: 'moved',    Icon: ArrowsRightLeftIcon },
+};
+function actTimeAgo(ts: string) {
+  const date = new Date(ts.includes('T') ? ts : ts.replace(' ', 'T') + 'Z');
+  const diff = Date.now() - date.getTime();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1) return 'just now';
+  if (mins < 60) return `${mins}m ago`;
+  const hours = Math.floor(mins / 60);
+  if (hours < 24) return `${hours}h ago`;
+  return `${Math.floor(hours / 24)}d ago`;
+}
+
 export default function DashboardPage() {
-  const { user } = useAuth();
+  const { user, canManage } = useAuth();
   const [stats, setStats] = useState<any>(null);
   const [workStats, setWorkStats] = useState({ total: 0, pending: 0, in_progress: 0, completed: 0 });
   const [warehouseNames, setWarehouseNames] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
+  const [activityItems, setActivityItems] = useState<any[]>([]);
   useEffect(() => {
     if (!user?.company_id) return;
     const load = async () => {
@@ -86,6 +106,11 @@ export default function DashboardPage() {
     };
     load();
   }, [user?.company_id]);
+
+  useEffect(() => {
+    if (!canManage || !user?.company_id) return;
+    api.get('/api/activity?perPage=5').then((d: any) => setActivityItems(d.items || [])).catch(() => {});
+  }, [canManage, user?.company_id]);
 
   const greeting = () => {
     const h = new Date().getHours();
@@ -312,10 +337,10 @@ export default function DashboardPage() {
           </motion.div>
         </div>
 
-        {/* E7 — Recent Activity */}
+        {/* E7 — Recent Vaults */}
         {recentBoxes.length > 0 && (
-          <motion.div custom={9} variants={fadeUp} initial="hidden" animate="show" className="bg-white rounded-2xl border border-gray-100 p-4 md:p-6">
-            <h2 className="font-semibold text-gray-900 mb-5">Recent Activity</h2>
+          <motion.div custom={9} variants={fadeUp} initial="hidden" animate="show" className="bg-white rounded-2xl border border-gray-100 p-4 md:p-6 mb-5 md:mb-6">
+            <h2 className="font-semibold text-gray-900 mb-5">Recent Vaults</h2>
             <div className="space-y-3">
               {recentBoxes.map((box) => {
                 const created = parseDateOpt(box.created);
@@ -341,6 +366,43 @@ export default function DashboardPage() {
                 );
               })}
             </div>
+          </motion.div>
+        )}
+
+        {/* Activity Log widget — canManage only */}
+        {canManage && (
+          <motion.div custom={10} variants={fadeUp} initial="hidden" animate="show" className="bg-white rounded-2xl border border-gray-100 p-4 md:p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="font-semibold text-gray-900">Team Activity</h2>
+              <Link href="/activity" className="text-xs text-blue-600 font-medium hover:text-blue-800 transition-colors">
+                View all →
+              </Link>
+            </div>
+            {activityItems.length === 0 ? (
+              <p className="text-sm text-gray-400 py-4 text-center">No activity yet</p>
+            ) : (
+              <div className="space-y-0 divide-y divide-gray-50">
+                {activityItems.map((item: any) => {
+                  const cfg = ACTIVITY_ACTION_CFG[item.action] || ACTIVITY_ACTION_CFG.EDITED;
+                  const ActionIcon = cfg.Icon;
+                  return (
+                    <div key={item.id} className="flex items-center gap-3 py-2.5">
+                      <div className={`w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 ${cfg.bg}`}>
+                        <ActionIcon className={`w-3.5 h-3.5 ${cfg.color}`} />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm text-gray-900 truncate">
+                          <span className="font-medium">{item.user_name}</span>
+                          {' '}<span className={`text-xs font-medium ${cfg.color}`}>{cfg.label}</span>
+                        </p>
+                        <p className="text-xs text-gray-400 truncate">{item.entity_label}</p>
+                      </div>
+                      <span className="text-xs text-gray-300 flex-shrink-0 ml-2">{actTimeAgo(item.created)}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </motion.div>
         )}
       </main>

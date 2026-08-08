@@ -8,25 +8,28 @@ import {
   HomeIcon, BuildingOffice2Icon, ArchiveBoxIcon, ClipboardDocumentListIcon,
   MagnifyingGlassIcon, ChartBarSquareIcon, CameraIcon, ChatBubbleLeftRightIcon,
   ArrowRightOnRectangleIcon, XMarkIcon, QrCodeIcon, Cog6ToothIcon,
+  ClipboardDocumentCheckIcon,
 } from '@heroicons/react/24/outline';
 import {
   HomeIcon as HomeSolid, BuildingOffice2Icon as BuildingSolid, ArchiveBoxIcon as ArchiveSolid,
   ClipboardDocumentListIcon as TasksSolid, MagnifyingGlassIcon as SearchSolid,
   ChartBarSquareIcon as ChartSolid, CameraIcon as CameraSolid,
   ChatBubbleLeftRightIcon as ChatSolid, Cog6ToothIcon as CogSolid,
+  ClipboardDocumentCheckIcon as ActivitySolid,
 } from '@heroicons/react/24/solid';
 import { useNavData } from '@/lib/nav-data-context';
 
 const NAV_ITEMS = [
-  { href: '/dashboard',  label: 'Dashboard',   icon: HomeIcon,                  iconActive: HomeSolid },
-  { href: '/warehouses', label: 'Warehouses',  icon: BuildingOffice2Icon,       iconActive: BuildingSolid },
-  { href: '/storage',    label: 'Storage',     icon: ArchiveBoxIcon,            iconActive: ArchiveSolid },
-  { href: '/tasks',      label: 'Tasks',       icon: ClipboardDocumentListIcon, iconActive: TasksSolid },
-  { href: '/search',     label: 'Search',      icon: MagnifyingGlassIcon,       iconActive: SearchSolid },
-  { href: '/stats',      label: 'Statistics',  icon: ChartBarSquareIcon,        iconActive: ChartSolid },
-  { href: '/snapshots',  label: 'Snapshots',   icon: CameraIcon,                iconActive: CameraSolid },
-  { href: '/chat',       label: 'Chat',        icon: ChatBubbleLeftRightIcon,   iconActive: ChatSolid },
-  { href: '/settings',   label: 'Settings',    icon: Cog6ToothIcon,             iconActive: CogSolid },
+  { href: '/dashboard',  label: 'Dashboard',   icon: HomeIcon,                     iconActive: HomeSolid },
+  { href: '/warehouses', label: 'Warehouses',  icon: BuildingOffice2Icon,          iconActive: BuildingSolid },
+  { href: '/storage',    label: 'Storage',     icon: ArchiveBoxIcon,               iconActive: ArchiveSolid },
+  { href: '/tasks',      label: 'Tasks',       icon: ClipboardDocumentListIcon,    iconActive: TasksSolid },
+  { href: '/search',     label: 'Search',      icon: MagnifyingGlassIcon,          iconActive: SearchSolid },
+  { href: '/stats',      label: 'Statistics',  icon: ChartBarSquareIcon,           iconActive: ChartSolid },
+  { href: '/snapshots',  label: 'Snapshots',   icon: CameraIcon,                   iconActive: CameraSolid },
+  { href: '/chat',       label: 'Chat',        icon: ChatBubbleLeftRightIcon,      iconActive: ChatSolid },
+  { href: '/activity',   label: 'Activity',    icon: ClipboardDocumentCheckIcon,   iconActive: ActivitySolid, managerOnly: true },
+  { href: '/settings',   label: 'Settings',    icon: Cog6ToothIcon,                iconActive: CogSolid },
 ];
 
 interface MobileNavProps {
@@ -36,7 +39,7 @@ interface MobileNavProps {
 
 export default function MobileNav({ open, onClose }: MobileNavProps) {
   const pathname = usePathname();
-  const { user, logout } = useAuth();
+  const { user, logout, canManage } = useAuth();
   const { unreadChat, pendingTasks } = useNavData();
 
   return (
@@ -101,7 +104,7 @@ export default function MobileNav({ open, onClose }: MobileNavProps) {
 
         {/* Nav items */}
         <nav className="flex-1 p-4 space-y-0.5 overflow-y-auto">
-          {NAV_ITEMS.map(({ href, label, icon: Icon, iconActive: IconActive }) => {
+          {NAV_ITEMS.filter(item => !item.managerOnly || canManage).map(({ href, label, icon: Icon, iconActive: IconActive }) => {
             const active = pathname === href || pathname.startsWith(href + '/');
             const ActiveIcon = IconActive;
             const InactiveIcon = Icon;

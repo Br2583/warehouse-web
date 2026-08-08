@@ -14,6 +14,28 @@ function sf(val: string): string {
   return val.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
 }
 
+// Fire-and-forget activity log — never blocks the main operation
+function logActivity(data: {
+  action: 'CREATED' | 'EDITED' | 'DELETED' | 'RESTORED' | 'MOVED';
+  entity_type: 'vault' | 'storage' | 'task';
+  entity_id: string;
+  entity_label: string;
+}) {
+  const cid  = companyId();
+  const uid  = userId();
+  const name = pb.authStore.model?.name as string || 'Unknown';
+  if (!cid || !uid) return;
+  pb.collection('activity_logs').create({
+    company_id:   cid,
+    user_id:      uid,
+    user_name:    name,
+    action:       data.action,
+    entity_type:  data.entity_type,
+    entity_id:    data.entity_id,
+    entity_label: data.entity_label,
+  }).catch(() => {});
+}
+
 // Sanitize error messages before surfacing them to the UI
 function safeError(e: any): never {
   const msg: string = e?.message || '';
@@ -357,6 +379,31 @@ async function routeGet(path: string): Promise<any> {
     return mapStorage(s);
   }
 
+  // ── Activity Log ──────────────────────────────────────────────────────────
+  if (p === '/api/activity') {
+    if (!cid) return { items: [], totalPages: 0, totalItems: 0, page: 1 };
+    const pageNum  = Number(q.get('page') || '1');
+    const perPage  = Number(q.get('perPage') || '25');
+    const period   = q.get('period') || '';
+    const filterUid = q.get('userId') || '';
+    let filter = `company_id="${cid}"`;
+    if (period === 'today') {
+      const start = new Date(); start.setHours(0, 0, 0, 0);
+      filter += ` && created >= "${start.toISOString()}"`;
+    } else if (period === 'week') {
+      filter += ` && created >= "${new Date(Date.now() - 7 * 86400000).toISOString()}"`;
+    } else if (period === 'month') {
+      filter += ` && created >= "${new Date(Date.now() - 30 * 86400000).toISOString()}"`;
+    }
+    if (filterUid) filter += ` && user_id="${sf(filterUid)}"`;
+    const result = await pb.collection('activity_logs').getList(pageNum, perPage, {
+      filter,
+      sort: '-created',
+      fields: 'id,user_id,user_name,action,entity_type,entity_id,entity_label,created',
+    });
+    return { items: result.items, totalPages: result.totalPages, totalItems: result.totalItems, page: result.page };
+  }
+
   // ── Deleted Vaults ────────────────────────────────────────────────────────
   if (p === '/api/deleted-boxes') {
     if (!cid) return [];
@@ -422,6 +469,7 @@ async function routePost(path: string, body: any): Promise<any> {
       qr_token,
       created_by:   uid,
     });
+    logActivity({ action: 'CREATED', entity_type: 'vault', entity_id: v.id, entity_label: `Vault ${v.row}${v.col}-L${v.level} · ${body.client_name || '—'} · ${body.job_type || '—'}` });
     return mapVault(v);
   }
 
@@ -448,6 +496,7 @@ async function routePost(path: string, body: any): Promise<any> {
     });
     const data = await r.json();
     if (!r.ok) throw new Error((data as any).error || 'Failed to create task');
+    logActivity({ action: 'CREATED', entity_type: 'task', entity_id: (data as any).id || '', entity_label: `Task: ${body.title || body.type || '—'}` });
     return data;
   }
 
@@ -485,6 +534,7 @@ async function routePost(path: string, body: any): Promise<any> {
       intake_date: body.intake_date || '',
       created_by:  uid,
     });
+    logActivity({ action: 'CREATED', entity_type: 'storage', entity_id: s.id, entity_label: `Storage: ${body.unit_name}` });
     return mapStorage(s);
   }
 
@@ -546,6 +596,7 @@ async function routePost(path: string, body: any): Promise<any> {
       company_id:    cid,
     });
     await pb.collection('deleted_vaults').delete(restoreMatch[1]);
+    logActivity({ action: 'RESTORED', entity_type: 'vault', entity_id: vd.box_id || restoreMatch[1], entity_label: `Vault ${vd.position || '—'} · ${vd.client_name || '—'}` });
     return { success: true };
   }
 
@@ -599,6 +650,7 @@ async function routePut(path: string, body: any): Promise<any> {
       comments:     body.comments,
       estado:       body.estado || body.status,
     });
+    logActivity({ action: 'EDITED', entity_type: 'vault', entity_id: v.id, entity_label: `Vault ${v.row}${v.col}-L${v.level} · ${v.client_name || '—'}` });
     return mapVault(v);
   }
 
@@ -624,6 +676,7 @@ async function routePut(path: string, body: any): Promise<any> {
       grid_rows:   body.grid_rows ?? undefined,
       grid_cols:   body.grid_cols ?? undefined,
     });
+    logActivity({ action: 'EDITED', entity_type: 'storage', entity_id: storageMatch[1], entity_label: `Storage: ${body.unit_name || existingStorage.unit_name}` });
     const s = await pb.collection('storage_units').getOne(storageMatch[1]);
     return mapStorage(s);
   }
@@ -687,10 +740,12 @@ async function routePut(path: string, body: any): Promise<any> {
         }).catch(() => {});
         throw new Error('Swap failed — please try again');
       }
+      logActivity({ action: 'MOVED', entity_type: 'vault', entity_id: vaultId, entity_label: `Vault swapped: ${source.position || `${source.row}${source.col}-L${source.level}`} ↔ ${newPosition}` });
       return { moved: true, swapped: true };
     }
 
     await pb.collection('vaults').update(vaultId, { warehouse_id, row, col: destCol, level: destLevel, position: newPosition });
+    logActivity({ action: 'MOVED', entity_type: 'vault', entity_id: vaultId, entity_label: `Vault ${source.position || `${source.row}${source.col}-L${source.level}`} → ${newPosition}` });
     return { moved: true, swapped: false };
   }
 
@@ -706,6 +761,9 @@ async function routePut(path: string, body: any): Promise<any> {
     });
     const data = await r.json();
     if (!r.ok) throw new Error((data as any).error || 'Failed to update task');
+    const action = body.status ? 'EDITED' : 'EDITED';
+    const statusSuffix = body.status ? ` → ${body.status}` : '';
+    logActivity({ action, entity_type: 'task', entity_id: taskMatch[1], entity_label: `Task: ${(data as any).title || body.title || '—'}${statusSuffix}` });
     return data;
   }
 
@@ -723,6 +781,7 @@ async function routeDelete(path: string): Promise<any> {
     const vaultId = boxMatch[1];
     const v = await pb.collection('vaults').getOne(vaultId);
     if (v.company_id !== cid) throw new Error('Forbidden');
+    logActivity({ action: 'DELETED', entity_type: 'vault', entity_id: vaultId, entity_label: `Vault ${v.position || `${v.row}${v.col}-L${v.level}`} · ${v.client_name || '—'}` });
     if (cid) {
       await pb.collection('deleted_vaults').create({
         company_id: cid,
@@ -740,6 +799,7 @@ async function routeDelete(path: string): Promise<any> {
   if (storageDelMatch) {
     const storDel = await pb.collection('storage_units').getOne(storageDelMatch[1]);
     if (storDel.company_id !== cid) throw new Error('Forbidden');
+    logActivity({ action: 'DELETED', entity_type: 'storage', entity_id: storageDelMatch[1], entity_label: `Storage: ${storDel.unit_name}` });
     await pb.collection('storage_units').delete(storageDelMatch[1]);
     return null;
   }
@@ -784,6 +844,7 @@ async function routeDelete(path: string): Promise<any> {
       const data = await r.json().catch(() => ({}));
       throw new Error((data as any).error || 'Failed to delete task');
     }
+    logActivity({ action: 'DELETED', entity_type: 'task', entity_id: taskDelMatch[1], entity_label: 'Task deleted' });
     return null;
   }
 
