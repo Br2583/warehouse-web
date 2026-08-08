@@ -56,7 +56,7 @@ function SearchContent() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [statusFilter]);
 
-  // Live search — fires on query change with 300ms debounce, min 2 chars
+  // Live search — fires on query or filter change with 300ms debounce, min 2 chars
   useEffect(() => {
     if (query.length < 2) return;
     const params = new URLSearchParams();
@@ -79,8 +79,7 @@ function SearchContent() {
       } finally { setLoading(false); }
     }, 300);
     return () => clearTimeout(t);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [query]);
+  }, [query, filterStatus, filterJob, filterWarehouse, filterPacker]);
 
   const runSearch = async (q = query, st = filterStatus) => {
     setLoading(true);

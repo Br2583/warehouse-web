@@ -88,6 +88,7 @@ export default function WarehouseDetailPage() {
   const [confirmModal, setConfirmModal] = useState<{ message: string; onConfirm: () => void } | null>(null);
   const [showQR, setShowQR] = useState(false);
   const [loadingPhotos, setLoadingPhotos] = useState(false);
+  const [photoLoadError, setPhotoLoadError] = useState(false);
   const [warehouseRows, setWarehouseRows] = useState(10);
   const [warehouseCols, setWarehouseCols] = useState(8);
   const [showGridEdit, setShowGridEdit] = useState(false);
@@ -95,7 +96,7 @@ export default function WarehouseDetailPage() {
   const [gridColsInput, setGridColsInput] = useState(8);
   const [gridSaving, setGridSaving] = useState(false);
   const [showScanner, setShowScanner] = useState(false);
-  const [allWarehouses, setAllWarehouses] = useState<{ id: string; name: string }[]>([]);
+  const [allWarehouses, setAllWarehouses] = useState<{ id: string; name: string; rows: number; cols: number }[]>([]);
   const [showMove, setShowMove] = useState(false);
   const [moveTarget, setMoveTarget] = useState<Box | null>(null);
   const [moveDest, setMoveDest] = useState({ warehouse_id: '', row: 'A', col: 1, level: 1 });
@@ -211,14 +212,10 @@ export default function WarehouseDetailPage() {
     setConfirmModal({
       message: 'Delete this vault? This cannot be undone.',
       onConfirm: async () => {
-        try {
-          await api.delete(`/api/boxes/${boxId}`);
-          setSelected(null);
-          fetchBoxes();
-          showToast('Vault deleted');
-        } catch (err: any) {
-          setApiError(err?.message || 'Failed to delete vault');
-        }
+        await api.delete(`/api/boxes/${boxId}`);
+        setSelected(null);
+        fetchBoxes();
+        showToast('Vault deleted');
       },
     });
   };
@@ -242,13 +239,12 @@ export default function WarehouseDetailPage() {
     setSaving(true);
     setSaveError('');
     try {
-      const levelName = form.level === 1 ? 'lower' : 'upper';
       await api.post('/api/boxes', {
         warehouse_id: warehouseId,
         row: form.row,
         column: form.column,
         level: form.level,
-        position: levelName,
+        position: `${form.row}${form.column}-L${form.level}`,
         client_name: form.client_name.trim(),
         job_type: form.job_type,
         content_type: form.contents_type,
@@ -315,10 +311,13 @@ export default function WarehouseDetailPage() {
     setSelected(box);
     setShowQR(false);
     setLoadingPhotos(true);
+    setPhotoLoadError(false);
     try {
       const full = await api.get(`/api/boxes/${box.box_id}`);
       if (full) setSelected(prev => prev ? { ...prev, ...full } : prev);
-    } catch {}
+    } catch {
+      setPhotoLoadError(true);
+    }
     setLoadingPhotos(false);
   }, []);
 
@@ -345,7 +344,9 @@ export default function WarehouseDetailPage() {
       setWarehouseRows(gridRowsInput);
       setWarehouseCols(gridColsInput);
       setShowGridEdit(false);
-    } catch { /* silently fail — grid stays as-is */ }
+    } catch {
+      showToast('Failed to save grid size — please try again', 'error');
+    }
     setGridSaving(false);
   };
 
@@ -629,6 +630,11 @@ export default function WarehouseDetailPage() {
                     Loading photos...
                   </div>
                 )}
+                {photoLoadError && (
+                  <p className="mt-4 text-xs text-amber-600 bg-amber-50 rounded-lg px-3 py-2">
+                    Some details could not be loaded. Photos may be unavailable.
+                  </p>
+                )}
                 {!loadingPhotos && selected.photos?.length > 0 && (
                   <div className="mt-4">
                     <p className="text-sm text-gray-400 mb-2">Photos</p>
@@ -886,7 +892,11 @@ export default function WarehouseDetailPage() {
                           onChange={e => setMoveDest(d => ({ ...d, row: e.target.value }))}
                           className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                         >
-                          {ROWS.map(r => <option key={r} value={r}>{r}</option>)}
+                          {(() => {
+                            const destWh = allWarehouses.find(w => w.id === moveDest.warehouse_id);
+                            const maxRows = destWh ? destWh.rows : (moveDest.warehouse_id === warehouseId ? warehouseRows : 10);
+                            return ROWS.slice(0, maxRows).map(r => <option key={r} value={r}>{r}</option>);
+                          })()}
                         </select>
                       </div>
                       <div>
@@ -896,7 +906,11 @@ export default function WarehouseDetailPage() {
                           onChange={e => setMoveDest(d => ({ ...d, col: Number(e.target.value) }))}
                           className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                         >
-                          {COLUMNS.map(c => <option key={c} value={c}>{c}</option>)}
+                          {(() => {
+                            const destWh = allWarehouses.find(w => w.id === moveDest.warehouse_id);
+                            const maxCols = destWh ? destWh.cols : (moveDest.warehouse_id === warehouseId ? warehouseCols : 8);
+                            return COLUMNS.slice(0, maxCols).map(c => <option key={c} value={c}>{c}</option>);
+                          })()}
                         </select>
                       </div>
                       <div>
@@ -933,7 +947,7 @@ export default function WarehouseDetailPage() {
                   </div>
                   <div className="bg-amber-50 border border-amber-100 rounded-xl p-4 mb-4">
                     <p className="text-sm text-amber-800 font-medium">{moveOccupant.client_name} · {moveOccupant.job_type}</p>
-                    <p className="text-xs text-amber-600 mt-1">is at {moveDest.row}{moveDest.col}-L{moveDest.level}</p>
+                    <p className="text-xs text-amber-600 mt-1">is at row {moveDest.row}, col {moveDest.col}, L{moveDest.level}</p>
                   </div>
                   <p className="text-sm text-gray-600 mb-5">Swap both vaults? They will exchange positions.</p>
                   {moveError && <p className="text-sm text-red-600 mb-3">{moveError}</p>}

@@ -142,10 +142,15 @@ export default function ChatPage() {
     setClearing(true);
     try {
       const token = getToken();
-      await fetch('/api/chat/messages/all', {
+      const res = await fetch('/api/chat/messages/all', {
         method: 'DELETE',
         headers: token ? { Authorization: `Bearer ${token}` } : {},
       });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        setSendError((err as any)?.error || 'Failed to clear chat');
+        return;
+      }
       setMessages([]);
       lastCountRef.current = 0;
     } catch {

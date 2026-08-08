@@ -35,8 +35,8 @@ export default function StoragePage() {
     if (!files) return;
     setCreateError('');
     try {
-      const compressed = await Promise.all(Array.from(files).slice(0, 4).map(f => compressImage(f)));
-      setForm(f => ({ ...f, photos: [...f.photos, ...compressed].slice(0, 4) }));
+      const compressed = await Promise.all(Array.from(files).slice(0, 6).map(f => compressImage(f)));
+      setForm(f => ({ ...f, photos: [...f.photos, ...compressed].slice(0, 6) }));
     } catch (e: any) { setCreateError(e?.message || 'Photo too large'); }
   };
 

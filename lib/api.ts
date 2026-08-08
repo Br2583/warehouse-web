@@ -200,8 +200,8 @@ async function routeGet(path: string): Promise<any> {
   // ── Warehouses list ────────────────────────────────────────────────────────
   if (p === '/api/warehouses') {
     if (!cid) return [];
-    const whs = await pb.collection('warehouses').getFullList({ filter: `company_id="${cid}"`, fields: 'id,name,address' });
-    return whs.map(w => ({ id: w.id, name: w.name, address: w.address }));
+    const whs = await pb.collection('warehouses').getFullList({ filter: `company_id="${cid}"`, fields: 'id,name,address,rows,cols' });
+    return whs.map(w => ({ id: w.id, name: w.name, address: w.address, rows: Number(w.rows) || 10, cols: Number(w.cols) || 8 }));
   }
 
   // GET /api/warehouses/:id
@@ -519,6 +519,8 @@ async function routePost(path: string, body: any): Promise<any> {
   const restoreMatch = p.match(/^\/api\/deleted-boxes\/([^/]+)\/restore$/);
   if (restoreMatch) {
     if (!cid) throw new Error('No company');
+    const role = pb.authStore.model?.role as string | undefined;
+    if (role !== 'owner' && role !== 'manager') throw new Error('Only managers and owners can restore vaults');
     const dv = await pb.collection('deleted_vaults').getOne(restoreMatch[1]);
     if (dv.company_id !== cid) throw new Error('Forbidden');
     const vd = (dv.vault_data as any) || {};

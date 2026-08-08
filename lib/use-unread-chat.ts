@@ -17,7 +17,7 @@ export function useUnreadChat(): ChatUnreadData {
     const token = getToken();
     if (!token) return;
     try {
-      const res = await fetch('/api/chat/messages?perPage=1&sort=-sent_at', {
+      const res = await fetch('/api/chat/messages?perPage=50&sort=-sent_at', {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (!res.ok) return;
@@ -25,15 +25,18 @@ export function useUnreadChat(): ChatUnreadData {
       if (!msgs.length) { setData({ count: 0, preview: null, senderName: null }); return; }
 
       const lastSeen = getChatLastSeen();
+      const toMs = (ts: string) => {
+        const iso = ts.includes('T') ? ts : ts.replace(' ', 'T');
+        return new Date(iso.endsWith('Z') || iso.includes('+') ? iso : iso + 'Z').getTime();
+      };
+
+      const unread = msgs.filter(m => toMs(m.timestamp) > lastSeen);
       const newest = msgs[0];
-      const iso = newest.timestamp.includes('T') ? newest.timestamp : newest.timestamp.replace(' ', 'T');
-      const ts = new Date(iso.endsWith('Z') || iso.includes('+') ? iso : iso + 'Z').getTime();
-      const isUnread = ts > lastSeen;
 
       setData({
-        count: isUnread ? 1 : 0,
-        preview: isUnread ? (newest.text?.slice(0, 80) || null) : null,
-        senderName: isUnread ? (newest.sender_name || null) : null,
+        count: unread.length,
+        preview: unread.length > 0 ? (newest.text?.slice(0, 80) || null) : null,
+        senderName: unread.length > 0 ? (newest.sender_name || null) : null,
       });
     } catch {
       // silent

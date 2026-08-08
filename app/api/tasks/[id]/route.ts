@@ -43,7 +43,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
   const body = await req.json();
   let updateData: Record<string, any>;
 
-  if (me.role !== 'owner') {
+  if (me.role === 'worker') {
     if (task.assigned_to !== me.id) {
       return NextResponse.json({ error: 'Can only update your own tasks' }, { status: 403 });
     }
@@ -94,8 +94,8 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
   if (!updateRes.ok) return NextResponse.json({ error: 'Failed to update task' }, { status: 500 });
   const updated = await updateRes.json();
 
-  // Worker changes status → notify owner (email + push)
-  if (me.role !== 'owner' && body.status && body.status !== task.status && task.created_by) {
+  // Worker changes status → notify task creator (email + push)
+  if (me.role === 'worker' && body.status && body.status !== task.status && task.created_by) {
     try {
       const [ownerRes, workerRes] = await Promise.all([
         fetch(`${PB_URL}/api/collections/users/records/${task.created_by}`, {
@@ -130,8 +130,8 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     } catch { /* notifications never break the task update */ }
   }
 
-  // Owner changes status → notify assigned worker via push
-  if (me.role === 'owner' && body.status && body.status !== task.status && task.assigned_to && task.assigned_to !== me.id) {
+  // Owner/manager changes status → notify assigned worker via push
+  if ((me.role === 'owner' || me.role === 'manager') && body.status && body.status !== task.status && task.assigned_to && task.assigned_to !== me.id) {
     try {
       const workerTokens = await getTokensForUser(task.assigned_to, adminToken, PB_URL);
       if (workerTokens.length > 0) {
@@ -153,7 +153,7 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
 
   const me = await verifyUser(token);
   if (!me?.company_id) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  if (me.role !== 'owner') return NextResponse.json({ error: 'Only owners can delete tasks' }, { status: 403 });
+  if (me.role !== 'owner' && me.role !== 'manager') return NextResponse.json({ error: 'Only managers and owners can delete tasks' }, { status: 403 });
 
   const { id } = await params;
 

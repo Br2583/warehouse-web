@@ -96,7 +96,7 @@ export default function DashboardPage() {
 
   const overviewCards = [
     { label: 'Total Vaults', value: stats?.total_boxes ?? 0, icon: ArchiveBoxIcon, color: 'blue', href: '/warehouses' },
-    { label: 'Work Orders', value: workStats.total, icon: ClipboardDocumentListIcon, color: 'amber', href: '/production' },
+    { label: 'Work Orders', value: workStats.total, icon: ClipboardDocumentListIcon, color: 'amber', href: '/tasks' },
     { label: 'Ready', value: stats?.statuses?.READY ?? 0, icon: CheckCircleIcon, color: 'green', href: '/search?status=READY' },
     { label: 'Delivered', value: stats?.statuses?.DELIVERED ?? 0, icon: TruckIcon, color: 'purple', href: '/search?status=DELIVERED' },
   ];

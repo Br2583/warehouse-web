@@ -24,7 +24,7 @@ export async function GET(req: NextRequest) {
   try { adminToken = await getPbAdminToken(); }
   catch { return NextResponse.json({ error: 'Admin auth failed' }, { status: 500 }); }
 
-  const filter = me.role === 'owner'
+  const filter = (me.role === 'owner' || me.role === 'manager')
     ? `company_id="${me.company_id}"`
     : `company_id="${me.company_id}" && assigned_to="${me.id}"`;
 
@@ -43,20 +43,22 @@ export async function POST(req: NextRequest) {
 
   const me = await verifyUser(token);
   if (!me?.company_id) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  if (me.role !== 'owner') return NextResponse.json({ error: 'Only owners can create tasks' }, { status: 403 });
+  if (me.role !== 'owner' && me.role !== 'manager') return NextResponse.json({ error: 'Only managers and owners can create tasks' }, { status: 403 });
 
   let adminToken: string;
   try { adminToken = await getPbAdminToken(); }
   catch { return NextResponse.json({ error: 'Admin auth failed' }, { status: 500 }); }
 
-  // Cross-check: verify the authenticated user is actually the company owner
-  const compRes = await fetch(`${PB_URL}/api/collections/companies/records/${me.company_id}`, {
-    headers: { Authorization: `Bearer ${adminToken}` },
-  });
-  if (compRes.ok) {
-    const comp = await compRes.json();
-    if (comp.owner_id && comp.owner_id !== me.id) {
-      return NextResponse.json({ error: 'Only the company owner can create tasks' }, { status: 403 });
+  // Cross-check: verify the company owner claim (owners only — managers are already role-verified)
+  if (me.role === 'owner') {
+    const compRes = await fetch(`${PB_URL}/api/collections/companies/records/${me.company_id}`, {
+      headers: { Authorization: `Bearer ${adminToken}` },
+    });
+    if (compRes.ok) {
+      const comp = await compRes.json();
+      if (comp.owner_id && comp.owner_id !== me.id) {
+        return NextResponse.json({ error: 'Only the company owner can create tasks' }, { status: 403 });
+      }
     }
   }
 
