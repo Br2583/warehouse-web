@@ -575,12 +575,25 @@ async function routePost(path: string, body: any): Promise<any> {
     if (!cid) throw new Error('No company');
     const role = pb.authStore.model?.role as string | undefined;
     if (role !== 'owner' && role !== 'manager') throw new Error('Only managers and owners can restore vaults');
-    const dv = await pb.collection('deleted_vaults').getOne(restoreMatch[1]);
+    // Try by deleted_vaults record ID first; fall back to searching by original vault ID
+    // (activity log entries before the Aug-08 fix stored the vault PB ID as entity_id)
+    let dv: any;
+    try {
+      dv = await pb.collection('deleted_vaults').getOne(restoreMatch[1]);
+    } catch {
+      try {
+        dv = await pb.collection('deleted_vaults').getFirstListItem(
+          `company_id="${cid}" && vault_data~"${sf(restoreMatch[1])}"`
+        );
+      } catch {
+        throw new Error('Vault not found in deleted records — it may have already been restored or permanently deleted.');
+      }
+    }
     if (dv.company_id !== cid) throw new Error('Forbidden');
     const vd = (dv.vault_data as any) || {};
-    // vault_data was saved with mapped field names (mapVault renames col→column, id→box_id)
-    // so we explicitly remap back to PocketBase field names
     await pb.collection('vaults').create({
+      box_id:        genCode(),
+      qr_token:      genCode(),
       warehouse_id:  vd.warehouse_id,
       row:           vd.row,
       col:           vd.column ?? vd.col,
@@ -598,9 +611,10 @@ async function routePost(path: string, body: any): Promise<any> {
       comments:      vd.comments,
       estado:        vd.estado || 'PENDING',
       company_id:    cid,
+      created_by:    uid || '',
     });
-    await pb.collection('deleted_vaults').delete(restoreMatch[1]);
-    logActivity({ action: 'RESTORED', entity_type: 'vault', entity_id: vd.box_id || restoreMatch[1], entity_label: `Vault ${vd.position || '—'} · ${vd.client_name || '—'}` });
+    await pb.collection('deleted_vaults').delete(dv.id);
+    logActivity({ action: 'RESTORED', entity_type: 'vault', entity_id: dv.id, entity_label: `Vault ${vd.position || '—'} · ${vd.client_name || '—'}` });
     return { success: true };
   }
 
