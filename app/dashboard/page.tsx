@@ -55,7 +55,7 @@ const ACTIVITY_ACTION_CFG: Record<string, { color: string; bg: string; label: st
   MOVED:    { color: 'text-purple-700', bg: 'bg-purple-100', label: 'moved',    Icon: ArrowsRightLeftIcon },
 };
 function actTimeAgo(ts: string) {
-  const date = new Date(ts.includes('T') ? ts : ts.replace(' ', 'T') + 'Z');
+  const date = new Date(ts.replace(' ', 'T'));
   const diff = Date.now() - date.getTime();
   const mins = Math.floor(diff / 60000);
   if (mins < 1) return 'just now';

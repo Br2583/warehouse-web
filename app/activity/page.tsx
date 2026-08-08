@@ -46,7 +46,7 @@ const PERIODS = [
 ];
 
 function timeAgo(ts: string) {
-  const date = new Date(ts.includes('T') ? ts : ts.replace(' ', 'T') + 'Z');
+  const date = new Date(ts.replace(' ', 'T'));
   const diff = Date.now() - date.getTime();
   const mins = Math.floor(diff / 60000);
   if (mins < 1) return 'just now';

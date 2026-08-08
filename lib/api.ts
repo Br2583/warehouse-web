@@ -146,7 +146,7 @@ async function buildStats() {
     by_warehouse[v.warehouse_id] = (by_warehouse[v.warehouse_id] || 0) + 1;
     job_types[v.job_type || 'Other'] = (job_types[v.job_type || 'Other'] || 0) + 1;
     if (s === 'PENDING' && v.created) {
-      const ts = new Date(v.created.includes('T') ? v.created : v.created.replace(' ', 'T') + 'Z').getTime();
+      const ts = new Date(v.created.replace(' ', 'T')).getTime();
       if (now - ts > 3 * 24 * 60 * 60 * 1000) sla_count++;
     }
   }
