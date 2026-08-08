@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   ArchiveBoxIcon, PlusIcon, MagnifyingGlassIcon, TrashIcon, XMarkIcon, CameraIcon,
   Squares2X2Icon, ListBulletIcon, PencilIcon, ChevronLeftIcon, ChevronRightIcon,
-  QrCodeIcon, Cog6ToothIcon,
+  QrCodeIcon, Cog6ToothIcon, ArrowsRightLeftIcon,
 } from '@heroicons/react/24/outline';
 import ConfirmModal from '@/components/ConfirmModal';
 import Sidebar from '@/components/Sidebar';
@@ -95,6 +95,13 @@ export default function WarehouseDetailPage() {
   const [gridColsInput, setGridColsInput] = useState(8);
   const [gridSaving, setGridSaving] = useState(false);
   const [showScanner, setShowScanner] = useState(false);
+  const [allWarehouses, setAllWarehouses] = useState<{ id: string; name: string }[]>([]);
+  const [showMove, setShowMove] = useState(false);
+  const [moveTarget, setMoveTarget] = useState<Box | null>(null);
+  const [moveDest, setMoveDest] = useState({ warehouse_id: '', row: 'A', col: 1, level: 1 });
+  const [moveSaving, setMoveSaving] = useState(false);
+  const [moveError, setMoveError] = useState('');
+  const [moveOccupant, setMoveOccupant] = useState<{ id: string; client_name: string; job_type: string; position: string } | null>(null);
 
   const fetchBoxes = () => {
     setApiError('');
@@ -111,6 +118,7 @@ export default function WarehouseDetailPage() {
 
   useEffect(() => {
     fetchBoxes();
+    api.get('/api/warehouses').then((whs: any) => { if (Array.isArray(whs)) setAllWarehouses(whs); }).catch(() => {});
     import('@/lib/pb').then(({ pb }) =>
       pb.collection('warehouses').getOne(warehouseId).then(w => {
         setWarehouseName(w.name);
@@ -260,6 +268,45 @@ export default function WarehouseDetailPage() {
       setSaveError(err?.message || 'Failed to add vault');
     } finally {
       setSaving(false);
+    }
+  };
+
+  const openMove = (box: Box) => {
+    setMoveTarget(box);
+    setMoveDest({ warehouse_id: warehouseId, row: box.row, col: Number(box.column), level: Number(box.level) });
+    setMoveError('');
+    setMoveOccupant(null);
+    setShowMove(true);
+  };
+
+  const handleMove = async (confirmSwap = false) => {
+    if (!moveTarget) return;
+    setMoveSaving(true);
+    setMoveError('');
+    try {
+      const result = await api.put(`/api/boxes/${moveTarget.box_id}/move`, {
+        warehouse_id: moveDest.warehouse_id,
+        row: moveDest.row,
+        col: moveDest.col,
+        level: moveDest.level,
+        confirmSwap,
+      });
+      if (result?.unchanged) {
+        setMoveError('The vault is already at this position');
+      } else if (result?.occupied) {
+        setMoveOccupant(result.occupant);
+      } else {
+        setShowMove(false);
+        setMoveTarget(null);
+        setMoveOccupant(null);
+        setSelected(null);
+        fetchBoxes();
+        showToast(result?.swapped ? 'Vaults swapped' : 'Vault moved');
+      }
+    } catch (err: any) {
+      setMoveError(err?.message || 'Failed to move vault');
+    } finally {
+      setMoveSaving(false);
     }
   };
 
@@ -631,12 +678,18 @@ export default function WarehouseDetailPage() {
                 </div>
 
                 {canManage && (
-                  <div className="flex gap-3 mt-4">
+                  <div className="flex flex-wrap gap-2 mt-4">
                     <button
                       onClick={() => openEdit(selected)}
                       className="flex items-center gap-2 px-4 py-2 text-sm text-blue-600 hover:bg-blue-50 rounded-xl transition-colors font-medium"
                     >
                       <PencilIcon className="w-4 h-4" /> Edit
+                    </button>
+                    <button
+                      onClick={() => openMove(selected)}
+                      className="flex items-center gap-2 px-4 py-2 text-sm text-gray-600 hover:bg-gray-50 rounded-xl transition-colors"
+                    >
+                      <ArrowsRightLeftIcon className="w-4 h-4" /> Move
                     </button>
                     <button
                       onClick={() => deleteBox(selected.box_id)}
@@ -787,6 +840,123 @@ export default function WarehouseDetailPage() {
           )}
         </AnimatePresence>
       </main>
+
+      {/* Move Vault Dialog */}
+      <AnimatePresence>
+        {showMove && moveTarget && (
+          <div
+            className="fixed inset-0 bg-black/50 flex items-center justify-center z-[60] p-4"
+            onClick={() => { setShowMove(false); setMoveOccupant(null); }}
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="bg-white rounded-2xl p-6 w-full max-w-sm shadow-xl"
+              onClick={e => e.stopPropagation()}
+            >
+              {!moveOccupant ? (
+                <>
+                  <div className="flex items-center justify-between mb-4">
+                    <h2 className="text-lg font-bold text-gray-900">Move Vault</h2>
+                    <button onClick={() => setShowMove(false)} className="p-2 -mr-2 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-50">
+                      <XMarkIcon className="w-5 h-5" />
+                    </button>
+                  </div>
+                  <p className="text-sm text-gray-500 mb-5">{moveTarget.client_name} · {moveTarget.position}</p>
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-xs text-gray-500 mb-1">Warehouse</label>
+                      <select
+                        value={moveDest.warehouse_id}
+                        onChange={e => setMoveDest(d => ({ ...d, warehouse_id: e.target.value }))}
+                        className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      >
+                        {allWarehouses.map(w => <option key={w.id} value={w.id}>{w.name}</option>)}
+                      </select>
+                    </div>
+                    <div className="grid grid-cols-3 gap-3">
+                      <div>
+                        <label className="block text-xs text-gray-500 mb-1">Row</label>
+                        <select
+                          value={moveDest.row}
+                          onChange={e => setMoveDest(d => ({ ...d, row: e.target.value }))}
+                          className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        >
+                          {ROWS.map(r => <option key={r} value={r}>{r}</option>)}
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-xs text-gray-500 mb-1">Column</label>
+                        <select
+                          value={moveDest.col}
+                          onChange={e => setMoveDest(d => ({ ...d, col: Number(e.target.value) }))}
+                          className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        >
+                          {COLUMNS.map(c => <option key={c} value={c}>{c}</option>)}
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-xs text-gray-500 mb-1">Level</label>
+                        <select
+                          value={moveDest.level}
+                          onChange={e => setMoveDest(d => ({ ...d, level: Number(e.target.value) }))}
+                          className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        >
+                          <option value={1}>Lower</option>
+                          <option value={2}>Upper</option>
+                        </select>
+                      </div>
+                    </div>
+                    {moveError && <p className="text-sm text-red-600">{moveError}</p>}
+                    <button
+                      onClick={() => handleMove(false)}
+                      disabled={moveSaving}
+                      className="w-full py-2.5 bg-gray-950 text-white text-sm font-medium rounded-full hover:bg-gray-800 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                    >
+                      {moveSaving
+                        ? <><div className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" /> Moving...</>
+                        : 'Move Vault'}
+                    </button>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="flex items-center justify-between mb-4">
+                    <h2 className="text-lg font-bold text-gray-900">Position Taken</h2>
+                    <button onClick={() => setMoveOccupant(null)} className="p-2 -mr-2 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-50">
+                      <XMarkIcon className="w-5 h-5" />
+                    </button>
+                  </div>
+                  <div className="bg-amber-50 border border-amber-100 rounded-xl p-4 mb-4">
+                    <p className="text-sm text-amber-800 font-medium">{moveOccupant.client_name} · {moveOccupant.job_type}</p>
+                    <p className="text-xs text-amber-600 mt-1">is at {moveDest.row}{moveDest.col}-L{moveDest.level}</p>
+                  </div>
+                  <p className="text-sm text-gray-600 mb-5">Swap both vaults? They will exchange positions.</p>
+                  {moveError && <p className="text-sm text-red-600 mb-3">{moveError}</p>}
+                  <div className="flex gap-3">
+                    <button
+                      onClick={() => setMoveOccupant(null)}
+                      className="flex-1 py-2.5 border border-gray-200 text-gray-600 text-sm font-medium rounded-full hover:bg-gray-50 transition-colors"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={() => handleMove(true)}
+                      disabled={moveSaving}
+                      className="flex-1 py-2.5 bg-gray-950 text-white text-sm font-medium rounded-full hover:bg-gray-800 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                    >
+                      {moveSaving
+                        ? <><div className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" /> Swapping...</>
+                        : 'Swap'}
+                    </button>
+                  </div>
+                </>
+              )}
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
 
       {confirmModal && (
         <ConfirmModal

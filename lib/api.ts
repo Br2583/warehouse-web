@@ -626,6 +626,59 @@ async function routePut(path: string, body: any): Promise<any> {
     return mapStorage(s);
   }
 
+  // PUT /api/boxes/:id/move
+  const moveMatch = p.match(/^\/api\/boxes\/([^/]+)\/move$/);
+  if (moveMatch) {
+    const vaultId = moveMatch[1];
+    if (!cid) throw new Error('No company');
+    const { warehouse_id, row, col, level, confirmSwap } = body;
+    const destCol   = Number(col);
+    const destLevel = Number(level);
+
+    const source = await pb.collection('vaults').getOne(vaultId);
+    if (source.company_id !== cid) throw new Error('Forbidden');
+
+    // No-op: already at the requested position
+    if (
+      source.warehouse_id === warehouse_id &&
+      source.row === row &&
+      Number(source.col) === destCol &&
+      Number(source.level) === destLevel
+    ) {
+      return { moved: false, unchanged: true };
+    }
+
+    const newPosition = `${row}${destCol}-L${destLevel}`;
+    // Filter by company + warehouse + row, then check col/level in JS to avoid field-type ambiguity
+    const candidates = await pb.collection('vaults').getFullList({
+      filter: `company_id="${cid}" && warehouse_id="${sf(warehouse_id)}" && row="${sf(row)}"`,
+      fields: 'id,client_name,job_type,position,row,col,level,warehouse_id',
+    });
+    const occupant = candidates.find((v: any) =>
+      v.id !== vaultId && Number(v.col) === destCol && Number(v.level) === destLevel
+    ) ?? null;
+
+    if (occupant) {
+      if (!confirmSwap) {
+        return {
+          occupied: true,
+          occupant: { id: occupant.id, client_name: occupant.client_name, job_type: occupant.job_type, position: occupant.position },
+        };
+      }
+      const oldPosition = source.position || `${source.row}${source.col}-L${source.level}`;
+      await pb.collection('vaults').update(vaultId, { warehouse_id, row, col: destCol, level: destLevel, position: newPosition });
+      await pb.collection('vaults').update(occupant.id, {
+        warehouse_id: source.warehouse_id,
+        row: source.row, col: Number(source.col), level: Number(source.level),
+        position: oldPosition,
+      });
+      return { moved: true, swapped: true };
+    }
+
+    await pb.collection('vaults').update(vaultId, { warehouse_id, row, col: destCol, level: destLevel, position: newPosition });
+    return { moved: true, swapped: false };
+  }
+
   // PUT /api/tasks/:id
   const taskMatch = p.match(/^\/api\/tasks\/([^/]+)$/);
   if (taskMatch) {
