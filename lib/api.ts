@@ -634,6 +634,9 @@ async function routePut(path: string, body: any): Promise<any> {
     const { warehouse_id, row, col, level, confirmSwap } = body;
     const destCol   = Number(col);
     const destLevel = Number(level);
+    if (!warehouse_id || !row || isNaN(destCol) || destCol < 1 || isNaN(destLevel) || destLevel < 1) {
+      throw new Error('Invalid move parameters');
+    }
 
     const source = await pb.collection('vaults').getOne(vaultId);
     if (source.company_id !== cid) throw new Error('Forbidden');
@@ -667,11 +670,21 @@ async function routePut(path: string, body: any): Promise<any> {
       }
       const oldPosition = source.position || `${source.row}${source.col}-L${source.level}`;
       await pb.collection('vaults').update(vaultId, { warehouse_id, row, col: destCol, level: destLevel, position: newPosition });
-      await pb.collection('vaults').update(occupant.id, {
-        warehouse_id: source.warehouse_id,
-        row: source.row, col: Number(source.col), level: Number(source.level),
-        position: oldPosition,
-      });
+      try {
+        await pb.collection('vaults').update(occupant.id, {
+          warehouse_id: source.warehouse_id,
+          row: source.row, col: Number(source.col), level: Number(source.level),
+          position: oldPosition,
+        });
+      } catch {
+        // Rollback: put source back to avoid two vaults at the same position
+        await pb.collection('vaults').update(vaultId, {
+          warehouse_id: source.warehouse_id,
+          row: source.row, col: Number(source.col), level: Number(source.level),
+          position: oldPosition,
+        }).catch(() => {});
+        throw new Error('Swap failed — please try again');
+      }
       return { moved: true, swapped: true };
     }
 

@@ -846,7 +846,7 @@ export default function WarehouseDetailPage() {
         {showMove && moveTarget && (
           <div
             className="fixed inset-0 bg-black/50 flex items-center justify-center z-[60] p-4"
-            onClick={() => { setShowMove(false); setMoveOccupant(null); }}
+            onClick={() => { setShowMove(false); setMoveOccupant(null); setMoveTarget(null); }}
           >
             <motion.div
               initial={{ opacity: 0, scale: 0.95 }}
@@ -859,7 +859,7 @@ export default function WarehouseDetailPage() {
                 <>
                   <div className="flex items-center justify-between mb-4">
                     <h2 className="text-lg font-bold text-gray-900">Move Vault</h2>
-                    <button onClick={() => setShowMove(false)} className="p-2 -mr-2 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-50">
+                    <button onClick={() => { setShowMove(false); setMoveTarget(null); }} className="p-2 -mr-2 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-50">
                       <XMarkIcon className="w-5 h-5" />
                     </button>
                   </div>
@@ -872,7 +872,10 @@ export default function WarehouseDetailPage() {
                         onChange={e => setMoveDest(d => ({ ...d, warehouse_id: e.target.value }))}
                         className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                       >
-                        {allWarehouses.map(w => <option key={w.id} value={w.id}>{w.name}</option>)}
+                        {allWarehouses.length > 0
+                          ? allWarehouses.map(w => <option key={w.id} value={w.id}>{w.name}</option>)
+                          : <option value={warehouseId}>{warehouseName || 'Current warehouse'}</option>
+                        }
                       </select>
                     </div>
                     <div className="grid grid-cols-3 gap-3">
