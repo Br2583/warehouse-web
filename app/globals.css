@@ -136,3 +136,23 @@ textarea::placeholder {
 .native-bottom-pad {
   padding-bottom: calc(56px + env(safe-area-inset-bottom, 0px));
 }
+
+/* Native app: chat main uses 100dvh — subtract bottom nav so input isn't hidden */
+.native-app .native-chat-main {
+  height: calc(100dvh - 56px - env(safe-area-inset-bottom, 0px)) !important;
+}
+
+/* Native app: bottom-sheet modals — push sheet up above bottom nav */
+.native-app .native-sheet-overlay {
+  padding-bottom: calc(56px + env(safe-area-inset-bottom, 0px));
+}
+
+/* Keyboard open: hide bottom nav + clear its padding (reclaim 56px of space) */
+.keyboard-open .native-bottom-nav { display: none !important; }
+.keyboard-open .native-bottom-pad { padding-bottom: 0 !important; }
+
+/* Keyboard open: restore full viewport height for chat (nav is gone) */
+.keyboard-open .native-chat-main { height: 100dvh !important; }
+
+/* Keyboard open: sheet overlay needs no extra bottom offset */
+.keyboard-open .native-sheet-overlay { padding-bottom: 0 !important; }

@@ -177,7 +177,7 @@ export default function ChatPage() {
   return (
     <div className="flex min-h-screen bg-gray-50">
       <Sidebar />
-      <main className="md:ml-64 flex-1 min-w-0 flex flex-col" style={{ height: '100dvh' }}>
+      <main className="native-chat-main md:ml-64 flex-1 min-w-0 flex flex-col" style={{ height: '100dvh' }}>
         <div className="px-4 md:px-8 py-4 md:py-6 pb-4 border-b border-gray-100 bg-white flex-shrink-0 topbar-offset">
           <div className="flex items-center justify-between gap-4">
             <div>

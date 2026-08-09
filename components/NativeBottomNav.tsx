@@ -34,7 +34,7 @@ export default function NativeBottomNav({ onOpenMore }: NativeBottomNavProps) {
 
   return (
     <nav
-      className="fixed bottom-0 inset-x-0 z-50 bg-white border-t border-gray-100 flex items-stretch"
+      className="native-bottom-nav fixed bottom-0 inset-x-0 z-50 bg-white border-t border-gray-100 flex items-stretch"
       style={{ height: 'calc(56px + env(safe-area-inset-bottom, 0px))' }}
     >
       <div

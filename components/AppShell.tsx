@@ -30,7 +30,17 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     import('@capacitor/core').then(({ Capacitor }) => {
-      if (Capacitor.isNativePlatform()) setIsNative(true);
+      if (!Capacitor.isNativePlatform()) return;
+      setIsNative(true);
+      // Hide bottom nav when keyboard opens to reclaim space
+      import('@capacitor/keyboard').then(({ Keyboard }) => {
+        Keyboard.addListener('keyboardWillShow', () => {
+          document.documentElement.classList.add('keyboard-open');
+        });
+        Keyboard.addListener('keyboardWillHide', () => {
+          document.documentElement.classList.remove('keyboard-open');
+        });
+      }).catch(() => {});
     });
   }, []);
 

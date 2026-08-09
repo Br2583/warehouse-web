@@ -458,7 +458,7 @@ function TaskFormModal({ open, onClose, members, editTask, onSave }: {
     <AnimatePresence>
       {open && (
         <div
-          className="fixed inset-0 z-50 flex items-end md:items-center justify-center p-0 md:p-4 bg-black/30"
+          className="native-sheet-overlay fixed inset-0 z-50 flex items-end md:items-center justify-center p-0 md:p-4 bg-black/30"
           onClick={onClose}
         >
           <motion.div
