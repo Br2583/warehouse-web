@@ -40,9 +40,42 @@ interface Box {
   created: string;
 }
 
+interface LooseItem {
+  id: string;
+  warehouse_id: string;
+  client_name: string;
+  grid_x: string;
+  grid_y: string;
+  item_type: 'Boxes' | 'Furniture';
+  furniture_type: string;
+  color: string;
+  condition: string[];
+  status: string;
+  photos: string[];
+  comments: string;
+  created: string;
+}
+
+interface LooseForm {
+  client_name: string;
+  item_type: 'Boxes' | 'Furniture';
+  furniture_type: string;
+  color: string;
+  condition: string[];
+  status: string;
+  photos: string[];
+  comments: string;
+}
 
 const ROWS    = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J'];
 const COLUMNS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11];
+
+const FURNITURE_TYPES = ['Sofa', 'Table', 'Chair', 'Bed', 'Dresser', 'TV', 'Other'];
+const LOOSE_CONDITIONS = ['Total Loss', 'Needs Cleaning', 'Ready to Go', 'Storage Only'];
+const LOOSE_STATUSES = ['PENDING', 'READY', 'DELIVERED'];
+const ITEM_EMOJI: Record<string, string> = {
+  Boxes: '📦', Sofa: '🛋️', Table: '🪑', Chair: '🪑', Bed: '🛏️', Dresser: '🗄️', TV: '📺', Other: '📋',
+};
 
 const emptyForm = (): VaultFormData => ({
   client_name:   '',
@@ -60,6 +93,16 @@ const emptyForm = (): VaultFormData => ({
   photos:        [],
 });
 
+const emptyLooseForm = (): LooseForm => ({
+  client_name:    '',
+  item_type:      'Boxes',
+  furniture_type: '',
+  color:          '',
+  condition:      [],
+  status:         'PENDING',
+  photos:         [],
+  comments:       '',
+});
 
 
 export default function WarehouseDetailPage() {
@@ -104,6 +147,23 @@ export default function WarehouseDetailPage() {
   const [moveError, setMoveError] = useState('');
   const [moveOccupant, setMoveOccupant] = useState<{ id: string; client_name: string; job_type: string; position: string } | null>(null);
 
+  // Loose Items state
+  const [activeTab, setActiveTab] = useState<'vaults' | 'loose'>('vaults');
+  const [looseItems, setLooseItems] = useState<LooseItem[]>([]);
+  const [looseRows, setLooseRows] = useState(5);
+  const [looseCols, setLooseCols] = useState(5);
+  const [looseLoading, setLooseLoading] = useState(false);
+  const [selectedZone, setSelectedZone] = useState<string | null>(null);
+  const [showLooseForm, setShowLooseForm] = useState(false);
+  const [editingLooseId, setEditingLooseId] = useState<string | null>(null);
+  const [looseForm, setLooseForm] = useState<LooseForm>(emptyLooseForm());
+  const [looseSaving, setLooseSaving] = useState(false);
+  const [looseError, setLooseError] = useState('');
+  const [showLooseGridEdit, setShowLooseGridEdit] = useState(false);
+  const [looseRowsInput, setLooseRowsInput] = useState(5);
+  const [looseColsInput, setLooseColsInput] = useState(5);
+  const [looseGridSaving, setLooseGridSaving] = useState(false);
+
   const fetchBoxes = () => {
     setApiError('');
     api.get(`/api/boxes?warehouse_id=${warehouseId}`)
@@ -127,9 +187,29 @@ export default function WarehouseDetailPage() {
         const c = Number(w.cols) || 8;
         setWarehouseRows(r); setGridRowsInput(r);
         setWarehouseCols(c); setGridColsInput(c);
+        const lr = Number(w.loose_rows) || 5;
+        const lc = Number(w.loose_cols) || 5;
+        setLooseRows(lr); setLooseRowsInput(lr);
+        setLooseCols(lc); setLooseColsInput(lc);
       }).catch(() => {})
     );
+    const tabParam = searchParams?.get('tab');
+    const zoneParam = searchParams?.get('zone');
+    if (tabParam === 'loose') {
+      setActiveTab('loose');
+      if (zoneParam) setSelectedZone(zoneParam);
+    }
   }, [warehouseId]);
+
+  // Load loose items when switching to loose tab
+  useEffect(() => {
+    if (activeTab !== 'loose') return;
+    setLooseLoading(true);
+    api.get(`/api/loose-items?warehouse_id=${warehouseId}`)
+      .then((data: any) => setLooseItems(Array.isArray(data) ? data : []))
+      .catch(() => {})
+      .finally(() => setLooseLoading(false));
+  }, [activeTab, warehouseId]);
 
   // Auto-open vault when navigating from /scan?vault=<box_id>
   useEffect(() => {
@@ -350,6 +430,111 @@ export default function WarehouseDetailPage() {
     setGridSaving(false);
   };
 
+  // Loose Items helpers
+  const getItemsForZone = (x: string, y: string) =>
+    looseItems.filter(item => item.grid_x === x && item.grid_y === y);
+  const getItemEmoji = (item: LooseItem) =>
+    item.item_type === 'Furniture' ? (ITEM_EMOJI[item.furniture_type] || '📋') : '📦';
+  const looseZoneItems = selectedZone
+    ? getItemsForZone(selectedZone.split('-')[0], selectedZone.split('-')[1])
+    : [];
+
+  const fetchLooseItems = () => {
+    api.get(`/api/loose-items?warehouse_id=${warehouseId}`)
+      .then((data: any) => setLooseItems(Array.isArray(data) ? data : []))
+      .catch(() => {});
+  };
+
+  const openAddLooseItem = () => {
+    setEditingLooseId(null);
+    setLooseForm(emptyLooseForm());
+    setLooseError('');
+    setShowLooseForm(true);
+  };
+
+  const openEditLooseItem = (item: LooseItem) => {
+    setEditingLooseId(item.id);
+    setLooseForm({
+      client_name:    item.client_name,
+      item_type:      item.item_type,
+      furniture_type: item.furniture_type,
+      color:          item.color,
+      condition:      item.condition,
+      status:         item.status,
+      photos:         item.photos,
+      comments:       item.comments,
+    });
+    setLooseError('');
+    setShowLooseForm(true);
+  };
+
+  const saveLooseItem = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!looseForm.client_name.trim()) { setLooseError('Client name is required'); return; }
+    if (!selectedZone) { setLooseError('No zone selected'); return; }
+    const [gx, gy] = selectedZone.split('-');
+    setLooseSaving(true);
+    setLooseError('');
+    try {
+      if (editingLooseId) {
+        await api.put(`/api/loose-items/${editingLooseId}`, { ...looseForm, client_name: looseForm.client_name.trim() });
+        showToast('Item updated');
+      } else {
+        await api.post('/api/loose-items', {
+          warehouse_id: warehouseId,
+          grid_x: gx,
+          grid_y: gy,
+          ...looseForm,
+          client_name: looseForm.client_name.trim(),
+        });
+        showToast('Item added');
+      }
+      setShowLooseForm(false);
+      setEditingLooseId(null);
+      fetchLooseItems();
+    } catch (err: any) {
+      setLooseError(err?.message || 'Failed to save');
+    } finally {
+      setLooseSaving(false);
+    }
+  };
+
+  const deleteLooseItemFn = (itemId: string) => {
+    setConfirmModal({
+      message: 'Delete this item? This cannot be undone.',
+      onConfirm: async () => {
+        await api.delete(`/api/loose-items/${itemId}`);
+        fetchLooseItems();
+        showToast('Item deleted');
+      },
+    });
+  };
+
+  const handleLoosePhotos = async (files: FileList | null) => {
+    if (!files) return;
+    try {
+      const converted = await Promise.all(Array.from(files).slice(0, 4).map(f => compressImage(f)));
+      setLooseForm(f => ({ ...f, photos: [...f.photos, ...converted].slice(0, 4) }));
+    } catch (err: any) {
+      setLooseError(err?.message || 'Photo too large');
+    }
+  };
+
+  const saveLooseGrid = async () => {
+    setLooseGridSaving(true);
+    try {
+      await api.put(`/api/warehouses/${warehouseId}/loose-grid`, { loose_rows: looseRowsInput, loose_cols: looseColsInput });
+      setLooseRows(looseRowsInput);
+      setLooseCols(looseColsInput);
+      setShowLooseGridEdit(false);
+      showToast('Grid size updated');
+    } catch {
+      showToast('Failed to save grid size', 'error');
+    } finally {
+      setLooseGridSaving(false);
+    }
+  };
+
   // Map helpers
   const getBox = (row: string, col: number, level: number) =>
     boxes.find(b => b.row === row && Number(b.column) === col && Number(b.level) === level);
@@ -365,226 +550,618 @@ export default function WarehouseDetailPage() {
       <Sidebar />
       <main className="md:ml-64 flex-1 min-w-0 px-4 pb-8 md:px-8 md:pb-8 topbar-offset">
         {/* Header */}
-        <div className="flex flex-wrap items-center justify-between gap-3 mb-8">
+        <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
           <div>
             <h1 className="text-2xl font-bold text-gray-900">{warehouseName || 'Warehouse'}</h1>
-            <p className="text-gray-500 text-sm mt-1">{boxes.length} vaults stored</p>
+            <p className="text-gray-500 text-sm mt-1">
+              {activeTab === 'vaults' ? `${boxes.length} vaults stored` : `${looseItems.length} loose items`}
+            </p>
           </div>
           <div className="flex items-center gap-2">
-            {/* Grid size button */}
-            {canManage && (
-              <button
-                onClick={() => { setGridRowsInput(warehouseRows); setGridColsInput(warehouseCols); setShowGridEdit(v => !v); }}
-                className={`flex items-center gap-1.5 px-3 py-2 text-sm border rounded-xl transition-colors ${showGridEdit ? 'bg-gray-100 border-gray-300 text-gray-700' : 'bg-white border-gray-200 text-gray-500 hover:text-gray-700'}`}
-                title="Edit grid dimensions"
-              >
-                <Cog6ToothIcon className="w-4 h-4" />
-                <span className="hidden sm:inline text-xs">{warehouseRows}×{warehouseCols}</span>
-              </button>
-            )}
-            {/* View toggle */}
-            <div className="flex bg-white border border-gray-200 rounded-xl overflow-hidden">
-              <button
-                onClick={() => setViewMode('map')}
-                className={`flex items-center gap-1.5 px-3 py-2 text-sm font-medium transition-colors ${viewMode === 'map' ? 'bg-blue-600 text-white' : 'text-gray-500 hover:text-gray-700'}`}
-              >
-                <Squares2X2Icon className="w-4 h-4" /><span className="hidden sm:inline ml-1">Map</span>
-              </button>
-              <button
-                onClick={() => setViewMode('list')}
-                className={`flex items-center gap-1.5 px-3 py-2 text-sm font-medium transition-colors ${viewMode === 'list' ? 'bg-blue-600 text-white' : 'text-gray-500 hover:text-gray-700'}`}
-              >
-                <ListBulletIcon className="w-4 h-4" /><span className="hidden sm:inline ml-1">List</span>
-              </button>
-            </div>
-            <button
-              onClick={() => setShowScanner(true)}
-              className="flex items-center gap-2 px-3 py-2 md:px-4 md:py-2.5 bg-white border border-gray-200 text-gray-600 text-sm font-medium rounded-xl hover:border-blue-400 hover:text-blue-600 transition-colors"
-              title="Scan QR code"
-            >
-              <QrCodeIcon className="w-4 h-4" /><span className="hidden sm:inline">Scan QR</span>
-            </button>
-            {canManage && (
-              <button
-                onClick={() => { setForm(emptyForm()); setShowAdd(true); setSaveError(''); }}
-                className="flex items-center gap-2 px-3 py-2 md:px-4 md:py-2.5 bg-gray-950 text-white text-sm font-medium rounded-full hover:bg-gray-800 transition-colors"
-              >
-                <PlusIcon className="w-4 h-4" /><span className="hidden sm:inline">Add Vault</span><span className="sm:hidden">Add</span>
-              </button>
+            {activeTab === 'vaults' ? (
+              <>
+                {canManage && (
+                  <button
+                    onClick={() => { setGridRowsInput(warehouseRows); setGridColsInput(warehouseCols); setShowGridEdit(v => !v); }}
+                    className={`flex items-center gap-1.5 px-3 py-2 text-sm border rounded-xl transition-colors ${showGridEdit ? 'bg-gray-100 border-gray-300 text-gray-700' : 'bg-white border-gray-200 text-gray-500 hover:text-gray-700'}`}
+                    title="Edit grid dimensions"
+                  >
+                    <Cog6ToothIcon className="w-4 h-4" />
+                    <span className="hidden sm:inline text-xs">{warehouseRows}×{warehouseCols}</span>
+                  </button>
+                )}
+                <div className="flex bg-white border border-gray-200 rounded-xl overflow-hidden">
+                  <button
+                    onClick={() => setViewMode('map')}
+                    className={`flex items-center gap-1.5 px-3 py-2 text-sm font-medium transition-colors ${viewMode === 'map' ? 'bg-blue-600 text-white' : 'text-gray-500 hover:text-gray-700'}`}
+                  >
+                    <Squares2X2Icon className="w-4 h-4" /><span className="hidden sm:inline ml-1">Map</span>
+                  </button>
+                  <button
+                    onClick={() => setViewMode('list')}
+                    className={`flex items-center gap-1.5 px-3 py-2 text-sm font-medium transition-colors ${viewMode === 'list' ? 'bg-blue-600 text-white' : 'text-gray-500 hover:text-gray-700'}`}
+                  >
+                    <ListBulletIcon className="w-4 h-4" /><span className="hidden sm:inline ml-1">List</span>
+                  </button>
+                </div>
+                <button
+                  onClick={() => setShowScanner(true)}
+                  className="flex items-center gap-2 px-3 py-2 md:px-4 md:py-2.5 bg-white border border-gray-200 text-gray-600 text-sm font-medium rounded-xl hover:border-blue-400 hover:text-blue-600 transition-colors"
+                  title="Scan QR code"
+                >
+                  <QrCodeIcon className="w-4 h-4" /><span className="hidden sm:inline">Scan QR</span>
+                </button>
+                {canManage && (
+                  <button
+                    onClick={() => { setForm(emptyForm()); setShowAdd(true); setSaveError(''); }}
+                    className="flex items-center gap-2 px-3 py-2 md:px-4 md:py-2.5 bg-gray-950 text-white text-sm font-medium rounded-full hover:bg-gray-800 transition-colors"
+                  >
+                    <PlusIcon className="w-4 h-4" /><span className="hidden sm:inline">Add Vault</span><span className="sm:hidden">Add</span>
+                  </button>
+                )}
+              </>
+            ) : (
+              <>
+                {canManage && (
+                  <button
+                    onClick={() => { setLooseRowsInput(looseRows); setLooseColsInput(looseCols); setShowLooseGridEdit(v => !v); }}
+                    className={`flex items-center gap-1.5 px-3 py-2 text-sm border rounded-xl transition-colors ${showLooseGridEdit ? 'bg-gray-100 border-gray-300 text-gray-700' : 'bg-white border-gray-200 text-gray-500 hover:text-gray-700'}`}
+                    title="Edit loose grid dimensions"
+                  >
+                    <Cog6ToothIcon className="w-4 h-4" />
+                    <span className="hidden sm:inline text-xs">{looseRows}×{looseCols}</span>
+                  </button>
+                )}
+                {canManage && selectedZone && (
+                  <button
+                    onClick={openAddLooseItem}
+                    className="flex items-center gap-2 px-3 py-2 md:px-4 md:py-2.5 bg-gray-950 text-white text-sm font-medium rounded-full hover:bg-gray-800 transition-colors"
+                  >
+                    <PlusIcon className="w-4 h-4" /><span className="hidden sm:inline">Add Item</span><span className="sm:hidden">Add</span>
+                  </button>
+                )}
+              </>
             )}
           </div>
         </div>
 
-        {/* Grid dimension editor */}
-        <AnimatePresence>
-          {showGridEdit && (
-            <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} className="mb-4 bg-white border border-gray-200 rounded-2xl p-4 flex flex-wrap items-end gap-4">
-              <div>
-                <label className="block text-xs text-gray-500 mb-1">Rows (A–{ROWS[gridRowsInput - 1]})</label>
-                <input type="number" min={1} max={10} value={gridRowsInput} onChange={e => setGridRowsInput(Math.min(10, Math.max(1, Number(e.target.value))))}
-                  className="w-20 border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
-              </div>
-              <div>
-                <label className="block text-xs text-gray-500 mb-1">Columns (1–{gridColsInput})</label>
-                <input type="number" min={1} max={11} value={gridColsInput} onChange={e => setGridColsInput(Math.min(11, Math.max(1, Number(e.target.value))))}
-                  className="w-20 border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
-              </div>
-              <button onClick={saveGridSize} disabled={gridSaving}
-                className="px-4 py-2 text-sm bg-gray-950 text-white rounded-full hover:bg-gray-800 transition-colors disabled:opacity-50">
-                {gridSaving ? 'Saving...' : 'Apply'}
-              </button>
-              <button onClick={() => setShowGridEdit(false)} className="px-4 py-2 text-sm text-gray-500 border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors">Cancel</button>
-            </motion.div>
-          )}
-        </AnimatePresence>
+        {/* Tab bar */}
+        <div className="flex gap-1 mb-6 bg-white border border-gray-200 rounded-xl p-1 w-fit">
+          <button
+            onClick={() => setActiveTab('vaults')}
+            className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${activeTab === 'vaults' ? 'bg-blue-600 text-white' : 'text-gray-500 hover:text-gray-700'}`}
+          >
+            Vaults <span className={`ml-1.5 text-xs px-1.5 py-0.5 rounded-full ${activeTab === 'vaults' ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-500'}`}>{boxes.length}</span>
+          </button>
+          <button
+            onClick={() => setActiveTab('loose')}
+            className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${activeTab === 'loose' ? 'bg-blue-600 text-white' : 'text-gray-500 hover:text-gray-700'}`}
+          >
+            Loose Items{looseItems.length > 0 && <span className={`ml-1.5 text-xs px-1.5 py-0.5 rounded-full ${activeTab === 'loose' ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-500'}`}>{looseItems.length}</span>}
+          </button>
+        </div>
 
-        {apiError && (
-          <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-xl text-sm text-red-700 font-mono">{apiError}</div>
+        {/* ── VAULTS TAB ── */}
+        {activeTab === 'vaults' && (
+          <>
+            {/* Grid dimension editor */}
+            <AnimatePresence>
+              {showGridEdit && (
+                <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} className="mb-4 bg-white border border-gray-200 rounded-2xl p-4 flex flex-wrap items-end gap-4">
+                  <div>
+                    <label className="block text-xs text-gray-500 mb-1">Rows (A–{ROWS[gridRowsInput - 1]})</label>
+                    <input type="number" min={1} max={10} value={gridRowsInput} onChange={e => setGridRowsInput(Math.min(10, Math.max(1, Number(e.target.value))))}
+                      className="w-20 border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                  </div>
+                  <div>
+                    <label className="block text-xs text-gray-500 mb-1">Columns (1–{gridColsInput})</label>
+                    <input type="number" min={1} max={11} value={gridColsInput} onChange={e => setGridColsInput(Math.min(11, Math.max(1, Number(e.target.value))))}
+                      className="w-20 border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                  </div>
+                  <button onClick={saveGridSize} disabled={gridSaving}
+                    className="px-4 py-2 text-sm bg-gray-950 text-white rounded-full hover:bg-gray-800 transition-colors disabled:opacity-50">
+                    {gridSaving ? 'Saving...' : 'Apply'}
+                  </button>
+                  <button onClick={() => setShowGridEdit(false)} className="px-4 py-2 text-sm text-gray-500 border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors">Cancel</button>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            {apiError && (
+              <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-xl text-sm text-red-700 font-mono">{apiError}</div>
+            )}
+
+            {loading ? (
+              <div className="flex items-center justify-center h-64">
+                <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
+              </div>
+            ) : viewMode === 'map' ? (
+              /* ── MAP VIEW ── */
+              <div>
+                {/* Level selector + Legend */}
+                <div className="flex flex-wrap items-center gap-3 mb-5">
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm text-gray-500 font-medium">Level:</span>
+                    <div className="flex bg-white border border-gray-200 rounded-xl overflow-hidden">
+                      <button
+                        onClick={() => setMapLevel(1)}
+                        className={`px-3 py-2 text-sm font-medium transition-colors ${mapLevel === 1 ? 'bg-blue-600 text-white' : 'text-gray-500 hover:text-gray-700'}`}
+                      >
+                        Lower
+                      </button>
+                      <button
+                        onClick={() => setMapLevel(2)}
+                        className={`px-3 py-2 text-sm font-medium transition-colors ${mapLevel === 2 ? 'bg-blue-600 text-white' : 'text-gray-500 hover:text-gray-700'}`}
+                      >
+                        Upper
+                      </button>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3 flex-wrap">
+                    {[['bg-gray-100', 'Empty'], ['bg-amber-400', 'Pending'], ['bg-green-500', 'Ready'], ['bg-blue-500', 'Delivered']].map(([color, label]) => (
+                      <div key={label} className="flex items-center gap-1">
+                        <div className={`w-2.5 h-2.5 rounded-sm ${color}`} />
+                        <span className="text-xs text-gray-500">{label}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Grid */}
+                <div className="bg-white rounded-2xl border border-gray-100 p-2 md:p-6">
+                  <div>
+                    {/* Column headers */}
+                    <div className="flex gap-1 md:gap-1.5 mb-1 md:mb-1.5 ml-6 md:ml-8">
+                      {activeCols.map(col => (
+                        <div key={col} className="flex-1 min-w-0 text-center text-[9px] md:text-xs font-semibold text-gray-400">{col}</div>
+                      ))}
+                    </div>
+
+                    {activeRows.map(row => (
+                      <div key={row} className="flex items-center gap-1 md:gap-1.5 mb-1 md:mb-1.5">
+                        <div className="w-6 md:w-8 text-center text-xs font-bold text-gray-500 flex-shrink-0">{row}</div>
+
+                        {activeCols.map(col => {
+                          const box = getBox(row, col, mapLevel);
+                          const status = box ? boxStatus(box) : null;
+                          return (
+                            <motion.button
+                              key={col}
+                              whileHover={{ scale: 1.03 }}
+                              onClick={() => { box ? selectVault(box) : openAddAtPosition(row, col, mapLevel); }}
+                              className={`flex-1 min-w-0 overflow-hidden h-10 md:h-14 rounded-lg md:rounded-xl border-2 flex flex-col items-center justify-center transition-all
+                                ${box
+                                  ? `${STATUS_CELL[status!] || 'bg-gray-300'} border-transparent text-white cursor-pointer`
+                                  : 'bg-gray-50 border-dashed border-gray-200 hover:border-blue-400 hover:bg-blue-50 cursor-pointer'
+                                }`}
+                            >
+                              {box ? (
+                                <>
+                                  <span className="block md:hidden text-[10px] font-bold leading-none text-center tracking-tight">
+                                    {box.client_name
+                                      ? box.client_name.split(' ').map((w: string) => w[0]).join('').slice(0, 3).toUpperCase()
+                                      : '?'}
+                                  </span>
+                                  <span className="hidden md:block text-[10px] font-bold leading-tight w-full px-0.5 text-center truncate">{box.client_name}</span>
+                                  <span className="hidden md:block text-[9px] opacity-75 mt-0.5 leading-none">{box.job_type}</span>
+                                </>
+                              ) : (
+                                <PlusIcon className="w-3 h-3 md:w-4 md:h-4 text-gray-300" />
+                              )}
+                            </motion.button>
+                          );
+                        })}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            ) : (
+              /* ── LIST VIEW ── */
+              <div>
+                <div className="relative mb-6">
+                  <MagnifyingGlassIcon className="absolute left-4 top-3.5 w-4 h-4 text-gray-400" />
+                  <input
+                    type="text"
+                    placeholder="Search by client, position, packer..."
+                    value={search}
+                    onChange={e => setSearch(e.target.value)}
+                    className="w-full pl-11 pr-4 py-3 bg-white border border-gray-100 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+                <div className="bg-white rounded-2xl border border-gray-100 overflow-x-auto">
+                  <table className="w-full min-w-[320px]">
+                    <thead>
+                      <tr className="border-b border-gray-50">
+                        <th className="text-left text-xs font-medium text-gray-400 uppercase tracking-wide px-4 py-4">Position</th>
+                        <th className="text-left text-xs font-medium text-gray-400 uppercase tracking-wide px-4 py-4">Client</th>
+                        <th className="hidden md:table-cell text-left text-xs font-medium text-gray-400 uppercase tracking-wide px-4 py-4">Job Type</th>
+                        <th className="hidden md:table-cell text-left text-xs font-medium text-gray-400 uppercase tracking-wide px-4 py-4">Packer</th>
+                        <th className="text-left text-xs font-medium text-gray-400 uppercase tracking-wide px-4 py-4">Job Status</th>
+                        <th className="hidden md:table-cell text-left text-xs font-medium text-gray-400 uppercase tracking-wide px-4 py-4">Photos</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {filtered.map((box, i) => (
+                        <motion.tr
+                          key={box.box_id}
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          transition={{ delay: i * 0.03 }}
+                          onClick={() => selectVault(box)}
+                          className="border-b border-gray-50 hover:bg-gray-50 cursor-pointer transition-colors"
+                        >
+                          <td className="px-4 py-4 text-sm font-medium text-gray-900">{box.position}</td>
+                          <td className="px-4 py-4 text-sm text-gray-700 max-w-[140px] truncate">{box.client_name}</td>
+                          <td className="hidden md:table-cell px-4 py-4 text-sm text-gray-500">{box.job_type}</td>
+                          <td className="hidden md:table-cell px-4 py-4 text-sm text-gray-500">{box.packer || '—'}</td>
+                          <td className="px-4 py-4">
+                            <span className={`text-xs font-medium px-2.5 py-1 rounded-full ${STATUS_COLORS[boxStatus(box)] || 'bg-gray-100 text-gray-600'}`}>
+                              {boxStatus(box)}
+                            </span>
+                          </td>
+                          <td className="hidden md:table-cell px-4 py-4 text-sm text-gray-500">
+                            {box.photos?.length > 0 ? (
+                              <span className="flex items-center gap-1"><CameraIcon className="w-3.5 h-3.5" />{box.photos.length}</span>
+                            ) : '—'}
+                          </td>
+                        </motion.tr>
+                      ))}
+                      {filtered.length === 0 && (
+                        <tr><td colSpan={6} className="text-center py-16 text-gray-400 text-sm">No vaults found</td></tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+          </>
         )}
 
-        {loading ? (
-          <div className="flex items-center justify-center h-64">
-            <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
-          </div>
-        ) : viewMode === 'map' ? (
-          /* ── MAP VIEW ── */
-          <div>
-            {/* Level selector + Legend */}
-            <div className="flex flex-wrap items-center gap-3 mb-5">
-              <div className="flex items-center gap-2">
-                <span className="text-sm text-gray-500 font-medium">Level:</span>
-                <div className="flex bg-white border border-gray-200 rounded-xl overflow-hidden">
-                  <button
-                    onClick={() => setMapLevel(1)}
-                    className={`px-3 py-2 text-sm font-medium transition-colors ${mapLevel === 1 ? 'bg-blue-600 text-white' : 'text-gray-500 hover:text-gray-700'}`}
-                  >
-                    Lower
-                  </button>
-                  <button
-                    onClick={() => setMapLevel(2)}
-                    className={`px-3 py-2 text-sm font-medium transition-colors ${mapLevel === 2 ? 'bg-blue-600 text-white' : 'text-gray-500 hover:text-gray-700'}`}
-                  >
-                    Upper
-                  </button>
-                </div>
-              </div>
-              <div className="flex items-center gap-3 flex-wrap">
-                {[['bg-gray-100', 'Empty'], ['bg-amber-400', 'Pending'], ['bg-green-500', 'Ready'], ['bg-blue-500', 'Delivered']].map(([color, label]) => (
-                  <div key={label} className="flex items-center gap-1">
-                    <div className={`w-2.5 h-2.5 rounded-sm ${color}`} />
-                    <span className="text-xs text-gray-500">{label}</span>
+        {/* ── LOOSE ITEMS TAB ── */}
+        {activeTab === 'loose' && (
+          <>
+            {/* Loose grid editor */}
+            <AnimatePresence>
+              {showLooseGridEdit && (
+                <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} className="mb-4 bg-white border border-gray-200 rounded-2xl p-4 flex flex-wrap items-end gap-4">
+                  <div>
+                    <label className="block text-xs text-gray-500 mb-1">Rows (1–20)</label>
+                    <input type="number" min={1} max={20} value={looseRowsInput} onChange={e => setLooseRowsInput(Math.min(20, Math.max(1, Number(e.target.value))))}
+                      className="w-20 border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
                   </div>
-                ))}
-              </div>
-            </div>
+                  <div>
+                    <label className="block text-xs text-gray-500 mb-1">Columns (1–20)</label>
+                    <input type="number" min={1} max={20} value={looseColsInput} onChange={e => setLooseColsInput(Math.min(20, Math.max(1, Number(e.target.value))))}
+                      className="w-20 border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                  </div>
+                  <button onClick={saveLooseGrid} disabled={looseGridSaving}
+                    className="px-4 py-2 text-sm bg-gray-950 text-white rounded-full hover:bg-gray-800 transition-colors disabled:opacity-50">
+                    {looseGridSaving ? 'Saving...' : 'Apply'}
+                  </button>
+                  <button onClick={() => setShowLooseGridEdit(false)} className="px-4 py-2 text-sm text-gray-500 border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors">Cancel</button>
+                </motion.div>
+              )}
+            </AnimatePresence>
 
-            {/* Grid */}
-            <div className="bg-white rounded-2xl border border-gray-100 p-2 md:p-6">
-              <div>
-                {/* Column headers */}
-                <div className="flex gap-1 md:gap-1.5 mb-1 md:mb-1.5 ml-6 md:ml-8">
-                  {activeCols.map(col => (
-                    <div key={col} className="flex-1 min-w-0 text-center text-[9px] md:text-xs font-semibold text-gray-400">{col}</div>
-                  ))}
+            {looseLoading ? (
+              <div className="flex items-center justify-center h-64">
+                <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
+              </div>
+            ) : (
+              <div className="flex flex-col lg:flex-row gap-6">
+                {/* Mini-grid */}
+                <div className="lg:w-1/2">
+                  <div className="bg-white rounded-2xl border border-gray-100 p-4">
+                    <div className="mb-3 flex items-center justify-between">
+                      <p className="text-sm font-semibold text-gray-700">Zone Map</p>
+                      <span className="text-xs text-gray-400">{looseItems.length} items total</span>
+                    </div>
+                    <div className="overflow-x-auto">
+                      {/* Column headers */}
+                      <div className="flex gap-1 mb-1 ml-7">
+                        {Array.from({ length: looseCols }, (_, ci) => (
+                          <div key={ci} className="flex-1 min-w-0 text-center text-[10px] font-semibold text-gray-400">{ci + 1}</div>
+                        ))}
+                      </div>
+                      {Array.from({ length: looseRows }, (_, ri) => (
+                        <div key={ri} className="flex items-stretch gap-1 mb-1">
+                          <div className="w-7 text-center text-xs font-bold text-gray-400 flex-shrink-0 flex items-center justify-center">{ri + 1}</div>
+                          {Array.from({ length: looseCols }, (_, ci) => {
+                            const x = String(ci + 1);
+                            const y = String(ri + 1);
+                            const zone = `${x}-${y}`;
+                            const zoneItemsList = getItemsForZone(x, y);
+                            const isSelected = selectedZone === zone;
+                            return (
+                              <motion.button
+                                key={ci}
+                                whileHover={{ scale: 1.04 }}
+                                onClick={() => { setSelectedZone(zone); setShowLooseForm(false); }}
+                                className={`flex-1 min-w-0 min-h-[52px] rounded-lg border-2 flex flex-col items-center justify-center gap-0.5 transition-all p-1
+                                  ${isSelected
+                                    ? 'border-blue-500 bg-blue-50'
+                                    : zoneItemsList.length > 0
+                                    ? 'border-transparent bg-slate-100 hover:border-blue-300'
+                                    : 'bg-gray-50 border-dashed border-gray-200 hover:border-blue-300 hover:bg-blue-50'
+                                  }`}
+                              >
+                                {zoneItemsList.length > 0 ? (
+                                  <>
+                                    <span className="text-sm leading-none">
+                                      {zoneItemsList.slice(0, 2).map(getItemEmoji).join('')}
+                                    </span>
+                                    <span className="text-[9px] font-semibold text-gray-600 bg-white/80 rounded-full px-1 leading-tight">{zoneItemsList.length}</span>
+                                  </>
+                                ) : (
+                                  <PlusIcon className="w-3 h-3 text-gray-300" />
+                                )}
+                              </motion.button>
+                            );
+                          })}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
                 </div>
 
-                {activeRows.map(row => (
-                  <div key={row} className="flex items-center gap-1 md:gap-1.5 mb-1 md:mb-1.5">
-                    <div className="w-6 md:w-8 text-center text-xs font-bold text-gray-500 flex-shrink-0">{row}</div>
-
-                    {activeCols.map(col => {
-                      const box = getBox(row, col, mapLevel);
-                      const status = box ? boxStatus(box) : null;
-                      return (
-                        <motion.button
-                          key={col}
-                          whileHover={{ scale: 1.03 }}
-                          onClick={() => { box ? selectVault(box) : openAddAtPosition(row, col, mapLevel); }}
-                          className={`flex-1 min-w-0 overflow-hidden h-10 md:h-14 rounded-lg md:rounded-xl border-2 flex flex-col items-center justify-center transition-all
-                            ${box
-                              ? `${STATUS_CELL[status!] || 'bg-gray-300'} border-transparent text-white cursor-pointer`
-                              : 'bg-gray-50 border-dashed border-gray-200 hover:border-blue-400 hover:bg-blue-50 cursor-pointer'
-                            }`}
-                        >
-                          {box ? (
-                            <>
-                              <span className="block md:hidden text-[10px] font-bold leading-none text-center tracking-tight">
-                                {box.client_name
-                                  ? box.client_name.split(' ').map((w: string) => w[0]).join('').slice(0, 3).toUpperCase()
-                                  : '?'}
-                              </span>
-                              <span className="hidden md:block text-[10px] font-bold leading-tight w-full px-0.5 text-center truncate">{box.client_name}</span>
-                              <span className="hidden md:block text-[9px] opacity-75 mt-0.5 leading-none">{box.job_type}</span>
-                            </>
-                          ) : (
-                            <PlusIcon className="w-3 h-3 md:w-4 md:h-4 text-gray-300" />
+                {/* Zone panel */}
+                <div className="lg:w-1/2">
+                  {selectedZone ? (
+                    <div className="bg-white rounded-2xl border border-gray-100 p-4">
+                      <div className="flex items-center justify-between mb-4">
+                        <div>
+                          <h3 className="font-semibold text-gray-900">
+                            Zone {selectedZone.split('-')[0]}–{selectedZone.split('-')[1]}
+                          </h3>
+                          <p className="text-xs text-gray-400 mt-0.5">
+                            {looseZoneItems.length} {looseZoneItems.length === 1 ? 'item' : 'items'}
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          {canManage && !showLooseForm && (
+                            <button
+                              onClick={openAddLooseItem}
+                              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-gray-950 text-white rounded-full hover:bg-gray-800 transition-colors"
+                            >
+                              <PlusIcon className="w-3 h-3" /> Add Item
+                            </button>
                           )}
-                        </motion.button>
-                      );
-                    })}
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        ) : (
-          /* ── LIST VIEW ── */
-          <div>
-            <div className="relative mb-6">
-              <MagnifyingGlassIcon className="absolute left-4 top-3.5 w-4 h-4 text-gray-400" />
-              <input
-                type="text"
-                placeholder="Search by client, position, packer..."
-                value={search}
-                onChange={e => setSearch(e.target.value)}
-                className="w-full pl-11 pr-4 py-3 bg-white border border-gray-100 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
-            <div className="bg-white rounded-2xl border border-gray-100 overflow-x-auto">
-              <table className="w-full min-w-[320px]">
-                <thead>
-                  <tr className="border-b border-gray-50">
-                    <th className="text-left text-xs font-medium text-gray-400 uppercase tracking-wide px-4 py-4">Position</th>
-                    <th className="text-left text-xs font-medium text-gray-400 uppercase tracking-wide px-4 py-4">Client</th>
-                    <th className="hidden md:table-cell text-left text-xs font-medium text-gray-400 uppercase tracking-wide px-4 py-4">Job Type</th>
-                    <th className="hidden md:table-cell text-left text-xs font-medium text-gray-400 uppercase tracking-wide px-4 py-4">Packer</th>
-                    <th className="text-left text-xs font-medium text-gray-400 uppercase tracking-wide px-4 py-4">Job Status</th>
-                    <th className="hidden md:table-cell text-left text-xs font-medium text-gray-400 uppercase tracking-wide px-4 py-4">Photos</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filtered.map((box, i) => (
-                    <motion.tr
-                      key={box.box_id}
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      transition={{ delay: i * 0.03 }}
-                      onClick={() => selectVault(box)}
-                      className="border-b border-gray-50 hover:bg-gray-50 cursor-pointer transition-colors"
-                    >
-                      <td className="px-4 py-4 text-sm font-medium text-gray-900">{box.position}</td>
-                      <td className="px-4 py-4 text-sm text-gray-700 max-w-[140px] truncate">{box.client_name}</td>
-                      <td className="hidden md:table-cell px-4 py-4 text-sm text-gray-500">{box.job_type}</td>
-                      <td className="hidden md:table-cell px-4 py-4 text-sm text-gray-500">{box.packer || '—'}</td>
-                      <td className="px-4 py-4">
-                        <span className={`text-xs font-medium px-2.5 py-1 rounded-full ${STATUS_COLORS[boxStatus(box)] || 'bg-gray-100 text-gray-600'}`}>
-                          {boxStatus(box)}
-                        </span>
-                      </td>
-                      <td className="hidden md:table-cell px-4 py-4 text-sm text-gray-500">
-                        {box.photos?.length > 0 ? (
-                          <span className="flex items-center gap-1"><CameraIcon className="w-3.5 h-3.5" />{box.photos.length}</span>
-                        ) : '—'}
-                      </td>
-                    </motion.tr>
-                  ))}
-                  {filtered.length === 0 && (
-                    <tr><td colSpan={6} className="text-center py-16 text-gray-400 text-sm">No vaults found</td></tr>
+                          <button
+                            onClick={() => { setSelectedZone(null); setShowLooseForm(false); }}
+                            className="p-1.5 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-50"
+                          >
+                            <XMarkIcon className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Items list */}
+                      {!showLooseForm && (
+                        <div className="space-y-3 max-h-[60vh] overflow-y-auto">
+                          {looseZoneItems.map(item => (
+                            <div key={item.id} className="flex gap-3 p-3 bg-gray-50 rounded-xl">
+                              <span className="text-2xl flex-shrink-0 leading-none pt-0.5">{getItemEmoji(item)}</span>
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center justify-between gap-2">
+                                  <p className="text-sm font-medium text-gray-900 truncate">{item.client_name || '(No client)'}</p>
+                                  {canManage && (
+                                    <div className="flex gap-1 flex-shrink-0">
+                                      <button onClick={() => openEditLooseItem(item)} className="p-1 text-gray-400 hover:text-blue-600 rounded hover:bg-blue-50 transition-colors">
+                                        <PencilIcon className="w-3.5 h-3.5" />
+                                      </button>
+                                      <button onClick={() => deleteLooseItemFn(item.id)} className="p-1 text-gray-400 hover:text-red-600 rounded hover:bg-red-50 transition-colors">
+                                        <TrashIcon className="w-3.5 h-3.5" />
+                                      </button>
+                                    </div>
+                                  )}
+                                </div>
+                                <p className="text-xs text-gray-500 mt-0.5">
+                                  {item.item_type}{item.furniture_type ? ` · ${item.furniture_type}` : ''}{item.color ? ` · ${item.color}` : ''}
+                                </p>
+                                {item.condition.length > 0 && (
+                                  <div className="flex flex-wrap gap-1 mt-1.5">
+                                    {item.condition.map(c => (
+                                      <span key={c} className="text-[10px] px-1.5 py-0.5 bg-amber-100 text-amber-700 rounded-full">{c}</span>
+                                    ))}
+                                  </div>
+                                )}
+                                <div className="flex items-center justify-between mt-1.5">
+                                  <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full ${STATUS_COLORS[item.status] || 'bg-gray-100 text-gray-600'}`}>
+                                    {item.status}
+                                  </span>
+                                  {item.photos.length > 0 && (
+                                    <span className="text-[10px] text-gray-400 flex items-center gap-0.5">
+                                      <CameraIcon className="w-3 h-3" />{item.photos.length}
+                                    </span>
+                                  )}
+                                </div>
+                                {item.photos.length > 0 && (
+                                  <div className="flex gap-1 mt-2">
+                                    {item.photos.slice(0, 3).map((photo, i) => (
+                                      <img key={i} src={photo} alt="" onClick={() => setLightbox({ photos: item.photos, index: i })}
+                                        className="w-12 h-12 object-cover rounded-lg cursor-pointer hover:opacity-90 transition-opacity" />
+                                    ))}
+                                    {item.photos.length > 3 && (
+                                      <button className="w-12 h-12 bg-gray-200 rounded-lg flex items-center justify-center text-xs text-gray-500 font-medium"
+                                        onClick={() => setLightbox({ photos: item.photos, index: 3 })}>
+                                        +{item.photos.length - 3}
+                                      </button>
+                                    )}
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          ))}
+                          {looseZoneItems.length === 0 && (
+                            <div className="text-center py-10 text-gray-400">
+                              <p className="text-sm">No items in this zone</p>
+                              {canManage && <p className="text-xs mt-1">Click &quot;Add Item&quot; to add one</p>}
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Loose item form */}
+                      {showLooseForm && (
+                        <form onSubmit={saveLooseItem} className="space-y-4">
+                          <div className="flex items-center justify-between">
+                            <h4 className="text-sm font-semibold text-gray-800">{editingLooseId ? 'Edit Item' : 'New Item'}</h4>
+                            <button type="button" onClick={() => { setShowLooseForm(false); setEditingLooseId(null); }}
+                              className="p-1 text-gray-400 hover:text-gray-600 rounded">
+                              <XMarkIcon className="w-4 h-4" />
+                            </button>
+                          </div>
+
+                          {/* Client name */}
+                          <div>
+                            <label className="block text-xs text-gray-500 mb-1">Client Name *</label>
+                            <input type="text" value={looseForm.client_name} onChange={e => setLooseForm(f => ({ ...f, client_name: e.target.value }))}
+                              className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                              placeholder="Client name" />
+                          </div>
+
+                          {/* Item type */}
+                          <div>
+                            <label className="block text-xs text-gray-500 mb-2">Item Type</label>
+                            <div className="flex gap-2">
+                              {(['Boxes', 'Furniture'] as const).map(t => (
+                                <button key={t} type="button"
+                                  onClick={() => setLooseForm(f => ({ ...f, item_type: t, furniture_type: '' }))}
+                                  className={`flex-1 py-2 text-sm rounded-xl border-2 transition-colors font-medium
+                                    ${looseForm.item_type === t ? 'border-blue-500 bg-blue-50 text-blue-700' : 'border-gray-200 text-gray-600 hover:border-gray-300'}`}>
+                                  {t === 'Boxes' ? '📦 Boxes' : '🛋️ Furniture'}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+
+                          {/* Furniture subtype + color */}
+                          {looseForm.item_type === 'Furniture' && (
+                            <>
+                              <div>
+                                <label className="block text-xs text-gray-500 mb-2">Furniture Type</label>
+                                <div className="flex flex-wrap gap-1.5">
+                                  {FURNITURE_TYPES.map(ft => (
+                                    <button key={ft} type="button"
+                                      onClick={() => setLooseForm(f => ({ ...f, furniture_type: f.furniture_type === ft ? '' : ft }))}
+                                      className={`px-2.5 py-1 text-xs rounded-lg border transition-colors
+                                        ${looseForm.furniture_type === ft ? 'border-blue-500 bg-blue-50 text-blue-700 font-medium' : 'border-gray-200 text-gray-600 hover:border-gray-300'}`}>
+                                      {ITEM_EMOJI[ft]} {ft}
+                                    </button>
+                                  ))}
+                                </div>
+                              </div>
+                              <div>
+                                <label className="block text-xs text-gray-500 mb-1">Color</label>
+                                <input type="text" value={looseForm.color} onChange={e => setLooseForm(f => ({ ...f, color: e.target.value }))}
+                                  className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                  placeholder="e.g. Brown, Black, White..." />
+                              </div>
+                            </>
+                          )}
+
+                          {/* Condition */}
+                          <div>
+                            <label className="block text-xs text-gray-500 mb-2">Condition</label>
+                            <div className="flex flex-wrap gap-1.5">
+                              {LOOSE_CONDITIONS.map(c => (
+                                <button key={c} type="button"
+                                  onClick={() => setLooseForm(f => ({
+                                    ...f,
+                                    condition: f.condition.includes(c) ? f.condition.filter(x => x !== c) : [...f.condition, c],
+                                  }))}
+                                  className={`px-2.5 py-1 text-xs rounded-lg border transition-colors
+                                    ${looseForm.condition.includes(c) ? 'border-amber-400 bg-amber-50 text-amber-700 font-medium' : 'border-gray-200 text-gray-600 hover:border-gray-300'}`}>
+                                  {c}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+
+                          {/* Status */}
+                          <div>
+                            <label className="block text-xs text-gray-500 mb-2">Job Status</label>
+                            <div className="flex gap-1.5">
+                              {LOOSE_STATUSES.map(s => (
+                                <button key={s} type="button"
+                                  onClick={() => setLooseForm(f => ({ ...f, status: s }))}
+                                  className={`flex-1 py-1.5 text-xs rounded-xl border-2 transition-colors font-medium
+                                    ${looseForm.status === s
+                                      ? s === 'PENDING' ? 'border-amber-400 bg-amber-50 text-amber-700'
+                                      : s === 'READY' ? 'border-green-400 bg-green-50 text-green-700'
+                                      : 'border-blue-400 bg-blue-50 text-blue-700'
+                                      : 'border-gray-200 text-gray-600 hover:border-gray-300'}`}>
+                                  {s}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+
+                          {/* Photos */}
+                          <div>
+                            <label className="block text-xs text-gray-500 mb-2">Photos (max 4)</label>
+                            {looseForm.photos.length < 4 && (
+                              <label className="flex items-center gap-2 px-3 py-2 border border-dashed border-gray-300 rounded-xl cursor-pointer hover:border-blue-400 transition-colors text-sm text-gray-500 mb-2">
+                                <CameraIcon className="w-4 h-4" />
+                                Add photos
+                                <input type="file" accept="image/*" multiple className="hidden"
+                                  onChange={e => handleLoosePhotos(e.target.files)} />
+                              </label>
+                            )}
+                            {looseForm.photos.length > 0 && (
+                              <div className="flex gap-2 flex-wrap">
+                                {looseForm.photos.map((photo, i) => (
+                                  <div key={i} className="relative">
+                                    <img src={photo} alt="" className="w-16 h-16 object-cover rounded-lg" />
+                                    <button type="button"
+                                      onClick={() => setLooseForm(f => ({ ...f, photos: f.photos.filter((_, j) => j !== i) }))}
+                                      className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white rounded-full text-xs flex items-center justify-center leading-none">
+                                      ×
+                                    </button>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Comments */}
+                          <div>
+                            <label className="block text-xs text-gray-500 mb-1">Comments</label>
+                            <textarea value={looseForm.comments} onChange={e => setLooseForm(f => ({ ...f, comments: e.target.value }))}
+                              rows={2} className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                              placeholder="Optional notes..." />
+                          </div>
+
+                          {looseError && <p className="text-sm text-red-600">{looseError}</p>}
+
+                          <div className="flex gap-2">
+                            <button type="submit" disabled={looseSaving}
+                              className="flex-1 py-2.5 bg-gray-950 text-white text-sm font-medium rounded-full hover:bg-gray-800 transition-colors disabled:opacity-50 flex items-center justify-center gap-2">
+                              {looseSaving
+                                ? <><div className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />{editingLooseId ? 'Saving...' : 'Adding...'}</>
+                                : editingLooseId ? 'Save Changes' : 'Add Item'}
+                            </button>
+                            <button type="button" onClick={() => { setShowLooseForm(false); setEditingLooseId(null); }}
+                              className="px-4 py-2.5 text-sm text-gray-600 border border-gray-200 rounded-full hover:bg-gray-50 transition-colors">
+                              Cancel
+                            </button>
+                          </div>
+                        </form>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="bg-white rounded-2xl border border-gray-100 h-full flex items-center justify-center min-h-[200px]">
+                      <div className="text-center py-8 text-gray-400 px-6">
+                        <ArchiveBoxIcon className="w-8 h-8 mx-auto mb-2 opacity-40" />
+                        <p className="text-sm">Click a zone on the map to view or add items</p>
+                      </div>
+                    </div>
                   )}
-                </tbody>
-              </table>
-            </div>
-          </div>
+                </div>
+              </div>
+            )}
+          </>
         )}
 
         {/* Detail Modal */}
@@ -797,20 +1374,12 @@ export default function WarehouseDetailPage() {
                 else setLightbox(l => l ? { ...l, index: (l.index - 1 + l.photos.length) % l.photos.length } : null);
               }}
             >
-              {/* Close */}
-              <button
-                onClick={() => setLightbox(null)}
-                className="absolute top-4 right-4 text-white/60 hover:text-white transition-colors z-10"
-              >
+              <button onClick={() => setLightbox(null)} className="absolute top-4 right-4 text-white/60 hover:text-white transition-colors z-10">
                 <XMarkIcon className="w-7 h-7" />
               </button>
-
-              {/* Counter */}
               <span className="absolute top-4 left-1/2 -translate-x-1/2 text-white/50 text-sm">
                 {lightbox.index + 1} / {lightbox.photos.length}
               </span>
-
-              {/* Prev */}
               {lightbox.photos.length > 1 && (
                 <button
                   onClick={e => { e.stopPropagation(); setLightbox(l => l ? { ...l, index: (l.index - 1 + l.photos.length) % l.photos.length } : null); }}
@@ -819,8 +1388,6 @@ export default function WarehouseDetailPage() {
                   <ChevronLeftIcon className="w-9 h-9" />
                 </button>
               )}
-
-              {/* Image */}
               <motion.img
                 key={lightbox.index}
                 initial={{ opacity: 0, scale: 0.95 }}
@@ -832,8 +1399,6 @@ export default function WarehouseDetailPage() {
                 onClick={e => e.stopPropagation()}
                 className="max-h-[85vh] max-w-[90vw] object-contain rounded-xl shadow-2xl"
               />
-
-              {/* Next */}
               {lightbox.photos.length > 1 && (
                 <button
                   onClick={e => { e.stopPropagation(); setLightbox(l => l ? { ...l, index: (l.index + 1) % l.photos.length } : null); }}
@@ -947,14 +1512,14 @@ export default function WarehouseDetailPage() {
                   </div>
                   <div className="bg-amber-50 border border-amber-100 rounded-xl p-4 mb-4">
                     <p className="text-sm text-amber-800 font-medium">{moveOccupant.client_name} · {moveOccupant.job_type}</p>
-                    <p className="text-xs text-amber-600 mt-1">is at row {moveDest.row}, col {moveDest.col}, L{moveDest.level}</p>
+                    <p className="text-xs text-amber-600 mt-1">at {moveOccupant.position}</p>
                   </div>
-                  <p className="text-sm text-gray-600 mb-5">Swap both vaults? They will exchange positions.</p>
+                  <p className="text-sm text-gray-600 mb-4">Swap both vaults?</p>
                   {moveError && <p className="text-sm text-red-600 mb-3">{moveError}</p>}
-                  <div className="flex gap-3">
+                  <div className="flex gap-2">
                     <button
                       onClick={() => setMoveOccupant(null)}
-                      className="flex-1 py-2.5 border border-gray-200 text-gray-600 text-sm font-medium rounded-full hover:bg-gray-50 transition-colors"
+                      className="flex-1 py-2.5 text-sm text-gray-600 border border-gray-200 rounded-full hover:bg-gray-50 transition-colors"
                     >
                       Cancel
                     </button>

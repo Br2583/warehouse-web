@@ -26,6 +26,7 @@ function SearchContent() {
   const [query, setQuery]                     = useState(searchParams.get('q') || '');
   const [results, setResults]                 = useState<any[]>([]);
   const [storageResults, setStorageResults]   = useState<any[]>([]);
+  const [looseResults, setLooseResults]       = useState<any[]>([]);
   const [loading, setLoading]                 = useState(false);
   const [searched, setSearched]               = useState(false);
   const [warehouses, setWarehouses]           = useState<{ id: string; name: string }[]>([]);
@@ -73,8 +74,9 @@ function SearchContent() {
         const data = await api.get(`/api/search/global?${params.toString()}`);
         setResults(Array.isArray(data) ? data : (data?.vaults ?? []));
         setStorageResults(Array.isArray(data) ? [] : (data?.storageUnits ?? []));
+        setLooseResults(Array.isArray(data) ? [] : (data?.looseItems ?? []));
       } catch {
-        setResults([]); setStorageResults([]);
+        setResults([]); setStorageResults([]); setLooseResults([]);
         setSearchError('Search failed. Please try again.');
       } finally { setLoading(false); }
     }, 300);
@@ -95,8 +97,9 @@ function SearchContent() {
       const data = await api.get(`/api/search/global?${params.toString()}`);
       setResults(Array.isArray(data) ? data : (data?.vaults ?? []));
       setStorageResults(Array.isArray(data) ? [] : (data?.storageUnits ?? []));
+      setLooseResults(Array.isArray(data) ? [] : (data?.looseItems ?? []));
     } catch {
-      setResults([]); setStorageResults([]);
+      setResults([]); setStorageResults([]); setLooseResults([]);
       setSearchError('Search failed. Please try again.');
     } finally { setLoading(false); }
   };
@@ -341,6 +344,70 @@ function SearchContent() {
                             </span>
                           </td>
                           <td className="hidden md:table-cell px-4 py-4 text-sm text-gray-500">{formatDate(su.intake_date)}</td>
+                        </motion.tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+
+            {/* ── Loose Items ─────────────────────────────────────────────────── */}
+            {looseResults.length > 0 && (
+              <div>
+                <div className="flex items-center gap-3 mb-4">
+                  <h2 className="text-sm font-semibold text-gray-700">Loose Items</h2>
+                  <span className="text-sm text-gray-500">
+                    <span className="font-semibold text-gray-900">{looseResults.length}</span> found
+                  </span>
+                </div>
+                <div className="bg-white rounded-2xl border border-gray-100 overflow-x-auto">
+                  <table className="w-full min-w-[320px]">
+                    <thead>
+                      <tr className="border-b border-gray-50">
+                        <th className="text-left text-xs font-medium text-gray-400 uppercase tracking-wide px-4 py-4">Client</th>
+                        <th className="text-left text-xs font-medium text-gray-400 uppercase tracking-wide px-4 py-4">Type</th>
+                        <th className="hidden md:table-cell text-left text-xs font-medium text-gray-400 uppercase tracking-wide px-4 py-4">Condition</th>
+                        <th className="hidden md:table-cell text-left text-xs font-medium text-gray-400 uppercase tracking-wide px-4 py-4">Warehouse</th>
+                        <th className="text-left text-xs font-medium text-gray-400 uppercase tracking-wide px-4 py-4">Zone</th>
+                        <th className="text-left text-xs font-medium text-gray-400 uppercase tracking-wide px-4 py-4">Status</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {looseResults.map((item, i) => (
+                        <motion.tr
+                          key={item.id}
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          transition={{ delay: Math.min(i * 0.03, 0.4) }}
+                          className="border-b border-gray-50 hover:bg-gray-50 transition-colors cursor-pointer"
+                          onClick={() => router.push(`/warehouses/${item.warehouse_id}?tab=loose&zone=${item.grid_x}-${item.grid_y}`)}
+                        >
+                          <td className="px-4 py-4 text-sm text-gray-700 max-w-[130px] truncate">{item.client_name || '—'}</td>
+                          <td className="px-4 py-4 text-sm text-gray-900">
+                            {item.item_type === 'Furniture'
+                              ? `${item.furniture_type || 'Furniture'}`
+                              : 'Boxes'}
+                          </td>
+                          <td className="hidden md:table-cell px-4 py-4 text-sm text-gray-500">
+                            {Array.isArray(item.condition) && item.condition.length > 0
+                              ? item.condition.join(', ')
+                              : '—'}
+                          </td>
+                          <td className="hidden md:table-cell px-4 py-4">
+                            <span className="flex items-center gap-1 text-sm text-gray-500">
+                              <BuildingOffice2Icon className="w-3.5 h-3.5 flex-shrink-0" />
+                              {whName(item.warehouse_id)}
+                            </span>
+                          </td>
+                          <td className="px-4 py-4 text-sm font-semibold text-gray-900">
+                            {item.grid_x}–{item.grid_y}
+                          </td>
+                          <td className="px-4 py-4">
+                            <span className={`text-xs font-medium px-2.5 py-1 rounded-full ${STATUS_COLORS[item.status] || 'bg-gray-100 text-gray-600'}`}>
+                              {item.status || '—'}
+                            </span>
+                          </td>
                         </motion.tr>
                       ))}
                     </tbody>

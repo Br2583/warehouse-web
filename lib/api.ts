@@ -108,6 +108,31 @@ function mapStorage(s: any) {
   };
 }
 
+// Map a PocketBase loose_items record
+function mapLooseItem(item: any) {
+  const photos = Array.isArray(item.photos)
+    ? item.photos
+    : item.photos ? (typeof item.photos === 'string' ? JSON.parse(item.photos) : item.photos) : [];
+  const condition = Array.isArray(item.condition)
+    ? item.condition
+    : item.condition ? (typeof item.condition === 'string' ? JSON.parse(item.condition) : item.condition) : [];
+  return {
+    id:             item.id,
+    warehouse_id:   item.warehouse_id,
+    client_name:    item.client_name || '',
+    grid_x:         item.grid_x || '1',
+    grid_y:         item.grid_y || '1',
+    item_type:      (item.item_type || 'Boxes') as 'Boxes' | 'Furniture',
+    furniture_type: item.furniture_type || '',
+    color:          item.color || '',
+    condition,
+    status:         item.status || 'PENDING',
+    photos,
+    comments:       item.comments || '',
+    created:        item.created,
+  };
+}
+
 // Map a PocketBase chat_messages record to the Message shape
 function mapMessage(m: any) {
   const raw = m.sent_at || m.created || '';
@@ -224,8 +249,8 @@ async function routeGet(path: string): Promise<any> {
   // ── Warehouses list ────────────────────────────────────────────────────────
   if (p === '/api/warehouses') {
     if (!cid) return [];
-    const whs = await pb.collection('warehouses').getFullList({ filter: `company_id="${cid}"`, fields: 'id,name,address,rows,cols' });
-    return whs.map(w => ({ id: w.id, name: w.name, address: w.address, rows: Number(w.rows) || 10, cols: Number(w.cols) || 8 }));
+    const whs = await pb.collection('warehouses').getFullList({ filter: `company_id="${cid}"`, fields: 'id,name,address,rows,cols,loose_rows,loose_cols' });
+    return whs.map(w => ({ id: w.id, name: w.name, address: w.address, rows: Number(w.rows) || 10, cols: Number(w.cols) || 8, loose_rows: Number(w.loose_rows) || 5, loose_cols: Number(w.loose_cols) || 5 }));
   }
 
   // GET /api/warehouses/:id
@@ -233,7 +258,7 @@ async function routeGet(path: string): Promise<any> {
   if (whMatch) {
     const w = await pb.collection('warehouses').getOne(whMatch[1]);
     if (w.company_id !== cid) throw new Error('Forbidden');
-    return { id: w.id, name: w.name, address: w.address };
+    return { id: w.id, name: w.name, address: w.address, loose_rows: Number(w.loose_rows) || 5, loose_cols: Number(w.loose_cols) || 5 };
   }
 
   // ── Stats ──────────────────────────────────────────────────────────────────
@@ -338,7 +363,17 @@ async function routeGet(path: string): Promise<any> {
           created:     s.created,
         }));
     }
-    return { vaults, storageUnits };
+    let looseItems: any[] = [];
+    if (q2) {
+      const looseRaw = await pb.collection('loose_items').getFullList({
+        filter: `company_id="${cid}" && (client_name~"${sf(q2)}" || comments~"${sf(q2)}" || furniture_type~"${sf(q2)}")`,
+        fields: 'id,warehouse_id,client_name,grid_x,grid_y,item_type,furniture_type,condition,status,created',
+      });
+      looseItems = looseRaw
+        .sort((a: any, b: any) => a.created < b.created ? 1 : -1)
+        .map(mapLooseItem);
+    }
+    return { vaults, storageUnits, looseItems };
   }
 
   // ── Snapshots ──────────────────────────────────────────────────────────────
@@ -379,6 +414,18 @@ async function routeGet(path: string): Promise<any> {
     const s = await pb.collection('storage_units').getOne(storageOneMatch[1], { expand: 'client_id' });
     if (s.company_id !== cid) throw new Error('Forbidden');
     return mapStorage(s);
+  }
+
+  // ── Loose Items ───────────────────────────────────────────────────────────
+  if (p === '/api/loose-items') {
+    if (!cid) return [];
+    const wid = q.get('warehouse_id') || '';
+    if (!wid) return [];
+    const items = await pb.collection('loose_items').getFullList({
+      filter: `company_id="${cid}" && warehouse_id="${sf(wid)}"`,
+      sort: 'created',
+    });
+    return items.map(mapLooseItem);
   }
 
   // ── Activity Log ──────────────────────────────────────────────────────────
@@ -618,6 +665,27 @@ async function routePost(path: string, body: any): Promise<any> {
     return { success: true };
   }
 
+  // ── Loose Items ───────────────────────────────────────────────────────────
+  if (p === '/api/loose-items') {
+    if (!cid) throw new Error('No company');
+    validatePhotos(body.photos);
+    const item = await pb.collection('loose_items').create({
+      warehouse_id:   body.warehouse_id,
+      company_id:     cid,
+      client_name:    body.client_name || '',
+      grid_x:         body.grid_x || '1',
+      grid_y:         body.grid_y || '1',
+      item_type:      body.item_type || 'Boxes',
+      furniture_type: body.furniture_type || '',
+      color:          body.color || '',
+      condition:      body.condition || [],
+      status:         body.status || 'PENDING',
+      photos:         body.photos || [],
+      comments:       body.comments || '',
+    });
+    return mapLooseItem(item);
+  }
+
   throw new Error(`Unknown POST path: ${p}`);
 }
 
@@ -814,6 +882,36 @@ async function routePut(path: string, body: any): Promise<any> {
     return data;
   }
 
+  // PUT /api/loose-items/:id
+  const looseItemMatch = p.match(/^\/api\/loose-items\/([^/]+)$/);
+  if (looseItemMatch) {
+    const existing = await pb.collection('loose_items').getOne(looseItemMatch[1]);
+    if (existing.company_id !== cid) throw new Error('Forbidden');
+    validatePhotos(body.photos);
+    const item = await pb.collection('loose_items').update(looseItemMatch[1], {
+      client_name:    body.client_name || '',
+      item_type:      body.item_type || 'Boxes',
+      furniture_type: body.furniture_type || '',
+      color:          body.color || '',
+      condition:      body.condition || [],
+      status:         body.status || 'PENDING',
+      photos:         body.photos || [],
+      comments:       body.comments || '',
+    });
+    return mapLooseItem(item);
+  }
+
+  // PUT /api/warehouses/:id/loose-grid
+  const looseGridMatch = p.match(/^\/api\/warehouses\/([^/]+)\/loose-grid$/);
+  if (looseGridMatch) {
+    const wh = await pb.collection('warehouses').getOne(looseGridMatch[1]);
+    if (wh.company_id !== cid) throw new Error('Forbidden');
+    const rows = Math.min(20, Math.max(1, Number(body.loose_rows) || 5));
+    const cols = Math.min(20, Math.max(1, Number(body.loose_cols) || 5));
+    await pb.collection('warehouses').update(looseGridMatch[1], { loose_rows: rows, loose_cols: cols });
+    return { loose_rows: rows, loose_cols: cols };
+  }
+
   throw new Error(`Unknown PUT path: ${p}`);
 }
 
@@ -893,6 +991,15 @@ async function routeDelete(path: string): Promise<any> {
       throw new Error((data as any).error || 'Failed to delete task');
     }
     logActivity({ action: 'DELETED', entity_type: 'task', entity_id: taskDelMatch[1], entity_label: 'Task deleted' });
+    return null;
+  }
+
+  // DELETE /api/loose-items/:id
+  const looseDelMatch = p.match(/^\/api\/loose-items\/([^/]+)$/);
+  if (looseDelMatch) {
+    const item = await pb.collection('loose_items').getOne(looseDelMatch[1]);
+    if (item.company_id !== cid) throw new Error('Forbidden');
+    await pb.collection('loose_items').delete(looseDelMatch[1]);
     return null;
   }
 
