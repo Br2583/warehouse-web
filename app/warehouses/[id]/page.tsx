@@ -442,7 +442,7 @@ export default function WarehouseDetailPage() {
   const fetchLooseItems = () => {
     api.get(`/api/loose-items?warehouse_id=${warehouseId}`)
       .then((data: any) => setLooseItems(Array.isArray(data) ? data : []))
-      .catch(() => { showToast('Failed to reload items', 'error'); });
+      .catch((err: any) => { showToast(err?.message || 'Failed to reload items', 'error'); });
   };
 
   const openAddLooseItem = () => {
