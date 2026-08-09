@@ -442,7 +442,7 @@ export default function WarehouseDetailPage() {
   const fetchLooseItems = () => {
     api.get(`/api/loose-items?warehouse_id=${warehouseId}`)
       .then((data: any) => setLooseItems(Array.isArray(data) ? data : []))
-      .catch(() => {});
+      .catch(() => { showToast('Failed to reload items', 'error'); });
   };
 
   const openAddLooseItem = () => {
@@ -612,7 +612,7 @@ export default function WarehouseDetailPage() {
                     <span className="hidden sm:inline text-xs">{looseRows}×{looseCols}</span>
                   </button>
                 )}
-                {canManage && selectedZone && (
+                {canManage && selectedZone && !showLooseForm && (
                   <button
                     onClick={openAddLooseItem}
                     className="flex items-center gap-2 px-3 py-2 md:px-4 md:py-2.5 bg-gray-950 text-white text-sm font-medium rounded-full hover:bg-gray-800 transition-colors"
@@ -628,13 +628,13 @@ export default function WarehouseDetailPage() {
         {/* Tab bar */}
         <div className="flex gap-1 mb-6 bg-white border border-gray-200 rounded-xl p-1 w-fit">
           <button
-            onClick={() => setActiveTab('vaults')}
+            onClick={() => { setActiveTab('vaults'); setShowLooseGridEdit(false); }}
             className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${activeTab === 'vaults' ? 'bg-blue-600 text-white' : 'text-gray-500 hover:text-gray-700'}`}
           >
             Vaults <span className={`ml-1.5 text-xs px-1.5 py-0.5 rounded-full ${activeTab === 'vaults' ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-500'}`}>{boxes.length}</span>
           </button>
           <button
-            onClick={() => setActiveTab('loose')}
+            onClick={() => { setActiveTab('loose'); setShowGridEdit(false); }}
             className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${activeTab === 'loose' ? 'bg-blue-600 text-white' : 'text-gray-500 hover:text-gray-700'}`}
           >
             Loose Items{looseItems.length > 0 && <span className={`ml-1.5 text-xs px-1.5 py-0.5 rounded-full ${activeTab === 'loose' ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-500'}`}>{looseItems.length}</span>}
@@ -1106,7 +1106,7 @@ export default function WarehouseDetailPage() {
                                 <CameraIcon className="w-4 h-4" />
                                 Add photos
                                 <input type="file" accept="image/*" multiple className="hidden"
-                                  onChange={e => handleLoosePhotos(e.target.files)} />
+                                  onChange={e => { handleLoosePhotos(e.target.files); e.target.value = ''; }} />
                               </label>
                             )}
                             {looseForm.photos.length > 0 && (
