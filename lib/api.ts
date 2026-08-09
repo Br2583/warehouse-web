@@ -364,18 +364,13 @@ async function routeGet(path: string): Promise<any> {
         }));
     }
     let looseItems: any[] = [];
-    if (q2) {
+    if (q2 && cid) {
       try {
-        const token = getToken() || '';
-        const looseRes = await fetch(`/api/loose-items?q=${encodeURIComponent(q2)}`, {
-          headers: { Authorization: `Bearer ${token}` },
+        const raw = await pb.collection('loose_items').getFullList({
+          filter: `company_id="${cid}" && (client_name~"${sf(q2)}" || comments~"${sf(q2)}" || furniture_type~"${sf(q2)}")`,
+          sort: '-created',
         });
-        if (looseRes.ok) {
-          const raw = await looseRes.json();
-          looseItems = (Array.isArray(raw) ? raw : [])
-            .sort((a: any, b: any) => a.created < b.created ? 1 : -1)
-            .map(mapLooseItem);
-        }
+        looseItems = raw.map(mapLooseItem);
       } catch {}
     }
     return { vaults, storageUnits, looseItems };
@@ -423,14 +418,14 @@ async function routeGet(path: string): Promise<any> {
 
   // ── Loose Items ───────────────────────────────────────────────────────────
   if (p === '/api/loose-items') {
-    const token = getToken() || '';
+    if (!cid) return [];
     const wid = q.get('warehouse_id') || '';
-    const r = await fetch(`/api/loose-items?warehouse_id=${encodeURIComponent(wid)}`, {
-      headers: { Authorization: `Bearer ${token}` },
+    if (!wid) return [];
+    const items = await pb.collection('loose_items').getFullList({
+      filter: `company_id="${cid}" && warehouse_id="${sf(wid)}"`,
+      sort: 'created',
     });
-    if (!r.ok) throw new Error((await r.json().catch(() => ({}))).error || 'Failed to load loose items');
-    const items = await r.json();
-    return Array.isArray(items) ? items.map(mapLooseItem) : [];
+    return items.map(mapLooseItem);
   }
 
   // ── Activity Log ──────────────────────────────────────────────────────────

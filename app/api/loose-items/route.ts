@@ -34,10 +34,7 @@ export async function GET(req: NextRequest) {
     `${PB_URL}/api/collections/loose_items/records?filter=${encodeURIComponent(filter)}&sort=created&perPage=500`,
     { headers: { Authorization: `Bearer ${adminToken}` } }
   );
-  if (!res.ok) {
-    const pbErr = await res.json().catch(() => ({}));
-    return NextResponse.json({ error: `PB ${res.status}: ${JSON.stringify(pbErr)}` }, { status: 502 });
-  }
+  if (!res.ok) return NextResponse.json({ error: 'Failed to load loose items' }, { status: 502 });
   const data = await res.json();
   return NextResponse.json(data.items || []);
 }
