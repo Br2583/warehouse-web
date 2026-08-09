@@ -315,7 +315,7 @@ async function routeGet(path: string): Promise<any> {
     // Fetch only last 150 messages sorted newest-first, then reverse for display
     const page = await pb.collection('chat_messages').getList(1, 500, {
       filter: `company_id="${chatCid}"`,
-      sort: '-sent_at,-created',
+      sort: '-sent_at,-id',
       fields: 'id,author_name,author_id,content,sent_at,created',
     });
     return page.items.reverse().map(mapMessage);
