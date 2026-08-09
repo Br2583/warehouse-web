@@ -6,6 +6,7 @@ import MobileNav from './MobileNav';
 import TopBar from './TopBar';
 import Tutorial from './Tutorial';
 import CapacitorBackHandler from './CapacitorBackHandler';
+import NativeBottomNav from './NativeBottomNav';
 import { motion } from 'framer-motion';
 import { useAuth } from '@/lib/auth-context';
 import { useTutorial } from '@/lib/use-tutorial';
@@ -25,6 +26,13 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   const { count: unreadChat, preview: chatPreview, senderName: chatSender } = useUnreadChat();
   const { count: pendingTasks, firstTitle: firstTaskTitle } = usePendingTasks();
   const [navOpen, setNavOpen] = useState(false);
+  const [isNative, setIsNative] = useState(false);
+
+  useEffect(() => {
+    import('@capacitor/core').then(({ Capacitor }) => {
+      if (Capacitor.isNativePlatform()) setIsNative(true);
+    });
+  }, []);
 
   useEffect(() => {
     if (loading) return;
@@ -54,10 +62,12 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
         initial={{ opacity: 0, y: 6 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.18, ease: 'easeOut' }}
+        className={isNative && showNav ? 'native-bottom-pad' : undefined}
       >
         {children}
       </motion.div>
       {showNav && <MobileNav open={navOpen} onClose={() => setNavOpen(false)} />}
+      {showNav && isNative && <NativeBottomNav onOpenMore={() => setNavOpen(true)} />}
     </NavDataContext.Provider>
   );
 }

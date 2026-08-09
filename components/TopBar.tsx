@@ -162,7 +162,7 @@ export default function TopBar({ onOpenNav }: TopBarProps) {
           <button
             onClick={onOpenNav}
             aria-label="Open navigation"
-            className="flex-shrink-0 flex flex-col gap-[4.5px] justify-center w-8 h-8 active:opacity-60 transition-opacity"
+            className="topbar-hamburger flex-shrink-0 flex flex-col gap-[4.5px] justify-center w-8 h-8 active:opacity-60 transition-opacity"
           >
             <span className="block w-5 h-[1.5px] bg-gray-700 rounded-full" />
             <span className="block w-5 h-[1.5px] bg-gray-700 rounded-full" />

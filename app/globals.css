@@ -128,3 +128,11 @@ textarea::placeholder {
 .animate-scan-line {
   animation: scan-line 2s ease-in-out infinite;
 }
+
+/* Native app: hide hamburger button (replaced by bottom tab bar) */
+.native-app .topbar-hamburger { display: none !important; }
+
+/* Native app: bottom padding so page content doesn't hide behind the tab bar */
+.native-bottom-pad {
+  padding-bottom: calc(56px + env(safe-area-inset-bottom, 0px));
+}

@@ -58,6 +58,9 @@ export default function Home() {
   // Redirect if already logged in + pre-warm PocketBase
   useEffect(() => {
     if (pb.authStore.isValid) { router.replace('/dashboard'); return; }
+    import('@capacitor/core').then(({ Capacitor }) => {
+      if (Capacitor.isNativePlatform()) { router.replace('/login'); }
+    });
     fetch('/api/ping').catch(() => {});
   }, [router]);
 
