@@ -365,13 +365,18 @@ async function routeGet(path: string): Promise<any> {
     }
     let looseItems: any[] = [];
     if (q2) {
-      const looseRaw = await pb.collection('loose_items').getFullList({
-        filter: `company_id="${cid}" && (client_name~"${sf(q2)}" || comments~"${sf(q2)}" || furniture_type~"${sf(q2)}")`,
-        fields: 'id,warehouse_id,client_name,grid_x,grid_y,item_type,furniture_type,condition,status,created',
-      });
-      looseItems = looseRaw
-        .sort((a: any, b: any) => a.created < b.created ? 1 : -1)
-        .map(mapLooseItem);
+      try {
+        const token = getToken() || '';
+        const looseRes = await fetch(`/api/loose-items?q=${encodeURIComponent(q2)}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (looseRes.ok) {
+          const raw = await looseRes.json();
+          looseItems = (Array.isArray(raw) ? raw : [])
+            .sort((a: any, b: any) => a.created < b.created ? 1 : -1)
+            .map(mapLooseItem);
+        }
+      } catch {}
     }
     return { vaults, storageUnits, looseItems };
   }
@@ -418,14 +423,14 @@ async function routeGet(path: string): Promise<any> {
 
   // ── Loose Items ───────────────────────────────────────────────────────────
   if (p === '/api/loose-items') {
-    if (!cid) return [];
+    const token = getToken() || '';
     const wid = q.get('warehouse_id') || '';
-    if (!wid) return [];
-    const items = await pb.collection('loose_items').getFullList({
-      filter: `company_id="${cid}" && warehouse_id="${sf(wid)}"`,
-      sort: 'created',
+    const r = await fetch(`/api/loose-items?warehouse_id=${encodeURIComponent(wid)}`, {
+      headers: { Authorization: `Bearer ${token}` },
     });
-    return items.map(mapLooseItem);
+    if (!r.ok) throw new Error((await r.json().catch(() => ({}))).error || 'Failed to load loose items');
+    const items = await r.json();
+    return Array.isArray(items) ? items.map(mapLooseItem) : [];
   }
 
   // ── Activity Log ──────────────────────────────────────────────────────────
@@ -667,23 +672,15 @@ async function routePost(path: string, body: any): Promise<any> {
 
   // ── Loose Items ───────────────────────────────────────────────────────────
   if (p === '/api/loose-items') {
-    if (!cid) throw new Error('No company');
     validatePhotos(body.photos);
-    const item = await pb.collection('loose_items').create({
-      warehouse_id:   body.warehouse_id,
-      company_id:     cid,
-      client_name:    body.client_name || '',
-      grid_x:         body.grid_x || '1',
-      grid_y:         body.grid_y || '1',
-      item_type:      body.item_type || 'Boxes',
-      furniture_type: body.furniture_type || '',
-      color:          body.color || '',
-      condition:      body.condition || [],
-      status:         body.status || 'PENDING',
-      photos:         body.photos || [],
-      comments:       body.comments || '',
+    const token = getToken() || '';
+    const r = await fetch('/api/loose-items', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
     });
-    return mapLooseItem(item);
+    if (!r.ok) throw new Error((await r.json().catch(() => ({}))).error || 'Failed to create item');
+    return mapLooseItem(await r.json());
   }
 
   throw new Error(`Unknown POST path: ${p}`);
@@ -885,20 +882,15 @@ async function routePut(path: string, body: any): Promise<any> {
   // PUT /api/loose-items/:id
   const looseItemMatch = p.match(/^\/api\/loose-items\/([^/]+)$/);
   if (looseItemMatch) {
-    const existing = await pb.collection('loose_items').getOne(looseItemMatch[1]);
-    if (existing.company_id !== cid) throw new Error('Forbidden');
     validatePhotos(body.photos);
-    const item = await pb.collection('loose_items').update(looseItemMatch[1], {
-      client_name:    body.client_name || '',
-      item_type:      body.item_type || 'Boxes',
-      furniture_type: body.furniture_type || '',
-      color:          body.color || '',
-      condition:      body.condition || [],
-      status:         body.status || 'PENDING',
-      photos:         body.photos || [],
-      comments:       body.comments || '',
+    const token = getToken() || '';
+    const r = await fetch(`/api/loose-items/${looseItemMatch[1]}`, {
+      method: 'PUT',
+      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
     });
-    return mapLooseItem(item);
+    if (!r.ok) throw new Error((await r.json().catch(() => ({}))).error || 'Failed to update item');
+    return mapLooseItem(await r.json());
   }
 
   // PUT /api/warehouses/:id/loose-grid
@@ -997,9 +989,15 @@ async function routeDelete(path: string): Promise<any> {
   // DELETE /api/loose-items/:id
   const looseDelMatch = p.match(/^\/api\/loose-items\/([^/]+)$/);
   if (looseDelMatch) {
-    const item = await pb.collection('loose_items').getOne(looseDelMatch[1]);
-    if (item.company_id !== cid) throw new Error('Forbidden');
-    await pb.collection('loose_items').delete(looseDelMatch[1]);
+    const token = getToken() || '';
+    const r = await fetch(`/api/loose-items/${looseDelMatch[1]}`, {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (r.status !== 204 && !r.ok) {
+      const data = await r.json().catch(() => ({}));
+      throw new Error((data as any).error || 'Failed to delete item');
+    }
     return null;
   }
 

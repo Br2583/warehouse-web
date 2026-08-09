@@ -1,0 +1,88 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { getPbAdminToken, PB_URL } from '@/lib/pb-admin';
+
+async function verifyUser(token: string) {
+  const res = await fetch(`${PB_URL}/api/collections/users/auth-refresh`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!res.ok) return null;
+  const { record } = await res.json();
+  return record as { id: string; company_id: string; role: string } | null;
+}
+
+export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const token = req.headers.get('Authorization')?.replace('Bearer ', '').trim();
+  if (!token) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+  const me = await verifyUser(token);
+  if (!me?.company_id) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  if (me.role !== 'owner' && me.role !== 'manager') {
+    return NextResponse.json({ error: 'Only managers and owners can edit items' }, { status: 403 });
+  }
+
+  const { id } = await params;
+
+  let adminToken: string;
+  try { adminToken = await getPbAdminToken(); }
+  catch { return NextResponse.json({ error: 'Admin auth failed' }, { status: 500 }); }
+
+  const itemRes = await fetch(`${PB_URL}/api/collections/loose_items/records/${id}`, {
+    headers: { Authorization: `Bearer ${adminToken}` },
+  });
+  if (!itemRes.ok) return NextResponse.json({ error: 'Item not found' }, { status: 404 });
+  const existing = await itemRes.json();
+  if (existing.company_id !== me.company_id) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+
+  const body = await req.json();
+  const photos = body.photos || [];
+  if (photos.length > 4) return NextResponse.json({ error: 'Maximum 4 photos allowed' }, { status: 400 });
+
+  const res = await fetch(`${PB_URL}/api/collections/loose_items/records/${id}`, {
+    method: 'PATCH',
+    headers: { Authorization: `Bearer ${adminToken}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      client_name:    body.client_name?.trim() ?? existing.client_name,
+      item_type:      body.item_type ?? existing.item_type,
+      furniture_type: body.furniture_type ?? existing.furniture_type,
+      color:          body.color ?? existing.color,
+      condition:      body.condition ?? existing.condition,
+      status:         body.status ?? existing.status,
+      photos,
+      comments:       body.comments ?? existing.comments,
+    }),
+  });
+  if (!res.ok) return NextResponse.json({ error: 'Failed to update item' }, { status: 500 });
+  return NextResponse.json(await res.json());
+}
+
+export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const token = _req.headers.get('Authorization')?.replace('Bearer ', '').trim();
+  if (!token) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+  const me = await verifyUser(token);
+  if (!me?.company_id) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  if (me.role !== 'owner' && me.role !== 'manager') {
+    return NextResponse.json({ error: 'Only managers and owners can delete items' }, { status: 403 });
+  }
+
+  const { id } = await params;
+
+  let adminToken: string;
+  try { adminToken = await getPbAdminToken(); }
+  catch { return NextResponse.json({ error: 'Admin auth failed' }, { status: 500 }); }
+
+  const itemRes = await fetch(`${PB_URL}/api/collections/loose_items/records/${id}`, {
+    headers: { Authorization: `Bearer ${adminToken}` },
+  });
+  if (!itemRes.ok) return NextResponse.json({ error: 'Item not found' }, { status: 404 });
+  const existing = await itemRes.json();
+  if (existing.company_id !== me.company_id) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+
+  const delRes = await fetch(`${PB_URL}/api/collections/loose_items/records/${id}`, {
+    method: 'DELETE',
+    headers: { Authorization: `Bearer ${adminToken}` },
+  });
+  if (!delRes.ok && delRes.status !== 404) return NextResponse.json({ error: 'Failed to delete item' }, { status: 500 });
+  return new NextResponse(null, { status: 204 });
+}
