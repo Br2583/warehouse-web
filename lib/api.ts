@@ -497,15 +497,22 @@ async function routePost(path: string, body: any): Promise<any> {
   if (p === '/api/boxes') {
     if (!cid) throw new Error('No company');
     validatePhotos(body.photos);
+    // Reject if the target position is already occupied
+    const col = body.column ?? body.col;
+    const existing = await pb.collection('vaults').getFullList({
+      filter: `company_id="${cid}" && warehouse_id="${sf(body.warehouse_id)}" && row="${sf(body.row)}" && col="${sf(String(col))}" && level="${sf(String(body.level))}"`,
+      fields: 'id',
+    });
+    if (existing.length > 0) throw new Error('This position is already occupied. Choose a different cell or move the existing vault first.');
     const qr_token = genCode();
     const v = await pb.collection('vaults').create({
       box_id:       genCode(),
       company_id:   cid,
       warehouse_id: body.warehouse_id,
       row:          body.row,
-      col:          body.column ?? body.col,
+      col:          col,
       level:        body.level,
-      position:     body.position || `${body.row}${body.column ?? body.col}-L${body.level}`,
+      position:     body.position || `${body.row}${col}-L${body.level}`,
       client_name:  body.client_name,
       client_id:    body.client_id,
       job_type:     body.job_type,
