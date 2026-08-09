@@ -17,7 +17,7 @@ function sf(val: string): string {
 // Fire-and-forget activity log — never blocks the main operation
 function logActivity(data: {
   action: 'CREATED' | 'EDITED' | 'DELETED' | 'RESTORED' | 'MOVED';
-  entity_type: 'vault' | 'storage' | 'task';
+  entity_type: 'vault' | 'storage' | 'task' | 'loose_item';
   entity_id: string;
   entity_label: string;
   before_data?: Record<string, any>;
@@ -675,7 +675,9 @@ async function routePost(path: string, body: any): Promise<any> {
       body: JSON.stringify(body),
     });
     if (!r.ok) throw new Error((await r.json().catch(() => ({}))).error || 'Failed to create item');
-    return mapLooseItem(await r.json());
+    const created = mapLooseItem(await r.json());
+    logActivity({ action: 'CREATED', entity_type: 'loose_item', entity_id: created.id, entity_label: `Loose Item · ${created.client_name || '—'} · ${created.item_type || '—'}` });
+    return created;
   }
 
   throw new Error(`Unknown POST path: ${p}`);
@@ -885,7 +887,9 @@ async function routePut(path: string, body: any): Promise<any> {
       body: JSON.stringify(body),
     });
     if (!r.ok) throw new Error((await r.json().catch(() => ({}))).error || 'Failed to update item');
-    return mapLooseItem(await r.json());
+    const updated = mapLooseItem(await r.json());
+    logActivity({ action: 'EDITED', entity_type: 'loose_item', entity_id: updated.id, entity_label: `Loose Item · ${updated.client_name || '—'} · ${updated.item_type || '—'}` });
+    return updated;
   }
 
   // PUT /api/warehouses/:id/loose-grid
@@ -993,6 +997,7 @@ async function routeDelete(path: string): Promise<any> {
       const data = await r.json().catch(() => ({}));
       throw new Error((data as any).error || 'Failed to delete item');
     }
+    logActivity({ action: 'DELETED', entity_type: 'loose_item', entity_id: looseDelMatch[1], entity_label: 'Loose Item deleted' });
     return null;
   }
 

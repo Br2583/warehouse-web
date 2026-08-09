@@ -18,7 +18,7 @@ interface ActivityItem {
   user_id: string;
   user_name: string;
   action: 'CREATED' | 'EDITED' | 'DELETED' | 'RESTORED' | 'MOVED';
-  entity_type: 'vault' | 'storage' | 'task';
+  entity_type: 'vault' | 'storage' | 'task' | 'loose_item';
   entity_id: string;
   entity_label: string;
   before_data?: string;
@@ -34,9 +34,10 @@ const ACTION_CONFIG: Record<string, { color: string; bg: string; label: string; 
 };
 
 const ENTITY_LABELS: Record<string, string> = {
-  vault:   'vault',
-  storage: 'storage unit',
-  task:    'task',
+  vault:      'vault',
+  storage:    'storage unit',
+  task:       'task',
+  loose_item: 'loose item',
 };
 
 const PERIODS = [
@@ -60,8 +61,9 @@ function timeAgo(ts: string) {
 }
 
 function entityHref(item: ActivityItem) {
-  if (item.entity_type === 'storage') return `/storage/${item.entity_id}`;
-  if (item.entity_type === 'task')    return '/tasks';
+  if (item.entity_type === 'storage')    return `/storage/${item.entity_id}`;
+  if (item.entity_type === 'task')       return '/tasks';
+  if (item.entity_type === 'loose_item') return '/warehouses';
   return '/warehouses';
 }
 
@@ -247,7 +249,7 @@ export default function ActivityPage() {
           <div className="text-center py-16 text-gray-400">
             <ClipboardDocumentListIcon className="w-12 h-12 mx-auto mb-3 opacity-30" />
             <p className="font-medium">No activity yet</p>
-            <p className="text-sm mt-1">Actions on vaults, storage and tasks will appear here</p>
+            <p className="text-sm mt-1">Actions on vaults, loose items, storage and tasks will appear here</p>
           </div>
         )}
 
