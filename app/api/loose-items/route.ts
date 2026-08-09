@@ -31,7 +31,7 @@ export async function GET(req: NextRequest) {
   if (q) filter += ` && (client_name~"${q.replace(/"/g, '\\"')}" || comments~"${q.replace(/"/g, '\\"')}" || furniture_type~"${q.replace(/"/g, '\\"')}")`;
 
   const res = await fetch(
-    `${PB_URL}/api/collections/loose_items/records?filter=${encodeURIComponent(filter)}&sort=created&perPage=500`,
+    `${PB_URL}/api/collections/loose_items/records?filter=${encodeURIComponent(filter)}&sort=id&perPage=500`,
     { headers: { Authorization: `Bearer ${adminToken}` } }
   );
   if (!res.ok) return NextResponse.json({ error: 'Failed to load loose items' }, { status: 502 });

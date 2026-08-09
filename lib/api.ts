@@ -368,7 +368,7 @@ async function routeGet(path: string): Promise<any> {
       try {
         const raw = await pb.collection('loose_items').getFullList({
           filter: `company_id="${cid}" && (client_name~"${sf(q2)}" || comments~"${sf(q2)}" || furniture_type~"${sf(q2)}")`,
-          sort: '-created',
+          sort: '-id',
         });
         looseItems = raw.map(mapLooseItem);
       } catch {}
@@ -423,7 +423,7 @@ async function routeGet(path: string): Promise<any> {
     if (!wid) return [];
     const items = await pb.collection('loose_items').getFullList({
       filter: `company_id="${cid}" && warehouse_id="${sf(wid)}"`,
-      sort: 'created',
+      sort: 'id',
     });
     return items.map(mapLooseItem);
   }
