@@ -53,7 +53,7 @@ export async function POST(req: NextRequest) {
   }
   if (!companyName) {
     const body = await req.json().catch(() => ({}));
-    companyName = (body as any).companyName || 'Unknown';
+    companyName = String((body as any).companyName || 'Unknown').slice(0, 100);
   }
 
   const email = adminNewRequestEmail(companyName, user.name || user.email, user.email);
