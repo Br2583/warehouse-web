@@ -132,26 +132,30 @@ textarea::placeholder {
 /* Native app: hide hamburger button (replaced by bottom tab bar) */
 .native-app .topbar-hamburger { display: none !important; }
 
-/* Native app: bottom padding so page content doesn't hide behind the tab bar */
+/* Native app: hide web footer on auth/landing pages */
+.native-app footer { display: none !important; }
+
+/* Native app: bottom padding so page content doesn't hide behind the floating tab bar */
+/* Floating nav: 64px height + 10px bottom margin + safe area */
 .native-bottom-pad {
-  padding-bottom: calc(56px + env(safe-area-inset-bottom, 0px));
+  padding-bottom: calc(84px + env(safe-area-inset-bottom, 0px));
 }
 
-/* Native app: chat main uses 100dvh — subtract bottom nav so input isn't hidden */
+/* Native app: chat main uses 100dvh — subtract floating bottom nav */
 .native-app .native-chat-main {
-  height: calc(100dvh - 56px - env(safe-area-inset-bottom, 0px)) !important;
+  height: calc(100dvh - 74px - env(safe-area-inset-bottom, 0px)) !important;
 }
 
-/* Native app: bottom-sheet modals — push sheet up above bottom nav */
+/* Native app: bottom-sheet modals — push sheet up above floating nav */
 .native-app .native-sheet-overlay {
-  padding-bottom: calc(56px + env(safe-area-inset-bottom, 0px));
+  padding-bottom: calc(84px + env(safe-area-inset-bottom, 0px));
 }
 
-/* Keyboard open: hide bottom nav + clear its padding (reclaim 56px of space) */
+/* Keyboard open: hide floating nav + clear padding */
 .keyboard-open .native-bottom-nav { display: none !important; }
 .keyboard-open .native-bottom-pad { padding-bottom: 0 !important; }
 
-/* Keyboard open: restore full viewport height for chat (nav is gone) */
+/* Keyboard open: restore full viewport height for chat */
 .keyboard-open .native-chat-main { height: 100dvh !important; }
 
 /* Keyboard open: sheet overlay needs no extra bottom offset */

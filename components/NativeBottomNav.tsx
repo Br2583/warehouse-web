@@ -34,51 +34,68 @@ export default function NativeBottomNav({ onOpenMore }: NativeBottomNavProps) {
 
   return (
     <nav
-      className="native-bottom-nav fixed bottom-0 inset-x-0 z-50 bg-white border-t border-gray-100 flex items-stretch"
-      style={{ height: 'calc(56px + env(safe-area-inset-bottom, 0px))' }}
+      className="native-bottom-nav fixed z-50 flex items-center px-3"
+      style={{
+        left: 14,
+        right: 14,
+        bottom: `calc(10px + env(safe-area-inset-bottom, 0px))`,
+        height: 64,
+        background: '#ffffff',
+        borderRadius: 40,
+        boxShadow: '0 6px 28px rgba(0,0,0,0.13), 0 1px 6px rgba(0,0,0,0.07)',
+      }}
     >
-      <div
-        className="flex w-full items-center"
-        style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
-      >
-        {TABS.map(({ href, label, icon: Icon, iconActive: IconActive }) => {
-          const isActive = pathname === href || pathname.startsWith(href + '/');
-          const badge =
-            href === '/tasks' ? pendingTasks :
-            href === '/chat'  ? unreadChat   : 0;
+      {TABS.map(({ href, label, icon: Icon, iconActive: IconActive }) => {
+        const isActive = pathname === href || pathname.startsWith(href + '/');
+        const badge =
+          href === '/tasks' ? pendingTasks :
+          href === '/chat'  ? unreadChat   : 0;
 
-          return (
-            <Link
-              key={href}
-              href={href}
-              className="flex-1 flex flex-col items-center justify-center gap-0.5 h-full active:opacity-60 transition-opacity"
+        return (
+          <Link
+            key={href}
+            href={href}
+            className="flex-1 flex flex-col items-center justify-center gap-0.5 h-full active:scale-95 transition-transform"
+          >
+            <div
+              className="relative flex items-center justify-center"
+              style={{
+                width: 44,
+                height: 34,
+                borderRadius: 17,
+                background: isActive ? '#2563eb' : 'transparent',
+                transition: 'background 0.18s ease',
+              }}
             >
-              <div className="relative">
-                {isActive
-                  ? <IconActive className="w-6 h-6 text-blue-600" />
-                  : <Icon className="w-6 h-6 text-gray-400" />}
-                {badge > 0 && (
-                  <span className="absolute -top-1 -right-1.5 min-w-[15px] h-[15px] bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center px-0.5">
-                    {badge > 9 ? '9+' : badge}
-                  </span>
-                )}
-              </div>
-              <span className={`text-[10px] font-medium ${isActive ? 'text-blue-600' : 'text-gray-400'}`}>
-                {label}
-              </span>
-            </Link>
-          );
-        })}
+              {isActive
+                ? <IconActive className="w-[22px] h-[22px] text-white" />
+                : <Icon className="w-[22px] h-[22px] text-gray-400" />}
+              {badge > 0 && (
+                <span className="absolute -top-1 -right-1 min-w-[15px] h-[15px] bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center px-0.5">
+                  {badge > 9 ? '9+' : badge}
+                </span>
+              )}
+            </div>
+            <span className={`text-[10px] font-semibold leading-none ${isActive ? 'text-blue-600' : 'text-gray-400'}`}>
+              {label}
+            </span>
+          </Link>
+        );
+      })}
 
-        {/* More — opens MobileNav drawer */}
-        <button
-          onClick={onOpenMore}
-          className="flex-1 flex flex-col items-center justify-center gap-0.5 h-full active:opacity-60 transition-opacity"
+      {/* More */}
+      <button
+        onClick={onOpenMore}
+        className="flex-1 flex flex-col items-center justify-center gap-0.5 h-full active:scale-95 transition-transform"
+      >
+        <div
+          className="flex items-center justify-center"
+          style={{ width: 44, height: 34, borderRadius: 17 }}
         >
-          <Bars3Icon className="w-6 h-6 text-gray-400" />
-          <span className="text-[10px] font-medium text-gray-400">More</span>
-        </button>
-      </div>
+          <Bars3Icon className="w-[22px] h-[22px] text-gray-400" />
+        </div>
+        <span className="text-[10px] font-semibold leading-none text-gray-400">More</span>
+      </button>
     </nav>
   );
 }

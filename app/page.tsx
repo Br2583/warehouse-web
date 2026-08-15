@@ -59,7 +59,7 @@ export default function Home() {
   useEffect(() => {
     if (pb.authStore.isValid) { router.replace('/dashboard'); return; }
     import('@capacitor/core').then(({ Capacitor }) => {
-      if (Capacitor.isNativePlatform()) { router.replace('/login'); }
+      if (Capacitor.isNativePlatform()) { router.replace('/native-welcome'); return; }
     });
     fetch('/api/ping').catch(() => {});
   }, [router]);
