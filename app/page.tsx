@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { pb } from '@/lib/pb';
 import AppFooter from '@/components/AppFooter';
@@ -54,15 +54,20 @@ const BAR_HEIGHTS = [40, 65, 35, 80, 55, 90, 70];
 
 export default function Home() {
   const router = useRouter();
+  const [show, setShow] = useState(false);
 
-  // Redirect if already logged in + pre-warm PocketBase
   useEffect(() => {
+    // Synchronous checks first — no async needed for these
     if (pb.authStore.isValid) { router.replace('/dashboard'); return; }
-    import('@capacitor/core').then(({ Capacitor }) => {
-      if (Capacitor.isNativePlatform()) { router.replace('/native-welcome'); return; }
-    });
+    // Capacitor injects window.Capacitor synchronously in the native WebView
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    if ((window as any)?.Capacitor?.isNativePlatform?.()) { router.replace('/native-welcome'); return; }
+    // Confirmed: web visitor, not logged in — show landing page
+    setShow(true);
     fetch('/api/ping').catch(() => {});
   }, [router]);
+
+  if (!show) return <div style={{ minHeight: '100vh', background: '#fff' }} />;
 
   return (
     <div className="min-h-screen bg-white text-gray-900 overflow-x-hidden">
