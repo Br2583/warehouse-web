@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useEffect, useState } from 'react';
 import { motion, useMotionValue, useTransform, animate } from 'framer-motion';
@@ -7,7 +7,7 @@ import {
   ClockIcon, PlayIcon, CheckIcon, PlusIcon, MagnifyingGlassIcon,
   ChatBubbleLeftRightIcon, ExclamationTriangleIcon, PlusCircleIcon,
   PencilSquareIcon, TrashIcon, ArrowPathIcon, ArrowsRightLeftIcon,
-} from '@heroicons/react/24/outline';
+} from '@/components/icons';
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import { useAuth } from '@/lib/auth-context';
 import { api } from '@/lib/api';

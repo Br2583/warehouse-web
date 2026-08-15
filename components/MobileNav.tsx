@@ -9,14 +9,12 @@ import {
   MagnifyingGlassIcon, ChartBarSquareIcon, CameraIcon, ChatBubbleLeftRightIcon,
   ArrowRightOnRectangleIcon, XMarkIcon, QrCodeIcon, Cog6ToothIcon,
   ClipboardDocumentCheckIcon,
-} from '@heroicons/react/24/outline';
-import {
   HomeIcon as HomeSolid, BuildingOffice2Icon as BuildingSolid, ArchiveBoxIcon as ArchiveSolid,
   ClipboardDocumentListIcon as TasksSolid, MagnifyingGlassIcon as SearchSolid,
   ChartBarSquareIcon as ChartSolid, CameraIcon as CameraSolid,
   ChatBubbleLeftRightIcon as ChatSolid, Cog6ToothIcon as CogSolid,
   ClipboardDocumentCheckIcon as ActivitySolid,
-} from '@heroicons/react/24/solid';
+} from '@/components/icons';
 import { useNavData } from '@/lib/nav-data-context';
 
 const NAV_ITEMS = [

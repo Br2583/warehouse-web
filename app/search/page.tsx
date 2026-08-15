@@ -4,7 +4,7 @@ import { useState, useEffect, Suspense } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   MagnifyingGlassIcon, BuildingOffice2Icon, FunnelIcon, XMarkIcon, ExclamationCircleIcon,
-} from '@heroicons/react/24/outline';
+} from '@/components/icons';
 import Sidebar from '@/components/Sidebar';
 import { api } from '@/lib/api';
 import { useSearchParams, useRouter } from 'next/navigation';

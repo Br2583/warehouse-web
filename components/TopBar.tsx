@@ -11,8 +11,8 @@ import {
   Cog6ToothIcon, ArrowRightOnRectangleIcon,
   ChatBubbleLeftRightIcon, ClipboardDocumentListIcon,
   PencilSquareIcon, UserPlusIcon, Bars3Icon,
-} from '@heroicons/react/24/outline';
-import { BellIcon as BellSolid } from '@heroicons/react/24/solid';
+  BellIcon as BellSolid,
+} from '@/components/icons';
 
 interface TopBarProps {
   onOpenNav?: () => void;

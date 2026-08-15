@@ -1,9 +1,9 @@
-﻿'use client';
+'use client';
 
 import { Suspense, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { motion } from 'framer-motion';
-import { XCircleIcon, ArrowPathIcon } from '@heroicons/react/24/outline';
+import { XCircleIcon, ArrowPathIcon } from '@/components/icons';
 
 function CallbackHandler() {
   const router = useRouter();

@@ -4,7 +4,7 @@ import { useState, useRef } from 'react';
 import {
   BuildingOffice2Icon, QrCodeIcon, ArchiveBoxIcon,
   ClipboardDocumentListIcon, CheckCircleIcon, XMarkIcon,
-} from '@heroicons/react/24/outline';
+} from '@/components/icons';
 
 interface Slide {
   icon: React.ReactNode;

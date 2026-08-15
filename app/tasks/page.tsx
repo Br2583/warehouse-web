@@ -7,7 +7,7 @@ import {
   PlusIcon, XMarkIcon, TrashIcon, CalendarIcon, UserCircleIcon,
   ExclamationCircleIcon, ListBulletIcon, ViewColumnsIcon, PencilIcon,
   ClipboardDocumentListIcon, MagnifyingGlassIcon,
-} from '@heroicons/react/24/outline';
+} from '@/components/icons';
 import Link from 'next/link';
 import Sidebar from '@/components/Sidebar';
 import { SkeletonTaskRow } from '@/components/Skeleton';

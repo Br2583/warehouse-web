@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { EnvelopeIcon, PhoneIcon, MapPinIcon } from '@heroicons/react/24/outline';
+import { EnvelopeIcon, PhoneIcon, MapPinIcon } from '@/components/icons';
 
 const SERVICES = [
   'Real-Time Vault Tracking',

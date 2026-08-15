@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import {
   PaperAirplaneIcon, PauseIcon, PlayIcon, TrashIcon, UsersIcon, ClockIcon,
   ArrowRightOnRectangleIcon, ArrowPathIcon, XMarkIcon,
-} from '@heroicons/react/24/outline';
+} from '@/components/icons';
 
 interface CompanyRecord {
   id: string;

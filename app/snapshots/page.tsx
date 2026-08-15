@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   CameraIcon, TrashIcon, PlusIcon, PrinterIcon, XMarkIcon,
   ArchiveBoxIcon, CheckCircleIcon, TruckIcon, ClockIcon, EnvelopeIcon, ExclamationCircleIcon,
-} from '@heroicons/react/24/outline';
+} from '@/components/icons';
 import ConfirmModal from '@/components/ConfirmModal';
 import Sidebar from '@/components/Sidebar';
 import { useToast } from '@/lib/toast-context';

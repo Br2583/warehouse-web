@@ -10,7 +10,7 @@ import {
   BuildingOffice2Icon, KeyIcon, EyeIcon, EyeSlashIcon, PlusIcon,
   DocumentDuplicateIcon, XMarkIcon, TrashIcon, LifebuoyIcon,
   ExclamationCircleIcon,
-} from '@heroicons/react/24/outline';
+} from '@/components/icons';
 import Sidebar from '@/components/Sidebar';
 import { UserAvatar } from '@/components/UserAvatar';
 import { useAuth } from '@/lib/auth-context';

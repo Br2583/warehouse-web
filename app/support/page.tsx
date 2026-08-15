@@ -8,7 +8,7 @@ import {
   DocumentTextIcon,
   CodeBracketIcon,
   HeartIcon,
-} from '@heroicons/react/24/outline';
+} from '@/components/icons';
 
 export default function SupportPage() {
   return (

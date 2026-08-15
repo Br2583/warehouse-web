@@ -5,7 +5,7 @@ import { motion } from 'framer-motion';
 import {
   BuildingOffice2Icon, ArchiveBoxIcon, PlusIcon, ChevronRightIcon, ArrowPathIcon, TrashIcon,
   ExclamationCircleIcon,
-} from '@heroicons/react/24/outline';
+} from '@/components/icons';
 import Sidebar from '@/components/Sidebar';
 import { SkeletonWarehouseCard } from '@/components/Skeleton';
 import { pb } from '@/lib/pb';

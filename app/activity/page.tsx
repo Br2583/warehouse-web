@@ -6,7 +6,7 @@ import {
   ClipboardDocumentListIcon, PlusCircleIcon, PencilSquareIcon,
   TrashIcon, ArrowPathIcon, ArrowsRightLeftIcon, ExclamationCircleIcon,
   FunnelIcon, ArrowUturnLeftIcon, ArrowUpTrayIcon,
-} from '@heroicons/react/24/outline';
+} from '@/components/icons';
 import Sidebar from '@/components/Sidebar';
 import { api } from '@/lib/api';
 import { useAuth } from '@/lib/auth-context';

@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
@@ -8,7 +8,7 @@ import { useAuth } from '@/lib/auth-context';
 import {
   BuildingOffice2Icon, UserCircleIcon, ChevronRightIcon,
   BriefcaseIcon, ArrowLeftIcon, CheckIcon,
-} from '@heroicons/react/24/outline';
+} from '@/components/icons';
 import { UserAvatar } from '@/components/UserAvatar';
 import { AVATARS } from '@/lib/avatars';
 import { compressAvatar } from '@/lib/compress-image';

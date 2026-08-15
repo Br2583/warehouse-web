@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
   EyeIcon, EyeSlashIcon, BuildingOffice2Icon, TicketIcon,
-} from '@heroicons/react/24/outline';
+} from '@/components/icons';
 import { Turnstile } from '@marsidev/react-turnstile';
 import { pb } from '@/lib/pb';
 import { genCode } from '@/lib/utils';

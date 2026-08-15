@@ -2,7 +2,7 @@
 
 import { useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { XMarkIcon } from '@heroicons/react/24/outline';
+import { XMarkIcon } from '@/components/icons';
 import QRScanner from '@/components/QRScanner';
 import { pb } from '@/lib/pb';
 import { useAuth } from '@/lib/auth-context';

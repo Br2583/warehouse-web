@@ -1,9 +1,9 @@
-﻿'use client';
+'use client';
 
 import { Suspense, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { KeyIcon, EnvelopeIcon, EyeIcon, EyeSlashIcon, ArrowLeftIcon, CheckCircleIcon } from '@heroicons/react/24/outline';
+import { KeyIcon, EnvelopeIcon, EyeIcon, EyeSlashIcon, ArrowLeftIcon, CheckCircleIcon } from '@/components/icons';
 import AuthShell from '@/components/AuthShell';
 
 /* ── light input helpers ── */

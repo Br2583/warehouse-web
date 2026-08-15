@@ -6,7 +6,7 @@ import {
   ArchiveBoxIcon, MapPinIcon, UserIcon, CameraIcon, PencilIcon, TrashIcon,
   XMarkIcon, ChevronLeftIcon, ExclamationCircleIcon, CheckIcon,
   Squares2X2Icon, AdjustmentsHorizontalIcon,
-} from '@heroicons/react/24/outline';
+} from '@/components/icons';
 import ConfirmModal from '@/components/ConfirmModal';
 import Sidebar from '@/components/Sidebar';
 import { api } from '@/lib/api';

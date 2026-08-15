@@ -3,7 +3,7 @@
 import { useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
-import { ClockIcon, ArrowRightOnRectangleIcon } from '@heroicons/react/24/outline';
+import { ClockIcon, ArrowRightOnRectangleIcon } from '@/components/icons';
 import { pb } from '@/lib/pb';
 import { useAuth } from '@/lib/auth-context';
 

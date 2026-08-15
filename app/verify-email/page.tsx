@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { EnvelopeIcon, ArrowPathIcon, ArrowLeftIcon, CheckCircleIcon } from '@heroicons/react/24/outline';
+import { EnvelopeIcon, ArrowPathIcon, ArrowLeftIcon, CheckCircleIcon } from '@/components/icons';
 import { Turnstile, type TurnstileInstance } from '@marsidev/react-turnstile';
 import AuthShell from '@/components/AuthShell';
 

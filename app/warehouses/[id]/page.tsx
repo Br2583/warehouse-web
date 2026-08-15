@@ -6,7 +6,7 @@ import {
   ArchiveBoxIcon, PlusIcon, MagnifyingGlassIcon, TrashIcon, XMarkIcon, CameraIcon,
   Squares2X2Icon, ListBulletIcon, PencilIcon, ChevronLeftIcon, ChevronRightIcon,
   QrCodeIcon, Cog6ToothIcon, ArrowsRightLeftIcon,
-} from '@heroicons/react/24/outline';
+} from '@/components/icons';
 import ConfirmModal from '@/components/ConfirmModal';
 import Sidebar from '@/components/Sidebar';
 import VaultForm, { VaultFormData } from '@/components/VaultForm';

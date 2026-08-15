@@ -9,13 +9,11 @@ import {
   ClipboardDocumentListIcon,
   ChatBubbleLeftRightIcon,
   Bars3Icon,
-} from '@heroicons/react/24/outline';
-import {
   HomeIcon as HomeSolid,
   BuildingOffice2Icon as BuildingSolid,
   ClipboardDocumentListIcon as TasksSolid,
   ChatBubbleLeftRightIcon as ChatSolid,
-} from '@heroicons/react/24/solid';
+} from '@/components/icons';
 
 interface NativeBottomNavProps {
   onOpenMore: () => void;

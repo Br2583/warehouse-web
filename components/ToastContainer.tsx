@@ -1,7 +1,7 @@
 'use client';
 
 import { AnimatePresence, motion } from 'framer-motion';
-import { CheckCircleIcon, XCircleIcon, InformationCircleIcon, XMarkIcon } from '@heroicons/react/24/outline';
+import { CheckCircleIcon, XCircleIcon, InformationCircleIcon, XMarkIcon } from '@/components/icons';
 import { useToast } from '@/lib/toast-context';
 
 const ICON: Record<string, React.ReactNode> = {

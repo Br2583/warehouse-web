@@ -7,7 +7,7 @@ import {
   BuildingOffice2Icon, ChevronRightIcon,
   ArchiveBoxIcon, ClockIcon, CheckCircleIcon, TruckIcon,
   ArrowTrendingUpIcon, UserGroupIcon, ExclamationCircleIcon,
-} from '@heroicons/react/24/outline';
+} from '@/components/icons';
 import Sidebar from '@/components/Sidebar';
 import { api } from '@/lib/api';
 import {

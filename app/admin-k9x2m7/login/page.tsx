@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { LockClosedIcon } from '@heroicons/react/24/outline';
+import { LockClosedIcon } from '@/components/icons';
 import { Turnstile } from '@marsidev/react-turnstile';
 
 const TURNSTILE_SITE_KEY = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY ?? '';

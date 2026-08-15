@@ -2,7 +2,7 @@
 
 import { useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { ShieldExclamationIcon, ArrowRightOnRectangleIcon, EnvelopeIcon } from '@heroicons/react/24/outline';
+import { ShieldExclamationIcon, ArrowRightOnRectangleIcon, EnvelopeIcon } from '@/components/icons';
 import { useAuth } from '@/lib/auth-context';
 import { pb } from '@/lib/pb';
 import { useRouter } from 'next/navigation';

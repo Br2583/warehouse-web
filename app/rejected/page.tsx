@@ -1,7 +1,7 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { XCircleIcon, ArrowRightOnRectangleIcon, EnvelopeIcon } from '@heroicons/react/24/outline';
+import { XCircleIcon, ArrowRightOnRectangleIcon, EnvelopeIcon } from '@/components/icons';
 import { useAuth } from '@/lib/auth-context';
 
 export default function RejectedPage() {

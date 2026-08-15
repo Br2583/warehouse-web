@@ -6,7 +6,7 @@ import {
   WrenchScrewdriverIcon, ArchiveBoxIcon, TruckIcon, CogIcon,
   UsersIcon, ShieldCheckIcon, ClipboardDocumentListIcon, BoltIcon,
   UserCircleIcon,
-} from '@heroicons/react/24/solid';
+} from '@/components/icons';
 import { getAvatarById } from '@/lib/avatars';
 
 const ICON_MAP: Record<string, React.ComponentType<{ className?: string; style?: React.CSSProperties }>> = {
