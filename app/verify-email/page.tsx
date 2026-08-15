@@ -1,17 +1,22 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { EnvelopeIcon, ArrowPathIcon, ArrowLeftIcon, CheckCircleIcon } from '@heroicons/react/24/outline';
+import { Turnstile, type TurnstileInstance } from '@marsidev/react-turnstile';
 import AuthShell from '@/components/AuthShell';
+
+const TURNSTILE_SITE_KEY = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY ?? '';
 
 export default function VerifyEmailPage() {
   const router = useRouter();
-  const [email,   setEmail  ] = useState('');
-  const [resent,  setResent ] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [error,   setError  ] = useState('');
+  const [email,          setEmail         ] = useState('');
+  const [resent,         setResent        ] = useState(false);
+  const [loading,        setLoading       ] = useState(false);
+  const [error,          setError         ] = useState('');
+  const [turnstileToken, setTurnstileToken] = useState('');
+  const turnstileRef = useRef<TurnstileInstance>(null);
 
   useEffect(() => {
     const saved = localStorage.getItem('verify_email') || '';
@@ -26,17 +31,24 @@ export default function VerifyEmailPage() {
 
   const resend = async () => {
     if (!email || loading) return;
+    if (TURNSTILE_SITE_KEY && !turnstileToken) {
+      setError('Verification still loading. Please wait a moment and try again.');
+      return;
+    }
     setLoading(true);
     setError('');
     try {
       const res = await fetch('/api/auth/send-verification', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email }),
+        body: JSON.stringify({ email, turnstileToken }),
       });
       if (!res.ok) { setError('Could not resend email. Try again in a moment.'); return; }
       setResent(true);
       setTimeout(() => setResent(false), 5000);
+      // Reset widget so the next resend gets a fresh token
+      turnstileRef.current?.reset();
+      setTurnstileToken('');
     } catch {
       setError('Could not resend email. Try again in a moment.');
     } finally {
@@ -83,6 +95,18 @@ export default function VerifyEmailPage() {
             </motion.div>
           )}
         </AnimatePresence>
+
+        {TURNSTILE_SITE_KEY && (
+          <div className="flex justify-center mb-2">
+            <Turnstile
+              ref={turnstileRef}
+              siteKey={TURNSTILE_SITE_KEY}
+              onSuccess={setTurnstileToken}
+              onExpire={() => setTurnstileToken('')}
+              onError={() => setTurnstileToken('')}
+            />
+          </div>
+        )}
 
         <div className="space-y-3">
           <button

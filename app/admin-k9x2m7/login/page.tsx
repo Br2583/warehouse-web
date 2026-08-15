@@ -25,6 +25,7 @@ export default function AdminLoginPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ password, turnstileToken }),
       });
+      if (res.status === 403) { setError('Verification failed. Please reload the page and try again.'); return; }
       if (!res.ok) { setError('Incorrect password.'); return; }
       router.replace('/admin-k9x2m7');
     } catch {
