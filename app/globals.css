@@ -67,9 +67,9 @@ body {
   }
 }
 
-/* TopBar offset — mobile: h-14 (56px) + safe area capped at 32px; desktop: h-16 (64px) */
+/* TopBar offset — mobile: h-14 (56px) + full safe area; desktop: h-16 (64px) */
 .topbar-offset {
-  padding-top: calc(3.5rem + clamp(0px, env(safe-area-inset-top, 0px), 32px));
+  padding-top: calc(3.5rem + env(safe-area-inset-top, 0px));
 }
 
 @media (min-width: 768px) {
@@ -78,12 +78,20 @@ body {
   }
 }
 
-/* Native app: same 32px cap (redundant safety — inline style already caps) */
-.native-app .topbar-safe {
-  padding-top: clamp(0px, env(safe-area-inset-top, 0px), 32px) !important;
+/* Android native: overlay:false → WebView already starts below status bar, no extra padding */
+.native-android .topbar-safe {
+  padding-top: 0 !important;
 }
-.native-app .topbar-offset {
-  padding-top: calc(3.5rem + clamp(0px, env(safe-area-inset-top, 0px), 32px)) !important;
+.native-android .topbar-offset {
+  padding-top: 3.5rem !important;
+}
+
+/* iOS native: WebView extends behind status bar, full safe-area needed */
+.native-ios .topbar-safe {
+  padding-top: env(safe-area-inset-top, 0px) !important;
+}
+.native-ios .topbar-offset {
+  padding-top: calc(3.5rem + env(safe-area-inset-top, 0px)) !important;
 }
 
 input,

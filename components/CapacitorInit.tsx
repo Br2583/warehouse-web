@@ -125,6 +125,7 @@ export default function CapacitorInit() {
 
       // Mark <html> so CSS can target native-only styles
       document.documentElement.classList.add('native-app');
+      document.documentElement.classList.add(`native-${Capacitor.getPlatform()}`);
 
       // Deep link handler — opens the scanned QR path inside the app
       try {
