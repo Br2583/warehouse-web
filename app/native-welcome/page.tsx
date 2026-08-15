@@ -1,155 +1,174 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { pb } from '@/lib/pb';
+import { Poppins } from 'next/font/google';
+
+const poppins = Poppins({ subsets: ['latin'], weight: ['600'], display: 'swap' });
 
 export default function NativeWelcome() {
   const router = useRouter();
-  const [showInvite, setShowInvite] = useState(false);
-  const [code, setCode] = useState('');
 
   useEffect(() => {
     if (pb.authStore.isValid) { router.replace('/dashboard'); }
   }, [router]);
 
-  const handleInvite = () => {
-    if (!code.trim()) return;
-    router.push('/signup?mode=join&code=' + encodeURIComponent(code.trim()));
-  };
-
   return (
-    <div
-      style={{
-        minHeight: '100dvh',
-        background: '#ffffff',
+    <div style={{
+      position: 'relative',
+      height: '100dvh',
+      width: '100%',
+      background: '#ffffff',
+      display: 'flex',
+      flexDirection: 'column',
+      overflow: 'hidden',
+    }}>
+
+      {/* ── Photo collage ── */}
+      <div
+        className="ob-collage-top"
+        style={{
+          position: 'relative',
+          display: 'grid',
+          gridTemplateColumns: '1fr 1fr 1fr',
+          gridTemplateRows: '15.4dvh 15.4dvh 13dvh',
+          gap: 6,
+          padding: '6px 6px 0',
+          flexShrink: 0,
+        }}
+      >
+        {/* col 1, row 1 */}
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/onboarding/wh-1.jpg" alt="Warehouse" draggable={false}
+          style={{ gridColumn: '1/2', gridRow: '1/2', width: '100%', height: '100%', objectFit: 'cover', borderRadius: 10 }} />
+
+        {/* col 2, rows 1–2 (tall) */}
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/onboarding/wh-2.jpg" alt="Warehouse" draggable={false}
+          style={{ gridColumn: '2/3', gridRow: '1/3', width: '100%', height: '100%', objectFit: 'cover', borderRadius: 10 }} />
+
+        {/* col 3, row 1 */}
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/onboarding/wh-3.jpg" alt="Warehouse" draggable={false}
+          style={{ gridColumn: '3/4', gridRow: '1/2', width: '100%', height: '100%', objectFit: 'cover', borderRadius: 10 }} />
+
+        {/* col 1, rows 2–3 (tall) */}
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/onboarding/wh-4.jpg" alt="Warehouse" draggable={false}
+          style={{ gridColumn: '1/2', gridRow: '2/4', width: '100%', height: '100%', objectFit: 'cover', borderRadius: 10 }} />
+
+        {/* col 3, rows 2–3 (tall) */}
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/onboarding/wh-5.jpg" alt="Warehouse" draggable={false}
+          style={{ gridColumn: '3/4', gridRow: '2/4', width: '100%', height: '100%', objectFit: 'cover', borderRadius: 10 }} />
+
+        {/* col 2, row 3 (wh-1 reused) */}
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/onboarding/wh-1.jpg" alt="Warehouse" draggable={false}
+          style={{ gridColumn: '2/3', gridRow: '3/4', width: '100%', height: '100%', objectFit: 'cover', borderRadius: 10 }} />
+
+        {/* Fade-to-white at bottom of collage */}
+        <div style={{
+          position: 'absolute', left: 0, right: 0, bottom: 0,
+          height: 70,
+          background: 'linear-gradient(to bottom, rgba(255,255,255,0) 0%, #ffffff 92%)',
+          pointerEvents: 'none',
+        }} />
+      </div>
+
+      {/* ── White content panel ── */}
+      <div style={{
+        flex: 1,
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
-        justifyContent: 'space-between',
-        padding: '0 24px',
-        paddingTop: 'max(env(safe-area-inset-top, 0px), 60px)',
-        paddingBottom: 'max(env(safe-area-inset-bottom, 0px), 36px)',
-      }}
-    >
-      {/* Logo area */}
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 0 }}>
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src="/wm-logo.png"
-          alt="WM"
-          style={{ width: 88, height: 88, objectFit: 'contain', borderRadius: 20 }}
-          draggable={false}
-        />
-        <p style={{
-          color: '#111827',
-          fontSize: 22,
-          fontWeight: 800,
-          letterSpacing: '-0.5px',
-          marginTop: 18,
-          lineHeight: 1,
-        }}>
-          Warehouse Manager
-        </p>
-        <p style={{
-          color: '#9ca3af',
-          fontSize: 14,
-          fontWeight: 400,
-          marginTop: 8,
-        }}>
-          Manage your team &amp; inventory
-        </p>
-      </div>
+        padding: '0 26px',
+        background: '#ffffff',
+      }}>
 
-      {/* Bottom section */}
-      <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: 10 }}>
+        {/* WM monogram — floats vertically centered in available space */}
+        <svg
+          viewBox="20 13 238 159"
+          style={{ width: 74, color: '#0a0a0a', marginTop: 'auto', flexShrink: 0 }}
+          aria-hidden="true"
+        >
+          <defs>
+            <mask id="wm-ob-cut" maskUnits="userSpaceOnUse" x="0" y="0" width="300" height="200">
+              <rect x="0" y="0" width="300" height="200" fill="#fff" />
+              <polygon points="150,18 168,18 134,166 116,166" fill="#000" />
+            </mask>
+          </defs>
+          <g transform="translate(28,0) skewX(-8)" mask="url(#wm-ob-cut)">
+            <polyline points="30,28 56,156 84,62 112,156 140,28" fill="none" stroke="currentColor" strokeWidth="30" strokeLinejoin="miter" />
+            <polyline points="140,156 140,28 176,98 212,28 212,156" fill="none" stroke="currentColor" strokeWidth="30" strokeLinejoin="miter" />
+          </g>
+        </svg>
 
-        {/* Main buttons */}
-        <button
-          onClick={() => router.push('/login')}
+        {/* Bottom block — headline + buttons + legal */}
+        <div
+          className="ob-bottom-pad"
           style={{
-            width: '100%', padding: '16px 0',
-            background: '#0a0a0a', color: '#fff',
-            fontSize: 16, fontWeight: 700,
-            borderRadius: 16, border: 'none', cursor: 'pointer',
+            width: '100%',
+            marginTop: 16,
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 12,
           }}
         >
-          Welcome Back
-        </button>
+          <h1
+            className={poppins.className}
+            style={{
+              margin: '0 0 4px',
+              fontWeight: 600,
+              fontSize: 18,
+              letterSpacing: 0,
+              color: '#0a0a0a',
+              textAlign: 'center',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            Welcome to Warehouse Manager
+          </h1>
 
-        <button
-          onClick={() => router.push('/signup')}
-          style={{
-            width: '100%', padding: '16px 0',
-            background: '#f8fafc', color: '#111827',
-            fontSize: 16, fontWeight: 600,
-            borderRadius: 16, border: '1.5px solid #e2e8f0', cursor: 'pointer',
-          }}
-        >
-          Create Account
-        </button>
+          <button
+            onClick={() => router.push('/signup')}
+            style={{
+              width: '100%', padding: 15,
+              background: '#0a0a0a', color: '#fff',
+              borderRadius: 12, border: 'none', cursor: 'pointer',
+              fontWeight: 700, fontSize: 15, letterSpacing: '0.02em',
+              textAlign: 'center',
+            }}
+          >
+            Sign up
+          </button>
 
-        {/* Invite code toggle */}
-        <button
-          onClick={() => setShowInvite(v => !v)}
-          style={{
-            background: 'none', border: 'none', cursor: 'pointer',
-            color: '#9ca3af', fontSize: 13, fontWeight: 500,
-            padding: '6px 0', marginTop: 2,
-          }}
-        >
-          {showInvite ? 'Cancel' : 'Have an invite code?'}
-        </button>
+          <button
+            onClick={() => router.push('/login')}
+            style={{
+              width: '100%', padding: 15,
+              background: '#f0f0f0', color: '#0a0a0a',
+              borderRadius: 12, border: 'none', cursor: 'pointer',
+              fontWeight: 700, fontSize: 15, letterSpacing: '0.02em',
+              textAlign: 'center',
+            }}
+          >
+            Log in
+          </button>
 
-        {/* Invite code form */}
-        {showInvite && (
-          <div style={{ display: 'flex', gap: 8 }}>
-            <input
-              type="text"
-              value={code}
-              onChange={e => setCode(e.target.value.toUpperCase())}
-              placeholder="Enter invite code"
-              maxLength={12}
-              onKeyDown={e => e.key === 'Enter' && handleInvite()}
-              style={{
-                flex: 1, padding: '14px 16px',
-                background: '#f8fafc',
-                border: '1.5px solid #e2e8f0',
-                borderRadius: 14, color: '#111827', fontSize: 15,
-                outline: 'none', letterSpacing: '1px',
-              }}
-            />
-            <button
-              onClick={handleInvite}
-              style={{
-                padding: '14px 20px',
-                background: '#0a0a0a', color: '#fff',
-                fontSize: 14, fontWeight: 700,
-                borderRadius: 14, border: 'none', cursor: 'pointer',
-                flexShrink: 0,
-              }}
-            >
-              Join
-            </button>
-          </div>
-        )}
-
-        {/* Legal */}
-        <p style={{
-          textAlign: 'center', fontSize: 11,
-          color: '#9ca3af', lineHeight: 1.7,
-          marginTop: 8,
-        }}>
-          By continuing you agree to our{' '}
-          <Link href="/terms" style={{ color: '#6b7280', textDecoration: 'underline', textUnderlineOffset: 2 }}>
-            Terms of Service
-          </Link>
-          {' '}and{' '}
-          <Link href="/privacy" style={{ color: '#6b7280', textDecoration: 'underline', textUnderlineOffset: 2 }}>
-            Privacy Policy
-          </Link>
-        </p>
+          <p style={{ margin: '6px 0 0', fontSize: 11, lineHeight: 1.5, color: '#8a8a8a', textAlign: 'center' }}>
+            By continuing, you agree to our{' '}
+            <Link href="/terms" style={{ color: '#4a4a4a', fontWeight: 600, textDecoration: 'none' }}>
+              Terms of Service
+            </Link>
+            {' '}and acknowledge you&apos;ve read our{' '}
+            <Link href="/privacy" style={{ color: '#4a4a4a', fontWeight: 600, textDecoration: 'none' }}>
+              Privacy Policy
+            </Link>.
+          </p>
+        </div>
       </div>
     </div>
   );

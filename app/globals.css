@@ -172,3 +172,20 @@ textarea::placeholder {
 
 /* Keyboard open: sheet overlay needs no extra bottom offset */
 .keyboard-open .native-sheet-overlay { padding-bottom: 0 !important; }
+
+/* Onboarding / native-welcome collage top margin — respects notch */
+.ob-collage-top {
+  margin-top: max(env(safe-area-inset-top, 0px), 12px);
+}
+/* Android: WebView already starts below status bar, minimal gap */
+.native-android .ob-collage-top {
+  margin-top: 8px;
+}
+
+/* Onboarding bottom content padding — respects home indicator */
+.ob-bottom-pad {
+  padding-bottom: max(env(safe-area-inset-bottom, 0px), 20px);
+}
+.native-android .ob-bottom-pad {
+  padding-bottom: max(env(safe-area-inset-bottom, 0px), 20px);
+}
