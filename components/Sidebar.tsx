@@ -42,9 +42,8 @@ export default function Sidebar() {
       {/* Logo — aligned with TopBar height (h-16) */}
       <div className="h-16 px-6 border-b border-gray-100 flex items-center">
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 bg-gray-950 rounded-xl flex items-center justify-center flex-shrink-0">
-            <span className="text-white font-black text-[10px] italic leading-none">WM</span>
-          </div>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/wm-logo.png" alt="WM" style={{ width: 36, height: 36, objectFit: 'contain', borderRadius: 10, flexShrink: 0 }} draggable={false} />
           <div>
             <p className="font-bold text-gray-900 text-sm leading-tight">Warehouse Manager</p>
             <p className="text-xs text-gray-400 truncate max-w-[140px]">{user?.company_name || 'Manager'}</p>

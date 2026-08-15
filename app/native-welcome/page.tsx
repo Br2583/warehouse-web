@@ -23,34 +23,42 @@ export default function NativeWelcome() {
     <div
       style={{
         minHeight: '100dvh',
-        background: '#0f0f0f',
+        background: '#ffffff',
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
         justifyContent: 'space-between',
         padding: '0 24px',
-        paddingTop: 'max(env(safe-area-inset-top, 0px), 48px)',
-        paddingBottom: 'max(env(safe-area-inset-bottom, 0px), 32px)',
+        paddingTop: 'max(env(safe-area-inset-top, 0px), 60px)',
+        paddingBottom: 'max(env(safe-area-inset-bottom, 0px), 36px)',
       }}
     >
       {/* Logo area */}
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 0 }}>
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
-          src="/wm-icon-fg.png"
+          src="/wm-logo.png"
           alt="WM"
-          style={{ width: 140, height: 140, objectFit: 'contain' }}
+          style={{ width: 88, height: 88, objectFit: 'contain', borderRadius: 20 }}
           draggable={false}
         />
         <p style={{
-          color: 'rgba(255,255,255,0.35)',
-          fontSize: 11,
-          fontWeight: 700,
-          letterSpacing: '3px',
-          textTransform: 'uppercase',
-          marginTop: 12,
+          color: '#111827',
+          fontSize: 22,
+          fontWeight: 800,
+          letterSpacing: '-0.5px',
+          marginTop: 18,
+          lineHeight: 1,
         }}>
           Warehouse Manager
+        </p>
+        <p style={{
+          color: '#9ca3af',
+          fontSize: 14,
+          fontWeight: 400,
+          marginTop: 8,
+        }}>
+          Manage your team &amp; inventory
         </p>
       </div>
 
@@ -62,7 +70,7 @@ export default function NativeWelcome() {
           onClick={() => router.push('/login')}
           style={{
             width: '100%', padding: '16px 0',
-            background: '#2563eb', color: '#fff',
+            background: '#0a0a0a', color: '#fff',
             fontSize: 16, fontWeight: 700,
             borderRadius: 16, border: 'none', cursor: 'pointer',
           }}
@@ -74,9 +82,9 @@ export default function NativeWelcome() {
           onClick={() => router.push('/signup')}
           style={{
             width: '100%', padding: '16px 0',
-            background: 'rgba(255,255,255,0.07)', color: '#fff',
+            background: '#f8fafc', color: '#111827',
             fontSize: 16, fontWeight: 600,
-            borderRadius: 16, border: '1.5px solid rgba(255,255,255,0.1)', cursor: 'pointer',
+            borderRadius: 16, border: '1.5px solid #e2e8f0', cursor: 'pointer',
           }}
         >
           Create Account
@@ -87,7 +95,7 @@ export default function NativeWelcome() {
           onClick={() => setShowInvite(v => !v)}
           style={{
             background: 'none', border: 'none', cursor: 'pointer',
-            color: 'rgba(255,255,255,0.4)', fontSize: 13, fontWeight: 500,
+            color: '#9ca3af', fontSize: 13, fontWeight: 500,
             padding: '6px 0', marginTop: 2,
           }}
         >
@@ -106,9 +114,9 @@ export default function NativeWelcome() {
               onKeyDown={e => e.key === 'Enter' && handleInvite()}
               style={{
                 flex: 1, padding: '14px 16px',
-                background: 'rgba(255,255,255,0.08)',
-                border: '1.5px solid rgba(255,255,255,0.15)',
-                borderRadius: 14, color: '#fff', fontSize: 15,
+                background: '#f8fafc',
+                border: '1.5px solid #e2e8f0',
+                borderRadius: 14, color: '#111827', fontSize: 15,
                 outline: 'none', letterSpacing: '1px',
               }}
             />
@@ -116,7 +124,7 @@ export default function NativeWelcome() {
               onClick={handleInvite}
               style={{
                 padding: '14px 20px',
-                background: '#2563eb', color: '#fff',
+                background: '#0a0a0a', color: '#fff',
                 fontSize: 14, fontWeight: 700,
                 borderRadius: 14, border: 'none', cursor: 'pointer',
                 flexShrink: 0,
@@ -130,15 +138,15 @@ export default function NativeWelcome() {
         {/* Legal */}
         <p style={{
           textAlign: 'center', fontSize: 11,
-          color: 'rgba(255,255,255,0.22)', lineHeight: 1.7,
+          color: '#9ca3af', lineHeight: 1.7,
           marginTop: 8,
         }}>
           By continuing you agree to our{' '}
-          <Link href="/terms" style={{ color: 'rgba(255,255,255,0.45)', textDecoration: 'underline', textUnderlineOffset: 2 }}>
+          <Link href="/terms" style={{ color: '#6b7280', textDecoration: 'underline', textUnderlineOffset: 2 }}>
             Terms of Service
           </Link>
           {' '}and{' '}
-          <Link href="/privacy" style={{ color: 'rgba(255,255,255,0.45)', textDecoration: 'underline', textUnderlineOffset: 2 }}>
+          <Link href="/privacy" style={{ color: '#6b7280', textDecoration: 'underline', textUnderlineOffset: 2 }}>
             Privacy Policy
           </Link>
         </p>

@@ -338,7 +338,8 @@ export default function LandingHero() {
       {/* NAV */}
       <nav className="lh-nav" id="lh-nav">
         <div className="nav-l">
-          <div className="lh-logo">WM <span className="logo-name">Warehouse Manager</span></div>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <div className="lh-logo"><img src="/wm-logo.png" alt="WM" style={{ width: 32, height: 32, objectFit: 'contain', borderRadius: 8 }} draggable={false} /><span className="logo-name">Warehouse Manager</span></div>
           <ul className="nav-links">
             <li className="nl"><a href="#home">Home</a></li>
             <li className="nl"><a href="#features">Features</a></li>

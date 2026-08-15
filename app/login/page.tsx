@@ -34,7 +34,8 @@ function AuthRight({ title, subtitle }: { title: React.ReactNode; subtitle: stri
 
       {/* Top logo */}
       <div className="flex items-center gap-3 relative z-10">
-        <span className="font-black italic select-none" style={{ fontSize: '38px', letterSpacing: '-2px', lineHeight: 1 }}>WM</span>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/wm-icon-fg.png" alt="WM" style={{ width: 44, height: 44, objectFit: 'contain', mixBlendMode: 'screen' }} draggable={false} />
         <span className="font-semibold text-[14px] text-white/60">Warehouse Manager</span>
       </div>
 

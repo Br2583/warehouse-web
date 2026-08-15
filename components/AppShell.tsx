@@ -7,7 +7,6 @@ import TopBar from './TopBar';
 import Tutorial from './Tutorial';
 import CapacitorBackHandler from './CapacitorBackHandler';
 import NativeBottomNav from './NativeBottomNav';
-import SplashScreen from './SplashScreen';
 import { motion } from 'framer-motion';
 import { useAuth } from '@/lib/auth-context';
 import { useTutorial } from '@/lib/use-tutorial';
@@ -65,7 +64,6 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
 
   return (
     <NavDataContext.Provider value={{ unreadChat, pendingTasks, chatPreview, chatSender, firstTaskTitle }}>
-      <SplashScreen />
       <CapacitorBackHandler />
       {showTutorial && isProtected && !loading && <Tutorial onDismiss={dismissTutorial} />}
       {showNav && <TopBar onOpenNav={() => setNavOpen(true)} />}

@@ -64,9 +64,8 @@ export default function MobileNav({ open, onClose }: MobileNavProps) {
           style={{ paddingTop: 'calc(0.35rem + clamp(0px, env(safe-area-inset-top, 0px), 32px))' }}
         >
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-gray-950 rounded-xl flex items-center justify-center flex-shrink-0">
-              <span className="text-white font-black text-[9px] italic leading-none">WM</span>
-            </div>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/wm-logo.png" alt="WM" style={{ width: 32, height: 32, objectFit: 'contain', borderRadius: 8, flexShrink: 0 }} draggable={false} />
             <p className="font-bold text-gray-900 text-sm">Warehouse</p>
           </div>
           <button

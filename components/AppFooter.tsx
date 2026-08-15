@@ -29,9 +29,8 @@ export default function AppFooter() {
         {/* Brand + contact */}
         <div>
           <div className="flex items-center gap-3 mb-5">
-            <div className="w-10 h-10 bg-white/10 border border-white/15 rounded-[10px] flex items-center justify-center flex-shrink-0">
-              <span className="text-white font-black text-xs italic leading-none">WM</span>
-            </div>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/wm-icon-fg.png" alt="WM" style={{ width: 40, height: 40, objectFit: 'contain', borderRadius: 10, flexShrink: 0, mixBlendMode: 'screen' }} draggable={false} />
             <div>
               <p className="font-bold text-white text-sm leading-tight">Warehouse Manager</p>
               <p className="text-white/35 text-[11px] mt-0.5">by PixelCore</p>
