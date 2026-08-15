@@ -67,9 +67,9 @@ body {
   }
 }
 
-/* TopBar offset — mobile: h-14 (56px) + safe area; desktop: h-16 (64px) */
+/* TopBar offset — mobile: h-14 (56px) + safe area capped at 32px; desktop: h-16 (64px) */
 .topbar-offset {
-  padding-top: calc(3.5rem + env(safe-area-inset-top, 0px));
+  padding-top: calc(3.5rem + clamp(0px, env(safe-area-inset-top, 0px), 32px));
 }
 
 @media (min-width: 768px) {
@@ -78,12 +78,12 @@ body {
   }
 }
 
-/* Native app: cap safe-area to 28px max (Android status bar) — env() can report inflated values */
+/* Native app: same 32px cap (redundant safety — inline style already caps) */
 .native-app .topbar-safe {
-  padding-top: clamp(0px, env(safe-area-inset-top, 0px), 28px) !important;
+  padding-top: clamp(0px, env(safe-area-inset-top, 0px), 32px) !important;
 }
 .native-app .topbar-offset {
-  padding-top: calc(3.5rem + clamp(0px, env(safe-area-inset-top, 0px), 28px)) !important;
+  padding-top: calc(3.5rem + clamp(0px, env(safe-area-inset-top, 0px), 32px)) !important;
 }
 
 input,
