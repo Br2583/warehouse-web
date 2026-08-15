@@ -10,7 +10,6 @@ interface Slide {
   icon: React.ReactNode;
   title: string;
   body: string;
-  accent: string;
 }
 
 const SLIDES: Slide[] = [
@@ -18,31 +17,26 @@ const SLIDES: Slide[] = [
     icon: <BuildingOffice2Icon className="w-14 h-14" />,
     title: 'Welcome to Warehouse Manager',
     body: 'Your complete tool for managing vaults, work orders, and your team — from any device.',
-    accent: '#2563eb',
   },
   {
     icon: <QrCodeIcon className="w-14 h-14" />,
     title: 'Scan QR Codes Instantly',
     body: 'Tap the menu icon → Scan QR Code. Point the camera at any vault label and open it immediately.',
-    accent: '#7c3aed',
   },
   {
     icon: <ArchiveBoxIcon className="w-14 h-14" />,
     title: 'Track Every Vault',
     body: 'View vaults on the grid map or list. Add photos, status, client info, and generate QR labels.',
-    accent: '#059669',
   },
   {
     icon: <ClipboardDocumentListIcon className="w-14 h-14" />,
     title: 'Manage Work Orders',
     body: 'Create and assign cleaning, restoration, and delivery tasks. Your team sees them instantly.',
-    accent: '#d97706',
   },
   {
     icon: <CheckCircleIcon className="w-14 h-14" />,
     title: "You're all set!",
     body: 'Everything is ready. Find help anytime in the Support section if you need it.',
-    accent: '#16a34a',
   },
 ];
 
@@ -82,8 +76,8 @@ export default function Tutorial({ onDismiss }: TutorialProps) {
         onTouchStart={onTouchStart}
         onTouchEnd={onTouchEnd}
       >
-        {/* Accent bar */}
-        <div className="h-1.5 w-full" style={{ backgroundColor: slide.accent }} />
+        {/* Top accent bar — always black */}
+        <div className="h-1.5 w-full bg-gray-950" />
 
         {/* Skip */}
         <button
@@ -96,11 +90,8 @@ export default function Tutorial({ onDismiss }: TutorialProps) {
 
         {/* Content */}
         <div className="px-8 pt-8 pb-6 flex flex-col items-center text-center min-h-[340px]">
-          {/* Icon */}
-          <div
-            className="w-24 h-24 rounded-2xl flex items-center justify-center mb-6"
-            style={{ backgroundColor: slide.accent + '18', color: slide.accent }}
-          >
+          {/* Icon — gray bg, dark icon */}
+          <div className="w-24 h-24 rounded-2xl flex items-center justify-center mb-6 bg-gray-100 text-gray-800">
             {slide.icon}
           </div>
 
@@ -120,7 +111,7 @@ export default function Tutorial({ onDismiss }: TutorialProps) {
                 style={{
                   width: i === index ? 20 : 8,
                   height: 8,
-                  backgroundColor: i === index ? slide.accent : '#e5e7eb',
+                  backgroundColor: i === index ? '#0a0a0a' : '#e5e7eb',
                 }}
               />
             ))}
@@ -138,8 +129,7 @@ export default function Tutorial({ onDismiss }: TutorialProps) {
             )}
             <button
               onClick={next}
-              className="flex-1 py-3 rounded-2xl text-white text-sm font-semibold transition-colors active:scale-95"
-              style={{ backgroundColor: slide.accent }}
+              className="flex-1 py-3 rounded-2xl text-white text-sm font-semibold transition-colors active:scale-95 bg-gray-950 hover:bg-gray-800"
             >
               {isLast ? 'Get Started' : 'Next'}
             </button>
