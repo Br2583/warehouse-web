@@ -6,8 +6,11 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   BuildingOffice2Icon, TicketIcon, EyeIcon, EyeSlashIcon,
 } from '@heroicons/react/24/outline';
+import { Turnstile } from '@marsidev/react-turnstile';
 import { pb } from '@/lib/pb';
 import AuthShell from '@/components/AuthShell';
+
+const TURNSTILE_SITE_KEY = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY ?? '';
 
 /* ── light input helpers ── */
 const iBase  = 'w-full px-4 py-3 rounded-[10px] text-sm text-gray-900 placeholder-gray-300 outline-none transition-all';
@@ -35,6 +38,7 @@ export default function SignupPage() {
   const [termsAccepted,  setTermsAccepted ] = useState(false);
   const [error,          setError         ] = useState('');
   const [loading,        setLoading       ] = useState(false);
+  const [turnstileToken, setTurnstileToken] = useState('');
   const submittingRef = useRef(false);
 
   const handleSubmit = async () => {
@@ -47,6 +51,7 @@ export default function SignupPage() {
     if (mode === 'create' && !companyName.trim()) { setError('Enter your company name.'); return; }
     if (mode === 'create' && !termsAccepted) { setError('You must accept the Terms & Conditions to create a company.'); return; }
     if (mode === 'join' && inviteCode.trim().length < 8) { setError('Enter a valid invitation code.'); return; }
+    if (TURNSTILE_SITE_KEY && !turnstileToken) { setError('Please complete the human verification below.'); return; }
 
     submittingRef.current = true;
     setLoading(true);
@@ -65,7 +70,7 @@ export default function SignupPage() {
       const verifyRes = await fetch('/api/auth/send-verification', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: normalizedEmail }),
+        body: JSON.stringify({ email: normalizedEmail, turnstileToken }),
       });
       localStorage.setItem('verify_email', normalizedEmail);
       if (!verifyRes.ok) {
@@ -193,6 +198,15 @@ export default function SignupPage() {
                   , and accept responsibility for all activity within my organization.
                 </span>
               </label>
+            )}
+
+            {TURNSTILE_SITE_KEY && (
+              <Turnstile
+                siteKey={TURNSTILE_SITE_KEY}
+                onSuccess={setTurnstileToken}
+                onExpire={() => setTurnstileToken('')}
+                onError={() => setTurnstileToken('')}
+              />
             )}
 
             <button

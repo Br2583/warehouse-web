@@ -3,22 +3,27 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { LockClosedIcon } from '@heroicons/react/24/outline';
+import { Turnstile } from '@marsidev/react-turnstile';
+
+const TURNSTILE_SITE_KEY = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY ?? '';
 
 export default function AdminLoginPage() {
   const router = useRouter();
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [turnstileToken, setTurnstileToken] = useState('');
 
   const login = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (TURNSTILE_SITE_KEY && !turnstileToken) { setError('Please complete the human verification.'); return; }
     setLoading(true);
     setError('');
     try {
       const res = await fetch('/api/admin/auth', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ password }),
+        body: JSON.stringify({ password, turnstileToken }),
       });
       if (!res.ok) { setError('Incorrect password.'); return; }
       router.replace('/admin-k9x2m7');
@@ -50,6 +55,14 @@ export default function AdminLoginPage() {
             className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             autoFocus
           />
+          {TURNSTILE_SITE_KEY && (
+            <Turnstile
+              siteKey={TURNSTILE_SITE_KEY}
+              onSuccess={setTurnstileToken}
+              onExpire={() => setTurnstileToken('')}
+              onError={() => setTurnstileToken('')}
+            />
+          )}
           {error && <p className="text-xs text-red-600">{error}</p>}
           <button
             type="submit"

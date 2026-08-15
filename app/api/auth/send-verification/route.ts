@@ -3,11 +3,17 @@ import { signToken } from '@/lib/tokens';
 import { sendEmail, verificationEmail } from '@/lib/email';
 import { getPbAdminToken, PB_URL } from '@/lib/pb-admin';
 import { emailRateLimit, checkLimit } from '@/lib/rate-limit';
+import { verifyTurnstile } from '@/lib/turnstile';
 
 export async function POST(req: NextRequest) {
   try {
-    const { email } = await req.json();
+    const body = await req.json();
+    const { email, turnstileToken } = body as { email?: string; turnstileToken?: string };
     if (!email) return NextResponse.json({ error: 'Email required' }, { status: 400 });
+    const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || '';
+    if (!await verifyTurnstile(turnstileToken, ip)) {
+      return NextResponse.json({ error: 'Human verification failed' }, { status: 403 });
+    }
     if (!await checkLimit(emailRateLimit, email.toLowerCase())) return NextResponse.json({ ok: true }); // silent
 
     // Find user by email

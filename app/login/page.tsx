@@ -6,9 +6,12 @@ import { AnimatePresence, motion } from 'framer-motion';
 import {
   EyeIcon, EyeSlashIcon, BuildingOffice2Icon, TicketIcon,
 } from '@heroicons/react/24/outline';
+import { Turnstile } from '@marsidev/react-turnstile';
 import { pb } from '@/lib/pb';
 import { genCode } from '@/lib/utils';
 import AuthShell from '@/components/AuthShell';
+
+const TURNSTILE_SITE_KEY = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY ?? '';
 
 /* ── Right info panel (dark) ── */
 const STATS = [
@@ -102,6 +105,7 @@ function LoginForm() {
   const [companyLoading, setCompanyLoading ] = useState(false);
   const [termsAccepted,  setTermsAccepted  ] = useState(false);
   const [bannerDismissed,setBannerDismissed] = useState(false);
+  const [turnstileToken, setTurnstileToken ] = useState('');
 
   const verified       = params.get('verified') === '1';
   const reset          = params.get('reset')    === '1';
@@ -124,6 +128,7 @@ function LoginForm() {
   const handleLogin = async () => {
     setError('');
     if (!email.trim() || !password) { setError('Enter your email and password.'); return; }
+    if (TURNSTILE_SITE_KEY && !turnstileToken) { setError('Please complete the human verification below.'); return; }
     setLoading(true);
     try {
       const auth = await pb.collection('users').authWithPassword(email.trim().toLowerCase(), password);
@@ -300,6 +305,15 @@ function LoginForm() {
                     Forgot password?
                   </button>
                 </div>
+
+                {TURNSTILE_SITE_KEY && (
+                  <Turnstile
+                    siteKey={TURNSTILE_SITE_KEY}
+                    onSuccess={setTurnstileToken}
+                    onExpire={() => setTurnstileToken('')}
+                    onError={() => setTurnstileToken('')}
+                  />
+                )}
 
                 <button
                   onClick={handleLogin}
