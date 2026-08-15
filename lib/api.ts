@@ -605,7 +605,7 @@ async function routePost(path: string, body: any): Promise<any> {
     if (!cid) throw new Error('No company');
     const warehouseRef = snapCreateMatch[1];
     let filter = `company_id="${cid}"`;
-    if (warehouseRef && warehouseRef !== 'all') filter += ` && warehouse_id="${warehouseRef}"`;
+    if (warehouseRef && warehouseRef !== 'all') filter += ` && warehouse_id="${sf(warehouseRef)}"`;
     const vaults = await pb.collection('vaults').getFullList({
       filter,
       fields: 'id,warehouse_id,row,col,level,position,client_name,client_id,job_type,vault_status,content_type,room_location,packer,pack_date,comments,estado,qr_token,company_id,created',
