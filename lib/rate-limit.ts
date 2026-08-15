@@ -27,12 +27,59 @@ export const joinRateLimit = new Ratelimit({
   prefix: 'rl:join',
 });
 
-// Fail-open: si Upstash está caído, permite el request en vez de romper la app
-export async function checkLimit(limiter: Ratelimit, key: string): Promise<boolean> {
+export const chatRateLimit = new Ratelimit({
+  redis,
+  limiter: Ratelimit.slidingWindow(30, '1 m'),
+  prefix: 'rl:chat',
+});
+
+// In-memory fallback for when Upstash is unavailable (single-instance protection only)
+const _fallback = new Map<string, { count: number; resetAt: number }>();
+function _checkFallback(key: string, max: number, windowMs: number): boolean {
+  const now = Date.now();
+  if (_fallback.size > 500) {
+    for (const [k, v] of _fallback) { if (now > v.resetAt) _fallback.delete(k); }
+  }
+  const entry = _fallback.get(key);
+  if (!entry || now > entry.resetAt) {
+    _fallback.set(key, { count: 1, resetAt: now + windowMs });
+    return true;
+  }
+  if (entry.count >= max) return false;
+  entry.count++;
+  return true;
+}
+
+// Fail-open: si Upstash está caído, usa fallback in-memory si se provee (para rutas críticas)
+// o permite el request (fail-open) para rutas no críticas
+export async function checkLimit(
+  limiter: Ratelimit,
+  key: string,
+  fallbackMax?: number,
+  fallbackWindowMs?: number,
+): Promise<boolean> {
   try {
     const { success } = await limiter.limit(key);
     return success;
   } catch {
-    return true;
+    if (fallbackMax !== undefined && fallbackWindowMs !== undefined) {
+      return _checkFallback(key, fallbackMax, fallbackWindowMs);
+    }
+    return true; // fail-open para rutas no críticas
+  }
+}
+
+// Token dedup via Redis SET NX — previene replay cross-process.
+// Returns 'new' (token ok, now marked), 'used' (reject), 'unknown' (Redis down, use PB check as fallback).
+export async function dedupToken(
+  tokenId: string,
+  ttlSec: number,
+): Promise<'new' | 'used' | 'unknown'> {
+  try {
+    const key = `token-used:${tokenId.slice(0, 64)}`;
+    const result = await redis.set(key, '1', { nx: true, ex: Math.max(ttlSec, 1) });
+    return result === 'OK' ? 'new' : 'used';
+  } catch {
+    return 'unknown'; // Redis no disponible — el PB timestamp check sigue protegiendo
   }
 }

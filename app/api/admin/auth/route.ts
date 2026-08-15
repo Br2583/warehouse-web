@@ -6,7 +6,8 @@ import { verifyTurnstile } from '@/lib/turnstile';
 
 export async function POST(req: NextRequest) {
   const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown';
-  if (!await checkLimit(adminLoginRateLimit, ip)) {
+  // fallbackMax=5, fallbackWindowMs=30_000 → same limits as Upstash but in-memory when Redis is down
+  if (!await checkLimit(adminLoginRateLimit, ip, 5, 30_000)) {
     return NextResponse.json({ error: 'Too many attempts. Try again in 30 seconds.' }, { status: 429 });
   }
 

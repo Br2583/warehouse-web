@@ -1,35 +1,25 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyToken } from '@/lib/tokens';
 import { getPbAdminToken, PB_URL } from '@/lib/pb-admin';
-
-// Fast-path in-memory dedup for same-process replays
-const _usedTokens = new Map<string, number>();
-function _isUsedMemory(token: string): boolean {
-  const exp = _usedTokens.get(token);
-  if (exp === undefined) return false;
-  if (Date.now() > exp) { _usedTokens.delete(token); return false; }
-  return true;
-}
-function _markUsed(token: string, expSec: number) {
-  _usedTokens.set(token, expSec * 1000);
-  const now = Date.now();
-  for (const [t, exp] of _usedTokens) { if (now > exp) _usedTokens.delete(t); }
-}
+import { dedupToken } from '@/lib/rate-limit';
 
 export async function POST(req: NextRequest) {
   try {
     const { token } = await req.json();
     if (!token) return NextResponse.json({ error: 'Token requerido' }, { status: 400 });
 
-    // Fast path: same-process replay
-    if (_isUsedMemory(token)) {
-      return NextResponse.json({ error: 'This activation link has already been used.' }, { status: 400 });
-    }
-
     const payload = verifyToken(token);
     if (payload.purpose !== 'activate' || !payload.companyId) {
       return NextResponse.json({ error: 'Token inválido' }, { status: 400 });
     }
+
+    // Cross-process dedup via Redis SET NX (prevents replay on multi-instance Railway)
+    const ttlRemaining = Math.max((payload.exp as number) - Math.floor(Date.now() / 1000), 1);
+    const dedup = await dedupToken(token, ttlRemaining);
+    if (dedup === 'used') {
+      return NextResponse.json({ error: 'This activation link has already been used.' }, { status: 400 });
+    }
+    // dedup === 'unknown' → Redis unavailable; PB timestamp check below still protects
 
     const adminToken = await getPbAdminToken();
 
@@ -54,7 +44,6 @@ export async function POST(req: NextRequest) {
     });
 
     if (!res.ok) return NextResponse.json({ error: 'No se pudo activar la empresa' }, { status: 500 });
-    _markUsed(token, payload.exp as number);
     return NextResponse.json({ ok: true });
   } catch (e: any) {
     return NextResponse.json({ error: e.message || 'Error al activar' }, { status: 400 });

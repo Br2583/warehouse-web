@@ -1,24 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyToken } from '@/lib/tokens';
 import { getPbAdminToken, PB_URL } from '@/lib/pb-admin';
-
-// In-memory dedup (fast path across requests in same process).
-const usedTokens = new Map<string, number>();
-
-function markTokenUsed(token: string, expSec: number) {
-  usedTokens.set(token, expSec * 1000);
-  const now = Date.now();
-  for (const [t, exp] of usedTokens) {
-    if (now > exp) usedTokens.delete(t);
-  }
-}
-
-function isTokenUsedMemory(token: string): boolean {
-  const exp = usedTokens.get(token);
-  if (exp === undefined) return false;
-  if (Date.now() > exp) { usedTokens.delete(token); return false; }
-  return true;
-}
+import { dedupToken } from '@/lib/rate-limit';
 
 export async function POST(req: NextRequest) {
   try {
@@ -27,9 +10,14 @@ export async function POST(req: NextRequest) {
     if (password !== passwordConfirm) return NextResponse.json({ error: 'Passwords do not match' }, { status: 400 });
     if (password.length < 8) return NextResponse.json({ error: 'Password too short' }, { status: 400 });
 
-    if (isTokenUsedMemory(token)) throw new Error('This reset link has already been used. Request a new one.');
     const payload = verifyToken(token);
     if (payload.purpose !== 'reset') throw new Error('Wrong token type');
+
+    // Cross-process dedup via Redis SET NX (prevents replay on multi-instance Railway)
+    const ttlRemaining = Math.max((payload.exp as number) - Math.floor(Date.now() / 1000), 1);
+    const dedup = await dedupToken(token, ttlRemaining);
+    if (dedup === 'used') throw new Error('This reset link has already been used. Request a new one.');
+    // dedup === 'unknown' → Redis unavailable; PB updated-timestamp check below still protects
 
     const adminToken = await getPbAdminToken();
 
@@ -56,7 +44,6 @@ export async function POST(req: NextRequest) {
     });
     if (!pbRes.ok) throw new Error('Failed to update password. Try again.');
 
-    markTokenUsed(token, payload.exp as number);
     return NextResponse.json({ ok: true });
   } catch (e: any) {
     return NextResponse.json({ error: e.message || 'Reset failed' }, { status: 400 });
