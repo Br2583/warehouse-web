@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -40,6 +40,13 @@ export default function SignupPage() {
   const [loading,        setLoading       ] = useState(false);
   const [turnstileToken, setTurnstileToken] = useState('');
   const submittingRef = useRef(false);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('mode') === 'join') setMode('join');
+    const c = params.get('code');
+    if (c) setInviteCode(c.toUpperCase());
+  }, []);
 
   const handleSubmit = async () => {
     if (submittingRef.current) return;
@@ -103,7 +110,8 @@ export default function SignupPage() {
         <div className="p-8 md:p-12 flex flex-col justify-center overflow-y-auto">
           {/* Mobile logo */}
           <div className="flex items-center gap-2 mb-6 md:hidden">
-            <span className="font-black italic text-gray-950 select-none" style={{ fontSize: '30px', letterSpacing: '-1.5px', lineHeight: 1 }}>WM</span>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/wm-logo.png" alt="WM" style={{ width: 32, height: 32, objectFit: 'contain', borderRadius: 8 }} draggable={false} />
             <span className="font-bold text-gray-900 text-sm">Warehouse Manager</span>
           </div>
 

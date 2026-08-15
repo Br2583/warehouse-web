@@ -16,7 +16,7 @@ export default function NativeWelcome() {
 
   const handleInvite = () => {
     if (!code.trim()) return;
-    router.push('/login?mode=join&code=' + encodeURIComponent(code.trim()));
+    router.push('/signup?mode=join&code=' + encodeURIComponent(code.trim()));
   };
 
   return (
