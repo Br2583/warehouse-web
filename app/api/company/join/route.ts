@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getPbAdminToken, PB_URL } from '@/lib/pb-admin';
+import { joinRateLimit, checkLimit } from '@/lib/rate-limit';
 
 export async function POST(req: NextRequest) {
   const authHeader = req.headers.get('Authorization') || '';
@@ -27,6 +28,9 @@ export async function POST(req: NextRequest) {
   const { record: me } = await meRes.json();
   if (!me?.id) return NextResponse.json({ error: 'Invalid session' }, { status: 401 });
   if (me.company_id) return NextResponse.json({ error: 'Already in a company' }, { status: 409 });
+  if (!await checkLimit(joinRateLimit, me.id)) {
+    return NextResponse.json({ error: 'Too many attempts. Try again later.' }, { status: 429 });
+  }
 
   // Find company by invite code — using admin token so PB rules don't block the lookup
   const searchRes = await fetch(

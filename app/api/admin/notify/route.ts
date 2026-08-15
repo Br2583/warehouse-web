@@ -1,22 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { sendEmail, adminNewRequestEmail } from '@/lib/email';
 import { getPbAdminToken, PB_URL } from '@/lib/pb-admin';
+import { notifyRateLimit, checkLimit } from '@/lib/rate-limit';
 
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL!;
-
-// 3 notifications per user per 24h
-const _notifyLimit = new Map<string, { count: number; resetAt: number }>();
-function checkNotifyLimit(userId: string): boolean {
-  const now = Date.now();
-  const entry = _notifyLimit.get(userId);
-  if (!entry || now > entry.resetAt) {
-    _notifyLimit.set(userId, { count: 1, resetAt: now + 86_400_000 });
-    return true;
-  }
-  if (entry.count >= 3) return false;
-  entry.count++;
-  return true;
-}
 
 async function getAuthenticatedUser(req: NextRequest) {
   const token = (req.headers.get('authorization') || '').replace('Bearer ', '');
@@ -37,7 +24,7 @@ async function getAuthenticatedUser(req: NextRequest) {
 export async function POST(req: NextRequest) {
   const user = await getAuthenticatedUser(req);
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  if (!checkNotifyLimit(user.id)) {
+  if (!await checkLimit(notifyRateLimit, user.id)) {
     return NextResponse.json({ error: 'Rate limit exceeded. Try again tomorrow.' }, { status: 429 });
   }
 

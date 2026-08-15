@@ -2,26 +2,13 @@ import { NextRequest, NextResponse } from 'next/server';
 import { signToken } from '@/lib/tokens';
 import { sendEmail, verificationEmail } from '@/lib/email';
 import { getPbAdminToken, PB_URL } from '@/lib/pb-admin';
-
-const _verifyRateLimit = new Map<string, { count: number; resetAt: number }>();
-function checkVerifyLimit(email: string): boolean {
-  const key = email.toLowerCase();
-  const now = Date.now();
-  const entry = _verifyRateLimit.get(key);
-  if (!entry || now > entry.resetAt) {
-    _verifyRateLimit.set(key, { count: 1, resetAt: now + 60 * 60 * 1000 });
-    return true;
-  }
-  if (entry.count >= 3) return false;
-  entry.count++;
-  return true;
-}
+import { emailRateLimit, checkLimit } from '@/lib/rate-limit';
 
 export async function POST(req: NextRequest) {
   try {
     const { email } = await req.json();
     if (!email) return NextResponse.json({ error: 'Email required' }, { status: 400 });
-    if (!checkVerifyLimit(email)) return NextResponse.json({ ok: true }); // silent
+    if (!await checkLimit(emailRateLimit, email.toLowerCase())) return NextResponse.json({ ok: true }); // silent
 
     // Find user by email
     const adminToken = await getPbAdminToken();
