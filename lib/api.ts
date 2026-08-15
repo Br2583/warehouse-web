@@ -274,7 +274,7 @@ async function routeGet(path: string): Promise<any> {
       name:       c.name,
       invite_code: c.invite_code,
       member_count: ms.length,
-      max_members: 50,
+      max_members: c.max_members || 50,
       is_owner:   c.owner_id === uid,
       active_invitation_codes: c.invite_code ? [c.invite_code] : [],
     };

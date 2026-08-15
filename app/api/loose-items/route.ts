@@ -26,9 +26,11 @@ export async function GET(req: NextRequest) {
   const warehouseId = url.searchParams.get('warehouse_id') || '';
   const q = url.searchParams.get('q') || '';
 
-  let filter = `company_id="${me.company_id}"`;
-  if (warehouseId) filter += ` && warehouse_id="${warehouseId}"`;
-  if (q) filter += ` && (client_name~"${q.replace(/"/g, '\\"')}" || comments~"${q.replace(/"/g, '\\"')}" || furniture_type~"${q.replace(/"/g, '\\"')}")`;
+  function sf(v: string) { return v.replace(/\\/g, '\\\\').replace(/"/g, '\\"'); }
+
+  let filter = `company_id="${sf(me.company_id)}"`;
+  if (warehouseId) filter += ` && warehouse_id="${sf(warehouseId)}"`;
+  if (q) filter += ` && (client_name~"${sf(q)}" || comments~"${sf(q)}" || furniture_type~"${sf(q)}")`;
 
   const res = await fetch(
     `${PB_URL}/api/collections/loose_items/records?filter=${encodeURIComponent(filter)}&sort=id&perPage=500`,

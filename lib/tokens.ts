@@ -14,7 +14,8 @@ function hmac(data: string) {
 }
 
 export function signToken(payload: Record<string, unknown>, expiresInSec = 86400): string {
-  const data = JSON.stringify({ ...payload, exp: Math.floor(Date.now() / 1000) + expiresInSec });
+  const now = Math.floor(Date.now() / 1000);
+  const data = JSON.stringify({ ...payload, iat: now, exp: now + expiresInSec });
   const b64 = toBase64(data);
   return `${b64}.${hmac(b64)}`;
 }
