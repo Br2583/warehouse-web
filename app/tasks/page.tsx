@@ -357,12 +357,13 @@ function TaskRow({ task, members, isOwner, onStatus, onDelete, onEdit }: {
 }
 
 // ── Form modal ────────────────────────────────────────────────────────────────
-function TaskFormModal({ open, onClose, members, editTask, onSave }: {
-  open:     boolean;
-  onClose:  () => void;
-  members:  Member[];
-  editTask: Task | null;
-  onSave:   (data: typeof emptyForm, editId?: string) => Promise<void>;
+function TaskFormModal({ open, onClose, members, editTask, onSave, allVaults }: {
+  open:      boolean;
+  onClose:   () => void;
+  members:   Member[];
+  editTask:  Task | null;
+  onSave:    (data: typeof emptyForm, editId?: string) => Promise<void>;
+  allVaults: VaultResult[];
 }) {
   const { user }                        = useAuth();
   const [form, setForm]                 = useState(emptyForm);
@@ -405,18 +406,7 @@ function TaskFormModal({ open, onClose, members, editTask, onSave }: {
       .catch(() => {});
   }, [open, editTask]);
 
-  // Vault search — loads all company vaults (same as warehouse page) and filters client-side
-  const [allVaults, setAllVaults] = useState<VaultResult[]>([]);
-  useEffect(() => {
-    if (!open) return;
-    api.get('/api/boxes').then((boxes: any[]) => {
-      setAllVaults((Array.isArray(boxes) ? boxes : []).map((b: any) => ({
-        id:          b.box_id || b.id,
-        client_name: b.client_name || '',
-        position:    b.position || '',
-      })));
-    }).catch(() => {});
-  }, [open]);
+  // allVaults is passed from parent (loaded once on page mount, not on each form open)
 
   useEffect(() => {
     const q = vaultQ.trim().toLowerCase();
@@ -680,9 +670,10 @@ function TasksPageInner() {
   const { showToast } = useToast();
   const searchParams = useSearchParams();
 
-  const [tasks,    setTasks]    = useState<Task[]>([]);
-  const [members,  setMembers]  = useState<Member[]>([]);
-  const [loading,  setLoading]  = useState(true);
+  const [tasks,     setTasks]     = useState<Task[]>([]);
+  const [members,   setMembers]   = useState<Member[]>([]);
+  const [allVaults, setAllVaults] = useState<VaultResult[]>([]);
+  const [loading,   setLoading]   = useState(true);
   const [error,    setError]    = useState('');
   const [view,     setView]     = useState<'kanban' | 'list'>('kanban');
   const [formOpen, setFormOpen] = useState(searchParams.get('new') === '1');
@@ -707,6 +698,13 @@ function TasksPageInner() {
     loadTasks();
     api.get('/api/company/members')
       .then((m: any) => setMembers(Array.isArray(m) ? m : []))
+      .catch(() => {});
+    api.get('/api/boxes')
+      .then((boxes: any[]) => setAllVaults((Array.isArray(boxes) ? boxes : []).map((b: any) => ({
+        id:          b.box_id || b.id,
+        client_name: b.client_name || '',
+        position:    b.position || '',
+      }))))
       .catch(() => {});
   }, []);
 
@@ -940,6 +938,7 @@ function TasksPageInner() {
         members={members}
         editTask={editTask}
         onSave={handleSave}
+        allVaults={allVaults}
       />
 
       {/* Clear all confirm */}

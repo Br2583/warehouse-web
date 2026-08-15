@@ -72,6 +72,7 @@ export default function DashboardPage() {
   const [warehouseNames, setWarehouseNames] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
   const [activityItems, setActivityItems] = useState<any[]>([]);
+  const [activityLoading, setActivityLoading] = useState(true);
   useEffect(() => {
     if (!user?.company_id) return;
     const load = async () => {
@@ -105,8 +106,11 @@ export default function DashboardPage() {
   }, [user?.company_id]);
 
   useEffect(() => {
-    if (!canManage || !user?.company_id) return;
-    api.get('/api/activity?perPage=5').then((d: any) => setActivityItems(d.items || [])).catch(() => {});
+    if (!canManage || !user?.company_id) { setActivityLoading(false); return; }
+    api.get('/api/activity?perPage=5')
+      .then((d: any) => setActivityItems(d.items || []))
+      .catch(() => {})
+      .finally(() => setActivityLoading(false));
   }, [canManage, user?.company_id]);
 
   const greeting = () => {
@@ -375,7 +379,9 @@ export default function DashboardPage() {
                 View all →
               </Link>
             </div>
-            {activityItems.length === 0 ? (
+            {activityLoading ? (
+              <div className="py-6 flex justify-center"><div className="w-5 h-5 border-2 border-gray-200 border-t-blue-500 rounded-full animate-spin" /></div>
+            ) : activityItems.length === 0 ? (
               <p className="text-sm text-gray-400 py-4 text-center">No activity yet</p>
             ) : (
               <div className="space-y-0 divide-y divide-gray-50">

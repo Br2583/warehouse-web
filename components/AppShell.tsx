@@ -62,9 +62,9 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
     }
   }, [loading, user, isProtected, router, pathname]);
 
-  // While auth is resolving on a protected route, show a blank screen instead of
-  // flashing protected content (or the login redirect) for a single frame.
-  if (loading && isProtected) return <div style={{ minHeight: '100vh', background: '#fff' }} />;
+  // While auth is resolving, or just after resolving with no user, show blank to prevent
+  // a single-frame flash of protected content before the redirect fires.
+  if (isProtected && (loading || !user)) return <div style={{ minHeight: '100vh', background: '#fff' }} />;
 
   return (
     <NavDataContext.Provider value={{ unreadChat, pendingTasks, chatPreview, chatSender, firstTaskTitle }}>

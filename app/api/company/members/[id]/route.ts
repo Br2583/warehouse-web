@@ -123,5 +123,24 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
   });
   if (!updateRes.ok) return NextResponse.json({ error: 'Failed to remove member' }, { status: 500 });
 
+  // Clear device tokens so removed member stops receiving push notifications
+  try {
+    const tokensRes = await fetch(
+      `${PB_URL}/api/collections/device_tokens/records?filter=${encodeURIComponent(`user_id="${targetUserId}"`)}&perPage=50&fields=id`,
+      { headers: { Authorization: `Bearer ${adminToken}` } }
+    );
+    if (tokensRes.ok) {
+      const tokensData = await tokensRes.json();
+      await Promise.allSettled(
+        (tokensData.items || []).map((t: { id: string }) =>
+          fetch(`${PB_URL}/api/collections/device_tokens/records/${t.id}`, {
+            method: 'DELETE',
+            headers: { Authorization: `Bearer ${adminToken}` },
+          })
+        )
+      );
+    }
+  } catch { /* best effort */ }
+
   return NextResponse.json({ ok: true });
 }

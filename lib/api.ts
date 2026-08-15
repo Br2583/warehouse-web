@@ -153,7 +153,7 @@ async function buildStats() {
   const [vaults, warehouses] = await Promise.all([
     pb.collection('vaults').getFullList({
       filter: `company_id="${cid}"`,
-      fields: 'id,estado,warehouse_id,job_type,created,client_name,position',
+      fields: 'id,estado,warehouse_id,job_type,created,pack_date,client_name,position',
     }),
     pb.collection('warehouses').getFullList({ filter: `company_id="${cid}"`, fields: 'id,name' }),
   ]);
@@ -172,9 +172,12 @@ async function buildStats() {
     statuses[s] = (statuses[s] || 0) + 1;
     by_warehouse[v.warehouse_id] = (by_warehouse[v.warehouse_id] || 0) + 1;
     job_types[v.job_type || 'Other'] = (job_types[v.job_type || 'Other'] || 0) + 1;
-    if (s === 'PENDING' && v.created) {
-      const ts = new Date(v.created.replace(' ', 'T')).getTime();
-      if (now - ts > 3 * 24 * 60 * 60 * 1000) sla_count++;
+    if (s === 'PENDING') {
+      const dateStr = v.pack_date || v.created;
+      if (dateStr) {
+        const ts = new Date(dateStr.replace(' ', 'T')).getTime();
+        if (now - ts > 3 * 24 * 60 * 60 * 1000) sla_count++;
+      }
     }
   }
 

@@ -74,16 +74,19 @@ export default function ChatPage() {
       .then(r => r.json())
       .then((msgs: Message[]) => {
         if (!Array.isArray(msgs)) throw new Error((msgs as any)?.error || 'Failed to load messages');
-        if (lastCountRef.current >= 0 && msgs.length > lastCountRef.current) {
+        const hadNew = lastCountRef.current >= 0 && msgs.length > lastCountRef.current;
+        if (hadNew) {
           const newest = msgs[msgs.length - 1];
           if (newest && newest.sender_id !== user?.id) {
             notify(`${newest.sender_name}`, newest.text);
           }
+          markChatSeen();
+        } else if (lastCountRef.current < 0) {
+          markChatSeen(); // first load
         }
         lastCountRef.current = msgs.length;
         setMessages(msgs);
         setSendError('');
-        markChatSeen();
       }).catch((err: any) => {
         const msg = err?.name === 'AbortError' ? 'Connection timed out — retrying…' : (err?.message || 'Could not load messages');
         setSendError(msg);

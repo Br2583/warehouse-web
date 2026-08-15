@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { pb } from './pb';
 
@@ -76,6 +76,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [sessionExpired, setSessionExpired] = useState(false);
+  const buildGenRef = useRef(0);
 
   useEffect(() => {
     if (pb.authStore.isValid && pb.authStore.model) {
@@ -93,11 +94,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setLoading(false);
     }
 
-    // Subscribe to auth changes
+    // Subscribe to auth changes — generation counter discards stale concurrent calls
     const unsub = pb.authStore.onChange((_token, model) => {
       if (model) {
-        buildUser(model).then(setUser).catch(() => setUser(null));
+        const gen = ++buildGenRef.current;
+        buildUser(model).then(u => { if (buildGenRef.current === gen) setUser(u); }).catch(() => setUser(null));
       } else {
+        ++buildGenRef.current;
         setUser(null);
       }
     });

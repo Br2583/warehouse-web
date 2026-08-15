@@ -16,7 +16,7 @@ import { useAuth } from '@/lib/auth-context';
 import { useToast } from '@/lib/toast-context';
 
 export default function ProfilePage() {
-  const { user, refreshUser, updatePicture } = useAuth();
+  const { user, isOwner, refreshUser, updatePicture } = useAuth();
   const { showToast } = useToast();
 
   const [company, setCompany] = useState<any>(null);
@@ -76,7 +76,7 @@ export default function ProfilePage() {
       .catch(() => {});
   }, []);
 
-  const isOwner = company?.is_owner;
+  // isOwner comes from useAuth() (role === 'owner') — consistent with settings and auth-context
 
   useEffect(() => {
     if (!isOwner) return;

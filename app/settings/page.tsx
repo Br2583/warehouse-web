@@ -391,7 +391,13 @@ export default function SettingsPage() {
                   </div>
                 </div>
                 <button
-                  onClick={() => { setShowPasswordForm(p => !p); setPasswordError(''); }}
+                  onClick={() => {
+                    if (showPasswordForm) {
+                      setCurrentPassword(''); setNewPassword(''); setConfirmPassword('');
+                      setShowCurrent(false); setShowNew(false); setShowConfirm(false);
+                    }
+                    setShowPasswordForm(p => !p); setPasswordError('');
+                  }}
                   className="text-sm text-blue-600 hover:underline flex-shrink-0"
                 >
                   {showPasswordForm ? 'Cancel' : 'Change'}

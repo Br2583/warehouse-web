@@ -209,7 +209,7 @@ export default function WarehouseDetailPage() {
     setLooseLoading(true);
     api.get(`/api/loose-items?warehouse_id=${warehouseId}`)
       .then((data: any) => setLooseItems(Array.isArray(data) ? data : []))
-      .catch(() => {})
+      .catch(() => { setLooseItems([]); setLooseError('Failed to load loose items. Try refreshing.'); })
       .finally(() => setLooseLoading(false));
   }, [activeTab, warehouseId]);
 

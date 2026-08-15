@@ -26,17 +26,34 @@ export async function DELETE(req: NextRequest) {
     );
     if (membersRes.ok) {
       const membersData = await membersRes.json();
-      await Promise.allSettled(
-        (membersData.items || [])
-          .filter((u: any) => u.id !== me.id)
-          .map((u: any) =>
-            fetch(`${PB_URL}/api/collections/users/records/${u.id}`, {
-              method: 'PATCH',
-              headers: { Authorization: `Bearer ${adminToken}`, 'Content-Type': 'application/json' },
-              body: JSON.stringify({ company_id: '' }),
-            })
-          )
-      );
+      const otherMembers = (membersData.items || []).filter((u: any) => u.id !== me.id);
+      await Promise.allSettled([
+        // Clear company_id for each member
+        ...otherMembers.map((u: any) =>
+          fetch(`${PB_URL}/api/collections/users/records/${u.id}`, {
+            method: 'PATCH',
+            headers: { Authorization: `Bearer ${adminToken}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ company_id: '' }),
+          })
+        ),
+        // Clear device tokens for each member so they stop receiving notifications
+        ...otherMembers.map(async (u: any) => {
+          const tokensRes = await fetch(
+            `${PB_URL}/api/collections/device_tokens/records?filter=${encodeURIComponent(`user_id="${u.id}"`)}&perPage=50&fields=id`,
+            { headers: { Authorization: `Bearer ${adminToken}` } }
+          );
+          if (!tokensRes.ok) return;
+          const tokensData = await tokensRes.json();
+          return Promise.allSettled(
+            (tokensData.items || []).map((t: { id: string }) =>
+              fetch(`${PB_URL}/api/collections/device_tokens/records/${t.id}`, {
+                method: 'DELETE',
+                headers: { Authorization: `Bearer ${adminToken}` },
+              })
+            )
+          );
+        }),
+      ]);
     }
     // Delete the company (PocketBase cascades related records)
     const compDelRes = await fetch(`${PB_URL}/api/collections/companies/records/${me.company_id}`, {
