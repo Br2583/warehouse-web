@@ -16,10 +16,15 @@ export default function ScanPage() {
   const [errorMsg, setErrorMsg] = useState('');
 
   const handleResult = useCallback(async (boxId: string) => {
+    if (!user?.company_id) {
+      setErrorMsg('Authentication not ready. Please wait and try again.');
+      setState('error');
+      return;
+    }
     setState('searching');
     try {
       const records = await pb.collection('vaults').getFullList({
-        filter: `id="${boxId}" && company_id="${user?.company_id}"`,
+        filter: `id="${boxId}" && company_id="${user.company_id}"`,
         fields: 'id,box_id,warehouse_id',
       });
       if (records.length === 0) {

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   CameraIcon, TrashIcon, PlusIcon, PrinterIcon, XMarkIcon,
@@ -33,14 +33,13 @@ export default function SnapshotsPage() {
   const [warehouses, setWarehouses] = useState<{ id: string; name: string }[]>([]);
   const [loading, setLoading] = useState(true);
   const [report, setReport] = useState<{ snap: any; boxes: any[] } | null>(null);
-  const [reportLoading, setReportLoading] = useState(false);
   const [emailModal, setEmailModal] = useState(false);
   const [sending, setSending] = useState(false);
   const [sendResult, setSendResult] = useState<'ok' | 'err' | null>(null);
   const [actionError, setActionError] = useState('');
   const [loadError, setLoadError] = useState<string | null>(null);
   const [confirmModal, setConfirmModal] = useState<{ message: string; onConfirm: () => void } | null>(null);
-  const printRef = useRef<HTMLDivElement>(null);
+  const [creatingSnap, setCreatingSnap] = useState<string | null>(null);
 
   const fetchSnapshots = () => {
     setLoadError(null);
@@ -61,12 +60,16 @@ export default function SnapshotsPage() {
   }, [user?.company_id]);
 
   const createSnapshot = async (warehouseId: string) => {
+    if (creatingSnap) return;
+    setCreatingSnap(warehouseId);
     setActionError('');
     try {
       await api.post(`/api/snapshots/create/${warehouseId}`, {});
       fetchSnapshots();
     } catch (e: any) {
       setActionError(e.message || 'Failed to create snapshot');
+    } finally {
+      setCreatingSnap(null);
     }
   };
 
@@ -85,15 +88,9 @@ export default function SnapshotsPage() {
     });
   };
 
-  const openReport = async (snap: any) => {
-    setReportLoading(true);
-    setReport({ snap, boxes: [] });
-    try {
-      const boxes = snap.data?.vaults || [];
-      setReport({ snap, boxes });
-    } finally {
-      setReportLoading(false);
-    }
+  const openReport = (snap: any) => {
+    const boxes = snap.data?.vaults || [];
+    setReport({ snap, boxes });
   };
 
   const handlePrint = async () => {
@@ -117,7 +114,7 @@ export default function SnapshotsPage() {
           to:            user.email,
           warehouseName: report.snap.warehouse_name,
           date:          formatSnapDate(report.snap.date),
-          total:         report.boxes.length || report.snap.box_count,
+          total:         report.boxes.length,
           pending:       report.boxes.filter(b => (b.estado||b.status) === 'PENDING').length,
           ready:         report.boxes.filter(b => (b.estado||b.status) === 'READY').length,
           delivered:     report.boxes.filter(b => (b.estado||b.status) === 'DELIVERED').length,
@@ -168,8 +165,11 @@ export default function SnapshotsPage() {
             <div className="flex gap-2 flex-wrap">
               {warehouses.map(wh => (
                 <button key={wh.id} onClick={() => createSnapshot(wh.id)}
-                  className="flex items-center gap-1.5 px-3 py-1.5 text-sm bg-gray-950 text-white rounded-full hover:bg-gray-800 transition-colors">
-                  <PlusIcon className="w-3.5 h-3.5 flex-shrink-0" />
+                  disabled={!!creatingSnap}
+                  className="flex items-center gap-1.5 px-3 py-1.5 text-sm bg-gray-950 text-white rounded-full hover:bg-gray-800 transition-colors disabled:opacity-60 disabled:cursor-not-allowed">
+                  {creatingSnap === wh.id
+                    ? <span className="w-3.5 h-3.5 border-2 border-white/40 border-t-white rounded-full animate-spin flex-shrink-0" />
+                    : <PlusIcon className="w-3.5 h-3.5 flex-shrink-0" />}
                   <span className="truncate max-w-[120px]">{wh.name}</span>
                 </button>
               ))}
@@ -268,7 +268,7 @@ export default function SnapshotsPage() {
               </div>
 
               {/* Printable content */}
-              <div id="print-report" ref={printRef} className="p-4 sm:p-8">
+              <div id="print-report" className="p-4 sm:p-8">
                 {/* Report header */}
                 <div className="mb-8">
                   <div className="flex items-center justify-between">
@@ -284,11 +284,7 @@ export default function SnapshotsPage() {
                 </div>
 
                 {/* Status summary cards */}
-                {reportLoading ? (
-                  <div className="flex justify-center py-8">
-                    <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
-                  </div>
-                ) : (
+                {(
                   <>
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
                       {[

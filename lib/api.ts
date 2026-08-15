@@ -831,12 +831,20 @@ async function routePut(path: string, body: any): Promise<any> {
           position: oldPosition,
         });
       } catch {
-        // Rollback: put source back to avoid two vaults at the same position
-        await pb.collection('vaults').update(vaultId, {
-          warehouse_id: source.warehouse_id,
-          row: source.row, col: Number(source.col), level: Number(source.level),
-          position: oldPosition,
-        }).catch(() => {});
+        // Rollback: put source back to its original position
+        let rollbackOk = true;
+        try {
+          await pb.collection('vaults').update(vaultId, {
+            warehouse_id: source.warehouse_id,
+            row: source.row, col: Number(source.col), level: Number(source.level),
+            position: oldPosition,
+          });
+        } catch {
+          rollbackOk = false;
+        }
+        if (!rollbackOk) {
+          throw new Error('Swap failed and could not rollback — please refresh the page');
+        }
         throw new Error('Swap failed — please try again');
       }
       logActivity({ action: 'MOVED', entity_type: 'vault', entity_id: vaultId, entity_label: `Vault swapped: ${source.position || `${source.row}${source.col}-L${source.level}`} ↔ ${newPosition}` });
@@ -936,16 +944,15 @@ async function routeDelete(path: string): Promise<any> {
     const v = await pb.collection('vaults').getOne(vaultId);
     if (v.company_id !== cid) throw new Error('Forbidden');
     const position = v.position || `${v.row}${v.col}-L${v.level}`;
-    // Create deleted_vaults record FIRST so we get its ID for the activity log
+    // Delete vault first — if this fails, no phantom deleted_vaults record is created
+    await pb.collection('vaults').delete(vaultId);
     const deletedRecord = cid ? await pb.collection('deleted_vaults').create({
       company_id: cid,
       vault_data: mapVault(v),
       deleted_by: userId() || '',
       reason: 'manual',
     }) : null;
-    // Store deleted_vaults record ID so the Restore button can call the restore endpoint directly
     logActivity({ action: 'DELETED', entity_type: 'vault', entity_id: deletedRecord?.id || vaultId, entity_label: `Vault ${position} · ${v.client_name || '—'}` });
-    await pb.collection('vaults').delete(vaultId);
     return null;
   }
 

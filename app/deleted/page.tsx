@@ -38,16 +38,23 @@ export default function DeletedPage() {
       .catch(() => {});
   }, [user?.company_id]);
 
-  const restore = async (id: string) => {
-    try {
-      await api.post(`/api/deleted-boxes/${id}/restore`, {});
-      fetchDeleted();
-    } catch (e: any) {
-      setError(e.message || 'Could not restore vault');
-    }
+  const restore = (id: string) => {
+    setError('');
+    setConfirmModal({
+      message: 'Restore this vault to the warehouse? It will re-occupy its original position.',
+      onConfirm: async () => {
+        try {
+          await api.post(`/api/deleted-boxes/${id}/restore`, {});
+          fetchDeleted();
+        } catch (e: any) {
+          setError(e.message || 'Could not restore vault');
+        }
+      },
+    });
   };
 
   const permDelete = (id: string) => {
+    setError('');
     setConfirmModal({
       message: 'Permanently delete this vault? This cannot be undone.',
       onConfirm: async () => {

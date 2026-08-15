@@ -75,32 +75,29 @@ export default function DashboardPage() {
   useEffect(() => {
     if (!user?.company_id) return;
     const load = async () => {
-      // Single query returns stats + histogram + recent + sla_count
-      try {
-        const globalStats = await api.get('/api/stats/global');
-        setStats(globalStats);
-      } catch { /* stats unavailable, show zeros */ }
+      const [globalStats, taskList, whs] = await Promise.allSettled([
+        api.get('/api/stats/global'),
+        api.get('/api/tasks'),
+        api.get('/api/warehouses'),
+      ]);
 
-      try {
-        const taskList = await api.get('/api/tasks');
-        if (Array.isArray(taskList)) {
-          setWorkStats({
-            total: taskList.length,
-            pending: taskList.filter((t: any) => t.status === 'PENDING').length,
-            in_progress: taskList.filter((t: any) => t.status === 'IN_PROGRESS').length,
-            completed: taskList.filter((t: any) => t.status === 'DONE').length,
-          });
-        }
-      } catch { /* no tasks yet */ }
+      if (globalStats.status === 'fulfilled') setStats(globalStats.value);
 
-      try {
-        const whs = await api.get('/api/warehouses');
-        if (Array.isArray(whs)) {
-          const map: Record<string, string> = {};
-          whs.forEach((w: any) => { map[w.id] = w.name || w.warehouse_name || w.id; });
-          setWarehouseNames(map);
-        }
-      } catch { /* warehouse names unavailable */ }
+      if (taskList.status === 'fulfilled' && Array.isArray(taskList.value)) {
+        const t = taskList.value;
+        setWorkStats({
+          total:       t.length,
+          pending:     t.filter((x: any) => x.status === 'PENDING').length,
+          in_progress: t.filter((x: any) => x.status === 'IN_PROGRESS').length,
+          completed:   t.filter((x: any) => x.status === 'DONE').length,
+        });
+      }
+
+      if (whs.status === 'fulfilled' && Array.isArray(whs.value)) {
+        const map: Record<string, string> = {};
+        whs.value.forEach((w: any) => { map[w.id] = w.name || w.warehouse_name || w.id; });
+        setWarehouseNames(map);
+      }
 
       setLoading(false);
     };

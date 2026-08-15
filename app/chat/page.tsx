@@ -43,6 +43,7 @@ export default function ChatPage() {
   const lastCountRef = useRef(-1);
   const containerRef = useRef<HTMLDivElement>(null);
   const isAtBottomRef = useRef(true);
+  const fetchingRef = useRef(false);
 
   const scrollToBottom = useCallback((instant = false) => {
     const el = containerRef.current;
@@ -60,7 +61,9 @@ export default function ChatPage() {
   }, []);
 
   const fetchMessages = useCallback(() => {
+    if (fetchingRef.current) return Promise.resolve();
     if (!user?.company_id) { setLoading(false); return Promise.resolve(); }
+    fetchingRef.current = true;
     const token = getToken();
     const ctrl = new AbortController();
     const tid = setTimeout(() => ctrl.abort(), 15_000);
@@ -84,7 +87,7 @@ export default function ChatPage() {
       }).catch((err: any) => {
         const msg = err?.name === 'AbortError' ? 'Connection timed out — retrying…' : (err?.message || 'Could not load messages');
         setSendError(msg);
-      }).finally(() => { clearTimeout(tid); setLoading(false); });
+      }).finally(() => { clearTimeout(tid); fetchingRef.current = false; setLoading(false); });
   }, [user?.company_id, user?.id]);
 
   useEffect(() => {
@@ -164,13 +167,17 @@ export default function ChatPage() {
   const deleteMsg = async (id: string) => {
     const token = getToken();
     try {
-      await fetch(`/api/chat/messages?id=${encodeURIComponent(id)}`, {
+      const res = await fetch(`/api/chat/messages?id=${encodeURIComponent(id)}`, {
         method: 'DELETE',
         headers: token ? { Authorization: `Bearer ${token}` } : {},
       });
+      if (!res.ok) {
+        const d = await res.json().catch(() => ({}));
+        throw new Error(d?.error || 'Failed to delete message');
+      }
       await fetchMessages();
-    } catch {
-      // deletion failed, list stays unchanged
+    } catch (err: any) {
+      setSendError(err?.message || 'Could not delete message');
     }
   };
 

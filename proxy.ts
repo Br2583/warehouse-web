@@ -4,6 +4,15 @@ import type { NextRequest } from 'next/server';
 const SESSION_TIMEOUT_MS = 30 * 24 * 60 * 60 * 1000; // 30 days inactivity
 const ACTIVITY_COOKIE    = 'wm_last_active';
 
+function timingSafeEqualHex(a: string, b: string): boolean {
+  if (a.length !== b.length) return false;
+  let diff = 0;
+  for (let i = 0; i < a.length; i++) {
+    diff |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  }
+  return diff === 0;
+}
+
 async function isValidAdminSession(value: string | undefined): Promise<boolean> {
   if (!value) return false;
   const secret = process.env.ADMIN_SECRET;
@@ -14,7 +23,7 @@ async function isValidAdminSession(value: string | undefined): Promise<boolean> 
   for (const bucket of [now, now - 1]) {
     const hash = await crypto.subtle.digest('SHA-256', enc.encode(secret + bucket + salt));
     const hex = [...new Uint8Array(hash)].map(b => b.toString(16).padStart(2, '0')).join('');
-    if (value === hex) return true;
+    if (timingSafeEqualHex(value, hex)) return true;
   }
   return false;
 }

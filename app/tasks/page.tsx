@@ -749,10 +749,14 @@ function TasksPageInner() {
     setClearingAll(true);
     try {
       const token = pb.authStore.token;
-      await fetch('/api/tasks/all', {
+      const res = await fetch('/api/tasks/all', {
         method: 'DELETE',
         headers: token ? { Authorization: `Bearer ${token}` } : {},
       });
+      if (!res.ok) {
+        const d = await res.json().catch(() => ({}));
+        throw new Error(d?.error || 'Failed to delete all tasks');
+      }
       setTasks([]);
       showToast('All tasks deleted');
     } catch {
@@ -769,7 +773,9 @@ function TasksPageInner() {
   const sorted = [...tasks].sort((a, b) => {
     if (a.priority === 'urgent' && b.priority !== 'urgent') return -1;
     if (b.priority === 'urgent' && a.priority !== 'urgent') return  1;
-    return b.created > a.created ? 1 : -1;
+    if (b.created > a.created) return 1;
+    if (b.created < a.created) return -1;
+    return 0;
   });
 
   const pendingCount = tasks.filter(t => t.status === 'PENDING').length;

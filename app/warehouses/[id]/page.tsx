@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   ArchiveBoxIcon, PlusIcon, MagnifyingGlassIcon, TrashIcon, XMarkIcon, CameraIcon,
@@ -111,6 +111,8 @@ export default function WarehouseDetailPage() {
   const { canManage } = useAuth();
   const { showToast } = useToast();
   const warehouseId = id as string;
+  const autoOpenedVaultRef = useRef<string | null>(null);
+  const selectVaultReqRef  = useRef<string | null>(null);
   const [warehouseName, setWarehouseName] = useState('');
   const [boxes, setBoxes] = useState<Box[]>([]);
   const [loading, setLoading] = useState(true);
@@ -211,12 +213,15 @@ export default function WarehouseDetailPage() {
       .finally(() => setLooseLoading(false));
   }, [activeTab, warehouseId]);
 
-  // Auto-open vault when navigating from /scan?vault=<box_id>
+  // Auto-open vault when navigating from /scan?vault=<id>
+  // Uses a ref so re-renders from fetchBoxes don't reopen a panel the user already closed
   useEffect(() => {
     const targetId = searchParams?.get('vault');
-    if (!targetId || boxes.length === 0 || selected) return;
+    if (!targetId || boxes.length === 0) return;
+    if (autoOpenedVaultRef.current === targetId) return;
     const found = boxes.find(b => b.box_id === targetId);
     if (!found) return;
+    autoOpenedVaultRef.current = targetId;
     setSelected(found);
     setShowQR(false);
     setLoadingPhotos(true);
@@ -387,18 +392,22 @@ export default function WarehouseDetailPage() {
   };
 
   // Open a vault and lazy-load full data (photos + all fields like pack_date)
+  // Uses selectVaultReqRef to discard stale responses from rapid consecutive clicks
   const selectVault = useCallback(async (box: Box) => {
+    selectVaultReqRef.current = box.box_id;
     setSelected(box);
     setShowQR(false);
     setLoadingPhotos(true);
     setPhotoLoadError(false);
     try {
       const full = await api.get(`/api/boxes/${box.box_id}`);
-      if (full) setSelected(prev => prev ? { ...prev, ...full } : prev);
+      if (full && selectVaultReqRef.current === box.box_id) {
+        setSelected(prev => prev ? { ...prev, ...full } : prev);
+      }
     } catch {
-      setPhotoLoadError(true);
+      if (selectVaultReqRef.current === box.box_id) setPhotoLoadError(true);
     }
-    setLoadingPhotos(false);
+    if (selectVaultReqRef.current === box.box_id) setLoadingPhotos(false);
   }, []);
 
   const handleScanResult = useCallback((vaultId: string) => {

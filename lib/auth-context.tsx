@@ -30,7 +30,7 @@ interface AuthContextType {
   sessionExpired: boolean;
   logout: () => Promise<void>;
   refreshUser: () => Promise<void>;
-  setUserFromLogin: (user: User, token: string) => void;
+  setUserFromLogin: (user: User) => void;
   updatePicture: (picture: string) => void;
 }
 
@@ -130,7 +130,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     router.replace('/login');
   };
 
-  const setUserFromLogin = (userData: User, _token: string) => {
+  const setUserFromLogin = (userData: User) => {
     setUser(userData);
     setSessionExpired(false);
   };

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { CameraIcon, XMarkIcon } from '@/components/icons';
 import { api } from '@/lib/api';
 import { useAuth } from '@/lib/auth-context';
@@ -69,15 +69,20 @@ export default function VaultForm({
   const set = (patch: Partial<VaultFormData>) => onChange({ ...value, ...patch });
   const { user } = useAuth();
   const [members, setMembers] = useState<{ user_id: string; name: string }[]>([]);
+  const onChangeRef = useRef(onChange);
+  onChangeRef.current = onChange;
 
   useEffect(() => {
+    // Capture mount-time values so the async call doesn't overwrite user input
+    const initialMode  = mode;
+    const initialValue = value;
+    const initialUser  = user;
     api.get('/api/company/members')
       .then((data: any) => {
-        if (Array.isArray(data)) {
-          setMembers(data);
-          if (mode === 'add' && !value.packer && user?.name) {
-            onChange({ ...value, packer: user.name });
-          }
+        if (!Array.isArray(data)) return;
+        setMembers(data);
+        if (initialMode === 'add' && !initialValue.packer && initialUser?.name) {
+          onChangeRef.current({ ...initialValue, packer: initialUser.name });
         }
       })
       .catch(() => {});
@@ -262,7 +267,7 @@ export default function VaultForm({
           <label className="flex flex-col items-center justify-center w-full h-20 border-2 border-dashed border-gray-200 rounded-xl cursor-pointer hover:border-blue-400 hover:bg-blue-50 transition-colors">
             <CameraIcon className="w-5 h-5 text-gray-300 mb-1" />
             <span className="text-xs text-gray-400">Click to add photos</span>
-            <input type="file" accept="image/*" multiple className="hidden" onChange={e => onPhotos(e.target.files)} />
+            <input type="file" accept="image/*" multiple className="hidden" onChange={e => { onPhotos(e.target.files); e.target.value = ''; }} />
           </label>
         )}
       </div>

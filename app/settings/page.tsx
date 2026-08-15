@@ -319,8 +319,8 @@ export default function SettingsPage() {
             </div>
           </motion.div>
 
-          {/* ─── Invite Codes (owner + manager) ─── */}
-          {canManage && (
+          {/* ─── Invite Codes (owner only — API rejects managers) ─── */}
+          {isOwner && (
             <motion.div id="invite" custom={2} variants={fade} initial="hidden" animate="show">
               <p className={sectionTitle}>Invite Codes</p>
               <div className={card}>
