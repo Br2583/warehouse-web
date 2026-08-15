@@ -4,27 +4,24 @@ import { useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '@/lib/auth-context';
 
+const MIN_MS = 800;
+
 export default function SplashScreen() {
   const { loading } = useAuth();
   const [visible, setVisible] = useState(true);
-  const [videoEnded, setVideoEnded] = useState(false);
-  const authDoneRef = useRef(false);
+  const startRef = useRef(Date.now());
 
-  // Track when auth is done
   useEffect(() => {
-    if (!loading) authDoneRef.current = true;
+    if (loading) return;
+    const elapsed = Date.now() - startRef.current;
+    const wait = Math.max(0, MIN_MS - elapsed);
+    const t = setTimeout(() => setVisible(false), wait);
+    return () => clearTimeout(t);
   }, [loading]);
 
-  // Hide once BOTH video ended AND auth is done
+  // Hard cap: never show longer than 3 seconds
   useEffect(() => {
-    if (videoEnded && !loading) {
-      setVisible(false);
-    }
-  }, [videoEnded, loading]);
-
-  // Fallback: if video fails / takes too long, hide after 2.5s max
-  useEffect(() => {
-    const t = setTimeout(() => setVisible(false), 2500);
+    const t = setTimeout(() => setVisible(false), 3000);
     return () => clearTimeout(t);
   }, []);
 
@@ -42,25 +39,42 @@ export default function SplashScreen() {
             zIndex: 9999,
             background: '#0f0f0f',
             display: 'flex',
+            flexDirection: 'column',
             alignItems: 'center',
             justifyContent: 'center',
-            overflow: 'hidden',
           }}
         >
-          <video
-            src="/splash.mp4"
-            autoPlay
-            muted
-            playsInline
-            onEnded={() => setVideoEnded(true)}
-            onError={() => setVisible(false)}
+          <motion.img
+            src="/wm-logo.png"
+            alt="WM"
+            initial={{ scale: 0.82, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ duration: 0.4, ease: [0.34, 1.3, 0.64, 1] }}
             style={{
-              width: '100%',
-              height: '100%',
-              objectFit: 'cover',
+              width: 'clamp(130px, 38vw, 200px)',
+              height: 'clamp(130px, 38vw, 200px)',
+              objectFit: 'contain',
               pointerEvents: 'none',
+              userSelect: 'none',
             }}
+            draggable={false}
           />
+          <motion.p
+            initial={{ opacity: 0, y: 6 }}
+            animate={{ opacity: 0.35, y: 0 }}
+            transition={{ duration: 0.3, delay: 0.25 }}
+            style={{
+              color: '#fff',
+              fontSize: 11,
+              fontWeight: 600,
+              letterSpacing: '3px',
+              textTransform: 'uppercase',
+              marginTop: 14,
+              userSelect: 'none',
+            }}
+          >
+            Warehouse Manager
+          </motion.p>
         </motion.div>
       )}
     </AnimatePresence>

@@ -135,8 +135,12 @@ textarea::placeholder {
 /* Native app: hide web footer on auth/landing pages */
 .native-app footer { display: none !important; }
 
-/* Native app: bottom padding so page content doesn't hide behind the floating tab bar */
-/* Floating nav: 64px height + 10px bottom margin + safe area */
+/* Native app: cancel page-level bottom padding (pb-4/pb-6/pb-8 etc.)
+   so it doesn't compound with native-bottom-pad */
+.native-app main { padding-bottom: 0 !important; }
+
+/* Native app: bottom padding so page content clears the floating tab bar */
+/* Floating nav: 64px height + 10px bottom margin + safe area + 10px breathing room */
 .native-bottom-pad {
   padding-bottom: calc(84px + env(safe-area-inset-bottom, 0px));
 }
