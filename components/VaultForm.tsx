@@ -7,6 +7,43 @@ import { useAuth } from '@/lib/auth-context';
 import { isNativePlatform, pickPhotoNative } from '@/lib/pick-photo';
 import { compressImage } from '@/lib/compress-image';
 
+// Native and web are completely separate paths — no async fallback.
+// On native: Capacitor Camera API (no file input involved).
+// On web: label click directly triggers file input (synchronous, no JS click() needed).
+function PhotoAddButton({ onAdd }: { onAdd: (b64: string) => void }) {
+  const [native, setNative] = useState(false);
+
+  useEffect(() => { setNative(isNativePlatform()); }, []);
+
+  const handleFiles = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files; e.target.value = '';
+    if (!files) return;
+    for (const file of Array.from(files).slice(0, 6)) {
+      try { onAdd(await compressImage(file)); } catch {}
+    }
+  };
+
+  const cls = 'flex flex-col items-center justify-center w-full h-20 border-2 border-dashed border-gray-200 rounded-xl hover:border-blue-400 hover:bg-blue-50 transition-colors';
+
+  if (native) {
+    return (
+      <button type="button" onClick={async () => { const b64 = await pickPhotoNative(); if (b64) onAdd(b64); }}
+        className={cls}>
+        <CameraIcon className="w-5 h-5 text-gray-300 mb-1" />
+        <span className="text-xs text-gray-400">Tap to add photos</span>
+      </button>
+    );
+  }
+
+  return (
+    <label className={cls + ' cursor-pointer'}>
+      <CameraIcon className="w-5 h-5 text-gray-300 mb-1" />
+      <span className="text-xs text-gray-400">Tap to add photos</span>
+      <input type="file" accept="image/*" multiple className="hidden" onChange={handleFiles} />
+    </label>
+  );
+}
+
 const JOB_TYPES       = ['Fire', 'Water', 'Mold', 'Moving', 'Storage'];
 const CONTENTS_TYPES  = ['Boxes', 'Furniture', 'Both'];
 const ROOM_LOCATIONS  = ['Kitchen', 'Patio', 'Living Room', 'Family Room', 'Dining Room', 'Bathroom', 'Bedroom 1', 'Bedroom 2', 'Bedroom 3'];
@@ -42,39 +79,6 @@ interface Props {
   onSubmit: (e: React.FormEvent) => void;
   onPhotoAdd: (b64: string) => void;
   onRemovePhoto: (idx: number) => void;
-}
-
-function PhotoAddButton({ onAdd }: { onAdd: (b64: string) => void }) {
-  const inputRef = useRef<HTMLInputElement>(null);
-
-  const handleClick = async () => {
-    if (isNativePlatform()) {
-      const b64 = await pickPhotoNative();
-      if (b64) { onAdd(b64); return; }
-      // Native returned null (cancelled or error) — fall through to file input
-    }
-    inputRef.current?.click();
-  };
-
-  const handleFiles = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    e.target.value = '';
-    if (!files) return;
-    for (const file of Array.from(files).slice(0, 6)) {
-      try { onAdd(await compressImage(file)); } catch {}
-    }
-  };
-
-  return (
-    <>
-      <button type="button" onClick={handleClick}
-        className="flex flex-col items-center justify-center w-full h-20 border-2 border-dashed border-gray-200 rounded-xl cursor-pointer hover:border-blue-400 hover:bg-blue-50 transition-colors">
-        <CameraIcon className="w-5 h-5 text-gray-300 mb-1" />
-        <span className="text-xs text-gray-400">Tap to add photos</span>
-      </button>
-      <input ref={inputRef} type="file" accept="image/*" multiple className="hidden" onChange={handleFiles} />
-    </>
-  );
 }
 
 function chip(active: boolean) {

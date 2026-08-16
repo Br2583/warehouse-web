@@ -134,14 +134,6 @@ export default function StorageDetailPage() {
     });
   };
 
-  const handlePhotoClick = async () => {
-    if (isNativePlatform()) {
-      const b64 = await pickPhotoNative();
-      if (b64) { addPhotoB64(b64); return; }
-    }
-    fileRef.current?.click();
-  };
-
   const addPhotos = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
     e.target.value = '';
@@ -280,18 +272,23 @@ export default function StorageDetailPage() {
                 </div>
               ))}
               {editMode && photos.length < MAX_PHOTOS && (
-                <button
-                  onClick={handlePhotoClick}
-                  className="aspect-square rounded-xl border-2 border-dashed border-gray-200 flex flex-col items-center justify-center text-gray-300 hover:border-blue-400 hover:text-blue-400 transition-colors"
-                >
-                  <CameraIcon className="w-6 h-6" />
-                  <span className="text-xs mt-1">Add</span>
-                </button>
+                isNativePlatform() ? (
+                  <button
+                    onClick={async () => { const b64 = await pickPhotoNative(); if (b64) addPhotoB64(b64); }}
+                    className="aspect-square rounded-xl border-2 border-dashed border-gray-200 flex flex-col items-center justify-center text-gray-300 hover:border-blue-400 hover:text-blue-400 transition-colors"
+                  >
+                    <CameraIcon className="w-6 h-6" /><span className="text-xs mt-1">Add</span>
+                  </button>
+                ) : (
+                  <label className="aspect-square rounded-xl border-2 border-dashed border-gray-200 flex flex-col items-center justify-center text-gray-300 hover:border-blue-400 hover:text-blue-400 transition-colors cursor-pointer">
+                    <CameraIcon className="w-6 h-6" /><span className="text-xs mt-1">Add</span>
+                    <input ref={fileRef} type="file" accept="image/*,.heic,.heif,.webp,.avif" multiple className="hidden" onChange={addPhotos} />
+                  </label>
+                )
               )}
             </div>
           )}
           {photoError && <p className="text-xs text-red-500 mt-2">{photoError}</p>}
-          <input ref={fileRef} type="file" accept="image/*,.heic,.heif,.webp,.avif" multiple className="hidden" onChange={addPhotos} />
         </motion.div>
 
         {/* Position Map */}

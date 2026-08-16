@@ -514,13 +514,6 @@ export default function WarehouseDetailPage() {
 
   const loosePhotoInputRef = useRef<HTMLInputElement>(null);
 
-  const handleLoosePhotoClick = async () => {
-    if (isNativePlatform()) {
-      const b64 = await pickPhotoNative();
-      if (b64) { handleLoosePhotoAdd(b64); return; }
-    }
-    loosePhotoInputRef.current?.click();
-  };
 
   const handleLoosePhotoFiles = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
@@ -1113,14 +1106,18 @@ export default function WarehouseDetailPage() {
                           <div>
                             <label className="block text-xs text-gray-500 mb-2">Photos (max 4)</label>
                             {looseForm.photos.length < 4 && (
-                              <>
-                                <button type="button" onClick={handleLoosePhotoClick}
+                              isNativePlatform() ? (
+                                <button type="button"
+                                  onClick={async () => { const b64 = await pickPhotoNative(); if (b64) handleLoosePhotoAdd(b64); }}
                                   className="flex items-center gap-2 px-3 py-2 border border-dashed border-gray-300 rounded-xl hover:border-blue-400 transition-colors text-sm text-gray-500 mb-2 w-full">
-                                  <CameraIcon className="w-4 h-4" />
-                                  Add photos
+                                  <CameraIcon className="w-4 h-4" />Add photos
                                 </button>
-                                <input ref={loosePhotoInputRef} type="file" accept="image/*" multiple className="hidden" onChange={handleLoosePhotoFiles} />
-                              </>
+                              ) : (
+                                <label className="flex items-center gap-2 px-3 py-2 border border-dashed border-gray-300 rounded-xl hover:border-blue-400 transition-colors text-sm text-gray-500 mb-2 w-full cursor-pointer">
+                                  <CameraIcon className="w-4 h-4" />Add photos
+                                  <input ref={loosePhotoInputRef} type="file" accept="image/*" multiple className="hidden" onChange={handleLoosePhotoFiles} />
+                                </label>
+                              )
                             )}
                             {looseForm.photos.length > 0 && (
                               <div className="flex gap-2 flex-wrap">
