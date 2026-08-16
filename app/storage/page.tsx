@@ -41,10 +41,9 @@ export default function StoragePage() {
   const handleCreatePhotoClick = async () => {
     if (isNativePlatform()) {
       const b64 = await pickPhotoNative();
-      if (b64) addCreatePhotoB64(b64);
-    } else {
-      createPhotoInputRef.current?.click();
+      if (b64) { addCreatePhotoB64(b64); return; }
     }
+    createPhotoInputRef.current?.click();
   };
 
   const handleCreatePhotoFiles = async (e: React.ChangeEvent<HTMLInputElement>) => {

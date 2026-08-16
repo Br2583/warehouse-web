@@ -50,10 +50,10 @@ function PhotoAddButton({ onAdd }: { onAdd: (b64: string) => void }) {
   const handleClick = async () => {
     if (isNativePlatform()) {
       const b64 = await pickPhotoNative();
-      if (b64) onAdd(b64);
-    } else {
-      inputRef.current?.click();
+      if (b64) { onAdd(b64); return; }
+      // Native returned null (cancelled or error) — fall through to file input
     }
+    inputRef.current?.click();
   };
 
   const handleFiles = async (e: React.ChangeEvent<HTMLInputElement>) => {

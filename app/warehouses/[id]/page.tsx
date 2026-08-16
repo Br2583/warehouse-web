@@ -517,10 +517,9 @@ export default function WarehouseDetailPage() {
   const handleLoosePhotoClick = async () => {
     if (isNativePlatform()) {
       const b64 = await pickPhotoNative();
-      if (b64) handleLoosePhotoAdd(b64);
-    } else {
-      loosePhotoInputRef.current?.click();
+      if (b64) { handleLoosePhotoAdd(b64); return; }
     }
+    loosePhotoInputRef.current?.click();
   };
 
   const handleLoosePhotoFiles = async (e: React.ChangeEvent<HTMLInputElement>) => {

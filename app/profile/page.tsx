@@ -229,16 +229,17 @@ export default function ProfilePage() {
                           onClick={async () => {
                             if (isNativePlatform()) {
                               const b64 = await pickPhotoNative();
-                              if (!b64) return;
-                              setPickerOpen(false); setAvatarSaving(true); setAvatarError('');
-                              try {
-                                await pb.collection('users').update(user!.id, { avatar_base64: b64 });
-                                updatePicture(b64); showToast('Photo updated');
-                              } catch (e: any) { setAvatarError(e?.message || 'Upload failed'); }
-                              finally { setAvatarSaving(false); }
-                            } else {
-                              photoInputRef.current?.click();
+                              if (b64) {
+                                setPickerOpen(false); setAvatarSaving(true); setAvatarError('');
+                                try {
+                                  await pb.collection('users').update(user!.id, { avatar_base64: b64 });
+                                  updatePicture(b64); showToast('Photo updated');
+                                } catch (e: any) { setAvatarError(e?.message || 'Upload failed'); }
+                                finally { setAvatarSaving(false); }
+                                return;
+                              }
                             }
+                            photoInputRef.current?.click();
                           }}
                           className="w-full flex items-center justify-center gap-2 py-2 mb-2.5 text-xs font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-xl transition-colors"
                         >

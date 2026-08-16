@@ -269,8 +269,9 @@ export default function OnboardingPage() {
                       onClick={async () => {
                         if (isNativePlatform()) {
                           const b64 = await pickPhotoNative();
-                          if (b64) { setPickerOpen(false); setAvatarValue(b64); }
-                        } else { photoInputRef.current?.click(); }
+                          if (b64) { setPickerOpen(false); setAvatarValue(b64); return; }
+                        }
+                        photoInputRef.current?.click();
                       }}
                       className="text-sm text-blue-600 hover:text-blue-700 font-medium flex items-center gap-1.5"
                     >
