@@ -12,7 +12,6 @@ import { useAuth } from '@/lib/auth-context';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { compressImage } from '@/lib/compress-image';
-import { isNativePlatform, pickPhotoNative } from '@/lib/pick-photo';
 
 const STATUS_CONFIG: Record<string, { color: string; label: string }> = {
   AVAILABLE:   { color: 'bg-green-100 text-green-700',  label: 'Available' },
@@ -32,18 +31,8 @@ export default function StoragePage() {
   const [createError, setCreateError] = useState('');
   const [form, setForm] = useState({ unit_name: '', address: '', city: '', state: '', client_name: '', capacity: '', access_code: '', status: 'AVAILABLE', notes: '', intake_date: new Date().toISOString().split('T')[0], photos: [] as string[] });
 
-  const createPhotoInputRef = useRef<HTMLInputElement>(null);
-
   const addCreatePhotoB64 = (b64: string) => {
     setForm(f => ({ ...f, photos: [...f.photos, b64].slice(0, 6) }));
-  };
-
-  const handleCreatePhotoClick = async () => {
-    if (isNativePlatform()) {
-      const b64 = await pickPhotoNative();
-      if (b64) { addCreatePhotoB64(b64); return; }
-    }
-    createPhotoInputRef.current?.click();
   };
 
   const handleCreatePhotoFiles = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -174,14 +163,11 @@ export default function StoragePage() {
                       </div>
                     ))}
                     {form.photos.length < 4 && (
-                      <>
-                        <button type="button" onClick={handleCreatePhotoClick}
-                          className="w-16 h-16 rounded-xl border-2 border-dashed border-gray-200 flex flex-col items-center justify-center hover:border-blue-400 hover:bg-blue-50 transition-colors flex-shrink-0">
-                          <CameraIcon className="w-4 h-4 text-gray-400" />
-                          <span className="text-[10px] text-gray-400 mt-0.5">Add</span>
-                        </button>
-                        <input ref={createPhotoInputRef} type="file" accept="image/*" multiple className="hidden" onChange={handleCreatePhotoFiles} />
-                      </>
+                      <label className="w-16 h-16 rounded-xl border-2 border-dashed border-gray-200 flex flex-col items-center justify-center hover:border-blue-400 hover:bg-blue-50 transition-colors flex-shrink-0 cursor-pointer">
+                        <CameraIcon className="w-4 h-4 text-gray-400" />
+                        <span className="text-[10px] text-gray-400 mt-0.5">Add</span>
+                        <input type="file" accept="image/*" multiple className="hidden" onChange={handleCreatePhotoFiles} />
+                      </label>
                     )}
                   </div>
                 </div>

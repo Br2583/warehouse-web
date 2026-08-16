@@ -4,17 +4,12 @@ import { useEffect, useState, useRef } from 'react';
 import { CameraIcon, XMarkIcon } from '@/components/icons';
 import { api } from '@/lib/api';
 import { useAuth } from '@/lib/auth-context';
-import { isNativePlatform, pickPhotoNative } from '@/lib/pick-photo';
 import { compressImage } from '@/lib/compress-image';
 
-// Native and web are completely separate paths — no async fallback.
-// On native: Capacitor Camera API (no file input involved).
-// On web: label click directly triggers file input (synchronous, no JS click() needed).
+// label+input works on both web and native (Capacitor implements onShowFileChooser in the WebView).
+// No native branching needed — programmatic JS .click() after await would lose Android gesture context,
+// but a <label> directly wrapping the input preserves it.
 function PhotoAddButton({ onAdd }: { onAdd: (b64: string) => void }) {
-  const [native, setNative] = useState(false);
-
-  useEffect(() => { setNative(isNativePlatform()); }, []);
-
   const handleFiles = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files; e.target.value = '';
     if (!files) return;
@@ -23,20 +18,8 @@ function PhotoAddButton({ onAdd }: { onAdd: (b64: string) => void }) {
     }
   };
 
-  const cls = 'flex flex-col items-center justify-center w-full h-20 border-2 border-dashed border-gray-200 rounded-xl hover:border-blue-400 hover:bg-blue-50 transition-colors';
-
-  if (native) {
-    return (
-      <button type="button" onClick={async () => { const b64 = await pickPhotoNative(); if (b64) onAdd(b64); }}
-        className={cls}>
-        <CameraIcon className="w-5 h-5 text-gray-300 mb-1" />
-        <span className="text-xs text-gray-400">Tap to add photos</span>
-      </button>
-    );
-  }
-
   return (
-    <label className={cls + ' cursor-pointer'}>
+    <label className="flex flex-col items-center justify-center w-full h-20 border-2 border-dashed border-gray-200 rounded-xl hover:border-blue-400 hover:bg-blue-50 transition-colors cursor-pointer">
       <CameraIcon className="w-5 h-5 text-gray-300 mb-1" />
       <span className="text-xs text-gray-400">Tap to add photos</span>
       <input type="file" accept="image/*" multiple className="hidden" onChange={handleFiles} />
