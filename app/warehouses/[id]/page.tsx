@@ -254,8 +254,14 @@ export default function WarehouseDetailPage() {
     setShowEdit(true);
   };
 
-  const handleEditPhotoAdd = (b64: string) => {
-    setEditForm(f => f ? { ...f, photos: [...f.photos, b64].slice(0, 6) } : f);
+  const handleEditPhotos = async (files: FileList | null) => {
+    if (!files || files.length === 0) return;
+    try {
+      const converted = await Promise.all(Array.from(files).slice(0, 6).map(f => compressImage(f)));
+      setEditForm(f => f ? { ...f, photos: [...f.photos, ...converted].slice(0, 6) } : f);
+    } catch (err: any) {
+      setEditError(err?.message || 'Photo too large');
+    }
   };
 
   const saveEdit = async (e: React.FormEvent) => {
@@ -299,8 +305,14 @@ export default function WarehouseDetailPage() {
     });
   };
 
-  const handlePhotoAdd = (b64: string) => {
-    setForm(f => ({ ...f, photos: [...f.photos, b64].slice(0, 6) }));
+  const handlePhotoFiles = async (files: FileList | null) => {
+    if (!files || files.length === 0) return;
+    try {
+      const converted = await Promise.all(Array.from(files).slice(0, 6).map(f => compressImage(f)));
+      setForm(f => ({ ...f, photos: [...f.photos, ...converted].slice(0, 6) }));
+    } catch (err: any) {
+      setSaveError(err?.message || 'Photo too large');
+    }
   };
 
   const removePhoto = (idx: number) =>
@@ -1314,7 +1326,7 @@ export default function WarehouseDetailPage() {
                   saving={editSaving}
                   submitLabel="Save Changes"
                   onSubmit={saveEdit}
-                  onPhotoAdd={handleEditPhotoAdd}
+                  onPhotos={handleEditPhotos}
                   onRemovePhoto={idx => setEditForm(f => f ? { ...f, photos: f.photos.filter((_, i) => i !== idx) } : f)}
                 />
               </motion.div>
@@ -1348,7 +1360,7 @@ export default function WarehouseDetailPage() {
                   saving={saving}
                   submitLabel="Create Vault"
                   onSubmit={addVolt}
-                  onPhotoAdd={handlePhotoAdd}
+                  onPhotos={handlePhotoFiles}
                   onRemovePhoto={removePhoto}
                 />
               </motion.div>

@@ -4,33 +4,23 @@ import { useEffect, useState, useRef } from 'react';
 import { CameraIcon, XMarkIcon } from '@/components/icons';
 import { api } from '@/lib/api';
 import { useAuth } from '@/lib/auth-context';
-import { compressImage } from '@/lib/compress-image';
 
-function PhotoAddButton({ onAdd }: { onAdd: (b64: string) => void }) {
-  const [photoErr, setPhotoErr] = useState<string | null>(null);
-
-  const handleFiles = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    setPhotoErr(null);
-    const files = e.target.files; e.target.value = '';
-    if (!files) return;
-    for (const file of Array.from(files).slice(0, 6)) {
-      try {
-        onAdd(await compressImage(file));
-      } catch (err) {
-        setPhotoErr((err as Error).message || 'Failed to load photo. Try again.');
-      }
-    }
-  };
-
+// Pass FileList directly to parent — parent owns compression with Promise.all.
+// This avoids async processing inside the child component which causes silent
+// failures on iOS Safari PWA and Android WebView after returning from camera.
+function PhotoAddButton({ onFiles }: { onFiles: (files: FileList | null) => void }) {
   return (
-    <div>
-      <label className="flex flex-col items-center justify-center w-full h-20 border-2 border-dashed border-gray-200 rounded-xl hover:border-blue-400 hover:bg-blue-50 transition-colors cursor-pointer">
-        <CameraIcon className="w-5 h-5 text-gray-300 mb-1" />
-        <span className="text-xs text-gray-400">Tap to add photos</span>
-        <input type="file" accept="image/*" multiple className="sr-only" onChange={handleFiles} />
-      </label>
-      {photoErr && <p className="text-xs text-red-500 mt-1">{photoErr}</p>}
-    </div>
+    <label className="flex flex-col items-center justify-center w-full h-20 border-2 border-dashed border-gray-200 rounded-xl hover:border-blue-400 hover:bg-blue-50 transition-colors cursor-pointer">
+      <CameraIcon className="w-5 h-5 text-gray-300 mb-1" />
+      <span className="text-xs text-gray-400">Tap to add photos</span>
+      <input
+        type="file"
+        accept="image/*"
+        multiple
+        className="hidden"
+        onChange={e => { onFiles(e.target.files); e.target.value = ''; }}
+      />
+    </label>
   );
 }
 
@@ -67,7 +57,7 @@ interface Props {
   saving?: boolean;
   submitLabel?: string;
   onSubmit: (e: React.FormEvent) => void;
-  onPhotoAdd: (b64: string) => void;
+  onPhotos: (files: FileList | null) => void;
   onRemovePhoto: (idx: number) => void;
 }
 
@@ -93,7 +83,7 @@ function togglePacker(current: string, name: string): string {
 }
 
 export default function VaultForm({
-  value, onChange, mode, positionLabel, error, saving, submitLabel, onSubmit, onPhotoAdd, onRemovePhoto,
+  value, onChange, mode, positionLabel, error, saving, submitLabel, onSubmit, onPhotos, onRemovePhoto,
 }: Props) {
   const set = (patch: Partial<VaultFormData>) => onChange({ ...value, ...patch });
   const { user } = useAuth();
@@ -293,7 +283,7 @@ export default function VaultForm({
           </div>
         )}
         {value.photos.length < 6 && (
-          <PhotoAddButton onAdd={onPhotoAdd} />
+          <PhotoAddButton onFiles={onPhotos} />
         )}
       </div>
 
