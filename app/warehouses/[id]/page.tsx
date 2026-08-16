@@ -1327,6 +1327,7 @@ export default function WarehouseDetailPage() {
                   submitLabel="Save Changes"
                   onSubmit={saveEdit}
                   onPhotos={handleEditPhotos}
+                  onPhotoNative={b64 => setEditForm(f => f ? { ...f, photos: [...f.photos, b64].slice(0, 6) } : f)}
                   onRemovePhoto={idx => setEditForm(f => f ? { ...f, photos: f.photos.filter((_, i) => i !== idx) } : f)}
                 />
               </motion.div>
@@ -1361,6 +1362,7 @@ export default function WarehouseDetailPage() {
                   submitLabel="Create Vault"
                   onSubmit={addVolt}
                   onPhotos={handlePhotoFiles}
+                  onPhotoNative={b64 => setForm(f => ({ ...f, photos: [...f.photos, b64].slice(0, 6) }))}
                   onRemovePhoto={removePhoto}
                 />
               </motion.div>
