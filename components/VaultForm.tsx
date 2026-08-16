@@ -11,9 +11,6 @@ const GalleryIcon = () => (
   </svg>
 );
 
-// Uses refs (not state) so there is no re-render that could break file inputs.
-// On native: buttons call Camera.getPhoto directly.
-// On web/iPhone: buttons programmatically click hidden file inputs (valid user gesture path).
 function PhotoAddButton({ onFiles, onPhotoNative }: {
   onFiles: (files: FileList | null) => void;
   onPhotoNative: (b64: string) => void;
@@ -21,6 +18,7 @@ function PhotoAddButton({ onFiles, onPhotoNative }: {
   const isNativeRef = useRef(false);
   const cameraInputRef = useRef<HTMLInputElement>(null);
   const galleryInputRef = useRef<HTMLInputElement>(null);
+  const [camError, setCamError] = useState<string | null>(null);
 
   useEffect(() => {
     import('@capacitor/core').then(({ Capacitor }) => {
@@ -29,8 +27,13 @@ function PhotoAddButton({ onFiles, onPhotoNative }: {
   }, []);
 
   const openNativeCamera = async (source: 'camera' | 'gallery') => {
+    setCamError(null);
     try {
       const { Camera, CameraResultType, CameraSource } = await import('@capacitor/camera');
+      const perms = await Camera.checkPermissions();
+      if (perms.camera === 'denied' || perms.photos === 'denied') {
+        await Camera.requestPermissions({ permissions: ['camera', 'photos'] });
+      }
       const photo = await Camera.getPhoto({
         quality: 80,
         width: 1200,
@@ -39,7 +42,12 @@ function PhotoAddButton({ onFiles, onPhotoNative }: {
         source: source === 'camera' ? CameraSource.Camera : CameraSource.Photos,
       });
       if (photo.dataUrl) onPhotoNative(photo.dataUrl);
-    } catch { /* cancelled or permission denied */ }
+    } catch (err: any) {
+      const msg = err?.message || String(err);
+      if (!msg.includes('cancelled') && !msg.includes('cancel') && !msg.includes('No image')) {
+        setCamError(msg || 'Camera error');
+      }
+    }
   };
 
   const handleCameraClick = () => {
@@ -61,7 +69,6 @@ function PhotoAddButton({ onFiles, onPhotoNative }: {
 
   return (
     <>
-      {/* Hidden inputs — only active on web/iPhone */}
       <input ref={cameraInputRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={handleChange} />
       <input ref={galleryInputRef} type="file" accept="image/*" multiple className="hidden" onChange={handleChange} />
 
@@ -75,6 +82,10 @@ function PhotoAddButton({ onFiles, onPhotoNative }: {
           <span className="text-xs text-gray-400">Gallery</span>
         </button>
       </div>
+
+      {camError && (
+        <p className="text-xs text-red-500 mt-1 break-all">{camError}</p>
+      )}
     </>
   );
 }
