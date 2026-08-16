@@ -6,24 +6,31 @@ import { api } from '@/lib/api';
 import { useAuth } from '@/lib/auth-context';
 import { compressImage } from '@/lib/compress-image';
 
-// label+input works on both web and native (Capacitor implements onShowFileChooser in the WebView).
-// No native branching needed — programmatic JS .click() after await would lose Android gesture context,
-// but a <label> directly wrapping the input preserves it.
 function PhotoAddButton({ onAdd }: { onAdd: (b64: string) => void }) {
+  const [photoErr, setPhotoErr] = useState<string | null>(null);
+
   const handleFiles = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    setPhotoErr(null);
     const files = e.target.files; e.target.value = '';
     if (!files) return;
     for (const file of Array.from(files).slice(0, 6)) {
-      try { onAdd(await compressImage(file)); } catch {}
+      try {
+        onAdd(await compressImage(file));
+      } catch (err) {
+        setPhotoErr((err as Error).message || 'Failed to load photo. Try again.');
+      }
     }
   };
 
   return (
-    <label className="flex flex-col items-center justify-center w-full h-20 border-2 border-dashed border-gray-200 rounded-xl hover:border-blue-400 hover:bg-blue-50 transition-colors cursor-pointer">
-      <CameraIcon className="w-5 h-5 text-gray-300 mb-1" />
-      <span className="text-xs text-gray-400">Tap to add photos</span>
-      <input type="file" accept="image/*" multiple className="hidden" onChange={handleFiles} />
-    </label>
+    <div>
+      <label className="flex flex-col items-center justify-center w-full h-20 border-2 border-dashed border-gray-200 rounded-xl hover:border-blue-400 hover:bg-blue-50 transition-colors cursor-pointer">
+        <CameraIcon className="w-5 h-5 text-gray-300 mb-1" />
+        <span className="text-xs text-gray-400">Tap to add photos</span>
+        <input type="file" accept="image/*" multiple className="sr-only" onChange={handleFiles} />
+      </label>
+      {photoErr && <p className="text-xs text-red-500 mt-1">{photoErr}</p>}
+    </div>
   );
 }
 

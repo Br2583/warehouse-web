@@ -47,7 +47,8 @@ const MAX_OUTPUT_BYTES = 1200 * 1024; // 1.2 MB after compression
 
 export function compressImage(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
-    if (!file.type.startsWith('image/')) {
+    // Allow empty file.type — Android camera can return "" for freshly captured photos
+    if (file.type && !file.type.startsWith('image/')) {
       reject(new Error(`"${file.name}" is not an image`));
       return;
     }
@@ -74,15 +75,11 @@ export function compressImage(file: File): Promise<string> {
         if (!ctx) { reject(new Error('Canvas not supported')); return; }
         ctx.drawImage(img, 0, 0, width, height);
 
-        const dataUrl = canvas.toDataURL('image/jpeg', JPEG_QUALITY);
-
-        // Guard: if still too large after compression, reject with a clear message
-        const byteLen = Math.round((dataUrl.length * 3) / 4);
-        if (byteLen > MAX_OUTPUT_BYTES) {
-          reject(new Error(`"${file.name}" is too large to upload even after compression`));
-          return;
+        // Try at JPEG_QUALITY first; if still over limit, try at half quality
+        let dataUrl = canvas.toDataURL('image/jpeg', JPEG_QUALITY);
+        if (Math.round((dataUrl.length * 3) / 4) > MAX_OUTPUT_BYTES) {
+          dataUrl = canvas.toDataURL('image/jpeg', JPEG_QUALITY / 2);
         }
-
         resolve(dataUrl);
       };
       img.src = e.target?.result as string;
