@@ -301,7 +301,7 @@ export default function AdminPage() {
       {/* Delete confirm modal */}
       {confirmDelete && (
         <div
-          className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+          className="fixed inset-0 bg-black/50 flex items-center justify-center z-[55] p-4"
           onClick={() => setConfirmDelete(null)}
         >
           <div

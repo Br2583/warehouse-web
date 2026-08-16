@@ -32,7 +32,7 @@ export default function NativeBottomNav({ onOpenMore }: NativeBottomNavProps) {
 
   return (
     <nav
-      className="native-bottom-nav fixed z-50 flex items-center px-3"
+      className="native-bottom-nav fixed z-[45] flex items-center px-3"
       style={{
         left: 14,
         right: 14,

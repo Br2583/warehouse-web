@@ -236,7 +236,7 @@ export default function SnapshotsPage() {
       {/* Report Modal */}
       <AnimatePresence>
         {report && (
-          <div className="fixed inset-0 bg-black/40 flex items-start justify-center z-50 p-4 overflow-y-auto">
+          <div className="fixed inset-0 bg-black/40 flex items-start justify-center z-[55] p-4 overflow-y-auto">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}

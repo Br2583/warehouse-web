@@ -448,7 +448,7 @@ function TaskFormModal({ open, onClose, members, editTask, onSave, allVaults }: 
     <AnimatePresence>
       {open && (
         <div
-          className="native-sheet-overlay fixed inset-0 z-50 flex items-end md:items-center justify-center p-0 md:p-4 bg-black/30"
+          className="native-sheet-overlay fixed inset-0 z-[55] flex items-end md:items-center justify-center p-0 md:p-4 bg-black/30"
           onClick={onClose}
         >
           <motion.div
@@ -944,7 +944,7 @@ function TasksPageInner() {
       {/* Clear all confirm */}
       <AnimatePresence>
         {clearAll && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/30">
+          <div className="fixed inset-0 z-[55] flex items-center justify-center p-4 bg-black/30">
             <motion.div
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
@@ -971,7 +971,7 @@ function TasksPageInner() {
       {/* Delete confirm */}
       <AnimatePresence>
         {deleteId && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/30">
+          <div className="fixed inset-0 z-[55] flex items-center justify-center p-4 bg-black/30">
             <motion.div
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}

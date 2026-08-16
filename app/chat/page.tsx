@@ -283,7 +283,7 @@ export default function ChatPage() {
 
       {/* Clear chat confirm */}
       {confirmClear && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/30">
+        <div className="fixed inset-0 z-[55] flex items-center justify-center p-4 bg-black/30">
           <div className="bg-white rounded-2xl p-6 w-full max-w-sm shadow-xl">
             <h3 className="font-bold text-gray-900 mb-2">Clear all messages?</h3>
             <p className="text-sm text-gray-500 mb-5">This will permanently delete all {messages.length} messages for everyone in the company. This cannot be undone.</p>

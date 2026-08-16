@@ -370,7 +370,7 @@ export default function StorageDetailPage() {
         {/* Slot modal */}
         <AnimatePresence>
           {slotModal && (
-            <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4" onClick={() => setSlotModal(null)}>
+            <div className="fixed inset-0 bg-black/40 z-[55] flex items-center justify-center p-4" onClick={() => setSlotModal(null)}>
               <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }}
                 className="bg-white rounded-2xl p-6 w-full max-w-sm shadow-xl" onClick={e => e.stopPropagation()}>
                 <div className="flex items-center justify-between mb-4">
@@ -591,7 +591,7 @@ export default function StorageDetailPage() {
         {/* Lightbox */}
         <AnimatePresence>
           {lightbox !== null && (
-            <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4" onClick={() => setLightbox(null)}>
+            <div className="fixed inset-0 bg-black/80 z-[60] flex items-center justify-center p-4" onClick={() => setLightbox(null)}>
               <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.9 }}
                 className="relative max-w-2xl w-full" onClick={e => e.stopPropagation()}>
                 <img src={photos[lightbox]} alt="Photo" className="w-full rounded-2xl object-contain max-h-[80vh]" />
