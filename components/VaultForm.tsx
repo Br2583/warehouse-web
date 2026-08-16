@@ -5,28 +5,30 @@ import { CameraIcon, XMarkIcon } from '@/components/icons';
 import { api } from '@/lib/api';
 import { useAuth } from '@/lib/auth-context';
 
-// On Android native: capture="environment" is ignored by Capacitor WebView,
-// so the Camera button uses @capacitor/camera directly (Camera.getPhoto).
-// On web/iPhone: Camera button uses capture="environment" (opens camera directly on iOS).
-// Gallery button always uses a plain file input — works everywhere.
+const GalleryIcon = () => (
+  <svg className="w-5 h-5 text-gray-400 mb-0.5" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+    <path strokeLinecap="round" strokeLinejoin="round" d="m2.25 15.75 5.159-5.159a2.25 2.25 0 0 1 3.182 0l5.159 5.159m-1.5-1.5 1.409-1.409a2.25 2.25 0 0 1 3.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 0 0 1.5-1.5V6a1.5 1.5 0 0 0-1.5-1.5H3.75A1.5 1.5 0 0 0 2.25 6v12a1.5 1.5 0 0 0 1.5 1.5Zm10.5-11.25h.008v.008h-.008V8.25Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Z" />
+  </svg>
+);
+
+// Uses refs (not state) so there is no re-render that could break file inputs.
+// On native: buttons call Camera.getPhoto directly.
+// On web/iPhone: buttons programmatically click hidden file inputs (valid user gesture path).
 function PhotoAddButton({ onFiles, onPhotoNative }: {
   onFiles: (files: FileList | null) => void;
   onPhotoNative: (b64: string) => void;
 }) {
-  const [isNative, setIsNative] = useState(false);
+  const isNativeRef = useRef(false);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
+  const galleryInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     import('@capacitor/core').then(({ Capacitor }) => {
-      if (Capacitor.isNativePlatform()) setIsNative(true);
+      isNativeRef.current = Capacitor.isNativePlatform();
     });
   }, []);
 
-  const handleGallery = (e: React.ChangeEvent<HTMLInputElement>) => {
-    onFiles(e.target.files);
-    e.target.value = '';
-  };
-
-  const handleNativeCamera = async () => {
+  const openNativeCamera = async (source: 'camera' | 'gallery') => {
     try {
       const { Camera, CameraResultType, CameraSource } = await import('@capacitor/camera');
       const photo = await Camera.getPhoto({
@@ -34,42 +36,46 @@ function PhotoAddButton({ onFiles, onPhotoNative }: {
         width: 1200,
         allowEditing: false,
         resultType: CameraResultType.DataUrl,
-        source: CameraSource.Camera,
+        source: source === 'camera' ? CameraSource.Camera : CameraSource.Photos,
       });
       if (photo.dataUrl) onPhotoNative(photo.dataUrl);
-    } catch {
-      // user cancelled or permission denied — silent is correct
-    }
+    } catch { /* cancelled or permission denied */ }
   };
 
-  const btnCls = 'flex flex-col items-center justify-center h-16 border-2 border-dashed border-gray-200 rounded-xl hover:border-blue-400 hover:bg-blue-50 transition-colors cursor-pointer';
+  const handleCameraClick = () => {
+    if (isNativeRef.current) { openNativeCamera('camera'); }
+    else { cameraInputRef.current?.click(); }
+  };
+
+  const handleGalleryClick = () => {
+    if (isNativeRef.current) { openNativeCamera('gallery'); }
+    else { galleryInputRef.current?.click(); }
+  };
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    onFiles(e.target.files);
+    e.target.value = '';
+  };
+
+  const btnCls = 'flex flex-col items-center justify-center h-16 border-2 border-dashed border-gray-200 rounded-xl hover:border-blue-400 hover:bg-blue-50 transition-colors cursor-pointer w-full';
 
   return (
-    <div className="grid grid-cols-2 gap-2">
-      {/* Camera */}
-      {isNative ? (
-        <button type="button" onClick={handleNativeCamera} className={btnCls}>
+    <>
+      {/* Hidden inputs — only active on web/iPhone */}
+      <input ref={cameraInputRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={handleChange} />
+      <input ref={galleryInputRef} type="file" accept="image/*" multiple className="hidden" onChange={handleChange} />
+
+      <div className="grid grid-cols-2 gap-2">
+        <button type="button" className={btnCls} onClick={handleCameraClick}>
           <CameraIcon className="w-5 h-5 text-gray-400 mb-0.5" />
           <span className="text-xs text-gray-400">Camera</span>
         </button>
-      ) : (
-        <label className={btnCls}>
-          <CameraIcon className="w-5 h-5 text-gray-400 mb-0.5" />
-          <span className="text-xs text-gray-400">Camera</span>
-          <input type="file" accept="image/*" capture="environment" className="hidden"
-            onChange={e => { onFiles(e.target.files); e.target.value = ''; }} />
-        </label>
-      )}
-
-      {/* Gallery */}
-      <label className={btnCls}>
-        <svg className="w-5 h-5 text-gray-400 mb-0.5" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" d="m2.25 15.75 5.159-5.159a2.25 2.25 0 0 1 3.182 0l5.159 5.159m-1.5-1.5 1.409-1.409a2.25 2.25 0 0 1 3.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 0 0 1.5-1.5V6a1.5 1.5 0 0 0-1.5-1.5H3.75A1.5 1.5 0 0 0 2.25 6v12a1.5 1.5 0 0 0 1.5 1.5Zm10.5-11.25h.008v.008h-.008V8.25Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Z" />
-        </svg>
-        <span className="text-xs text-gray-400">Gallery</span>
-        <input type="file" accept="image/*" multiple className="hidden" onChange={handleGallery} />
-      </label>
-    </div>
+        <button type="button" className={btnCls} onClick={handleGalleryClick}>
+          <GalleryIcon />
+          <span className="text-xs text-gray-400">Gallery</span>
+        </button>
+      </div>
+    </>
   );
 }
 
