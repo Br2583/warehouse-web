@@ -10,6 +10,7 @@ import {
 import ConfirmModal from '@/components/ConfirmModal';
 import Sidebar from '@/components/Sidebar';
 import VaultForm, { VaultFormData } from '@/components/VaultForm';
+import PhotoAddButton from '@/components/PhotoAddButton';
 import QRScanner from '@/components/QRScanner';
 import { api } from '@/lib/api';
 import { useAuth } from '@/lib/auth-context';
@@ -523,12 +524,7 @@ export default function WarehouseDetailPage() {
     setLooseForm(f => ({ ...f, photos: [...f.photos, b64].slice(0, 4) }));
   };
 
-  const loosePhotoInputRef = useRef<HTMLInputElement>(null);
-
-
-  const handleLoosePhotoFiles = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    e.target.value = '';
+  const handleLoosePhotoFiles = async (files: FileList | null) => {
     if (!files) return;
     for (const file of Array.from(files).slice(0, 4)) {
       try { handleLoosePhotoAdd(await compressImage(file)); } catch {}
@@ -1117,10 +1113,9 @@ export default function WarehouseDetailPage() {
                           <div>
                             <label className="block text-xs text-gray-500 mb-2">Photos (max 4)</label>
                             {looseForm.photos.length < 4 && (
-                              <label className="flex items-center gap-2 px-3 py-2 border border-dashed border-gray-300 rounded-xl hover:border-blue-400 transition-colors text-sm text-gray-500 mb-2 w-full cursor-pointer">
-                                <CameraIcon className="w-4 h-4" />Add photos
-                                <input ref={loosePhotoInputRef} type="file" accept="image/*" multiple className="hidden" onChange={handleLoosePhotoFiles} />
-                              </label>
+                              <div className="mb-2">
+                                <PhotoAddButton onFiles={handleLoosePhotoFiles} onPhotoNative={handleLoosePhotoAdd} />
+                              </div>
                             )}
                             {looseForm.photos.length > 0 && (
                               <div className="flex gap-2 flex-wrap">

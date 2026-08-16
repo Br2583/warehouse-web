@@ -4,8 +4,9 @@ import { useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   ArchiveBoxIcon, PlusIcon, MapPinIcon, UserCircleIcon, ChevronRightIcon,
-  ArrowPathIcon, XMarkIcon, ExclamationCircleIcon, CameraIcon,
+  ArrowPathIcon, XMarkIcon, ExclamationCircleIcon,
 } from '@/components/icons';
+import PhotoAddButton from '@/components/PhotoAddButton';
 import Sidebar from '@/components/Sidebar';
 import { api } from '@/lib/api';
 import { useAuth } from '@/lib/auth-context';
@@ -35,9 +36,7 @@ export default function StoragePage() {
     setForm(f => ({ ...f, photos: [...f.photos, b64].slice(0, 6) }));
   };
 
-  const handleCreatePhotoFiles = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    e.target.value = '';
+  const handleCreatePhotoFiles = async (files: FileList | null) => {
     if (!files) return;
     for (const file of Array.from(files).slice(0, 6)) {
       try { addCreatePhotoB64(await compressImage(file)); } catch (err: any) { setCreateError(err?.message || 'Photo too large'); }
@@ -163,11 +162,9 @@ export default function StoragePage() {
                       </div>
                     ))}
                     {form.photos.length < 4 && (
-                      <label className="w-16 h-16 rounded-xl border-2 border-dashed border-gray-200 flex flex-col items-center justify-center hover:border-blue-400 hover:bg-blue-50 transition-colors flex-shrink-0 cursor-pointer">
-                        <CameraIcon className="w-4 h-4 text-gray-400" />
-                        <span className="text-[10px] text-gray-400 mt-0.5">Add</span>
-                        <input type="file" accept="image/*" multiple className="hidden" onChange={handleCreatePhotoFiles} />
-                      </label>
+                      <div className="w-full mt-2">
+                        <PhotoAddButton onFiles={handleCreatePhotoFiles} onPhotoNative={addCreatePhotoB64} />
+                      </div>
                     )}
                   </div>
                 </div>

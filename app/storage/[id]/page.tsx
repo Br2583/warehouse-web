@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   ArchiveBoxIcon, MapPinIcon, UserIcon, CameraIcon, PencilIcon, TrashIcon,
@@ -8,6 +8,7 @@ import {
   Squares2X2Icon, AdjustmentsHorizontalIcon,
 } from '@/components/icons';
 import ConfirmModal from '@/components/ConfirmModal';
+import PhotoAddButton from '@/components/PhotoAddButton';
 import Sidebar from '@/components/Sidebar';
 import { api } from '@/lib/api';
 import { useAuth } from '@/lib/auth-context';
@@ -45,7 +46,6 @@ export default function StorageDetailPage() {
   const { id } = useParams();
   const router = useRouter();
   const { canManage } = useAuth();
-  const fileRef = useRef<HTMLInputElement>(null);
 
   const [unit, setUnit] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -133,10 +133,8 @@ export default function StorageDetailPage() {
     });
   };
 
-  const addPhotos = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(e.target.files || []);
-    e.target.value = '';
-    for (const file of files) {
+  const addPhotos = async (files: FileList | null) => {
+    for (const file of Array.from(files || [])) {
       try { addPhotoB64(await compressImage(file)); } catch (err: any) { setPhotoError(err.message); }
     }
   };
@@ -270,12 +268,11 @@ export default function StorageDetailPage() {
                   )}
                 </div>
               ))}
-              {editMode && photos.length < MAX_PHOTOS && (
-                <label className="aspect-square rounded-xl border-2 border-dashed border-gray-200 flex flex-col items-center justify-center text-gray-300 hover:border-blue-400 hover:text-blue-400 transition-colors cursor-pointer">
-                  <CameraIcon className="w-6 h-6" /><span className="text-xs mt-1">Add</span>
-                  <input ref={fileRef} type="file" accept="image/*,.heic,.heif,.webp,.avif" multiple className="hidden" onChange={addPhotos} />
-                </label>
-              )}
+            </div>
+          )}
+          {editMode && photos.length < MAX_PHOTOS && (
+            <div className="mt-3">
+              <PhotoAddButton onFiles={addPhotos} onPhotoNative={addPhotoB64} />
             </div>
           )}
           {photoError && <p className="text-xs text-red-500 mt-2">{photoError}</p>}
