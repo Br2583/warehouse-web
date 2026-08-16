@@ -14,6 +14,7 @@ import { useAuth } from '@/lib/auth-context';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { compressImage } from '@/lib/compress-image';
+import { isNativePlatform, pickPhotoNative } from '@/lib/pick-photo';
 
 const STATUS_CONFIG: Record<string, { color: string; label: string }> = {
   AVAILABLE:   { color: 'bg-green-100 text-green-700',  label: 'Available' },
@@ -125,18 +126,29 @@ export default function StorageDetailPage() {
     } finally { setSaving(false); }
   };
 
-  const addPhotos = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const addPhotoB64 = (b64: string) => {
     setPhotoError('');
-    const files = Array.from(e.target.files || []);
-    const current = form.photos?.length || 0;
-    if (current + files.length > MAX_PHOTOS) {
-      setPhotoError(`Max ${MAX_PHOTOS} photos`); return;
+    setForm((f: any) => {
+      if ((f.photos?.length || 0) >= MAX_PHOTOS) { setPhotoError(`Max ${MAX_PHOTOS} photos`); return f; }
+      return { ...f, photos: [...(f.photos || []), b64] };
+    });
+  };
+
+  const handlePhotoClick = async () => {
+    if (isNativePlatform()) {
+      const b64 = await pickPhotoNative();
+      if (b64) addPhotoB64(b64);
+    } else {
+      fileRef.current?.click();
     }
-    try {
-      const b64s = await Promise.all(files.map(compressImage));
-      setForm((f: any) => ({ ...f, photos: [...(f.photos || []), ...b64s] }));
-    } catch (e: any) { setPhotoError(e.message); }
+  };
+
+  const addPhotos = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
     e.target.value = '';
+    for (const file of files) {
+      try { addPhotoB64(await compressImage(file)); } catch (err: any) { setPhotoError(err.message); }
+    }
   };
 
   const removePhoto = (idx: number) => {
@@ -270,7 +282,7 @@ export default function StorageDetailPage() {
               ))}
               {editMode && photos.length < MAX_PHOTOS && (
                 <button
-                  onClick={() => fileRef.current?.click()}
+                  onClick={handlePhotoClick}
                   className="aspect-square rounded-xl border-2 border-dashed border-gray-200 flex flex-col items-center justify-center text-gray-300 hover:border-blue-400 hover:text-blue-400 transition-colors"
                 >
                   <CameraIcon className="w-6 h-6" />

@@ -16,6 +16,7 @@ import { useAuth } from '@/lib/auth-context';
 import { useToast } from '@/lib/toast-context';
 import { useParams, useSearchParams } from 'next/navigation';
 import { compressImage } from '@/lib/compress-image';
+import { isNativePlatform, pickPhotoNative } from '@/lib/pick-photo';
 import { QRCodeSVG } from 'qrcode.react';
 import { STATUS_COLORS, STATUS_CELL } from '@/lib/constants';
 
@@ -254,14 +255,8 @@ export default function WarehouseDetailPage() {
     setShowEdit(true);
   };
 
-  const handleEditPhotos = async (files: FileList | null) => {
-    if (!files || !editForm) return;
-    try {
-      const converted = await Promise.all(Array.from(files).slice(0, 6).map(f => compressImage(f)));
-      setEditForm(f => f ? { ...f, photos: [...f.photos, ...converted].slice(0, 6) } : f);
-    } catch (err: any) {
-      setEditError(err?.message || 'Photo too large');
-    }
+  const handleEditPhotoAdd = (b64: string) => {
+    setEditForm(f => f ? { ...f, photos: [...f.photos, b64].slice(0, 6) } : f);
   };
 
   const saveEdit = async (e: React.FormEvent) => {
@@ -305,14 +300,8 @@ export default function WarehouseDetailPage() {
     });
   };
 
-  const handlePhotoFiles = async (files: FileList | null) => {
-    if (!files) return;
-    try {
-      const converted = await Promise.all(Array.from(files).slice(0, 6).map(f => compressImage(f)));
-      setForm(f => ({ ...f, photos: [...f.photos, ...converted].slice(0, 6) }));
-    } catch (err: any) {
-      setSaveError(err?.message || 'Photo too large');
-    }
+  const handlePhotoAdd = (b64: string) => {
+    setForm(f => ({ ...f, photos: [...f.photos, b64].slice(0, 6) }));
   };
 
   const removePhoto = (idx: number) =>
@@ -519,13 +508,27 @@ export default function WarehouseDetailPage() {
     });
   };
 
-  const handleLoosePhotos = async (files: FileList | null) => {
+  const handleLoosePhotoAdd = async (b64: string) => {
+    setLooseForm(f => ({ ...f, photos: [...f.photos, b64].slice(0, 4) }));
+  };
+
+  const loosePhotoInputRef = useRef<HTMLInputElement>(null);
+
+  const handleLoosePhotoClick = async () => {
+    if (isNativePlatform()) {
+      const b64 = await pickPhotoNative();
+      if (b64) handleLoosePhotoAdd(b64);
+    } else {
+      loosePhotoInputRef.current?.click();
+    }
+  };
+
+  const handleLoosePhotoFiles = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    e.target.value = '';
     if (!files) return;
-    try {
-      const converted = await Promise.all(Array.from(files).slice(0, 4).map(f => compressImage(f)));
-      setLooseForm(f => ({ ...f, photos: [...f.photos, ...converted].slice(0, 4) }));
-    } catch (err: any) {
-      setLooseError(err?.message || 'Photo too large');
+    for (const file of Array.from(files).slice(0, 4)) {
+      try { handleLoosePhotoAdd(await compressImage(file)); } catch {}
     }
   };
 
@@ -1111,12 +1114,14 @@ export default function WarehouseDetailPage() {
                           <div>
                             <label className="block text-xs text-gray-500 mb-2">Photos (max 4)</label>
                             {looseForm.photos.length < 4 && (
-                              <label className="flex items-center gap-2 px-3 py-2 border border-dashed border-gray-300 rounded-xl cursor-pointer hover:border-blue-400 transition-colors text-sm text-gray-500 mb-2">
-                                <CameraIcon className="w-4 h-4" />
-                                Add photos
-                                <input type="file" accept="image/*" multiple className="hidden"
-                                  onChange={e => { handleLoosePhotos(e.target.files); e.target.value = ''; }} />
-                              </label>
+                              <>
+                                <button type="button" onClick={handleLoosePhotoClick}
+                                  className="flex items-center gap-2 px-3 py-2 border border-dashed border-gray-300 rounded-xl hover:border-blue-400 transition-colors text-sm text-gray-500 mb-2 w-full">
+                                  <CameraIcon className="w-4 h-4" />
+                                  Add photos
+                                </button>
+                                <input ref={loosePhotoInputRef} type="file" accept="image/*" multiple className="hidden" onChange={handleLoosePhotoFiles} />
+                              </>
                             )}
                             {looseForm.photos.length > 0 && (
                               <div className="flex gap-2 flex-wrap">
@@ -1322,7 +1327,7 @@ export default function WarehouseDetailPage() {
                   saving={editSaving}
                   submitLabel="Save Changes"
                   onSubmit={saveEdit}
-                  onPhotos={handleEditPhotos}
+                  onPhotoAdd={handleEditPhotoAdd}
                   onRemovePhoto={idx => setEditForm(f => f ? { ...f, photos: f.photos.filter((_, i) => i !== idx) } : f)}
                 />
               </motion.div>
@@ -1356,7 +1361,7 @@ export default function WarehouseDetailPage() {
                   saving={saving}
                   submitLabel="Create Vault"
                   onSubmit={addVolt}
-                  onPhotos={handlePhotoFiles}
+                  onPhotoAdd={handlePhotoAdd}
                   onRemovePhoto={removePhoto}
                 />
               </motion.div>

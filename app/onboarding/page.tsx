@@ -12,6 +12,7 @@ import {
 import { UserAvatar } from '@/components/UserAvatar';
 import { AVATARS } from '@/lib/avatars';
 import { compressAvatar } from '@/lib/compress-image';
+import { isNativePlatform, pickPhotoNative } from '@/lib/pick-photo';
 
 const INDUSTRIES = [
   'Warehouse & Logistics',
@@ -265,7 +266,12 @@ export default function OnboardingPage() {
                   <div className="flex flex-col gap-1.5">
                     <button
                       type="button"
-                      onClick={() => photoInputRef.current?.click()}
+                      onClick={async () => {
+                        if (isNativePlatform()) {
+                          const b64 = await pickPhotoNative();
+                          if (b64) { setPickerOpen(false); setAvatarValue(b64); }
+                        } else { photoInputRef.current?.click(); }
+                      }}
                       className="text-sm text-blue-600 hover:text-blue-700 font-medium flex items-center gap-1.5"
                     >
                       <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

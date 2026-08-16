@@ -10,6 +10,7 @@ import Sidebar from '@/components/Sidebar';
 import { UserAvatar } from '@/components/UserAvatar';
 import { AVATARS } from '@/lib/avatars';
 import { compressAvatar } from '@/lib/compress-image';
+import { isNativePlatform, pickPhotoNative } from '@/lib/pick-photo';
 import { api, getToken } from '@/lib/api';
 import { pb } from '@/lib/pb';
 import { useAuth } from '@/lib/auth-context';
@@ -225,7 +226,20 @@ export default function ProfilePage() {
                         <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-wide mb-2.5">Choose avatar</p>
 
                         <button
-                          onClick={() => photoInputRef.current?.click()}
+                          onClick={async () => {
+                            if (isNativePlatform()) {
+                              const b64 = await pickPhotoNative();
+                              if (!b64) return;
+                              setPickerOpen(false); setAvatarSaving(true); setAvatarError('');
+                              try {
+                                await pb.collection('users').update(user!.id, { avatar_base64: b64 });
+                                updatePicture(b64); showToast('Photo updated');
+                              } catch (e: any) { setAvatarError(e?.message || 'Upload failed'); }
+                              finally { setAvatarSaving(false); }
+                            } else {
+                              photoInputRef.current?.click();
+                            }
+                          }}
                           className="w-full flex items-center justify-center gap-2 py-2 mb-2.5 text-xs font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-xl transition-colors"
                         >
                           <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
