@@ -5,7 +5,7 @@ const AVATAR_MAX_BYTES = 80 * 1024; // 80 KB
 
 export function compressAvatar(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
-    if (!file.type.startsWith('image/')) {
+    if (file.type && !file.type.startsWith('image/')) {
       reject(new Error('File is not an image'));
       return;
     }
