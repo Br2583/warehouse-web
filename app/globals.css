@@ -163,6 +163,12 @@ textarea::placeholder {
   padding-bottom: calc(84px + env(safe-area-inset-bottom, 0px));
 }
 
+/* Native app: prevent scroll chaining on inner scroll containers */
+.native-app .overflow-y-auto,
+.native-app .overflow-y-scroll {
+  overscroll-behavior-y: contain;
+}
+
 /* Keyboard open: hide floating nav + clear padding */
 .keyboard-open .native-bottom-nav { display: none !important; }
 .keyboard-open .native-bottom-pad { padding-bottom: 0 !important; }

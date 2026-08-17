@@ -205,7 +205,7 @@ export default function ChatPage() {
           </div>
         </div>
 
-        <div ref={containerRef} onScroll={onScroll} className="flex-1 overflow-y-auto p-4 md:p-6 space-y-4">
+        <div ref={containerRef} onScroll={onScroll} className="flex-1 overflow-y-auto overscroll-y-contain p-4 md:p-6 space-y-4">
           {loading ? (
             <div className="flex justify-center py-16">
               <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
