@@ -73,9 +73,9 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
       {showNav && <TopBar onOpenNav={() => setNavOpen(true)} />}
       <motion.div
         key={pathname}
-        initial={{ opacity: 0, x: 16 }}
-        animate={{ opacity: 1, x: 0 }}
-        transition={{ duration: 0.2, ease: [0.25, 0.46, 0.45, 0.94] }}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.18, ease: 'easeOut' }}
         className={isNative && showNav ? 'native-bottom-pad' : undefined}
       >
         {children}
