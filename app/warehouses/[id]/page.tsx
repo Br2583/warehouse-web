@@ -1279,15 +1279,15 @@ export default function WarehouseDetailPage() {
       <AnimatePresence>
         {showLooseForm && (
           <div
-            className="fixed inset-0 bg-black/40 flex items-end sm:items-center justify-center z-[55]"
+            className="fixed inset-0 bg-black/40 flex items-center justify-center z-[55] p-4"
             onClick={() => { setShowLooseForm(false); setEditingLooseId(null); }}
           >
             <motion.div
-              initial={{ opacity: 0, y: 40 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: 40 }}
-              transition={{ duration: 0.22, ease: [0.32, 0.72, 0, 1] }}
-              className="bg-white rounded-t-2xl sm:rounded-2xl p-5 w-full sm:max-w-md shadow-xl max-h-[85vh] overflow-y-auto"
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              transition={{ duration: 0.18, ease: 'easeOut' }}
+              className="bg-white rounded-2xl p-5 w-full max-w-md shadow-xl max-h-[85vh] overflow-y-auto"
               onClick={e => e.stopPropagation()}
             >
               <form onSubmit={saveLooseItem} className="space-y-4">

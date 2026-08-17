@@ -18,6 +18,7 @@ import {
   ClipboardDocumentCheckIcon,
   Cog6ToothIcon,
   Squares2X2Icon,
+  QrCodeIcon,
 } from '@/components/icons';
 
 const TABS = [
@@ -31,6 +32,7 @@ const GRID_ITEMS = [
   { href: '/storage',   label: 'Storage',   icon: ArchiveBoxIcon,             managerOnly: false },
   { href: '/search',    label: 'Search',    icon: MagnifyingGlassIcon,        managerOnly: false },
   { href: '/stats',     label: 'Stats',     icon: ChartBarSquareIcon,         managerOnly: false },
+  { href: '/scan',      label: 'Scan QR',   icon: QrCodeIcon,                 managerOnly: false },
   { href: '/snapshots', label: 'Snapshots', icon: CameraIcon,                 managerOnly: false },
   { href: '/activity',  label: 'Activity',  icon: ClipboardDocumentCheckIcon, managerOnly: true },
   { href: '/settings',  label: 'Settings',  icon: Cog6ToothIcon,              managerOnly: false },
