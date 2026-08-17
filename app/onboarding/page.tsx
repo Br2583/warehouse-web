@@ -10,7 +10,6 @@ import {
   BriefcaseIcon, ArrowLeftIcon, CheckIcon,
 } from '@/components/icons';
 import { UserAvatar } from '@/components/UserAvatar';
-import { AVATARS } from '@/lib/avatars';
 import { compressAvatar } from '@/lib/compress-image';
 
 const INDUSTRIES = [
@@ -48,10 +47,8 @@ export default function OnboardingPage() {
   const [displayName, setDisplayName] = useState('');
   const [jobTitle, setJobTitle] = useState('');
   const [avatarValue, setAvatarValue] = useState('');
-  const [pickerOpen, setPickerOpen] = useState(false);
   const [avatarUploading, setAvatarUploading] = useState(false);
   const [avatarError, setAvatarError] = useState('');
-  const pickerRef = useRef<HTMLDivElement>(null);
   const photoInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -60,17 +57,6 @@ export default function OnboardingPage() {
       setAvatarValue(prev => prev || user.picture || '');
     }
   }, [user]);
-
-  useEffect(() => {
-    if (!pickerOpen) return;
-    const handler = (e: MouseEvent) => {
-      if (pickerRef.current && !pickerRef.current.contains(e.target as Node)) {
-        setPickerOpen(false);
-      }
-    };
-    document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
-  }, [pickerOpen]);
 
   // Step 2 — company (owner only)
   const [companyName, setCompanyName] = useState('');
@@ -127,7 +113,6 @@ export default function OnboardingPage() {
     const file = e.target.files?.[0];
     e.target.value = '';
     if (!file) return;
-    setPickerOpen(false);
     setAvatarUploading(true);
     setAvatarError('');
     try {
@@ -248,8 +233,8 @@ export default function OnboardingPage() {
                 </div>
               </div>
 
-              {/* Avatar picker */}
-              <div className="mb-6" ref={pickerRef}>
+              {/* Avatar — photo only */}
+              <div className="mb-6">
                 <label className="block text-[12px] font-semibold text-slate-500 mb-2.5">
                   Profile photo <span className="font-normal text-slate-300">(optional)</span>
                 </label>
@@ -271,13 +256,6 @@ export default function OnboardingPage() {
                       Upload photo
                       <input ref={photoInputRef} type="file" accept="image/*" className="hidden" onChange={handlePhotoUpload} />
                     </label>
-                    <button
-                      type="button"
-                      onClick={() => setPickerOpen(p => !p)}
-                      className="text-sm text-gray-500 hover:text-gray-700 font-medium"
-                    >
-                      Choose icon
-                    </button>
                     {avatarValue && (
                       <button type="button" onClick={() => setAvatarValue('')} className="text-xs text-gray-400 hover:text-gray-600">
                         Remove
@@ -288,33 +266,6 @@ export default function OnboardingPage() {
                 {avatarError && (
                   <p className="mt-1.5 text-xs text-red-500">{avatarError}</p>
                 )}
-                <AnimatePresence>
-                  {pickerOpen && (
-                    <motion.div
-                      initial={{ opacity: 0, y: -4 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -4 }}
-                      transition={{ duration: 0.14 }}
-                      className="mt-2 bg-white rounded-2xl border border-gray-200 shadow-lg p-3 w-fit"
-                    >
-                      <div className="grid grid-cols-6 gap-1.5">
-                        {AVATARS.map(av => (
-                          <button
-                            key={av.id}
-                            type="button"
-                            onClick={() => { setAvatarValue('avatar:' + av.id); setPickerOpen(false); }}
-                            title={av.label}
-                            className={`rounded-xl transition-transform hover:scale-110 active:scale-95 ${
-                              avatarValue === 'avatar:' + av.id ? 'ring-2 ring-blue-500 ring-offset-1' : ''
-                            }`}
-                          >
-                            <UserAvatar picture={'avatar:' + av.id} name="" size={44} shape="square" />
-                          </button>
-                        ))}
-                      </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
               </div>
 
               <div className="space-y-4">

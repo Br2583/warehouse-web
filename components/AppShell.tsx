@@ -81,7 +81,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
         {children}
       </motion.div>
       {showNav && <MobileNav open={navOpen} onClose={() => setNavOpen(false)} />}
-      {showNav && isNative && <NativeBottomNav onOpenMore={() => setNavOpen(true)} />}
+      {showNav && isNative && <NativeBottomNav />}
     </NavDataContext.Provider>
   );
 }

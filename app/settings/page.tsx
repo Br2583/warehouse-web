@@ -9,7 +9,7 @@ import {
   ArrowRightOnRectangleIcon, ChevronRightIcon, CheckCircleIcon,
   BuildingOffice2Icon, KeyIcon, EyeIcon, EyeSlashIcon, PlusIcon,
   DocumentDuplicateIcon, XMarkIcon, TrashIcon, LifebuoyIcon,
-  ExclamationCircleIcon,
+  ExclamationCircleIcon, ArrowUpIcon, ArrowDownIcon,
 } from '@/components/icons';
 import Sidebar from '@/components/Sidebar';
 import { UserAvatar } from '@/components/UserAvatar';
@@ -62,9 +62,16 @@ export default function SettingsPage() {
   const [generatingCode, setGeneratingCode] = useState(false);
   const [genError, setGenError] = useState('');
 
+  // Native detection
+  const [isNative, setIsNative] = useState(false);
+
   // Team management
   const [removingId, setRemovingId] = useState<string | null>(null);
   const [removeError, setRemoveError] = useState('');
+
+  // Role change (owner only)
+  const [roleChangingId, setRoleChangingId] = useState<string | null>(null);
+  const [roleError, setRoleError] = useState('');
 
   useEffect(() => {
     Promise.all([
@@ -95,6 +102,12 @@ export default function SettingsPage() {
     };
     window.addEventListener('beforeinstallprompt', handler as any);
     return () => window.removeEventListener('beforeinstallprompt', handler as any);
+  }, []);
+
+  useEffect(() => {
+    import('@capacitor/core').then(({ Capacitor }) => {
+      if (Capacitor.isNativePlatform()) setIsNative(true);
+    });
   }, []);
 
   const installPwa = async () => {
@@ -177,6 +190,26 @@ export default function SettingsPage() {
       setRemoveError('Failed to remove member');
     } finally {
       setRemovingId(null);
+    }
+  };
+
+  const changeRole = async (memberId: string, newRole: 'manager' | 'worker') => {
+    setRoleChangingId(memberId);
+    setRoleError('');
+    try {
+      const res = await fetch(`/api/company/members/${memberId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${pb.authStore.token}` },
+        body: JSON.stringify({ role: newRole }),
+      });
+      const data = await res.json();
+      if (!res.ok) { setRoleError(data.error || 'Failed to update role'); return; }
+      setMembers(prev => prev.map(m => m.user_id === memberId ? { ...m, role: newRole } : m));
+      showToast(newRole === 'manager' ? 'Promoted to Manager' : 'Demoted to Worker');
+    } catch {
+      setRoleError('Failed to update role');
+    } finally {
+      setRoleChangingId(null);
     }
   };
 
@@ -288,31 +321,69 @@ export default function SettingsPage() {
                       <button onClick={() => setRemoveError('')}><XMarkIcon className="w-4 h-4" /></button>
                     </div>
                   )}
+                  {roleError && (
+                    <div className="flex items-center gap-2 bg-red-50 border border-red-100 text-red-700 text-sm rounded-xl px-3 py-2 mb-3">
+                      <ExclamationCircleIcon className="w-4 h-4 flex-shrink-0" />
+                      <span className="flex-1">{roleError}</span>
+                      <button onClick={() => setRoleError('')}><XMarkIcon className="w-4 h-4" /></button>
+                    </div>
+                  )}
 
                   <div className="space-y-2.5">
-                    {members.map(m => (
-                      <div key={m.user_id} className="flex items-center gap-3">
-                        <UserAvatar picture={m.picture} name={m.name} size={34} />
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium text-gray-900 truncate">{m.name}</p>
-                          <p className="text-xs text-gray-400 truncate">{m.email}</p>
+                    {members.map(m => {
+                      const managerCount = members.filter(x => x.role === 'manager').length;
+                      const canPromote = m.role === 'worker' && managerCount < 5;
+                      return (
+                        <div key={m.user_id} className="flex items-center gap-3">
+                          <UserAvatar picture={m.picture} name={m.name} size={34} />
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium text-gray-900 truncate">{m.name}</p>
+                            <p className="text-xs text-gray-400 truncate">{m.email}</p>
+                          </div>
+                          <span className="text-xs text-gray-400 capitalize flex-shrink-0">{m.role}</span>
+                          {isOwner && m.user_id !== user?.id && m.role !== 'owner' && (
+                            m.role === 'worker' ? (
+                              <button
+                                onClick={() => changeRole(m.user_id, 'manager')}
+                                disabled={!canPromote || roleChangingId === m.user_id}
+                                title={canPromote ? 'Promote to Manager' : 'Maximum 5 managers reached'}
+                                className="flex items-center gap-1 text-xs text-blue-600 hover:bg-blue-50 px-2 py-1.5 rounded-lg transition-colors disabled:opacity-40 flex-shrink-0"
+                              >
+                                {roleChangingId === m.user_id
+                                  ? <span className="w-3 h-3 border-2 border-blue-300 border-t-blue-600 rounded-full animate-spin block" />
+                                  : <><ArrowUpIcon className="w-3 h-3" /></>
+                                }
+                              </button>
+                            ) : (
+                              <button
+                                onClick={() => changeRole(m.user_id, 'worker')}
+                                disabled={roleChangingId === m.user_id}
+                                title="Demote to Worker"
+                                className="flex items-center gap-1 text-xs text-amber-600 hover:bg-amber-50 px-2 py-1.5 rounded-lg transition-colors disabled:opacity-40 flex-shrink-0"
+                              >
+                                {roleChangingId === m.user_id
+                                  ? <span className="w-3 h-3 border-2 border-amber-300 border-t-amber-600 rounded-full animate-spin block" />
+                                  : <><ArrowDownIcon className="w-3 h-3" /></>
+                                }
+                              </button>
+                            )
+                          )}
+                          {canManage && m.user_id !== user?.id && m.role !== 'owner' && (
+                            <button
+                              onClick={() => removeMember(m.user_id)}
+                              disabled={removingId === m.user_id}
+                              title="Remove from company"
+                              className="flex-shrink-0 p-1.5 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-40"
+                            >
+                              {removingId === m.user_id
+                                ? <span className="w-3.5 h-3.5 border-2 border-red-300 border-t-red-500 rounded-full animate-spin block" />
+                                : <TrashIcon className="w-3.5 h-3.5" />
+                              }
+                            </button>
+                          )}
                         </div>
-                        <span className="text-xs text-gray-400 capitalize flex-shrink-0">{m.role}</span>
-                        {canManage && m.user_id !== user?.id && m.role !== 'owner' && (
-                          <button
-                            onClick={() => removeMember(m.user_id)}
-                            disabled={removingId === m.user_id}
-                            title="Remove from company"
-                            className="flex-shrink-0 p-1.5 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-40"
-                          >
-                            {removingId === m.user_id
-                              ? <span className="w-3.5 h-3.5 border-2 border-red-300 border-t-red-500 rounded-full animate-spin block" />
-                              : <TrashIcon className="w-3.5 h-3.5" />
-                            }
-                          </button>
-                        )}
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 </>
               )}
@@ -496,7 +567,7 @@ export default function SettingsPage() {
           </motion.div>
 
           {/* ─── Install App ─── */}
-          <motion.div custom={canManage ? 5 : 4} variants={fade} initial="hidden" animate="show">
+          {!isNative && <motion.div custom={canManage ? 5 : 4} variants={fade} initial="hidden" animate="show">
             <p className={sectionTitle}>Install App</p>
             <div className={card}>
               <div className="flex items-start gap-4">
@@ -546,7 +617,7 @@ export default function SettingsPage() {
                 </div>
               </div>
             </div>
-          </motion.div>
+          </motion.div>}
 
           {/* ─── Danger Zone ─── */}
           <motion.div custom={canManage ? 6 : 5} variants={fade} initial="hidden" animate="show">
@@ -615,7 +686,7 @@ export default function SettingsPage() {
         </div>
       </main>
       </div>
-      <AppFooter />
+      {!isNative && <AppFooter />}
 
       {confirmDelete && (
         <ConfirmModal

@@ -623,7 +623,7 @@ export default function WarehouseDetailPage() {
                     <span className="hidden sm:inline text-xs">{looseRows}×{looseCols}</span>
                   </button>
                 )}
-                {canManage && selectedZone && !showLooseForm && (
+                {canManage && selectedZone && (
                   <button
                     onClick={openAddLooseItem}
                     className="flex items-center gap-2 px-3 py-2 md:px-4 md:py-2.5 bg-gray-950 text-white text-sm font-medium rounded-full hover:bg-gray-800 transition-colors"
@@ -930,7 +930,7 @@ export default function WarehouseDetailPage() {
                           </p>
                         </div>
                         <div className="flex items-center gap-2">
-                          {canManage && !showLooseForm && (
+                          {canManage && (
                             <button
                               onClick={openAddLooseItem}
                               className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-gray-950 text-white rounded-full hover:bg-gray-800 transition-colors"
@@ -948,8 +948,7 @@ export default function WarehouseDetailPage() {
                       </div>
 
                       {/* Items list */}
-                      {!showLooseForm && (
-                        <div className="space-y-3 max-h-[60vh] overflow-y-auto">
+                      <div className="space-y-3 max-h-[60vh] overflow-y-auto">
                           {looseZoneItems.map(item => (
                             <div key={item.id} className="flex gap-3 p-3 bg-gray-50 rounded-xl">
                               <span className="text-2xl flex-shrink-0 leading-none pt-0.5">{getItemEmoji(item)}</span>
@@ -1011,152 +1010,6 @@ export default function WarehouseDetailPage() {
                             </div>
                           )}
                         </div>
-                      )}
-
-                      {/* Loose item form */}
-                      {showLooseForm && (
-                        <form onSubmit={saveLooseItem} className="space-y-4">
-                          <div className="flex items-center justify-between">
-                            <h4 className="text-sm font-semibold text-gray-800">{editingLooseId ? 'Edit Item' : 'New Item'}</h4>
-                            <button type="button" onClick={() => { setShowLooseForm(false); setEditingLooseId(null); }}
-                              className="p-1 text-gray-400 hover:text-gray-600 rounded">
-                              <XMarkIcon className="w-4 h-4" />
-                            </button>
-                          </div>
-
-                          {/* Client name */}
-                          <div>
-                            <label className="block text-xs text-gray-500 mb-1">Client Name *</label>
-                            <input type="text" value={looseForm.client_name} onChange={e => setLooseForm(f => ({ ...f, client_name: e.target.value }))}
-                              className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                              placeholder="Client name" />
-                          </div>
-
-                          {/* Item type */}
-                          <div>
-                            <label className="block text-xs text-gray-500 mb-2">Item Type</label>
-                            <div className="flex gap-2">
-                              {(['Boxes', 'Furniture'] as const).map(t => (
-                                <button key={t} type="button"
-                                  onClick={() => setLooseForm(f => ({ ...f, item_type: t, furniture_type: '' }))}
-                                  className={`flex-1 py-2 text-sm rounded-xl border-2 transition-colors font-medium
-                                    ${looseForm.item_type === t ? 'border-blue-500 bg-blue-50 text-blue-700' : 'border-gray-200 text-gray-600 hover:border-gray-300'}`}>
-                                  {t === 'Boxes' ? '📦 Boxes' : '🛋️ Furniture'}
-                                </button>
-                              ))}
-                            </div>
-                          </div>
-
-                          {/* Furniture subtype + color */}
-                          {looseForm.item_type === 'Furniture' && (
-                            <>
-                              <div>
-                                <label className="block text-xs text-gray-500 mb-2">Furniture Type</label>
-                                <div className="flex flex-wrap gap-1.5">
-                                  {FURNITURE_TYPES.map(ft => (
-                                    <button key={ft} type="button"
-                                      onClick={() => setLooseForm(f => ({ ...f, furniture_type: f.furniture_type === ft ? '' : ft }))}
-                                      className={`px-2.5 py-1 text-xs rounded-lg border transition-colors
-                                        ${looseForm.furniture_type === ft ? 'border-blue-500 bg-blue-50 text-blue-700 font-medium' : 'border-gray-200 text-gray-600 hover:border-gray-300'}`}>
-                                      {ITEM_EMOJI[ft]} {ft}
-                                    </button>
-                                  ))}
-                                </div>
-                              </div>
-                              <div>
-                                <label className="block text-xs text-gray-500 mb-1">Color</label>
-                                <input type="text" value={looseForm.color} onChange={e => setLooseForm(f => ({ ...f, color: e.target.value }))}
-                                  className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                  placeholder="e.g. Brown, Black, White..." />
-                              </div>
-                            </>
-                          )}
-
-                          {/* Condition */}
-                          <div>
-                            <label className="block text-xs text-gray-500 mb-2">Condition</label>
-                            <div className="flex flex-wrap gap-1.5">
-                              {LOOSE_CONDITIONS.map(c => (
-                                <button key={c} type="button"
-                                  onClick={() => setLooseForm(f => ({
-                                    ...f,
-                                    condition: f.condition.includes(c) ? f.condition.filter(x => x !== c) : [...f.condition, c],
-                                  }))}
-                                  className={`px-2.5 py-1 text-xs rounded-lg border transition-colors
-                                    ${looseForm.condition.includes(c) ? 'border-amber-400 bg-amber-50 text-amber-700 font-medium' : 'border-gray-200 text-gray-600 hover:border-gray-300'}`}>
-                                  {c}
-                                </button>
-                              ))}
-                            </div>
-                          </div>
-
-                          {/* Status */}
-                          <div>
-                            <label className="block text-xs text-gray-500 mb-2">Job Status</label>
-                            <div className="flex gap-1.5">
-                              {LOOSE_STATUSES.map(s => (
-                                <button key={s} type="button"
-                                  onClick={() => setLooseForm(f => ({ ...f, status: s }))}
-                                  className={`flex-1 py-1.5 text-xs rounded-xl border-2 transition-colors font-medium
-                                    ${looseForm.status === s
-                                      ? s === 'PENDING' ? 'border-amber-400 bg-amber-50 text-amber-700'
-                                      : s === 'READY' ? 'border-green-400 bg-green-50 text-green-700'
-                                      : 'border-blue-400 bg-blue-50 text-blue-700'
-                                      : 'border-gray-200 text-gray-600 hover:border-gray-300'}`}>
-                                  {s}
-                                </button>
-                              ))}
-                            </div>
-                          </div>
-
-                          {/* Photos */}
-                          <div>
-                            <label className="block text-xs text-gray-500 mb-2">Photos (max 4)</label>
-                            {looseForm.photos.length < 4 && (
-                              <div className="mb-2">
-                                <PhotoAddButton onFiles={handleLoosePhotoFiles} onPhotoNative={handleLoosePhotoAdd} />
-                              </div>
-                            )}
-                            {looseForm.photos.length > 0 && (
-                              <div className="flex gap-2 flex-wrap">
-                                {looseForm.photos.map((photo, i) => (
-                                  <div key={i} className="relative">
-                                    <img src={photo} alt="" className="w-16 h-16 object-cover rounded-lg" />
-                                    <button type="button"
-                                      onClick={() => setLooseForm(f => ({ ...f, photos: f.photos.filter((_, j) => j !== i) }))}
-                                      className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white rounded-full text-xs flex items-center justify-center leading-none">
-                                      ×
-                                    </button>
-                                  </div>
-                                ))}
-                              </div>
-                            )}
-                          </div>
-
-                          {/* Comments */}
-                          <div>
-                            <label className="block text-xs text-gray-500 mb-1">Comments</label>
-                            <textarea value={looseForm.comments} onChange={e => setLooseForm(f => ({ ...f, comments: e.target.value }))}
-                              rows={2} className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
-                              placeholder="Optional notes..." />
-                          </div>
-
-                          {looseError && <p className="text-sm text-red-600">{looseError}</p>}
-
-                          <div className="flex gap-2">
-                            <button type="submit" disabled={looseSaving}
-                              className="flex-1 py-2.5 bg-gray-950 text-white text-sm font-medium rounded-full hover:bg-gray-800 transition-colors disabled:opacity-50 flex items-center justify-center gap-2">
-                              {looseSaving
-                                ? <><div className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />{editingLooseId ? 'Saving...' : 'Adding...'}</>
-                                : editingLooseId ? 'Save Changes' : 'Add Item'}
-                            </button>
-                            <button type="button" onClick={() => { setShowLooseForm(false); setEditingLooseId(null); }}
-                              className="px-4 py-2.5 text-sm text-gray-600 border border-gray-200 rounded-full hover:bg-gray-50 transition-colors">
-                              Cancel
-                            </button>
-                          </div>
-                        </form>
-                      )}
                     </div>
                   ) : (
                     <div className="bg-white rounded-2xl border border-gray-100 h-full flex items-center justify-center min-h-[200px]">
@@ -1421,6 +1274,167 @@ export default function WarehouseDetailPage() {
           )}
         </AnimatePresence>
       </main>
+
+      {/* Loose Item Form Modal */}
+      <AnimatePresence>
+        {showLooseForm && (
+          <div
+            className="fixed inset-0 bg-black/40 flex items-end sm:items-center justify-center z-[55]"
+            onClick={() => { setShowLooseForm(false); setEditingLooseId(null); }}
+          >
+            <motion.div
+              initial={{ opacity: 0, y: 40 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 40 }}
+              transition={{ duration: 0.22, ease: [0.32, 0.72, 0, 1] }}
+              className="bg-white rounded-t-2xl sm:rounded-2xl p-5 w-full sm:max-w-md shadow-xl max-h-[85vh] overflow-y-auto"
+              onClick={e => e.stopPropagation()}
+            >
+              <form onSubmit={saveLooseItem} className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <h4 className="text-sm font-semibold text-gray-800">{editingLooseId ? 'Edit Item' : 'New Item'}</h4>
+                  <button type="button" onClick={() => { setShowLooseForm(false); setEditingLooseId(null); }}
+                    className="p-1 text-gray-400 hover:text-gray-600 rounded">
+                    <XMarkIcon className="w-4 h-4" />
+                  </button>
+                </div>
+
+                {/* Client name */}
+                <div>
+                  <label className="block text-xs text-gray-500 mb-1">Client Name *</label>
+                  <input type="text" value={looseForm.client_name} onChange={e => setLooseForm(f => ({ ...f, client_name: e.target.value }))}
+                    className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="Client name" />
+                </div>
+
+                {/* Item type */}
+                <div>
+                  <label className="block text-xs text-gray-500 mb-2">Item Type</label>
+                  <div className="flex gap-2">
+                    {(['Boxes', 'Furniture'] as const).map(t => (
+                      <button key={t} type="button"
+                        onClick={() => setLooseForm(f => ({ ...f, item_type: t, furniture_type: '' }))}
+                        className={`flex-1 py-2 text-sm rounded-xl border-2 transition-colors font-medium
+                          ${looseForm.item_type === t ? 'border-blue-500 bg-blue-50 text-blue-700' : 'border-gray-200 text-gray-600 hover:border-gray-300'}`}>
+                        {t === 'Boxes' ? '📦 Boxes' : '🛋️ Furniture'}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Furniture subtype + color */}
+                {looseForm.item_type === 'Furniture' && (
+                  <>
+                    <div>
+                      <label className="block text-xs text-gray-500 mb-2">Furniture Type</label>
+                      <div className="flex flex-wrap gap-1.5">
+                        {FURNITURE_TYPES.map(ft => (
+                          <button key={ft} type="button"
+                            onClick={() => setLooseForm(f => ({ ...f, furniture_type: f.furniture_type === ft ? '' : ft }))}
+                            className={`px-2.5 py-1 text-xs rounded-lg border transition-colors
+                              ${looseForm.furniture_type === ft ? 'border-blue-500 bg-blue-50 text-blue-700 font-medium' : 'border-gray-200 text-gray-600 hover:border-gray-300'}`}>
+                            {ITEM_EMOJI[ft]} {ft}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                    <div>
+                      <label className="block text-xs text-gray-500 mb-1">Color</label>
+                      <input type="text" value={looseForm.color} onChange={e => setLooseForm(f => ({ ...f, color: e.target.value }))}
+                        className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        placeholder="e.g. Brown, Black, White..." />
+                    </div>
+                  </>
+                )}
+
+                {/* Condition */}
+                <div>
+                  <label className="block text-xs text-gray-500 mb-2">Condition</label>
+                  <div className="flex flex-wrap gap-1.5">
+                    {LOOSE_CONDITIONS.map(c => (
+                      <button key={c} type="button"
+                        onClick={() => setLooseForm(f => ({
+                          ...f,
+                          condition: f.condition.includes(c) ? f.condition.filter(x => x !== c) : [...f.condition, c],
+                        }))}
+                        className={`px-2.5 py-1 text-xs rounded-lg border transition-colors
+                          ${looseForm.condition.includes(c) ? 'border-amber-400 bg-amber-50 text-amber-700 font-medium' : 'border-gray-200 text-gray-600 hover:border-gray-300'}`}>
+                        {c}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Status */}
+                <div>
+                  <label className="block text-xs text-gray-500 mb-2">Job Status</label>
+                  <div className="flex gap-1.5">
+                    {LOOSE_STATUSES.map(s => (
+                      <button key={s} type="button"
+                        onClick={() => setLooseForm(f => ({ ...f, status: s }))}
+                        className={`flex-1 py-1.5 text-xs rounded-xl border-2 transition-colors font-medium
+                          ${looseForm.status === s
+                            ? s === 'PENDING' ? 'border-amber-400 bg-amber-50 text-amber-700'
+                            : s === 'READY' ? 'border-green-400 bg-green-50 text-green-700'
+                            : 'border-blue-400 bg-blue-50 text-blue-700'
+                            : 'border-gray-200 text-gray-600 hover:border-gray-300'}`}>
+                        {s}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Photos */}
+                <div>
+                  <label className="block text-xs text-gray-500 mb-2">Photos (max 4)</label>
+                  {looseForm.photos.length < 4 && (
+                    <div className="mb-2">
+                      <PhotoAddButton onFiles={handleLoosePhotoFiles} onPhotoNative={handleLoosePhotoAdd} />
+                    </div>
+                  )}
+                  {looseForm.photos.length > 0 && (
+                    <div className="flex gap-2 flex-wrap">
+                      {looseForm.photos.map((photo, i) => (
+                        <div key={i} className="relative">
+                          <img src={photo} alt="" className="w-16 h-16 object-cover rounded-lg" />
+                          <button type="button"
+                            onClick={() => setLooseForm(f => ({ ...f, photos: f.photos.filter((_, j) => j !== i) }))}
+                            className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white rounded-full text-xs flex items-center justify-center leading-none">
+                            ×
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* Comments */}
+                <div>
+                  <label className="block text-xs text-gray-500 mb-1">Comments</label>
+                  <textarea value={looseForm.comments} onChange={e => setLooseForm(f => ({ ...f, comments: e.target.value }))}
+                    rows={2} className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                    placeholder="Optional notes..." />
+                </div>
+
+                {looseError && <p className="text-sm text-red-600">{looseError}</p>}
+
+                <div className="flex gap-2">
+                  <button type="submit" disabled={looseSaving}
+                    className="flex-1 py-2.5 bg-gray-950 text-white text-sm font-medium rounded-full hover:bg-gray-800 transition-colors disabled:opacity-50 flex items-center justify-center gap-2">
+                    {looseSaving
+                      ? <><div className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />{editingLooseId ? 'Saving...' : 'Adding...'}</>
+                      : editingLooseId ? 'Save Changes' : 'Add Item'}
+                  </button>
+                  <button type="button" onClick={() => { setShowLooseForm(false); setEditingLooseId(null); }}
+                    className="px-4 py-2.5 text-sm text-gray-600 border border-gray-200 rounded-full hover:bg-gray-50 transition-colors">
+                    Cancel
+                  </button>
+                </div>
+              </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
 
       {/* Move Vault Dialog */}
       <AnimatePresence>

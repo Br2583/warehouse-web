@@ -8,7 +8,6 @@ import {
 } from '@/components/icons';
 import Sidebar from '@/components/Sidebar';
 import { UserAvatar } from '@/components/UserAvatar';
-import { AVATARS } from '@/lib/avatars';
 import { compressAvatar } from '@/lib/compress-image';
 import { api, getToken } from '@/lib/api';
 import { pb } from '@/lib/pb';
@@ -23,11 +22,9 @@ export default function ProfilePage() {
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
 
-  // Avatar picker
-  const [pickerOpen, setPickerOpen] = useState(false);
+  // Avatar
   const [avatarSaving, setAvatarSaving] = useState(false);
   const [avatarError, setAvatarError] = useState('');
-  const pickerRef = useRef<HTMLDivElement>(null);
   const photoInputRef = useRef<HTMLInputElement>(null);
 
   // Inline name editing
@@ -48,17 +45,6 @@ export default function ProfilePage() {
   const [roleChangingId, setRoleChangingId] = useState<string | null>(null);
   const [roleError, setRoleError] = useState('');
 
-
-  useEffect(() => {
-    if (!pickerOpen) return;
-    const handler = (e: MouseEvent) => {
-      if (pickerRef.current && !pickerRef.current.contains(e.target as Node)) {
-        setPickerOpen(false);
-      }
-    };
-    document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
-  }, [pickerOpen]);
 
   useEffect(() => {
     api.get('/api/company/info')
@@ -111,7 +97,6 @@ export default function ProfilePage() {
 
   const handleAvatarSelect = async (avatarValue: string) => {
     if (!user) return;
-    setPickerOpen(false);
     setAvatarSaving(true);
     setAvatarError('');
     try {
@@ -128,7 +113,6 @@ export default function ProfilePage() {
     const file = e.target.files?.[0];
     e.target.value = '';
     if (!file) return;
-    setPickerOpen(false);
     setAvatarSaving(true);
     setAvatarError('');
     try {
@@ -196,10 +180,10 @@ export default function ProfilePage() {
               className="bg-white rounded-2xl border border-gray-100 p-6"
             >
               <div className="flex items-start gap-5">
-                {/* Avatar picker */}
-                <div className="relative flex-shrink-0" ref={pickerRef}>
+                {/* Avatar — photo only */}
+                <div className="relative flex-shrink-0">
                   <button
-                    onClick={() => setPickerOpen(p => !p)}
+                    onClick={() => photoInputRef.current?.click()}
                     disabled={avatarSaving}
                     className="relative block group"
                   >
@@ -211,60 +195,22 @@ export default function ProfilePage() {
                       }
                     </div>
                   </button>
-
-                  <AnimatePresence>
-                    {pickerOpen && (
-                      <motion.div
-                        initial={{ opacity: 0, scale: 0.95, y: -4 }}
-                        animate={{ opacity: 1, scale: 1, y: 0 }}
-                        exit={{ opacity: 0, scale: 0.95, y: -4 }}
-                        transition={{ duration: 0.14 }}
-                        className="absolute left-0 top-[80px] z-30 bg-white rounded-2xl shadow-xl border border-gray-100 p-3"
-                        style={{ width: 228 }}
-                      >
-                        <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-wide mb-2.5">Choose avatar</p>
-
-                        <label className="w-full flex items-center justify-center gap-2 py-2 mb-2.5 text-xs font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-xl transition-colors cursor-pointer">
-                          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
-                          </svg>
-                          Upload photo
-                          <input
-                            ref={photoInputRef}
-                            type="file"
-                            accept="image/*"
-                            className="hidden"
-                            onChange={handlePhotoUpload}
-                          />
-                        </label>
-
-                        <p className="text-[10px] font-semibold text-gray-300 uppercase tracking-wide mb-1.5">Or pick an icon</p>
-                        <div className="grid grid-cols-4 gap-1.5">
-                          {AVATARS.map(av => (
-                            <button
-                              key={av.id}
-                              onClick={() => handleAvatarSelect('avatar:' + av.id)}
-                              title={av.label}
-                              className={`rounded-xl transition-transform hover:scale-110 active:scale-95 ${
-                                user?.picture === 'avatar:' + av.id
-                                  ? 'ring-2 ring-blue-500 ring-offset-1'
-                                  : ''
-                              }`}
-                            >
-                              <UserAvatar picture={'avatar:' + av.id} name="" size={48} shape="square" />
-                            </button>
-                          ))}
-                        </div>
-                        <button
-                          onClick={() => handleAvatarSelect('')}
-                          className="mt-2 w-full py-1.5 text-xs text-gray-400 hover:text-gray-600 hover:bg-gray-50 rounded-lg transition-colors"
-                        >
-                          Remove avatar
-                        </button>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
+                  <input
+                    ref={photoInputRef}
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={handlePhotoUpload}
+                  />
+                  {user?.picture && (
+                    <button
+                      onClick={() => handleAvatarSelect('')}
+                      disabled={avatarSaving}
+                      className="mt-1.5 text-[10px] text-gray-400 hover:text-gray-600 w-full text-center block"
+                    >
+                      Remove
+                    </button>
+                  )}
                 </div>
 
                 {/* Name + info */}

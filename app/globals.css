@@ -78,12 +78,12 @@ body {
   }
 }
 
-/* Android native: overlay:false → WebView already starts below status bar, no extra padding */
+/* Android native: use safe-area-inset-top for edge-to-edge support */
 .native-android .topbar-safe {
-  padding-top: 0 !important;
+  padding-top: env(safe-area-inset-top, 0px) !important;
 }
 .native-android .topbar-offset {
-  padding-top: 3.5rem !important;
+  padding-top: calc(3.5rem + env(safe-area-inset-top, 0px)) !important;
 }
 
 /* iOS native: WebView extends behind status bar, full safe-area needed */
