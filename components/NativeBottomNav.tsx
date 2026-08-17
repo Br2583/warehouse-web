@@ -19,7 +19,7 @@ import {
   Cog6ToothIcon,
   Squares2X2Icon,
   QrCodeIcon,
-} from '@/components/icons';
+} from '@heroicons/react/24/outline';
 
 const TABS = [
   { href: '/dashboard',  label: 'Home',       icon: HomeIcon },
