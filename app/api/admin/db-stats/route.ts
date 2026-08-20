@@ -20,16 +20,13 @@ export async function GET(req: NextRequest) {
   if (!isAdminRequest(req)) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   try {
     const token = await getPbAdminToken();
-    const [users, companies, boxes, tasks, chat_messages, activity_logs, loose_items] = await Promise.all([
+    const [users, companies, boxes, tasks] = await Promise.all([
       countCollection(token, 'users'),
       countCollection(token, 'companies'),
       countCollection(token, 'boxes'),
       countCollection(token, 'tasks'),
-      countCollection(token, 'chat_messages'),
-      countCollection(token, 'activity_logs'),
-      countCollection(token, 'loose_items'),
     ]);
-    return NextResponse.json({ users, companies, boxes, tasks, chat_messages, activity_logs, loose_items, ts: Date.now() });
+    return NextResponse.json({ users, companies, boxes, tasks, ts: Date.now() });
   } catch {
     return NextResponse.json({ error: 'Failed to fetch stats' }, { status: 500 });
   }

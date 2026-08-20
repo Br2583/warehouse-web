@@ -48,9 +48,6 @@ interface DbStatsData {
   companies: number;
   boxes: number;
   tasks: number;
-  chat_messages: number;
-  activity_logs: number;
-  loose_items: number;
   ts: number;
 }
 
@@ -588,9 +585,6 @@ export default function AdminPage() {
                     { label: 'Companies', value: statsData.companies },
                     { label: 'Vaults', value: statsData.boxes },
                     { label: 'Tasks', value: statsData.tasks },
-                    { label: 'Chat Messages', value: statsData.chat_messages },
-                    { label: 'Activity Logs', value: statsData.activity_logs },
-                    { label: 'Loose Items', value: statsData.loose_items },
                   ]).map(({ label, value }) => (
                     <div key={label} className="bg-white rounded-2xl border border-gray-100 p-4">
                       <p className="text-xs text-gray-400">{label}</p>
