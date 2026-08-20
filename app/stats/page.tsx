@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, useMotionValue, useTransform, animate } from 'framer-motion';
 import {
@@ -96,36 +96,38 @@ export default function StatsPage() {
   const [loadError, setLoadError]   = useState<string | null>(null);
   const [period, setPeriod]         = useState<Period>('all');
   const [expandedClient, setExpandedClient] = useState<string | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
 
-  useEffect(() => {
-    const load = async () => {
-      try {
-        const [ab, whs, st] = await Promise.allSettled([
-          api.get('/api/boxes'),
-          api.get('/api/warehouses'),
-          api.get('/api/storage'),
-        ]);
-        if (ab.status === 'fulfilled') {
-          const d = ab.value;
-          setBoxes(Array.isArray(d) ? d : d?.boxes || []);
-        }
-        if (whs.status === 'fulfilled') {
-          const arr: any[] = Array.isArray(whs.value) ? whs.value : whs.value?.warehouses || [];
-          const map: Record<string, string> = {};
-          arr.forEach((w: any) => { map[w.warehouse_id || w.id] = w.name; });
-          setWhNames(map);
-        }
-        if (st.status === 'fulfilled') {
-          const arr: any[] = Array.isArray(st.value) ? st.value : st.value?.units || [];
-          setStorageUnits(arr);
-        }
-        if ([ab, whs].every(r => r.status === 'rejected')) {
-          setLoadError('Failed to load stats. Try again.');
-        }
-      } finally { setLoading(false); }
-    };
-    load();
+  const load = useCallback(async (isRefresh?: boolean) => {
+    if (isRefresh) setRefreshing(true); else setLoading(true);
+    setLoadError(null);
+    try {
+      const [ab, whs, st] = await Promise.allSettled([
+        api.get('/api/boxes'),
+        api.get('/api/warehouses'),
+        api.get('/api/storage'),
+      ]);
+      if (ab.status === 'fulfilled') {
+        const d = ab.value;
+        setBoxes(Array.isArray(d) ? d : d?.boxes || []);
+      }
+      if (whs.status === 'fulfilled') {
+        const arr: any[] = Array.isArray(whs.value) ? whs.value : whs.value?.warehouses || [];
+        const map: Record<string, string> = {};
+        arr.forEach((w: any) => { map[w.warehouse_id || w.id] = w.name; });
+        setWhNames(map);
+      }
+      if (st.status === 'fulfilled') {
+        const arr: any[] = Array.isArray(st.value) ? st.value : st.value?.units || [];
+        setStorageUnits(arr);
+      }
+      if ([ab, whs].every(r => r.status === 'rejected')) {
+        setLoadError('Failed to load stats. Try again.');
+      }
+    } finally { setLoading(false); setRefreshing(false); }
   }, []);
+
+  useEffect(() => { load(); }, [load]);
 
   const filteredBoxes = useMemo(() => filterByPeriod(boxes, period), [boxes, period]);
 
@@ -219,17 +221,31 @@ export default function StatsPage() {
                   : 'Real-time inventory intelligence'}
               </p>
             </div>
-            {/* Period selector */}
-            <div className="flex items-center gap-1 bg-white/70 backdrop-blur-sm border border-gray-200 p-1 rounded-xl self-start sm:self-auto shadow-sm">
-              {(['7d', '30d', '3m', 'all'] as Period[]).map(p => (
-                <button
-                  key={p}
-                  onClick={() => setPeriod(p)}
-                  className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-all ${period === p ? 'bg-blue-600 text-white shadow-sm' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'}`}
-                >
-                  {PERIOD_LABELS[p]}
-                </button>
-              ))}
+            {/* Period selector + refresh */}
+            <div className="flex items-center gap-2 self-start sm:self-auto">
+              <div className="flex items-center gap-1 bg-white/70 backdrop-blur-sm border border-gray-200 p-1 rounded-xl shadow-sm">
+                {(['7d', '30d', '3m', 'all'] as Period[]).map(p => (
+                  <button
+                    key={p}
+                    onClick={() => setPeriod(p)}
+                    className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-all ${period === p ? 'bg-blue-600 text-white shadow-sm' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'}`}
+                  >
+                    {PERIOD_LABELS[p]}
+                  </button>
+                ))}
+              </div>
+              <button
+                onClick={() => load(true)}
+                disabled={refreshing}
+                title="Refresh data"
+                className="flex items-center justify-center w-9 h-9 bg-white/70 backdrop-blur-sm border border-gray-200 rounded-xl text-gray-400 hover:text-blue-600 hover:border-blue-200 transition-all shadow-sm disabled:opacity-40"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+                  className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`}>
+                  <path d="M21 2v6h-6" /><path d="M3 12a9 9 0 0 1 15-6.7L21 8" />
+                  <path d="M3 22v-6h6" /><path d="M21 12a9 9 0 0 1-15 6.7L3 16" />
+                </svg>
+              </button>
             </div>
           </div>
         </motion.div>
@@ -309,7 +325,7 @@ export default function StatsPage() {
                 <span className="text-xs text-gray-400 bg-gray-50 px-3 py-1 rounded-xl">{PERIOD_LABELS[period]}</span>
               </div>
               <p className="text-xs text-gray-400 mb-5">New vaults added per week</p>
-              {trendData.length > 1 ? (
+              {trendData.length >= 1 ? (
                 <ResponsiveContainer width="100%" height={180}>
                   <AreaChart data={trendData} margin={{ top: 4, right: 4, left: -24, bottom: 0 }}>
                     <defs>
