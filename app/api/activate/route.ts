@@ -45,7 +45,7 @@ export async function POST(req: NextRequest) {
 
     if (!res.ok) return NextResponse.json({ error: 'No se pudo activar la empresa' }, { status: 500 });
     return NextResponse.json({ ok: true });
-  } catch (e: any) {
-    return NextResponse.json({ error: e.message || 'Error al activar' }, { status: 400 });
+  } catch {
+    return NextResponse.json({ error: 'Activation failed. The link may be invalid or expired.' }, { status: 400 });
   }
 }

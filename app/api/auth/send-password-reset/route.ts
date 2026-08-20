@@ -32,7 +32,7 @@ export async function POST(req: NextRequest) {
     }
 
     return NextResponse.json({ ok: true });
-  } catch (e: any) {
-    return NextResponse.json({ error: e.message || 'Failed to send email' }, { status: 500 });
+  } catch {
+    return NextResponse.json({ error: 'Failed to send email. Try again.' }, { status: 500 });
   }
 }
