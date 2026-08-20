@@ -1,5 +1,6 @@
 import { Ratelimit } from '@upstash/ratelimit';
 import { Redis } from '@upstash/redis';
+import { logSecurityEvent, SecurityEventType } from '@/lib/security-events';
 
 const redis = Redis.fromEnv();
 
@@ -57,9 +58,13 @@ export async function checkLimit(
   key: string,
   fallbackMax?: number,
   fallbackWindowMs?: number,
+  logAs?: { type: SecurityEventType; ip: string },
 ): Promise<boolean> {
   try {
     const { success } = await limiter.limit(key);
+    if (!success && logAs) {
+      logSecurityEvent({ type: logAs.type, ip: logAs.ip, detail: `Rate limit hit — key: ${key.slice(0, 60)}`, ts: Date.now() });
+    }
     return success;
   } catch {
     if (fallbackMax !== undefined && fallbackWindowMs !== undefined) {

@@ -3,11 +3,12 @@ import { createHash, timingSafeEqual } from 'crypto';
 import { hashAdminSecret } from '@/lib/admin-auth';
 import { adminLoginRateLimit, checkLimit } from '@/lib/rate-limit';
 import { verifyTurnstile } from '@/lib/turnstile';
+import { logSecurityEvent } from '@/lib/security-events';
 
 export async function POST(req: NextRequest) {
   const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown';
   // fallbackMax=5, fallbackWindowMs=30_000 → same limits as Upstash but in-memory when Redis is down
-  if (!await checkLimit(adminLoginRateLimit, ip, 5, 30_000)) {
+  if (!await checkLimit(adminLoginRateLimit, ip, 5, 30_000, { type: 'rate_limit_hit', ip })) {
     return NextResponse.json({ error: 'Too many attempts. Try again in 30 seconds.' }, { status: 429 });
   }
 
@@ -19,6 +20,7 @@ export async function POST(req: NextRequest) {
   const passHash = createHash('sha256').update(password || '').digest();
   const secretHash = createHash('sha256').update(secret).digest();
   if (!password || !timingSafeEqual(passHash, secretHash)) {
+    logSecurityEvent({ type: 'admin_login_failed', ip, detail: 'Wrong admin password', ts: Date.now() });
     return NextResponse.json({ error: 'Wrong password' }, { status: 401 });
   }
   const res = NextResponse.json({ ok: true });
