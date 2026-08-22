@@ -316,7 +316,7 @@ export function adminNewRequestEmail(companyName: string, ownerName: string, own
   const ADMIN_PATH = process.env.ADMIN_PANEL_PATH || 'admin-k9x2m7';
   const adminUrl = `${APP_URL}/${ADMIN_PATH}`;
   return {
-    subject: `New access request — ${companyName}`,
+    subject: `New access request — ${companyName.replace(/[\r\n]/g, ' ').trim()}`,
     html: base({
       accent: '#d97706', accentDark: '#b45309',
       icon: '🏢', iconBg: 'rgba(217,119,6,0.15)',
