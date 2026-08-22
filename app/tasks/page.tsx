@@ -6,7 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   PlusIcon, XMarkIcon, TrashIcon, CalendarIcon, UserCircleIcon,
   ExclamationCircleIcon, ListBulletIcon, ViewColumnsIcon, PencilIcon,
-  ClipboardDocumentListIcon, MagnifyingGlassIcon,
+  ClipboardDocumentListIcon, MagnifyingGlassIcon, ArchiveBoxIcon,
 } from '@/components/icons';
 import Link from 'next/link';
 import Sidebar from '@/components/Sidebar';
@@ -53,9 +53,10 @@ interface StorageUnit {
 }
 
 interface VaultResult {
-  id:          string;
-  client_name: string;
-  position:    string;
+  id:           string;
+  client_name:  string;
+  position:     string;
+  warehouse_id: string;
 }
 
 const TASK_TYPES: TaskType[] = ['Cleaning', 'Restoration', 'Delivery', 'Free'];
@@ -108,7 +109,7 @@ const emptyForm = {
 };
 
 // ── Kanban card ───────────────────────────────────────────────────────────────
-function TaskCard({ task, members, isOwner, onStatus, onDelete, onEdit, statusLoading }: {
+function TaskCard({ task, members, isOwner, onStatus, onDelete, onEdit, statusLoading, vault }: {
   task:          Task;
   members:       Member[];
   isOwner:       boolean;
@@ -116,6 +117,7 @@ function TaskCard({ task, members, isOwner, onStatus, onDelete, onEdit, statusLo
   onDelete:      (id: string) => void;
   onEdit:        (t: Task) => void;
   statusLoading: boolean;
+  vault?:        VaultResult;
 }) {
   const assignee    = members.find(m => m.user_id === task.assigned_to);
   const [statusMenu, setStatusMenu] = useState(false);
@@ -178,19 +180,27 @@ function TaskCard({ task, members, isOwner, onStatus, onDelete, onEdit, statusLo
         </p>
       )}
 
-      {/* Navigation links */}
+      {/* Navigation chips */}
       {(task.vault_id || task.storage_id) && (
-        <div className="flex flex-wrap gap-2 mb-2">
-          {task.vault_id && (
-            <Link href={`/vault/${task.vault_id}`} title={`Vault: ${task.vault_id}`}
-              className="text-[10px] text-blue-500 hover:text-blue-700 hover:underline">
-              → View Vault
+        <div className="flex flex-wrap gap-1.5 mb-2">
+          {task.vault_id && vault ? (
+            <Link
+              href={`/warehouses/${vault.warehouse_id}?vault=${task.vault_id}`}
+              title={`${vault.client_name} · ${vault.position}`}
+              className="flex items-center gap-1 text-[10px] font-medium text-blue-600 bg-blue-50 border border-blue-100 px-2 py-0.5 rounded-full hover:bg-blue-100 transition-colors max-w-full"
+            >
+              <ArchiveBoxIcon className="w-2.5 h-2.5 flex-shrink-0" />
+              <span className="truncate">{vault.client_name || vault.position}</span>
             </Link>
-          )}
+          ) : task.vault_id ? (
+            <Link href={`/vault/${task.vault_id}`} className="text-[10px] text-blue-500 hover:underline">
+              → Vault
+            </Link>
+          ) : null}
           {task.storage_id && (
             <Link href={`/storage/${task.storage_id}`}
-              className="text-[10px] text-blue-500 hover:text-blue-700 hover:underline">
-              → View Storage
+              className="flex items-center gap-1 text-[10px] font-medium text-gray-500 bg-gray-50 border border-gray-100 px-2 py-0.5 rounded-full hover:bg-gray-100 transition-colors">
+              → Storage
             </Link>
           )}
         </div>
@@ -247,7 +257,7 @@ function TaskCard({ task, members, isOwner, onStatus, onDelete, onEdit, statusLo
 }
 
 // ── List row ──────────────────────────────────────────────────────────────────
-function TaskRow({ task, members, isOwner, onStatus, onDelete, onEdit, statusLoading }: {
+function TaskRow({ task, members, isOwner, onStatus, onDelete, onEdit, statusLoading, vault }: {
   task:          Task;
   members:       Member[];
   isOwner:       boolean;
@@ -255,6 +265,7 @@ function TaskRow({ task, members, isOwner, onStatus, onDelete, onEdit, statusLoa
   onDelete:      (id: string) => void;
   onEdit:        (t: Task) => void;
   statusLoading: boolean;
+  vault?:        VaultResult;
 }) {
   const assignee  = members.find(m => m.user_id === task.assigned_to);
   const todayStr = new Date().toLocaleDateString('en-CA');
@@ -290,15 +301,23 @@ function TaskRow({ task, members, isOwner, onStatus, onDelete, onEdit, statusLoa
               {isOverdue && <span>· Overdue</span>}
             </span>
           )}
-          {task.vault_id && (
-            <Link href={`/vault/${task.vault_id}`} title={`Vault: ${task.vault_id}`}
-              className="text-xs text-blue-500 hover:underline">
+          {task.vault_id && vault ? (
+            <Link
+              href={`/warehouses/${vault.warehouse_id}?vault=${task.vault_id}`}
+              title={`${vault.client_name} · ${vault.position}`}
+              className="flex items-center gap-1 text-[10px] font-medium text-blue-600 bg-blue-50 border border-blue-100 px-2 py-0.5 rounded-full hover:bg-blue-100 transition-colors max-w-[160px]"
+            >
+              <ArchiveBoxIcon className="w-2.5 h-2.5 flex-shrink-0" />
+              <span className="truncate">{vault.client_name || vault.position}</span>
+            </Link>
+          ) : task.vault_id ? (
+            <Link href={`/vault/${task.vault_id}`} className="text-xs text-blue-500 hover:underline">
               → Vault
             </Link>
-          )}
+          ) : null}
           {task.storage_id && (
             <Link href={`/storage/${task.storage_id}`}
-              className="text-xs text-blue-500 hover:underline">
+              className="flex items-center gap-1 text-[10px] font-medium text-gray-500 bg-gray-50 border border-gray-100 px-2 py-0.5 rounded-full hover:bg-gray-100 transition-colors">
               → Storage
             </Link>
           )}
@@ -702,9 +721,10 @@ function TasksPageInner() {
   const loadVaults = () =>
     api.get('/api/boxes')
       .then((boxes: any[]) => setAllVaults((Array.isArray(boxes) ? boxes : []).map((b: any) => ({
-        id:          b.box_id || b.id,
-        client_name: b.client_name || '',
-        position:    b.position || '',
+        id:           b.box_id || b.id,
+        client_name:  b.client_name || '',
+        position:     b.position || '',
+        warehouse_id: b.warehouse_id || '',
       }))))
       .catch(() => {});
 
@@ -825,6 +845,7 @@ function TasksPageInner() {
             onDelete={id => setDeleteId(id)}
             onEdit={openEdit}
             statusLoading={!!statusLoading[task.id]}
+            vault={task.vault_id ? allVaults.find(v => v.id === task.vault_id) : undefined}
           />
         </motion.div>
       ))}
@@ -981,6 +1002,7 @@ function TasksPageInner() {
                               onDelete={id => setDeleteId(id)}
                               onEdit={openEdit}
                               statusLoading={!!statusLoading[task.id]}
+                              vault={task.vault_id ? allVaults.find(v => v.id === task.vault_id) : undefined}
                             />
                           ))}
                         </AnimatePresence>
