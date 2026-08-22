@@ -699,11 +699,7 @@ function TasksPageInner() {
     }
   };
 
-  useEffect(() => {
-    loadTasks();
-    api.get('/api/company/members')
-      .then((m: any) => setMembers(Array.isArray(m) ? m : []))
-      .catch(() => {});
+  const loadVaults = () =>
     api.get('/api/boxes')
       .then((boxes: any[]) => setAllVaults((Array.isArray(boxes) ? boxes : []).map((b: any) => ({
         id:          b.box_id || b.id,
@@ -711,7 +707,17 @@ function TasksPageInner() {
         position:    b.position || '',
       }))))
       .catch(() => {});
+
+  useEffect(() => {
+    loadTasks();
+    api.get('/api/company/members')
+      .then((m: any) => setMembers(Array.isArray(m) ? m : []))
+      .catch(() => {});
+    loadVaults();
   }, []);
+
+  // Refresh vault list whenever the task form opens so newly-created vaults appear
+  useEffect(() => { if (formOpen) loadVaults(); }, [formOpen]);
 
   const handleStatusChange = async (taskId: string, newStatus: TaskStatus) => {
     setStatusLoading(prev => ({ ...prev, [taskId]: true }));

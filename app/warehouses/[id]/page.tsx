@@ -387,6 +387,7 @@ export default function WarehouseDetailPage() {
       }
     } catch (err: any) {
       setMoveError(err?.message || 'Failed to move vault');
+      if ((err?.message as string)?.includes('could not rollback')) fetchBoxes();
     } finally {
       setMoveSaving(false);
     }
