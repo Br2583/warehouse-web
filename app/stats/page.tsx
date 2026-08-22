@@ -95,6 +95,7 @@ export default function StatsPage() {
   const [expandedClient, setExpandedClient] = useState<string | null>(null);
   const [refreshing, setRefreshing]     = useState(false);
   const [clientSort, setClientSort]     = useState<ClientSort>('count');
+  const [clientSearch, setClientSearch] = useState('');
   const [lastLoaded, setLastLoaded]     = useState<Date | null>(null);
   const lastLoadedRef                   = useRef<number>(0);
 
@@ -239,6 +240,15 @@ export default function StatsPage() {
     return entries.sort((a, b) => a.name.localeCompare(b.name));
   }, [filteredBoxes, boxes, storageUnits, whNames, clientSort]);
 
+  const visibleClients = useMemo(() => {
+    const q = clientSearch.trim().toLowerCase();
+    if (!q) return clientList;
+    return clientList.filter(c =>
+      c.name.toLowerCase().includes(q) ||
+      c.topJob.toLowerCase().includes(q)
+    );
+  }, [clientList, clientSearch]);
+
   if (loading) return (
     <div className="flex min-h-screen bg-gray-50">
       <Sidebar />
@@ -249,6 +259,7 @@ export default function StatsPage() {
   );
 
   const maxClientCount = Math.max(...clientList.map(c => c.count), 1);
+  const maxVisibleCount = Math.max(...visibleClients.map(c => c.count), 1);
 
   return (
     <div className="flex min-h-screen bg-gray-50">
@@ -372,19 +383,48 @@ export default function StatsPage() {
             className="bg-white rounded-2xl border border-gray-100 p-6"
             style={{ boxShadow: '0 1px 4px rgba(0,0,0,0.04)' }}
           >
-            {/* Section header + sort chips */}
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-5">
-              <div>
-                <div className="flex items-center gap-2 mb-0.5">
-                  <UserGroupIcon className="w-4 h-4 text-gray-400" />
-                  <h2 className="font-bold text-gray-900">Clients</h2>
-                </div>
-                <p className="text-xs text-gray-400 pl-6">
-                  {clientList.length} client{clientList.length !== 1 ? 's' : ''} · {filteredBoxes.length} vault{filteredBoxes.length !== 1 ? 's' : ''} · {PERIOD_LABELS[period]}
-                </p>
+            {/* Section header */}
+            <div className="flex items-center justify-between gap-3 mb-3">
+              <div className="flex items-center gap-2">
+                <UserGroupIcon className="w-4 h-4 text-gray-400" />
+                <h2 className="font-bold text-gray-900">Clients</h2>
+              </div>
+              <p className="text-xs text-gray-400">
+                {clientSearch.trim()
+                  ? `${visibleClients.length} of ${clientList.length}`
+                  : `${clientList.length} client${clientList.length !== 1 ? 's' : ''}`}
+                {' · '}{filteredBoxes.length} vault{filteredBoxes.length !== 1 ? 's' : ''} · {PERIOD_LABELS[period]}
+              </p>
+            </div>
+
+            {/* Search + sort row */}
+            <div className="flex flex-col sm:flex-row gap-2 mb-5">
+              {/* Search input */}
+              <div className="relative flex-1">
+                <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" />
+                </svg>
+                <input
+                  type="text"
+                  value={clientSearch}
+                  onChange={e => setClientSearch(e.target.value)}
+                  placeholder="Search clients or job type…"
+                  className="w-full pl-9 pr-8 py-2 text-sm bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent placeholder-gray-400 transition-all"
+                />
+                {clientSearch && (
+                  <button
+                    onClick={() => setClientSearch('')}
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+                    aria-label="Clear search"
+                  >
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path d="M18 6 6 18M6 6l12 12" />
+                    </svg>
+                  </button>
+                )}
               </div>
               {/* Sort chips — horizontal scroll on mobile */}
-              <div className="flex items-center gap-2 overflow-x-auto pb-0.5 -mb-0.5">
+              <div className="flex items-center gap-2 overflow-x-auto pb-0.5">
                 {(['count', 'days', 'az'] as const).map(s => (
                   <button
                     key={s}
@@ -403,10 +443,14 @@ export default function StatsPage() {
 
             {clientList.length === 0 ? (
               <div className="text-sm text-gray-300 text-center py-8">No clients yet</div>
+            ) : visibleClients.length === 0 ? (
+              <div className="text-sm text-gray-400 text-center py-8">
+                No clients match <span className="font-semibold">"{clientSearch}"</span>
+              </div>
             ) : (
               <div className="space-y-1">
-                {clientList.map((client, i) => {
-                  const pct = (client.count / maxClientCount) * 100;
+                {visibleClients.map((client, i) => {
+                  const pct = (client.count / maxVisibleCount) * 100;
                   const isExpanded = expandedClient === client.name;
                   return (
                     <div key={client.name}>
