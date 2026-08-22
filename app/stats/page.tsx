@@ -211,7 +211,7 @@ export default function StatsPage() {
 
     const entries = Object.entries(map).map(([name, d]) => {
       const allTs = allTsByClient[name] || [];
-      const firstTs = allTs.length > 0 ? Math.min(...allTs) : NaN;
+      const firstTs = allTs.length > 0 ? allTs.reduce((a, b) => Math.min(a, b), allTs[0]) : NaN;
       const daysInSystem = !isNaN(firstTs) ? Math.floor((nowMs - firstTs) / 86_400_000) : null;
       const firstDate = !isNaN(firstTs)
         ? new Date(firstTs).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
@@ -258,7 +258,6 @@ export default function StatsPage() {
     </div>
   );
 
-  const maxClientCount = Math.max(...clientList.map(c => c.count), 1);
   const maxVisibleCount = Math.max(...visibleClients.map(c => c.count), 1);
 
   return (
@@ -390,10 +389,17 @@ export default function StatsPage() {
                 <h2 className="font-bold text-gray-900">Clients</h2>
               </div>
               <p className="text-xs text-gray-400">
-                {clientSearch.trim()
-                  ? `${visibleClients.length} of ${clientList.length}`
-                  : `${clientList.length} client${clientList.length !== 1 ? 's' : ''}`}
-                {' · '}{filteredBoxes.length} vault{filteredBoxes.length !== 1 ? 's' : ''} · {PERIOD_LABELS[period]}
+                {clientSearch.trim() ? (
+                  <>
+                    {visibleClients.length} of {clientList.length} clients
+                    {' · '}{visibleClients.reduce((sum, c) => sum + c.count, 0)} vault{visibleClients.reduce((sum, c) => sum + c.count, 0) !== 1 ? 's' : ''}
+                  </>
+                ) : (
+                  <>
+                    {clientList.length} client{clientList.length !== 1 ? 's' : ''}
+                    {' · '}{filteredBoxes.length} vault{filteredBoxes.length !== 1 ? 's' : ''} · {PERIOD_LABELS[period]}
+                  </>
+                )}
               </p>
             </div>
 
