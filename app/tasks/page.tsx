@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, Suspense } from 'react';
+import { useState, useEffect, useMemo, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -20,6 +20,7 @@ import { pb } from '@/lib/pb';
 type TaskStatus   = 'PENDING' | 'IN_PROGRESS' | 'DONE';
 type TaskPriority = 'normal' | 'urgent';
 type TaskType     = 'Cleaning' | 'Restoration' | 'Delivery' | 'Free';
+type TaskFilter   = 'all' | 'mine' | 'overdue' | 'today';
 
 interface Task {
   id:          string;
@@ -107,13 +108,14 @@ const emptyForm = {
 };
 
 // ── Kanban card ───────────────────────────────────────────────────────────────
-function TaskCard({ task, members, isOwner, onStatus, onDelete, onEdit }: {
-  task:     Task;
-  members:  Member[];
-  isOwner:  boolean;
-  onStatus: (id: string, s: TaskStatus) => void;
-  onDelete: (id: string) => void;
-  onEdit:   (t: Task) => void;
+function TaskCard({ task, members, isOwner, onStatus, onDelete, onEdit, statusLoading }: {
+  task:          Task;
+  members:       Member[];
+  isOwner:       boolean;
+  onStatus:      (id: string, s: TaskStatus) => void;
+  onDelete:      (id: string) => void;
+  onEdit:        (t: Task) => void;
+  statusLoading: boolean;
 }) {
   const assignee    = members.find(m => m.user_id === task.assigned_to);
   const [statusMenu, setStatusMenu] = useState(false);
@@ -225,14 +227,18 @@ function TaskCard({ task, members, isOwner, onStatus, onDelete, onEdit }: {
           )}
         </div>
       ) : nextSt && (
-        <button onClick={() => onStatus(task.id, nextSt)}
-          className={`w-full mt-1 py-1.5 text-xs font-medium rounded-lg border transition-colors ${
+        <button
+          onClick={() => onStatus(task.id, nextSt)}
+          disabled={statusLoading}
+          className={`w-full mt-1 py-1.5 text-xs font-medium rounded-lg border transition-colors disabled:opacity-50 flex items-center justify-center gap-1.5 ${
             nextSt === 'IN_PROGRESS'
               ? 'border-amber-200 text-amber-600 hover:bg-amber-50'
               : 'border-green-200 text-green-600 hover:bg-green-50'
           }`}
         >
-          {nextLabel}
+          {statusLoading
+            ? <span className="w-3 h-3 border border-current border-t-transparent rounded-full animate-spin" />
+            : nextLabel}
         </button>
       )}
     </div>
@@ -240,21 +246,26 @@ function TaskCard({ task, members, isOwner, onStatus, onDelete, onEdit }: {
 }
 
 // ── List row ──────────────────────────────────────────────────────────────────
-function TaskRow({ task, members, isOwner, onStatus, onDelete, onEdit }: {
-  task:     Task;
-  members:  Member[];
-  isOwner:  boolean;
-  onStatus: (id: string, s: TaskStatus) => void;
-  onDelete: (id: string) => void;
-  onEdit:   (t: Task) => void;
+function TaskRow({ task, members, isOwner, onStatus, onDelete, onEdit, statusLoading }: {
+  task:          Task;
+  members:       Member[];
+  isOwner:       boolean;
+  onStatus:      (id: string, s: TaskStatus) => void;
+  onDelete:      (id: string) => void;
+  onEdit:        (t: Task) => void;
+  statusLoading: boolean;
 }) {
-  const assignee   = members.find(m => m.user_id === task.assigned_to);
-  const [statusMenu, setStatusMenu] = useState(false);
-  const nextSt     = NEXT_STATUS[task.status];
+  const assignee  = members.find(m => m.user_id === task.assigned_to);
+  const isOverdue = !!task.due_date && task.status !== 'DONE' && new Date(task.due_date) < new Date();
+  const nextSt    = NEXT_STATUS[task.status];
 
   return (
-    <div className="flex items-center gap-3 bg-white rounded-xl border border-gray-100 px-4 py-3 hover:shadow-sm transition-shadow group">
-      <div className={`w-2 h-2 rounded-full flex-shrink-0 ${task.priority === 'urgent' ? 'bg-red-500' : 'bg-gray-200'}`} />
+    <div className={`flex items-center gap-3 rounded-xl border px-4 py-3 hover:shadow-sm transition-shadow group ${
+      isOverdue ? 'bg-red-50/50 border-red-200' : 'bg-white border-gray-100'
+    }`}>
+      <div className={`w-2 h-2 rounded-full flex-shrink-0 ${
+        task.priority === 'urgent' ? 'bg-red-500' : isOverdue ? 'bg-red-400' : 'bg-gray-200'
+      }`} />
 
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 flex-wrap">
@@ -271,9 +282,10 @@ function TaskRow({ task, members, isOwner, onStatus, onDelete, onEdit }: {
             </span>
           )}
           {task.due_date && (
-            <span className="flex items-center gap-1 text-xs text-gray-400">
+            <span className={`flex items-center gap-1 text-xs ${isOverdue ? 'text-red-500 font-medium' : 'text-gray-400'}`}>
               <CalendarIcon className="w-3 h-3 flex-shrink-0" />
               {formatDate(task.due_date)}
+              {isOverdue && <span>· Overdue</span>}
             </span>
           )}
           {task.vault_id && (
@@ -296,49 +308,38 @@ function TaskRow({ task, members, isOwner, onStatus, onDelete, onEdit }: {
         </div>
       </div>
 
-      {/* Status: dropdown for owner, badge for worker */}
-      {isOwner ? (
-        <div className="relative flex-shrink-0">
+      {/* Quick status toggle — same for owners and workers */}
+      {task.status === 'DONE' ? (
+        isOwner ? (
           <button
-            onClick={() => setStatusMenu(m => !m)}
-            className={`text-xs font-medium px-2.5 py-1 rounded-full flex items-center gap-1 ${STATUS_STYLE[task.status]}`}
+            onClick={() => onStatus(task.id, 'PENDING')}
+            disabled={statusLoading}
+            className="flex-shrink-0 text-xs font-medium px-3 py-1.5 border border-gray-200 text-gray-400 hover:text-gray-600 hover:bg-gray-50 rounded-lg transition-colors disabled:opacity-50 flex items-center gap-1"
           >
-            {STATUS_LABEL[task.status]}
-            <span className="opacity-40 text-[9px]">▾</span>
+            {statusLoading
+              ? <span className="w-3 h-3 border border-current border-t-transparent rounded-full animate-spin" />
+              : <><span>↩</span><span className="hidden sm:inline ml-0.5">Reopen</span></>}
           </button>
-          {statusMenu && (
-            <>
-              <div className="fixed inset-0 z-10" onClick={() => setStatusMenu(false)} />
-              <div className="absolute right-0 top-full mt-1 bg-white border border-gray-200 rounded-xl shadow-lg z-20 overflow-hidden min-w-[120px]">
-                {(['PENDING', 'IN_PROGRESS', 'DONE'] as TaskStatus[]).map(s => (
-                  <button
-                    key={s}
-                    onClick={() => { onStatus(task.id, s); setStatusMenu(false); }}
-                    className={`w-full text-left px-3 py-2 text-xs font-medium whitespace-nowrap transition-colors ${
-                      task.status === s
-                        ? 'bg-gray-50 text-gray-400 cursor-default'
-                        : 'hover:bg-gray-50 text-gray-700'
-                    }`}
-                  >
-                    {STATUS_LABEL[s]}
-                  </button>
-                ))}
-              </div>
-            </>
-          )}
-        </div>
-      ) : (
-        <span className={`text-xs font-medium px-2.5 py-1 rounded-full flex-shrink-0 ${STATUS_STYLE[task.status]}`}>
-          {STATUS_LABEL[task.status]}
-        </span>
-      )}
-
-      {!isOwner && nextSt && (
-        <button onClick={() => onStatus(task.id, nextSt)}
-          className="flex-shrink-0 text-xs font-medium px-3 py-1.5 border border-gray-200 text-gray-600 hover:bg-gray-50 rounded-lg transition-colors">
-          {task.status === 'PENDING' ? 'Start' : 'Done'}
+        ) : (
+          <span className="flex-shrink-0 text-xs font-medium px-2.5 py-1 rounded-full bg-green-50 text-green-700">
+            Done
+          </span>
+        )
+      ) : nextSt ? (
+        <button
+          onClick={() => onStatus(task.id, nextSt)}
+          disabled={statusLoading}
+          className={`flex-shrink-0 text-xs font-medium px-3 py-1.5 border rounded-lg transition-colors disabled:opacity-50 flex items-center gap-1.5 ${
+            nextSt === 'IN_PROGRESS'
+              ? 'border-amber-200 text-amber-700 hover:bg-amber-50'
+              : 'border-green-200 text-green-700 hover:bg-green-50'
+          }`}
+        >
+          {statusLoading
+            ? <span className="w-3 h-3 border border-current border-t-transparent rounded-full animate-spin" />
+            : nextSt === 'IN_PROGRESS' ? '→ Start' : '✓ Done'}
         </button>
-      )}
+      ) : null}
 
       {isOwner && (
         <div className="flex items-center gap-0.5 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity flex-shrink-0">
@@ -682,6 +683,8 @@ function TasksPageInner() {
   const [deleting, setDeleting]     = useState(false);
   const [clearAll, setClearAll]     = useState(false);
   const [clearingAll, setClearingAll] = useState(false);
+  const [taskFilter, setTaskFilter]     = useState<TaskFilter>('all');
+  const [statusLoading, setStatusLoading] = useState<Record<string, boolean>>({});
 
   const loadTasks = async () => {
     try {
@@ -709,11 +712,14 @@ function TasksPageInner() {
   }, []);
 
   const handleStatusChange = async (taskId: string, newStatus: TaskStatus) => {
+    setStatusLoading(prev => ({ ...prev, [taskId]: true }));
     setTasks(prev => prev.map(t => t.id === taskId ? { ...t, status: newStatus } : t));
     try {
       await api.put(`/api/tasks/${taskId}`, { status: newStatus });
     } catch {
       loadTasks();
+    } finally {
+      setStatusLoading(prev => ({ ...prev, [taskId]: false }));
     }
   };
 
@@ -768,26 +774,50 @@ function TasksPageInner() {
   const openEdit = (task: Task) => { setEditTask(task); setFormOpen(true); };
   const openNew  = ()           => { setEditTask(null); setFormOpen(true); };
 
-  const sorted = [...tasks].sort((a, b) => {
+  const sorted = useMemo(() => [...tasks].sort((a, b) => {
     if (a.priority === 'urgent' && b.priority !== 'urgent') return -1;
     if (b.priority === 'urgent' && a.priority !== 'urgent') return  1;
     if (b.created > a.created) return 1;
     if (b.created < a.created) return -1;
     return 0;
-  });
+  }), [tasks]);
 
   const pendingCount = tasks.filter(t => t.status === 'PENDING').length;
   const doneCount    = tasks.filter(t => t.status === 'DONE').length;
 
+  const overdueCount = useMemo(() => {
+    const n = new Date();
+    return tasks.filter(t => !!t.due_date && t.status !== 'DONE' && new Date(t.due_date) < n).length;
+  }, [tasks]);
+
+  const filteredSorted = useMemo(() => {
+    const n = new Date();
+    const today = n.toISOString().split('T')[0];
+    return sorted.filter(t => {
+      if (taskFilter === 'mine')    return t.assigned_to === user?.id;
+      if (taskFilter === 'overdue') return !!t.due_date && t.status !== 'DONE' && new Date(t.due_date) < n;
+      if (taskFilter === 'today')   return !!t.due_date && t.due_date.split(/[ T]/)[0] === today;
+      return true;
+    });
+  }, [sorted, taskFilter, user?.id]);
+
   const listView = (
     <div className="space-y-2">
-      {sorted.map((task, i) => (
+      {filteredSorted.length === 0 && taskFilter !== 'all' ? (
+        <div className="flex flex-col items-center justify-center py-12 text-center">
+          <p className="text-gray-400 text-sm">No tasks match this filter</p>
+          <button onClick={() => setTaskFilter('all')} className="mt-2 text-sm text-blue-500 hover:underline">
+            Show all
+          </button>
+        </div>
+      ) : filteredSorted.map((task, i) => (
         <motion.div key={task.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.03 }}>
           <TaskRow
             task={task} members={members} isOwner={isOwner}
             onStatus={handleStatusChange}
             onDelete={id => setDeleteId(id)}
             onEdit={openEdit}
+            statusLoading={!!statusLoading[task.id]}
           />
         </motion.div>
       ))}
@@ -849,6 +879,41 @@ function TasksPageInner() {
           </div>
         </div>
 
+        {/* Filter chips */}
+        {tasks.length > 0 && (
+          <div className="flex gap-2 mb-5 overflow-x-auto pb-1">
+            {([
+              { key: 'all',     label: 'All' },
+              { key: 'mine',    label: 'Mine' },
+              { key: 'overdue', label: 'Overdue', count: overdueCount },
+              { key: 'today',   label: 'Due today' },
+            ] as { key: TaskFilter; label: string; count?: number }[]).map(chip => (
+              <button
+                key={chip.key}
+                onClick={() => setTaskFilter(chip.key)}
+                className={`flex items-center gap-1.5 flex-shrink-0 px-3.5 py-1.5 rounded-full text-sm font-medium border transition-colors ${
+                  taskFilter === chip.key
+                    ? chip.key === 'overdue'
+                      ? 'bg-red-600 text-white border-red-600'
+                      : 'bg-gray-900 text-white border-gray-900'
+                    : chip.key === 'overdue' && overdueCount > 0
+                      ? 'bg-red-50 text-red-600 border-red-200 hover:bg-red-100'
+                      : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'
+                }`}
+              >
+                {chip.label}
+                {chip.count !== undefined && chip.count > 0 && (
+                  <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full leading-none ${
+                    taskFilter === chip.key ? 'bg-white/20 text-white' : 'bg-red-100 text-red-600'
+                  }`}>
+                    {chip.count}
+                  </span>
+                )}
+              </button>
+            ))}
+          </div>
+        )}
+
         {/* Error */}
         <AnimatePresence>
           {error && (
@@ -889,7 +954,7 @@ function TasksPageInner() {
             {isOwner && view === 'kanban' && (
               <div className="hidden md:grid md:grid-cols-3 gap-5">
                 {COLUMNS.map(col => {
-                  const colTasks = sorted.filter(t => t.status === col.status);
+                  const colTasks = filteredSorted.filter(t => t.status === col.status);
                   return (
                     <div key={col.status}>
                       <div className="flex items-center gap-2 mb-3">
@@ -908,6 +973,7 @@ function TasksPageInner() {
                               onStatus={handleStatusChange}
                               onDelete={id => setDeleteId(id)}
                               onEdit={openEdit}
+                              statusLoading={!!statusLoading[task.id]}
                             />
                           ))}
                         </AnimatePresence>
