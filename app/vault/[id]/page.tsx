@@ -10,9 +10,9 @@ export default function VaultRedirectPage() {
 
   useEffect(() => {
     if (!id) return;
-    pb.collection('vaults').getOne(String(id), { fields: 'id,box_id,warehouse_id' })
+    pb.collection('vaults').getOne(String(id), { fields: 'id,warehouse_id' })
       .then(vault => {
-        router.replace(`/warehouses/${vault.warehouse_id}?vault=${vault.box_id}`);
+        router.replace(`/warehouses/${vault.warehouse_id}?vault=${vault.id}`);
       })
       .catch(() => {
         router.replace('/dashboard');

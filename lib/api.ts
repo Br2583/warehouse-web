@@ -387,13 +387,18 @@ async function routeGet(path: string): Promise<any> {
     });
     return items
       .sort((a: any, b: any) => a.date < b.date ? 1 : -1)
-      .map(s => ({
-        id:            s.id,
-        date:          s.date,
-        warehouse_name: (s.data as any)?.warehouse_name || 'Snapshot',
-        box_count:     (s.data as any)?.box_count || 0,
-        data:          s.data,
-      }));
+      .map(s => {
+        const data = typeof s.data === 'string'
+          ? (() => { try { return JSON.parse(s.data); } catch { return {}; } })()
+          : (s.data || {});
+        return {
+          id:             s.id,
+          date:           s.date,
+          warehouse_name: data.warehouse_name || 'Snapshot',
+          box_count:      data.box_count || 0,
+          data,
+        };
+      });
   }
 
   // ── Storage Units ─────────────────────────────────────────────────────────

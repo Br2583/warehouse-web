@@ -45,7 +45,7 @@ function startTokenRetry(fcmToken: string, platform: string): () => void {
   return () => clearInterval(id);
 }
 
-async function initPushNotifications(platform: string) {
+async function initPushNotifications(platform: string, router: { push: (route: string) => void }) {
   try {
     const { PushNotifications } = await import('@capacitor/push-notifications');
 
@@ -103,8 +103,8 @@ async function initPushNotifications(platform: string) {
 
     PushNotifications.addListener('pushNotificationActionPerformed', (action) => {
       const route = action.notification.data?.route as string | undefined;
-      if (route && typeof window !== 'undefined') {
-        window.location.href = route;
+      if (route) {
+        router.push(route);
       }
     });
 
@@ -170,7 +170,7 @@ export default function CapacitorInit() {
         }
       }
 
-      await initPushNotifications(platform);
+      await initPushNotifications(platform, router);
     };
 
     init();

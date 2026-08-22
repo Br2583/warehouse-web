@@ -80,16 +80,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (pb.authStore.isValid && pb.authStore.model) {
-      // Refresh token on load to extend its lifetime
-      pb.collection('users').authRefresh()
-        .then(() => buildUser(pb.authStore.model!))
-        .then(setUser)
-        .catch(() => {
+      // Refresh token on load to extend its lifetime.
+      // Retry once after 600ms — covers Android cold-start when network isn't ready yet.
+      const tryRefresh = async (attempt = 0): Promise<void> => {
+        try {
+          await pb.collection('users').authRefresh();
+          setUser(await buildUser(pb.authStore.model!));
+        } catch {
+          if (attempt === 0) {
+            await new Promise(r => setTimeout(r, 600));
+            return tryRefresh(1);
+          }
           pb.authStore.clear();
           setUser(null);
           setSessionExpired(true);
-        })
-        .finally(() => setLoading(false));
+        }
+      };
+      tryRefresh().finally(() => setLoading(false));
     } else {
       setLoading(false);
     }
