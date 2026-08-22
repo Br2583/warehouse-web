@@ -109,7 +109,7 @@ const emptyLooseForm = (): LooseForm => ({
 export default function WarehouseDetailPage() {
   const { id } = useParams();
   const searchParams = useSearchParams();
-  const { canManage } = useAuth();
+  const { canManage, user } = useAuth();
   const { showToast } = useToast();
   const warehouseId = id as string;
   const autoOpenedVaultRef = useRef<string | null>(null);
@@ -184,7 +184,7 @@ export default function WarehouseDetailPage() {
     fetchBoxes();
     api.get('/api/warehouses').then((whs: any) => { if (Array.isArray(whs)) setAllWarehouses(whs); }).catch(() => {});
     import('@/lib/pb').then(({ pb }) =>
-      pb.collection('warehouses').getOne(warehouseId).then(w => {
+      pb.collection('warehouses').getFirstListItem(`id="${warehouseId}" && company_id="${user?.company_id || ''}"`).then(w => {
         setWarehouseName(w.name);
         const r = Number(w.rows) || 10;
         const c = Number(w.cols) || 8;

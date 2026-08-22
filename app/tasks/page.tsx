@@ -160,7 +160,8 @@ function TaskCard({ task, members, isOwner, onStatus, onDelete, onEdit, statusLo
       )}
 
       {task.due_date && (() => {
-        const overdue = task.status !== 'DONE' && new Date(task.due_date) < new Date();
+        const todayStr = new Date().toLocaleDateString('en-CA');
+        const overdue = task.status !== 'DONE' && task.due_date.split(/[ T]/)[0] < todayStr;
         return (
           <div className={`flex items-center gap-1 text-xs mb-2 ${overdue ? 'text-red-500 font-medium' : 'text-gray-400'}`}>
             <CalendarIcon className="w-3 h-3 flex-shrink-0" />
@@ -256,7 +257,8 @@ function TaskRow({ task, members, isOwner, onStatus, onDelete, onEdit, statusLoa
   statusLoading: boolean;
 }) {
   const assignee  = members.find(m => m.user_id === task.assigned_to);
-  const isOverdue = !!task.due_date && task.status !== 'DONE' && new Date(task.due_date) < new Date();
+  const todayStr = new Date().toLocaleDateString('en-CA');
+  const isOverdue = !!task.due_date && task.status !== 'DONE' && task.due_date.split(/[ T]/)[0] < todayStr;
   const nextSt    = NEXT_STATUS[task.status];
 
   return (
@@ -786,17 +788,16 @@ function TasksPageInner() {
   const doneCount    = tasks.filter(t => t.status === 'DONE').length;
 
   const overdueCount = useMemo(() => {
-    const n = new Date();
-    return tasks.filter(t => !!t.due_date && t.status !== 'DONE' && new Date(t.due_date) < n).length;
+    const todayStr = new Date().toLocaleDateString('en-CA');
+    return tasks.filter(t => !!t.due_date && t.status !== 'DONE' && t.due_date.split(/[ T]/)[0] < todayStr).length;
   }, [tasks]);
 
   const filteredSorted = useMemo(() => {
-    const n = new Date();
-    const today = n.toISOString().split('T')[0];
+    const todayStr = new Date().toLocaleDateString('en-CA');
     return sorted.filter(t => {
       if (taskFilter === 'mine')    return t.assigned_to === user?.id;
-      if (taskFilter === 'overdue') return !!t.due_date && t.status !== 'DONE' && new Date(t.due_date) < n;
-      if (taskFilter === 'today')   return !!t.due_date && t.due_date.split(/[ T]/)[0] === today;
+      if (taskFilter === 'overdue') return !!t.due_date && t.status !== 'DONE' && t.due_date.split(/[ T]/)[0] < todayStr;
+      if (taskFilter === 'today')   return !!t.due_date && t.due_date.split(/[ T]/)[0] === todayStr;
       return true;
     });
   }, [sorted, taskFilter, user?.id]);

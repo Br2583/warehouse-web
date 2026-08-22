@@ -503,10 +503,12 @@ async function routePost(path: string, body: any): Promise<any> {
     // Reject if the target position is already occupied
     const col = body.column ?? body.col;
     const existing = await pb.collection('vaults').getFullList({
-      filter: `company_id="${cid}" && warehouse_id="${sf(body.warehouse_id)}" && row="${sf(body.row)}" && col="${sf(String(col))}" && level="${sf(String(body.level))}"`,
-      fields: 'id',
+      filter: `company_id="${cid}" && warehouse_id="${sf(body.warehouse_id)}" && row="${sf(body.row)}"`,
+      fields: 'id,col,level',
     });
-    if (existing.length > 0) throw new Error('This position is already occupied. Choose a different cell or move the existing vault first.');
+    if (existing.some((v: any) => Number(v.col) === Number(col) && Number(v.level) === Number(body.level))) {
+      throw new Error('This position is already occupied. Choose a different cell or move the existing vault first.');
+    }
     const qr_token = genCode();
     const v = await pb.collection('vaults').create({
       box_id:       genCode(),
@@ -651,12 +653,13 @@ async function routePost(path: string, body: any): Promise<any> {
     // Block restore if the original position is already occupied
     const restoreCol = vd.column ?? vd.col;
     const occupying = await pb.collection('vaults').getFullList({
-      filter: `company_id="${cid}" && warehouse_id="${sf(vd.warehouse_id)}" && row="${sf(vd.row)}" && col="${sf(String(restoreCol))}" && level="${sf(String(vd.level))}"`,
-      fields: 'id,client_name,position',
+      filter: `company_id="${cid}" && warehouse_id="${sf(vd.warehouse_id)}" && row="${sf(vd.row)}"`,
+      fields: 'id,col,level,client_name,position',
     });
-    if (occupying.length > 0) {
+    const occupant = occupying.find((v: any) => Number(v.col) === Number(restoreCol) && Number(v.level) === Number(vd.level));
+    if (occupant) {
       const pos = vd.position || `${vd.row}${restoreCol}-L${vd.level}`;
-      const who = occupying[0].client_name ? ` (${occupying[0].client_name})` : '';
+      const who = occupant.client_name ? ` (${occupant.client_name})` : '';
       throw new Error(`Position ${pos} is already occupied${who}. Move or delete that vault first, then restore this one.`);
     }
     await pb.collection('vaults').create({

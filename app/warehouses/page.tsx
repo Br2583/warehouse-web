@@ -9,6 +9,7 @@ import {
 import Sidebar from '@/components/Sidebar';
 import { SkeletonWarehouseCard } from '@/components/Skeleton';
 import { pb } from '@/lib/pb';
+import { api } from '@/lib/api';
 import { useAuth } from '@/lib/auth-context';
 import Link from 'next/link';
 import ConfirmModal from '@/components/ConfirmModal';
@@ -57,7 +58,13 @@ export default function WarehousesPage() {
     finally { setLoading(false); }
   };
 
-  useEffect(() => { if (user?.company_id) fetchWarehouses(); }, [user?.company_id]);
+  useEffect(() => {
+    if (!user?.company_id) return;
+    fetchWarehouses();
+    const onVisible = () => { if (document.visibilityState === 'visible') fetchWarehouses(); };
+    document.addEventListener('visibilitychange', onVisible);
+    return () => document.removeEventListener('visibilitychange', onVisible);
+  }, [user?.company_id]);
 
   const createWarehouse = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -84,11 +91,11 @@ export default function WarehousesPage() {
 
   const deleteWarehouse = (id: string, name: string) => {
     setConfirmModal({
-      message: `Delete "${name}"? All vaults in this warehouse will also be deleted. This cannot be undone.`,
+      message: `Delete "${name}"? All vaults will be moved to Deleted (recoverable from /deleted).`,
       onConfirm: async () => {
         try {
           const vaults = await pb.collection('vaults').getFullList({ filter: `warehouse_id="${id}"`, fields: 'id' });
-          await Promise.all(vaults.map((v: any) => pb.collection('vaults').delete(v.id)));
+          await Promise.all(vaults.map((v: any) => api.delete(`/api/boxes/${v.id}`)));
           await pb.collection('warehouses').delete(id);
           await fetchWarehouses();
           showToast('Warehouse deleted');
