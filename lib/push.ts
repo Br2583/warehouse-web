@@ -70,7 +70,7 @@ export async function sendPush(
               token,
               notification: { title: payload.title, body: payload.body },
               data: payload.route ? { route: payload.route } : {},
-              android: { priority: 'high', notification: { sound: 'default', channel_id: 'warehouse-high', notification_priority: 'PRIORITY_MAX', visibility: 'PUBLIC' } },
+              android: { priority: 'high', notification: { channel_id: 'wm-alerts-v2', notification_priority: 'PRIORITY_MAX', visibility: 'PUBLIC' } },
             },
           }),
         });

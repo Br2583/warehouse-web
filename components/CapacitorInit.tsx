@@ -52,11 +52,10 @@ async function initPushNotifications(platform: string, router: { push: (route: s
     if (platform === 'android') {
       try {
         await PushNotifications.createChannel({
-          id: 'warehouse-high',
-          name: 'Warehouse Notifications',
+          id: 'wm-alerts-v2',
+          name: 'Warehouse Alerts',
           importance: 5,
           vibration: true,
-          sound: 'default',
           visibility: 1,
         });
       } catch { /* channel already exists */ }
