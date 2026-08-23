@@ -15,8 +15,7 @@ const SERVICES = [
 const LINKS = [
   { label: 'Dashboard', href: '/dashboard' },
   { label: 'Warehouses', href: '/warehouses' },
-  { label: 'Production', href: '/production' },
-  { label: 'Support', href: '/support' },
+  { label: 'Tasks', href: '/tasks' },
   { label: 'Terms & Conditions', href: '/terms' },
 ];
 
@@ -45,12 +44,12 @@ export default function AppFooter() {
               <span className="text-[13px] text-white/55">Los Angeles, California</span>
             </div>
             <a
-              href="mailto:noreplywarehousemanager@gmail.com"
+              href="mailto:support@managerwarehouse.cc"
               className="flex items-center gap-2.5 group py-2"
             >
               <EnvelopeIcon className="w-4 h-4 text-white/25 flex-shrink-0" />
               <span className="text-[13px] text-white/55 group-hover:text-white transition-colors">
-                noreplywarehousemanager@gmail.com
+                support@managerwarehouse.cc
               </span>
             </a>
             <a

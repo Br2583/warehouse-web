@@ -32,7 +32,7 @@ const PROTECTED = [
   '/dashboard', '/warehouses', '/search',
   '/stats', '/snapshots', '/chat', '/deleted', '/profile',
   '/storage', '/onboarding', '/admin-k9x2m7', '/scan', '/tasks',
-  '/vault', '/settings', '/support',
+  '/vault', '/settings',
 ];
 
 function isProtected(pathname: string): boolean {

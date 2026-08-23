@@ -8,7 +8,7 @@ import {
   UsersIcon, DevicePhoneMobileIcon, ExclamationTriangleIcon,
   ArrowRightOnRectangleIcon, ChevronRightIcon, CheckCircleIcon,
   BuildingOffice2Icon, KeyIcon, EyeIcon, EyeSlashIcon, PlusIcon,
-  DocumentDuplicateIcon, XMarkIcon, TrashIcon, LifebuoyIcon,
+  DocumentDuplicateIcon, XMarkIcon, TrashIcon, EnvelopeIcon, PhoneIcon,
   ExclamationCircleIcon, ArrowUpIcon, ArrowDownIcon,
 } from '@/components/icons';
 import Sidebar from '@/components/Sidebar';
@@ -553,16 +553,27 @@ export default function SettingsPage() {
           <motion.div custom={canManage ? 4 : 3} variants={fade} initial="hidden" animate="show">
             <p className={sectionTitle}>Support</p>
             <div className={card}>
-              <Link href="/support" className="flex items-center gap-3 group">
-                <div className="w-10 h-10 bg-blue-50 rounded-xl flex items-center justify-center flex-shrink-0">
-                  <LifebuoyIcon className="w-5 h-5 text-blue-600" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="font-semibold text-gray-900">Help &amp; Support</p>
-                  <p className="text-sm text-gray-400">Get help, report issues, documentation</p>
-                </div>
-                <ChevronRightIcon className="w-4 h-4 text-gray-400 group-hover:text-gray-600 transition-colors flex-shrink-0" />
-              </Link>
+              <div className="space-y-1">
+                <a href="mailto:support@managerwarehouse.cc" className="flex items-center gap-3 p-3 rounded-xl hover:bg-gray-50 transition-colors group">
+                  <div className="w-9 h-9 bg-blue-50 rounded-xl flex items-center justify-center flex-shrink-0">
+                    <EnvelopeIcon className="w-4 h-4 text-blue-600" />
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-400">Email</p>
+                    <p className="text-sm font-medium text-gray-900">support@managerwarehouse.cc</p>
+                  </div>
+                </a>
+                <a href="tel:+17142178029" className="flex items-center gap-3 p-3 rounded-xl hover:bg-gray-50 transition-colors group">
+                  <div className="w-9 h-9 bg-green-50 rounded-xl flex items-center justify-center flex-shrink-0">
+                    <PhoneIcon className="w-4 h-4 text-green-600" />
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-400">Phone</p>
+                    <p className="text-sm font-medium text-gray-900">+1 (714) 217-8029</p>
+                  </div>
+                </a>
+              </div>
+              <p className="text-xs text-gray-400 mt-3 px-1">We typically respond within 24–48 hours on business days.</p>
             </div>
           </motion.div>
 

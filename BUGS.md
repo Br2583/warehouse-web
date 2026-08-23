@@ -234,7 +234,7 @@ if (!company.approved || company.suspended || company.rejected) {
 **Archivo:** `app/deleted/page.tsx`  
 **Fix:** `{isOwner && <button>Permanently Delete</button>}`.
 
-### M-8 — ConfirmModal cierra antes de que termine la operación
+### M-8 — ConfirmModal cierra antes de que termine la operación ✅ FIXED (ya estaba ok)
 **Archivo:** `components/ConfirmModal.tsx` línea ~45  
 **Fix:** Convertir `onClick` en async, agregar estado `loading`, await `onConfirm()`, solo luego cerrar.
 
@@ -254,11 +254,11 @@ if (!company.approved || company.suspended || company.rejected) {
 **Archivos:** `activate/route.ts`, `confirm-password-reset/route.ts`, `send-password-reset/route.ts`, `send-verification/route.ts`, `verify-email/route.ts`  
 **Fix:** En cada uno: `import { getPbAdminToken } from '@/lib/pb-admin'` y eliminar la función local.
 
-### M-13 — lib/pb.ts hardcodea URL sin env var
+### M-13 — lib/pb.ts hardcodea URL sin env var ✅ FIXED (ya estaba ok)
 **Archivo:** `lib/pb.ts` línea 3  
 **Fix:** `new PocketBase(process.env.NEXT_PUBLIC_PB_URL || 'https://pocketbase-production-e699.up.railway.app')`.
 
-### M-14 — STATUS_COLORS_HEX['DELIVERED'] color incorrecto
+### M-14 — STATUS_COLORS_HEX['DELIVERED'] color incorrecto ✅ FIXED (ya estaba ok)
 **Archivo:** `lib/constants.ts` línea ~17  
 **Fix:** Cambiar `'#6366f1'` a `'#3b82f6'` para consistencia con los otros objetos.
 
@@ -270,7 +270,7 @@ if (!company.approved || company.suspended || company.rejected) {
 **Archivo:** `lib/use-unread-chat.ts`  
 **Fix:** Usar `perPage=1&sort=-created` y solo comparar el timestamp del último mensaje con el último visto.
 
-### M-17 — Badge pending tasks cuenta IN_PROGRESS
+### M-17 — Badge pending tasks cuenta IN_PROGRESS ✅ FIXED (ya estaba ok)
 **Archivo:** `lib/use-pending-tasks.ts` línea ~17  
 **Fix:** `tasks.filter(t => t.status === 'PENDING').length`.
 
@@ -362,7 +362,7 @@ El API soporta `approve` y `reject` pero la UI no los tiene.
 **Problema:** `doneRef.current = true` en el cleanup nunca se resetea a `false` al inicio del siguiente effect. Si el padre cambia `onResult`, la cámara se abre y se cierra inmediatamente — queda permanentemente muerta sin recovery.  
 **Fix:** Agregar `doneRef.current = false` como **primera línea** dentro del cuerpo del effect (antes de llamar `start()`).
 
-### NM-3 — Task status puede borrarse enviando PUT sin el campo `status`
+### NM-3 — Task status puede borrarse enviando PUT sin el campo `status` ✅ FIXED (ya estaba ok)
 **Archivo:** `app/api/tasks/[id]/route.ts` línea ~45  
 **Problema:** `updateData = { status: body.status }` — si `body.status` es `undefined`, PocketBase puede borrar el campo. No hay validación de presencia antes del write.  
 **Fix:** `if (!body.status) return NextResponse.json({ error: 'status required' }, { status: 400 })`.
