@@ -173,6 +173,14 @@ export default function TopBar({ onOpenNav }: TopBarProps) {
             <p className="text-sm font-semibold text-gray-900 truncate">Hi, {firstName} 👋</p>
             <p className="text-[11px] text-gray-400">{timeStr}</p>
           </div>
+          <Link
+            href="/tasks?new=1"
+            className="flex-shrink-0 flex items-center gap-1 px-3 py-1.5 bg-gray-950 text-white text-xs font-semibold rounded-full active:opacity-70 transition-opacity"
+            aria-label="Add task"
+          >
+            <PlusIcon className="w-3.5 h-3.5" />
+            Task
+          </Link>
           {bellBtn}
           <div ref={mobileProfileRef} className="relative flex-shrink-0">
             <button
