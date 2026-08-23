@@ -12,7 +12,7 @@ export default function VaultRedirectPage() {
     if (!id) return;
     pb.collection('vaults').getOne(String(id), { fields: 'id,warehouse_id' })
       .then(vault => {
-        router.replace(`/warehouses/${vault.warehouse_id}?vault=${vault.id}`);
+        router.replace(`/warehouses/${vault.warehouse_id}?vault=${vault.id}&t=${Date.now()}`);
       })
       .catch(() => {
         router.replace('/dashboard');

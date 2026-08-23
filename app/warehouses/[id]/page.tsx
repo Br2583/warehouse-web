@@ -214,15 +214,17 @@ export default function WarehouseDetailPage() {
       .finally(() => setLooseLoading(false));
   }, [activeTab, warehouseId]);
 
-  // Auto-open vault when navigating from /scan?vault=<id>
-  // Uses a ref so re-renders from fetchBoxes don't reopen a panel the user already closed
+  // Auto-open vault when navigating from /scan?vault=<id> or QR scan
+  // cacheKey includes ?t= timestamp so repeated QR scans of the same vault still open the modal
   useEffect(() => {
     const targetId = searchParams?.get('vault');
     if (!targetId || boxes.length === 0) return;
-    if (autoOpenedVaultRef.current === targetId) return;
+    const t = searchParams?.get('t') || '';
+    const cacheKey = `${targetId}-${t}`;
+    if (autoOpenedVaultRef.current === cacheKey) return;
     const found = boxes.find(b => b.box_id === targetId);
     if (!found) return;
-    autoOpenedVaultRef.current = targetId;
+    autoOpenedVaultRef.current = cacheKey;
     setSelected(found);
     setShowQR(false);
     setLoadingPhotos(true);
