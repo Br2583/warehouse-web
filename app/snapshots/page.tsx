@@ -86,7 +86,14 @@ export default function SnapshotsPage() {
       onConfirm: async () => {
         setActionError('');
         try {
-          await api.delete(`/api/snapshots/${id}`);
+          const res = await fetch(`/api/snapshots/${id}`, {
+            method: 'DELETE',
+            headers: { Authorization: `Bearer ${pb.authStore.token}` },
+          });
+          if (!res.ok && res.status !== 204) {
+            const err = await res.json().catch(() => ({}));
+            throw new Error(err?.error || 'Failed to delete snapshot');
+          }
           fetchSnapshots();
         } catch (e: any) {
           setActionError(e.message || 'Failed to delete snapshot');

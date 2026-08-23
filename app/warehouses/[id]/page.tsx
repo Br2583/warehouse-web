@@ -1115,7 +1115,7 @@ export default function WarehouseDetailPage() {
                   {showQR && (
                     <div className="mt-3 flex flex-col items-center gap-2 p-4 bg-gray-50 rounded-xl">
                       <QRCodeSVG
-                        value={`${process.env.NEXT_PUBLIC_APP_URL || 'https://managerwarehouse.cc'}/vault/${selected.box_id}/print`}
+                        value={`${process.env.NEXT_PUBLIC_APP_URL || 'https://managerwarehouse.cc'}/vault/${selected.box_id}`}
                         size={160}
                         level="H"
                       />
