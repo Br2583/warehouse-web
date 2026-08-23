@@ -10,7 +10,7 @@ const companyId = () => pb.authStore.model?.company_id as string | undefined;
 const userId    = () => pb.authStore.model?.id as string | undefined;
 
 // Escape values interpolated into PocketBase filter strings to prevent injection
-function sf(val: string): string {
+export function sf(val: string): string {
   return val.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
 }
 
@@ -370,7 +370,6 @@ async function routeGet(path: string): Promise<any> {
       sort: '-date',
     });
     return items
-      .sort((a: any, b: any) => a.date < b.date ? 1 : -1)
       .map(s => {
         const data = typeof s.data === 'string'
           ? (() => { try { return JSON.parse(s.data); } catch { return {}; } })()
@@ -416,6 +415,7 @@ async function routeGet(path: string): Promise<any> {
     const items = await pb.collection('loose_items').getFullList({
       filter: `company_id="${cid}" && warehouse_id="${sf(wid)}"`,
       sort: 'id',
+      fields: 'id,warehouse_id,client_name,grid_x,grid_y,item_type,furniture_type,color,condition,status,comments,created',
     });
     return items.map(mapLooseItem);
   }

@@ -3,21 +3,27 @@
 import { useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { pb } from '@/lib/pb';
+import { sf } from '@/lib/api';
+import { useAuth } from '@/lib/auth-context';
 
 export default function VaultRedirectPage() {
   const { id } = useParams();
   const router = useRouter();
+  const { user } = useAuth();
 
   useEffect(() => {
-    if (!id) return;
-    pb.collection('vaults').getOne(String(id), { fields: 'id,warehouse_id' })
+    if (!id || !user?.company_id) return;
+    pb.collection('vaults').getFirstListItem(
+      `id="${sf(String(id))}" && company_id="${sf(user.company_id)}"`,
+      { fields: 'id,warehouse_id' }
+    )
       .then(vault => {
         router.replace(`/warehouses/${vault.warehouse_id}?vault=${vault.id}&t=${Date.now()}`);
       })
       .catch(() => {
         router.replace('/dashboard');
       });
-  }, [id, router]);
+  }, [id, router, user?.company_id]);
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50">

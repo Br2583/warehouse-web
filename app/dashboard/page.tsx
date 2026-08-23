@@ -72,7 +72,7 @@ export default function DashboardPage() {
 
       if (whs.status === 'fulfilled' && Array.isArray(whs.value)) {
         const map: Record<string, string> = {};
-        whs.value.forEach((w: any) => { map[w.id] = w.name || w.warehouse_name || w.id; });
+        whs.value.forEach((w: any) => { map[w.id] = w.name || w.id; });
         setWarehouseNames(map);
       }
 

@@ -174,7 +174,7 @@ export default function WarehouseDetailPage() {
         if (Array.isArray(data)) setBoxes(data);
         else if (data?.boxes) setBoxes(data.boxes);
         else if (data?.items) setBoxes(data.items);
-        else { setBoxes([]); setApiError(`Unexpected response: ${JSON.stringify(data).slice(0, 100)}`); }
+        else { setBoxes([]); setApiError('Unexpected response format. Please refresh.'); }
       })
       .catch(err => setApiError(`API Error: ${err.message}`))
       .finally(() => setLoading(false));
@@ -184,7 +184,7 @@ export default function WarehouseDetailPage() {
     fetchBoxes();
     api.get('/api/warehouses').then((whs: any) => { if (Array.isArray(whs)) setAllWarehouses(whs); }).catch(() => {});
     import('@/lib/pb').then(({ pb }) =>
-      pb.collection('warehouses').getFirstListItem(`id="${warehouseId}" && company_id="${user?.company_id || ''}"`).then(w => {
+      pb.collection('warehouses').getFirstListItem(`id="${warehouseId.replace(/\\/g,'\\\\').replace(/"/g,'\\"')}" && company_id="${(user?.company_id||'').replace(/\\/g,'\\\\').replace(/"/g,'\\"')}"`).then(w => {
         setWarehouseName(w.name);
         const r = Number(w.rows) || 10;
         const c = Number(w.cols) || 8;
@@ -298,7 +298,7 @@ export default function WarehouseDetailPage() {
 
   const deleteBox = (boxId: string) => {
     setConfirmModal({
-      message: 'Delete this vault? This cannot be undone.',
+      message: 'Delete this vault? You can recover it from the Deleted Vaults page.',
       onConfirm: async () => {
         await api.delete(`/api/boxes/${boxId}`);
         setSelected(null);
@@ -363,7 +363,7 @@ export default function WarehouseDetailPage() {
     setShowMove(true);
   };
 
-  const handleMove = async () => {
+  const handleMove = async (confirmSwap = false) => {
     if (!moveTarget) return;
     setMoveSaving(true);
     setMoveError('');
@@ -373,11 +373,13 @@ export default function WarehouseDetailPage() {
         row: moveDest.row,
         col: moveDest.col,
         level: moveDest.level,
+        ...(confirmSwap ? { confirmSwap: true } : {}),
       });
       if (result?.unchanged) {
         setMoveError('The vault is already at this position');
       } else if (result?.occupied) {
-        setMoveError(`Position taken by ${result.occupant?.client_name || 'another vault'}`);
+        setMoveOccupant(result.occupant || null);
+        setMoveError(`Position taken by ${result.occupant?.client_name || 'another vault'}. Swap positions?`);
       } else {
         setShowMove(false);
         setMoveTarget(null);
@@ -1556,6 +1558,15 @@ export default function WarehouseDetailPage() {
                 </div>
 
                 {moveError && <p className="text-sm text-red-600">{moveError}</p>}
+                {moveOccupant && (
+                  <button
+                    onClick={() => handleMove(true)}
+                    disabled={moveSaving}
+                    className="w-full py-2.5 bg-blue-600 text-white text-sm font-medium rounded-full hover:bg-blue-700 transition-colors disabled:opacity-50"
+                  >
+                    Swap with {moveOccupant.client_name}
+                  </button>
+                )}
                 <button
                   onClick={() => handleMove()}
                   disabled={moveSaving}

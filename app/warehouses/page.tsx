@@ -95,7 +95,11 @@ export default function WarehousesPage() {
       onConfirm: async () => {
         try {
           const vaults = await pb.collection('vaults').getFullList({ filter: `warehouse_id="${id}"`, fields: 'id' });
-          await Promise.all(vaults.map((v: any) => api.delete(`/api/boxes/${v.id}`)));
+          // Delete in batches of 20 to avoid overwhelming PocketBase
+          const BATCH = 20;
+          for (let i = 0; i < vaults.length; i += BATCH) {
+            await Promise.allSettled(vaults.slice(i, i + BATCH).map((v: any) => api.delete(`/api/boxes/${v.id}`)));
+          }
           await pb.collection('warehouses').delete(id);
           await fetchWarehouses();
           showToast('Warehouse deleted');

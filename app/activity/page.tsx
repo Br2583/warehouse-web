@@ -47,7 +47,12 @@ function entityHref(item: ActivityItem) {
   if (item.entity_type === 'storage')    return `/storage/${item.entity_id}`;
   if (item.entity_type === 'task')       return '/tasks';
   if (item.entity_type === 'loose_item') return '/warehouses';
-  return '/warehouses';
+  // vault: parse before_data to get warehouse_id for a direct link
+  try {
+    const bd = item.before_data ? JSON.parse(item.before_data) : null;
+    if (bd?.warehouse_id) return `/warehouses/${bd.warehouse_id}?vault=${item.entity_id}`;
+  } catch { /* fall through */ }
+  return `/vault/${item.entity_id}`;
 }
 
 function InitialAvatar({ name }: { name: string }) {

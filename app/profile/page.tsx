@@ -328,10 +328,6 @@ export default function ProfilePage() {
                     </p>
                   )}
                   <div className="flex justify-between text-sm">
-                    <span className="text-gray-400">Industry</span>
-                    <span className="font-medium text-gray-900">{company.industry || 'Warehousing'}</span>
-                  </div>
-                  <div className="flex justify-between text-sm">
                     <span className="text-gray-400">Members</span>
                     <span className="font-medium text-gray-900">{company.member_count} / {company.max_members}</span>
                   </div>

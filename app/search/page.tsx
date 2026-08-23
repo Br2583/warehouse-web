@@ -13,9 +13,9 @@ import { STATUS_COLORS } from '@/lib/constants';
 const JOB_TYPES = ['Fire', 'Water', 'Mold', 'Moving', 'Storage'];
 const STATUSES  = ['PENDING', 'READY', 'DELIVERED'];
 const STORAGE_STATUS_COLORS: Record<string, string> = {
-  Available:   'bg-green-100 text-green-700',
-  Occupied:    'bg-blue-100 text-blue-700',
-  Maintenance: 'bg-amber-100 text-amber-700',
+  AVAILABLE:   'bg-green-100 text-green-700',
+  OCCUPIED:    'bg-blue-100 text-blue-700',
+  MAINTENANCE: 'bg-amber-100 text-amber-700',
 };
 
 function SearchContent() {

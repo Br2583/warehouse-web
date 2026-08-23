@@ -135,8 +135,8 @@ export default function ChatPage() {
       }
       setText('');
       isAtBottomRef.current = true;
-      await fetchMessages();
       scrollToBottom();
+      fetchMessages(); // fire-and-forget; polling picks it up within 5s
     } catch (err: any) {
       setSendError(err?.message || 'Failed to send message');
     } finally {

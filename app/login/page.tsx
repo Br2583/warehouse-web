@@ -124,7 +124,7 @@ function LoginForm() {
         else router.replace('/dashboard');
       })
       .catch(() => router.replace('/dashboard'));
-  }, [sessionExpired]);
+  }, [sessionExpired, router]);
 
   const handleLogin = async () => {
     setError('');
@@ -276,7 +276,7 @@ function LoginForm() {
             )}
           </AnimatePresence>
 
-          <div className="space-y-4">
+          <form className="space-y-4" onSubmit={e => { e.preventDefault(); handleLogin(); }}>
             {/* ── LOGIN FORM ── */}
             {!needsCompany && (
               <>
@@ -317,7 +317,7 @@ function LoginForm() {
                 )}
 
                 <button
-                  onClick={handleLogin}
+                  type="submit"
                   disabled={loading}
                   className="w-full py-3.5 rounded-full bg-gray-950 text-white font-bold text-sm hover:bg-gray-800 hover:-translate-y-0.5 active:translate-y-0 transition-all shadow-[0_4px_18px_rgba(15,23,42,.18)] hover:shadow-[0_6px_24px_rgba(15,23,42,.28)] disabled:opacity-50 flex items-center justify-center gap-2"
                 >
@@ -391,7 +391,7 @@ function LoginForm() {
                 </button>
               </>
             )}
-          </div>
+          </form>
         </div>
 
         {/* ── RIGHT: Info panel ── */}

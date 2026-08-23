@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { XMarkIcon } from '@/components/icons';
 import QRScanner from '@/components/QRScanner';
 import { pb } from '@/lib/pb';
+import { sf } from '@/lib/api';
 import { useAuth } from '@/lib/auth-context';
 
 type ScanState = 'scanning' | 'searching' | 'error';
@@ -24,7 +25,7 @@ export default function ScanPage() {
     setState('searching');
     try {
       const records = await pb.collection('vaults').getFullList({
-        filter: `id="${boxId}" && company_id="${user.company_id}"`,
+        filter: `id="${sf(boxId)}" && company_id="${sf(user.company_id)}"`,
         fields: 'id,box_id,warehouse_id',
       });
       if (records.length === 0) {

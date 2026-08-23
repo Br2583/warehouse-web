@@ -68,6 +68,17 @@ export default function DeletedPage() {
     });
   };
 
+  if (!canManage) {
+    return (
+      <div className="flex min-h-screen bg-gray-50">
+        <Sidebar />
+        <main className="md:ml-64 flex-1 min-w-0 px-8 py-16 topbar-offset text-center">
+          <p className="text-gray-500 text-sm">You don't have permission to view deleted vaults.</p>
+        </main>
+      </div>
+    );
+  }
+
   return (
     <div className="flex min-h-screen bg-gray-50">
       <Sidebar />
