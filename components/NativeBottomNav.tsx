@@ -21,7 +21,7 @@ import {
   QrCodeIcon,
   TrashIcon,
   UserCircleIcon,
-} from '@heroicons/react/24/outline';
+} from '@/components/icons';
 
 const TABS = [
   { href: '/dashboard',  label: 'Home',       icon: HomeIcon },

@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useMemo, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { motion, useMotionValue, useTransform, animate } from 'framer-motion';
+import { motion } from 'framer-motion';
 import {
   BuildingOffice2Icon, ChevronRightIcon,
   ArchiveBoxIcon, ClockIcon, CheckCircleIcon, TruckIcon,
@@ -10,6 +10,7 @@ import {
 } from '@/components/icons';
 import Sidebar from '@/components/Sidebar';
 import { api } from '@/lib/api';
+import { CountUp } from '@/components/CountUp';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid,
   Cell, ResponsiveContainer, Tooltip,
@@ -24,18 +25,6 @@ const STATUS_CFG: Record<string, { label: string; color: string; bg: string; tex
   DELIVERED: { label: 'Delivered', color: '#3b82f6', bg: 'bg-blue-50',    text: 'text-blue-700',   icon: TruckIcon },
 };
 
-function CountUp({ value, delay = 0 }: { value: number; delay?: number }) {
-  const mv = useMotionValue(0);
-  const display = useTransform(mv, v => Math.round(v).toLocaleString());
-  useEffect(() => {
-    const t = setTimeout(() => {
-      const c = animate(mv, value, { duration: 1.2, ease: [0.16, 1, 0.3, 1] });
-      return c.stop;
-    }, delay);
-    return () => clearTimeout(t);
-  }, [value, delay, mv]);
-  return <motion.span>{display}</motion.span>;
-}
 
 function ChartTooltip({ active, payload }: any) {
   if (!active || !payload?.length) return null;

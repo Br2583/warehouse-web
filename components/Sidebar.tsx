@@ -2,36 +2,12 @@
 
 import { useAuth } from '@/lib/auth-context';
 import { motion } from 'framer-motion';
-import {
-  HomeIcon, BuildingOffice2Icon, ArchiveBoxIcon, ClipboardDocumentListIcon,
-  MagnifyingGlassIcon, ChartBarSquareIcon, CameraIcon, ChatBubbleLeftRightIcon,
-  Cog6ToothIcon, ArrowRightOnRectangleIcon, ClipboardDocumentCheckIcon,
-  TrashIcon,
-  HomeIcon as HomeSolid, BuildingOffice2Icon as BuildingSolid, ArchiveBoxIcon as ArchiveSolid,
-  ClipboardDocumentListIcon as TasksSolid, MagnifyingGlassIcon as SearchSolid,
-  ChartBarSquareIcon as ChartSolid, CameraIcon as CameraSolid,
-  ChatBubbleLeftRightIcon as ChatSolid, Cog6ToothIcon as CogSolid,
-  ClipboardDocumentCheckIcon as ActivitySolid,
-  TrashIcon as TrashSolid,
-} from '@/components/icons';
+import { ArrowRightOnRectangleIcon } from '@/components/icons';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useNavData } from '@/lib/nav-data-context';
 import { UserAvatar } from '@/components/UserAvatar';
-
-const navItems = [
-  { href: '/dashboard',  label: 'Dashboard',  icon: HomeIcon,                      iconActive: HomeSolid },
-  { href: '/warehouses', label: 'Warehouses', icon: BuildingOffice2Icon,           iconActive: BuildingSolid },
-  { href: '/storage',    label: 'Storage',    icon: ArchiveBoxIcon,                iconActive: ArchiveSolid },
-  { href: '/tasks',      label: 'Tasks',      icon: ClipboardDocumentListIcon,     iconActive: TasksSolid },
-  { href: '/search',     label: 'Search',     icon: MagnifyingGlassIcon,           iconActive: SearchSolid },
-  { href: '/stats',       label: 'Stats',          icon: ChartBarSquareIcon,            iconActive: ChartSolid },
-  { href: '/snapshots',  label: 'Snapshots',      icon: CameraIcon,                    iconActive: CameraSolid },
-  { href: '/chat',       label: 'Chat',           icon: ChatBubbleLeftRightIcon,       iconActive: ChatSolid },
-  { href: '/activity',   label: 'Activity',       icon: ClipboardDocumentCheckIcon,    iconActive: ActivitySolid, managerOnly: true },
-  { href: '/deleted',    label: 'Deleted Vaults', icon: TrashIcon,                     iconActive: TrashSolid,    managerOnly: true },
-  { href: '/settings',   label: 'Settings',       icon: Cog6ToothIcon,                 iconActive: CogSolid },
-];
+import { NAV_ITEMS } from '@/lib/nav-routes';
 
 export default function Sidebar() {
   const { user, logout, canManage } = useAuth();
@@ -54,7 +30,7 @@ export default function Sidebar() {
 
       {/* Nav */}
       <nav className="flex-1 p-4 space-y-0.5 overflow-y-auto">
-        {navItems.filter(item => !item.managerOnly || canManage).map((item) => {
+        {NAV_ITEMS.filter(item => !item.managerOnly || canManage).map((item) => {
           const active = pathname === item.href || pathname.startsWith(item.href + '/');
           const Icon = active ? item.iconActive : item.icon;
           return (

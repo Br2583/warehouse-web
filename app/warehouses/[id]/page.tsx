@@ -22,7 +22,7 @@ import { STATUS_COLORS, STATUS_CELL } from '@/lib/constants';
 
 interface Box {
   box_id: string;
-  warehouse_id: number;
+  warehouse_id: string;
   row: string;
   column: number;
   level: number;

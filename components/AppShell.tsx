@@ -14,7 +14,7 @@ import { useUnreadChat } from '@/lib/use-unread-chat';
 import { usePendingTasks } from '@/lib/use-pending-tasks';
 import { NavDataContext } from '@/lib/nav-data-context';
 
-const AUTH_ROUTES = ['/dashboard', '/warehouses', '/search', '/tasks', '/production', '/stats', '/snapshots', '/chat', '/profile', '/storage', '/onboarding', '/deleted', '/scan', '/vault', '/settings', '/support', '/push-debug', '/activity'];
+const AUTH_ROUTES = ['/dashboard', '/warehouses', '/search', '/tasks', '/stats', '/snapshots', '/chat', '/profile', '/storage', '/onboarding', '/deleted', '/scan', '/vault', '/settings', '/support', '/push-debug', '/activity'];
 
 export default function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();

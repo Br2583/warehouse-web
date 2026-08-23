@@ -65,7 +65,7 @@ export default function SupportPage() {
             <h3 className="font-semibold text-gray-900 text-sm mb-4">Get in Touch</h3>
             <div className="space-y-2">
               <a
-                href="mailto:noreplywarehousemanager@gmail.com"
+                href="mailto:support@managerwarehouse.cc"
                 className="flex items-center gap-3 p-3.5 rounded-xl hover:bg-slate-50 transition-colors group"
               >
                 <div className="w-10 h-10 bg-blue-50 rounded-xl flex items-center justify-center flex-shrink-0 group-hover:bg-blue-100 transition-colors">
@@ -73,7 +73,7 @@ export default function SupportPage() {
                 </div>
                 <div>
                   <p className="text-xs text-slate-400 mb-0.5">Email Support</p>
-                  <p className="text-sm font-medium text-gray-900">noreplywarehousemanager@gmail.com</p>
+                  <p className="text-sm font-medium text-gray-900">support@managerwarehouse.cc</p>
                 </div>
               </a>
 

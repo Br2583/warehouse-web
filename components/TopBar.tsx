@@ -25,22 +25,11 @@ export default function TopBar({ onOpenNav }: TopBarProps) {
   const [showProfile, setShowProfile] = useState(false);
   const [showMobileProfile, setShowMobileProfile] = useState(false);
   const [showNotifs, setShowNotifs] = useState(false);
-  const [timeStr, setTimeStr] = useState(() =>
-    new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
-  );
 
   const profileRef = useRef<HTMLDivElement>(null);
   const mobileProfileRef = useRef<HTMLDivElement>(null);
   const notifRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    const update = () => {
-      setTimeStr(new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }));
-    };
-    update();
-    const t = setInterval(update, 30_000);
-    return () => clearInterval(t);
-  }, []);
 
   useEffect(() => {
     if (!showProfile) return;
@@ -171,7 +160,6 @@ export default function TopBar({ onOpenNav }: TopBarProps) {
 
           <div className="flex-1 min-w-0">
             <p className="text-sm font-semibold text-gray-900 truncate">Hi, {firstName} 👋</p>
-            <p className="text-[11px] text-gray-400">{timeStr}</p>
           </div>
           <Link
             href="/tasks?new=1"
@@ -241,7 +229,6 @@ export default function TopBar({ onOpenNav }: TopBarProps) {
         {/* Greeting + clock */}
         <div className="flex-1 min-w-0">
           <p className="text-sm font-semibold text-gray-900">Hi, {firstName} 👋</p>
-          <p className="text-[11px] text-gray-400">{timeStr}</p>
         </div>
 
         {/* Bell */}

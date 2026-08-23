@@ -29,7 +29,7 @@ async function isValidAdminSession(value: string | undefined): Promise<boolean> 
 }
 
 const PROTECTED = [
-  '/dashboard', '/warehouses', '/search', '/production',
+  '/dashboard', '/warehouses', '/search',
   '/stats', '/snapshots', '/chat', '/deleted', '/profile',
   '/storage', '/onboarding', '/admin-k9x2m7', '/scan', '/tasks',
   '/vault', '/settings', '/support',

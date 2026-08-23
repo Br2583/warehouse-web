@@ -4,7 +4,10 @@ import { Suspense, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { KeyIcon, EnvelopeIcon, EyeIcon, EyeSlashIcon, ArrowLeftIcon, CheckCircleIcon } from '@/components/icons';
+import { Turnstile } from '@marsidev/react-turnstile';
 import AuthShell from '@/components/AuthShell';
+
+const TURNSTILE_SITE_KEY = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY ?? '';
 
 /* ── light input helpers ── */
 const iBase  = 'w-full px-4 py-3 rounded-[10px] text-sm text-gray-900 placeholder-gray-300 outline-none transition-all';
@@ -22,6 +25,7 @@ function ResetPasswordForm() {
   const token  = params.get('token');
 
   const [email,          setEmail         ] = useState('');
+  const [turnstileToken, setTurnstileToken] = useState('');
   const [sent,           setSent          ] = useState(false);
   const [reqLoading,     setReqLoading    ] = useState(false);
   const [reqError,       setReqError      ] = useState('');
@@ -33,13 +37,19 @@ function ResetPasswordForm() {
 
   const handleRequestReset = async () => {
     if (!email.trim()) { setReqError('Enter your email.'); return; }
+    if (TURNSTILE_SITE_KEY && !turnstileToken) { setReqError('Please complete the human verification below.'); return; }
     setReqLoading(true); setReqError('');
     try {
-      await fetch('/api/auth/send-password-reset', {
+      const res = await fetch('/api/auth/send-password-reset', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: email.trim().toLowerCase() }),
+        body: JSON.stringify({ email: email.trim().toLowerCase(), turnstileToken }),
       });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        setReqError(data.error || 'Failed to send reset email. Try again.');
+        return;
+      }
       setSent(true);
     } catch { setSent(true); }
     finally { setReqLoading(false); }
@@ -115,6 +125,14 @@ function ResetPasswordForm() {
                     <label htmlFor="rp-email" className="block text-[12px] font-semibold text-slate-500 mb-1.5 group-focus-within:text-blue-600 transition-colors">Email address</label>
                     <input id="rp-email" type="email" value={email} onChange={e => setEmail(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleRequestReset()} placeholder="you@company.com" autoFocus className={iBase} style={iStyle} onFocus={iFocus} onBlur={iBlur} />
                   </div>
+                  {TURNSTILE_SITE_KEY && (
+                    <Turnstile
+                      siteKey={TURNSTILE_SITE_KEY}
+                      onSuccess={setTurnstileToken}
+                      onExpire={() => setTurnstileToken('')}
+                      onError={() => setTurnstileToken('')}
+                    />
+                  )}
                   <button onClick={handleRequestReset} disabled={reqLoading}
                     className="w-full py-3.5 rounded-full bg-gray-950 text-white font-bold text-sm hover:bg-gray-800 active:translate-y-0 hover:-translate-y-0.5 transition-all shadow-[0_4px_18px_rgba(15,23,42,.18)] disabled:opacity-50 flex items-center justify-center">
                     {reqLoading ? <span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" /> : 'Send Reset Link'}

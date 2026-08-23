@@ -4,33 +4,9 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
 import { UserAvatar } from '@/components/UserAvatar';
-import {
-  HomeIcon, BuildingOffice2Icon, ArchiveBoxIcon, ClipboardDocumentListIcon,
-  MagnifyingGlassIcon, ChartBarSquareIcon, CameraIcon, ChatBubbleLeftRightIcon,
-  ArrowRightOnRectangleIcon, XMarkIcon, QrCodeIcon, Cog6ToothIcon,
-  ClipboardDocumentCheckIcon, TrashIcon,
-  HomeIcon as HomeSolid, BuildingOffice2Icon as BuildingSolid, ArchiveBoxIcon as ArchiveSolid,
-  ClipboardDocumentListIcon as TasksSolid, MagnifyingGlassIcon as SearchSolid,
-  ChartBarSquareIcon as ChartSolid, CameraIcon as CameraSolid,
-  ChatBubbleLeftRightIcon as ChatSolid, Cog6ToothIcon as CogSolid,
-  ClipboardDocumentCheckIcon as ActivitySolid,
-  TrashIcon as TrashSolid,
-} from '@/components/icons';
+import { ArrowRightOnRectangleIcon, XMarkIcon, QrCodeIcon } from '@/components/icons';
 import { useNavData } from '@/lib/nav-data-context';
-
-const NAV_ITEMS = [
-  { href: '/dashboard',  label: 'Dashboard',   icon: HomeIcon,                     iconActive: HomeSolid },
-  { href: '/warehouses', label: 'Warehouses',  icon: BuildingOffice2Icon,          iconActive: BuildingSolid },
-  { href: '/storage',    label: 'Storage',     icon: ArchiveBoxIcon,               iconActive: ArchiveSolid },
-  { href: '/tasks',      label: 'Tasks',       icon: ClipboardDocumentListIcon,    iconActive: TasksSolid },
-  { href: '/search',     label: 'Search',      icon: MagnifyingGlassIcon,          iconActive: SearchSolid },
-  { href: '/stats',       label: 'Stats',          icon: ChartBarSquareIcon,           iconActive: ChartSolid },
-  { href: '/snapshots',  label: 'Snapshots',      icon: CameraIcon,                   iconActive: CameraSolid },
-  { href: '/chat',       label: 'Chat',           icon: ChatBubbleLeftRightIcon,      iconActive: ChatSolid },
-  { href: '/activity',   label: 'Activity',       icon: ClipboardDocumentCheckIcon,   iconActive: ActivitySolid, managerOnly: true },
-  { href: '/deleted',    label: 'Deleted Vaults', icon: TrashIcon,                    iconActive: TrashSolid,    managerOnly: true },
-  { href: '/settings',   label: 'Settings',       icon: Cog6ToothIcon,                iconActive: CogSolid },
-];
+import { NAV_ITEMS } from '@/lib/nav-routes';
 
 interface MobileNavProps {
   open: boolean;

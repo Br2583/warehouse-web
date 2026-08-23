@@ -4,9 +4,6 @@ import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { pb } from '@/lib/pb';
-import { Poppins } from 'next/font/google';
-
-const poppins = Poppins({ subsets: ['latin'], weight: ['600'], display: 'swap' });
 
 export default function NativeWelcome() {
   const router = useRouter();
@@ -118,8 +115,8 @@ export default function NativeWelcome() {
           }}
         >
           <h1
-            className={poppins.className}
             style={{
+              fontFamily: 'Inter, system-ui, sans-serif',
               margin: '0 0 4px',
               fontWeight: 600,
               fontSize: 18,

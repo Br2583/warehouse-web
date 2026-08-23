@@ -3,13 +3,14 @@
 import { useEffect, useState, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import {
-  ClipboardDocumentListIcon, PlusCircleIcon, PencilSquareIcon,
-  TrashIcon, ArrowPathIcon, ArrowsRightLeftIcon, ExclamationCircleIcon,
+  ClipboardDocumentListIcon, ExclamationCircleIcon,
   FunnelIcon, ArrowUturnLeftIcon, ArrowUpTrayIcon,
-  ChevronDownIcon, ChevronUpIcon,
+  ChevronDownIcon, ChevronUpIcon, ArrowPathIcon,
 } from '@/components/icons';
 import Sidebar from '@/components/Sidebar';
 import { api } from '@/lib/api';
+import { timeAgo } from '@/lib/utils';
+import { ACTION_CONFIG } from '@/lib/activity-config';
 import { useAuth } from '@/lib/auth-context';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -26,13 +27,6 @@ interface ActivityItem {
   created: string;
 }
 
-const ACTION_CONFIG: Record<string, { color: string; bg: string; label: string; Icon: any }> = {
-  CREATED:  { color: 'text-green-700',  bg: 'bg-green-100',  label: 'created',  Icon: PlusCircleIcon },
-  EDITED:   { color: 'text-blue-700',   bg: 'bg-blue-100',   label: 'edited',   Icon: PencilSquareIcon },
-  DELETED:  { color: 'text-red-700',    bg: 'bg-red-100',    label: 'deleted',  Icon: TrashIcon },
-  RESTORED: { color: 'text-amber-700',  bg: 'bg-amber-100',  label: 'restored', Icon: ArrowPathIcon },
-  MOVED:    { color: 'text-purple-700', bg: 'bg-purple-100', label: 'moved',    Icon: ArrowsRightLeftIcon },
-};
 
 const ENTITY_LABELS: Record<string, string> = {
   vault:      'vault',
@@ -48,18 +42,6 @@ const PERIODS = [
   { value: 'month',  label: 'This month' },
 ];
 
-function timeAgo(ts: string) {
-  const date = new Date(ts.replace(' ', 'T'));
-  const diff = Date.now() - date.getTime();
-  const mins = Math.floor(diff / 60000);
-  if (mins < 1) return 'just now';
-  if (mins < 60) return `${mins}m ago`;
-  const hours = Math.floor(mins / 60);
-  if (hours < 24) return `${hours}h ago`;
-  const days = Math.floor(hours / 24);
-  if (days < 7) return `${days}d ago`;
-  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: date.getFullYear() !== new Date().getFullYear() ? 'numeric' : undefined });
-}
 
 function entityHref(item: ActivityItem) {
   if (item.entity_type === 'storage')    return `/storage/${item.entity_id}`;

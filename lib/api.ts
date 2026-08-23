@@ -207,25 +207,6 @@ async function routeGet(path: string): Promise<any> {
   const cid  = companyId();
   const uid  = userId();
 
-  // ── Auth ──────────────────────────────────────────────────────────────────
-  if (p === '/api/auth/me') {
-    const m = pb.authStore.model;
-    if (!m) { pb.authStore.clear(); throw new Error('401'); }
-    let company_name = '';
-    if (m.company_id) {
-      try { const c = await pb.collection('companies').getOne(m.company_id); company_name = c.name; } catch {}
-    }
-    return {
-      user_id:      m.id,
-      email:        m.email,
-      name:         m.name,
-      picture:      m.avatar,
-      company_id:   m.company_id,
-      company_name,
-      role:         m.role,
-    };
-  }
-
   // ── Boxes / Vaults ─────────────────────────────────────────────────────────
   if (p === '/api/boxes') {
     if (!cid) return [];
@@ -372,6 +353,7 @@ async function routeGet(path: string): Promise<any> {
         const raw = await pb.collection('loose_items').getFullList({
           filter: `company_id="${cid}" && (client_name~"${sf(q2)}" || comments~"${sf(q2)}" || furniture_type~"${sf(q2)}")`,
           sort: '-id',
+          fields: 'id,client_name,furniture_type,comments,warehouse_id,company_id,created',
         });
         looseItems = raw.map(mapLooseItem);
       } catch {}
@@ -384,6 +366,8 @@ async function routeGet(path: string): Promise<any> {
     if (!cid) return [];
     const items = await pb.collection('snapshots').getFullList({
       filter: `company_id="${cid}"`,
+      fields: 'id,date,company_id,data',
+      sort: '-date',
     });
     return items
       .sort((a: any, b: any) => a.date < b.date ? 1 : -1)

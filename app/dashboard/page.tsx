@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { motion, useMotionValue, useTransform, animate } from 'framer-motion';
+import { motion } from 'framer-motion';
 import {
   ArchiveBoxIcon, ClipboardDocumentListIcon, CheckCircleIcon, TruckIcon,
   ClockIcon, PlayIcon, CheckIcon, PlusIcon, MagnifyingGlassIcon,
@@ -11,7 +11,9 @@ import {
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import { useAuth } from '@/lib/auth-context';
 import { api } from '@/lib/api';
-import { parseDate, parseDateOpt } from '@/lib/utils';
+import { parseDate, parseDateOpt, timeAgo } from '@/lib/utils';
+import { CountUp } from '@/components/CountUp';
+import { ACTION_CONFIG } from '@/lib/activity-config';
 import Sidebar from '@/components/Sidebar';
 import { SkeletonDashboardCard } from '@/components/Skeleton';
 import Link from 'next/link';
@@ -21,15 +23,6 @@ const STATUS_COLORS_LIGHT: Record<string, string> = {
   DELIVERED: 'bg-blue-50 text-blue-700',
 };
 
-function CountUp({ value }: { value: number }) {
-  const mv = useMotionValue(0);
-  const display = useTransform(mv, v => Math.round(v).toLocaleString());
-  useEffect(() => {
-    const c = animate(mv, value, { duration: 1.0, ease: [0.16, 1, 0.3, 1] });
-    return c.stop;
-  }, [value, mv]);
-  return <motion.span>{display}</motion.span>;
-}
 
 const CARD_CFG: Record<string, { lightBg: string; accentColor: string; iconBg: string }> = {
   blue:   { lightBg: '#eff6ff', accentColor: '#1d4ed8', iconBg: 'bg-blue-600' },
@@ -47,23 +40,6 @@ const fadeUp = {
 };
 
 
-const ACTIVITY_ACTION_CFG: Record<string, { color: string; bg: string; label: string; Icon: any }> = {
-  CREATED:  { color: 'text-green-700',  bg: 'bg-green-100',  label: 'created',  Icon: PlusCircleIcon },
-  EDITED:   { color: 'text-blue-700',   bg: 'bg-blue-100',   label: 'edited',   Icon: PencilSquareIcon },
-  DELETED:  { color: 'text-red-700',    bg: 'bg-red-100',    label: 'deleted',  Icon: TrashIcon },
-  RESTORED: { color: 'text-amber-700',  bg: 'bg-amber-100',  label: 'restored', Icon: ArrowPathIcon },
-  MOVED:    { color: 'text-purple-700', bg: 'bg-purple-100', label: 'moved',    Icon: ArrowsRightLeftIcon },
-};
-function actTimeAgo(ts: string) {
-  const date = new Date(ts.replace(' ', 'T'));
-  const diff = Date.now() - date.getTime();
-  const mins = Math.floor(diff / 60000);
-  if (mins < 1) return 'just now';
-  if (mins < 60) return `${mins}m ago`;
-  const hours = Math.floor(mins / 60);
-  if (hours < 24) return `${hours}h ago`;
-  return `${Math.floor(hours / 24)}d ago`;
-}
 
 export default function DashboardPage() {
   const { user, canManage } = useAuth();
@@ -386,7 +362,7 @@ export default function DashboardPage() {
             ) : (
               <div className="space-y-0 divide-y divide-gray-50">
                 {activityItems.map((item: any) => {
-                  const cfg = ACTIVITY_ACTION_CFG[item.action] || ACTIVITY_ACTION_CFG.EDITED;
+                  const cfg = ACTION_CONFIG[item.action] || ACTION_CONFIG.EDITED;
                   const ActionIcon = cfg.Icon;
                   return (
                     <div key={item.id} className="flex items-center gap-3 py-2.5">
@@ -400,7 +376,7 @@ export default function DashboardPage() {
                         </p>
                         <p className="text-xs text-gray-400 truncate">{item.entity_label}</p>
                       </div>
-                      <span className="text-xs text-gray-300 flex-shrink-0 ml-2">{actTimeAgo(item.created)}</span>
+                      <span className="text-xs text-gray-300 flex-shrink-0 ml-2">{timeAgo(item.created)}</span>
                     </div>
                   );
                 })}

@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
+import { usePathname } from 'next/navigation';
 import { getChatLastSeen } from './unread-chat';
 import { getToken } from './api';
 
@@ -12,12 +13,15 @@ export interface ChatUnreadData {
 
 export function useUnreadChat(): ChatUnreadData {
   const [data, setData] = useState<ChatUnreadData>({ count: 0, preview: null, senderName: null });
+  const pathname = usePathname();
 
   const check = useCallback(async () => {
+    // Skip polling when user is already on the chat page — it manages its own messages
+    if (pathname === '/chat') return;
     const token = getToken();
     if (!token) return;
     try {
-      const res = await fetch('/api/chat/messages?perPage=50&sort=-sent_at', {
+      const res = await fetch('/api/chat/messages?perPage=5&sort=-sent_at', {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (!res.ok) return;
@@ -47,7 +51,7 @@ export function useUnreadChat(): ChatUnreadData {
     check();
     const id = setInterval(check, 15_000);
     return () => clearInterval(id);
-  }, [check]);
+  }, [check, pathname]);
 
   return data;
 }
