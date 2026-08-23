@@ -28,15 +28,10 @@ async function isValidAdminSession(value: string | undefined): Promise<boolean> 
   return false;
 }
 
-const PROTECTED = [
-  '/dashboard', '/warehouses', '/search',
-  '/stats', '/snapshots', '/chat', '/deleted', '/profile',
-  '/storage', '/onboarding', '/admin-k9x2m7', '/scan', '/tasks',
-  '/vault', '/settings', '/activity',
-];
+import { PROTECTED_ROUTES } from '@/lib/protected-routes';
 
 function isProtected(pathname: string): boolean {
-  return PROTECTED.some(p => pathname === p || pathname.startsWith(p + '/'));
+  return PROTECTED_ROUTES.some(p => pathname === p || pathname.startsWith(p + '/'));
 }
 
 function setActivityCookie(res: NextResponse): void {

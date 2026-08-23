@@ -41,6 +41,7 @@ export default function ChatPage() {
   const [confirmClear, setConfirmClear] = useState(false);
   const [clearing, setClearing] = useState(false);
   const lastCountRef = useRef(-1);
+  const lastIdRef    = useRef('');
   const containerRef = useRef<HTMLDivElement>(null);
   const isAtBottomRef = useRef(true);
   const fetchingRef = useRef(false);
@@ -74,9 +75,9 @@ export default function ChatPage() {
       .then(r => r.json())
       .then((msgs: Message[]) => {
         if (!Array.isArray(msgs)) throw new Error((msgs as any)?.error || 'Failed to load messages');
-        const hadNew = lastCountRef.current >= 0 && msgs.length > lastCountRef.current;
+        const newest  = msgs[msgs.length - 1];
+        const hadNew  = lastCountRef.current >= 0 && !!newest && newest.id !== lastIdRef.current;
         if (hadNew) {
-          const newest = msgs[msgs.length - 1];
           if (newest && newest.sender_id !== user?.id) {
             notify(`${newest.sender_name}`, newest.text);
           }
@@ -85,6 +86,7 @@ export default function ChatPage() {
           markChatSeen(); // first load
         }
         lastCountRef.current = msgs.length;
+        if (newest) lastIdRef.current = newest.id;
         setMessages(msgs);
         setSendError('');
       }).catch((err: any) => {

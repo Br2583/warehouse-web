@@ -147,56 +147,11 @@ function mapMessage(m: any) {
 
 // Aggregate vaults into stats shape — single query, returns everything dashboard needs
 async function buildStats() {
-  const cid = companyId();
-  if (!cid) return { total_boxes: 0, statuses: {}, by_warehouse: {}, job_types: {}, recent: [], sla_count: 0, histogram: [] };
-
-  const [vaults, warehouses] = await Promise.all([
-    pb.collection('vaults').getFullList({
-      filter: `company_id="${cid}"`,
-      fields: 'id,estado,warehouse_id,job_type,created,pack_date,client_name,position',
-    }),
-    pb.collection('warehouses').getFullList({ filter: `company_id="${cid}"`, fields: 'id,name' }),
-  ]);
-
-  const whMap: Record<string, string> = {};
-  for (const w of warehouses) whMap[w.id] = w.name;
-
-  const statuses: Record<string, number> = {};
-  const by_warehouse: Record<string, number> = {};
-  const job_types: Record<string, number> = {};
-  let sla_count = 0;
-  const now = Date.now();
-
-  for (const v of vaults) {
-    const s = v.estado || 'PENDING';
-    statuses[s] = (statuses[s] || 0) + 1;
-    by_warehouse[v.warehouse_id] = (by_warehouse[v.warehouse_id] || 0) + 1;
-    job_types[v.job_type || 'Other'] = (job_types[v.job_type || 'Other'] || 0) + 1;
-    if (s === 'PENDING') {
-      const dateStr = v.pack_date || v.created;
-      if (dateStr) {
-        const ts = new Date(dateStr.replace(' ', 'T')).getTime();
-        if (now - ts > 3 * 24 * 60 * 60 * 1000) sla_count++;
-      }
-    }
-  }
-
-  const recent = [...vaults]
-    .sort((a, b) => (b.created || '') > (a.created || '') ? 1 : -1)
-    .slice(0, 5)
-    .map(v => ({ box_id: v.id, client_name: v.client_name, position: v.position, estado: v.estado, status: v.estado, created: v.created }));
-
-  const histogram: { label: string; count: number }[] = [];
-  for (let i = 6; i >= 0; i--) {
-    const d = new Date(now); d.setDate(d.getDate() - i);
-    const dateStr = d.toISOString().split('T')[0];
-    histogram.push({
-      label: d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-      count: vaults.filter(v => (v.created || '').split(/[ T]/)[0] === dateStr).length,
-    });
-  }
-
-  return { total_boxes: vaults.length, statuses, by_warehouse, job_types, recent, sla_count, histogram };
+  const token = pb.authStore.token;
+  if (!token) return { total_boxes: 0, statuses: {}, by_warehouse: {}, job_types: {}, recent: [], sla_count: 0, histogram: [], wh_map: {} };
+  const r = await fetch('/api/stats', { headers: { Authorization: `Bearer ${token}` } });
+  if (!r.ok) throw new Error('Failed to load stats');
+  return r.json();
 }
 
 // ─── Path router ──────────────────────────────────────────────────────────────
@@ -296,7 +251,7 @@ async function routeGet(path: string): Promise<any> {
       chatCid = freshUser.company_id;
     }
     if (!chatCid) return [];
-    // Fetch only last 150 messages sorted newest-first, then reverse for display
+    // Fetch last 500 messages sorted newest-first, then reverse for display
     const page = await pb.collection('chat_messages').getList(1, 500, {
       filter: `company_id="${chatCid}"`,
       sort: '-sent_at,-id',
@@ -453,9 +408,9 @@ async function routeGet(path: string): Promise<any> {
     const items = await pb.collection('deleted_vaults').getFullList({
       filter: `company_id="${cid}"`,
       fields: 'id,company_id,created,vault_data',
+      sort: '-created',
     });
     return items
-      .sort((a: any, b: any) => a.created < b.created ? 1 : -1)
       .map(d => {
         const vd = (d.vault_data as any) || {};
         return {
@@ -959,15 +914,6 @@ async function routeDelete(path: string): Promise<any> {
     if (storDel.company_id !== cid) throw new Error('Forbidden');
     logActivity({ action: 'DELETED', entity_type: 'storage', entity_id: storageDelMatch[1], entity_label: `Storage: ${storDel.unit_name}` });
     await pb.collection('storage_units').delete(storageDelMatch[1]);
-    return null;
-  }
-
-  // DELETE /api/chat/messages/:id
-  const chatMatch = p.match(/^\/api\/chat\/messages\/([^/]+)$/);
-  if (chatMatch) {
-    const chatMsg = await pb.collection('chat_messages').getOne(chatMatch[1]);
-    if (chatMsg.company_id !== cid || chatMsg.author_id !== userId()) throw new Error('Forbidden');
-    await pb.collection('chat_messages').delete(chatMatch[1]);
     return null;
   }
 

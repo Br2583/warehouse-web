@@ -105,7 +105,9 @@ function LoginForm() {
   const [inviteCode,     setInviteCode     ] = useState('');
   const [companyLoading, setCompanyLoading ] = useState(false);
   const [termsAccepted,  setTermsAccepted  ] = useState(false);
-  const [bannerDismissed,setBannerDismissed] = useState(false);
+  const [sessionBannerDismissed,  setSessionBannerDismissed]  = useState(false);
+  const [verifiedBannerDismissed, setVerifiedBannerDismissed] = useState(false);
+  const [resetBannerDismissed,    setResetBannerDismissed]    = useState(false);
   const [turnstileToken, setTurnstileToken ] = useState('');
 
   const verified       = params.get('verified') === '1';
@@ -243,22 +245,22 @@ function LoginForm() {
           </p>
 
           {/* Banners */}
-          {!bannerDismissed && sessionExpired && !error && (
+          {!sessionBannerDismissed && sessionExpired && !error && (
             <div className="flex items-center gap-2 bg-amber-50 border border-amber-200 text-amber-700 text-sm px-4 py-3 rounded-xl mb-4">
               <span className="flex-1">⏱ Your session has expired. Sign in again to continue.</span>
-              <button onClick={() => setBannerDismissed(true)} className="text-amber-400 hover:text-amber-600 text-lg leading-none flex-shrink-0">✕</button>
+              <button onClick={() => setSessionBannerDismissed(true)} className="text-amber-400 hover:text-amber-600 text-lg leading-none flex-shrink-0">✕</button>
             </div>
           )}
-          {!bannerDismissed && verified && !error && (
+          {!verifiedBannerDismissed && verified && !error && (
             <div className="flex items-center gap-2 bg-green-50 border border-green-200 text-green-700 text-sm px-4 py-3 rounded-xl mb-4">
               <span className="flex-1">✓ Email verified! Sign in to continue.</span>
-              <button onClick={() => setBannerDismissed(true)} className="text-green-400 hover:text-green-600 text-lg leading-none flex-shrink-0">✕</button>
+              <button onClick={() => setVerifiedBannerDismissed(true)} className="text-green-400 hover:text-green-600 text-lg leading-none flex-shrink-0">✕</button>
             </div>
           )}
-          {!bannerDismissed && reset && !error && (
+          {!resetBannerDismissed && reset && !error && (
             <div className="flex items-center gap-2 bg-green-50 border border-green-200 text-green-700 text-sm px-4 py-3 rounded-xl mb-4">
               <span className="flex-1">✓ Password updated! Sign in with your new password.</span>
-              <button onClick={() => setBannerDismissed(true)} className="text-green-400 hover:text-green-600 text-lg leading-none flex-shrink-0">✕</button>
+              <button onClick={() => setResetBannerDismissed(true)} className="text-green-400 hover:text-green-600 text-lg leading-none flex-shrink-0">✕</button>
             </div>
           )}
 

@@ -13,8 +13,9 @@ import { useTutorial } from '@/lib/use-tutorial';
 import { useUnreadChat } from '@/lib/use-unread-chat';
 import { usePendingTasks } from '@/lib/use-pending-tasks';
 import { NavDataContext } from '@/lib/nav-data-context';
+import { PROTECTED_ROUTES } from '@/lib/protected-routes';
 
-const AUTH_ROUTES = ['/dashboard', '/warehouses', '/search', '/tasks', '/stats', '/snapshots', '/chat', '/profile', '/storage', '/onboarding', '/deleted', '/scan', '/vault', '/settings', '/push-debug', '/activity'];
+const AUTH_ROUTES = [...PROTECTED_ROUTES, '/push-debug'];
 
 export default function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();

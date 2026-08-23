@@ -3,7 +3,8 @@
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { QRCodeSVG } from 'qrcode.react';
-import { api } from '@/lib/api';
+import { api, sf } from '@/lib/api';
+import { pb } from '@/lib/pb';
 import { useAuth } from '@/lib/auth-context';
 
 export default function VaultPrintPage() {
@@ -32,15 +33,16 @@ export default function VaultPrintPage() {
             if (wh?.name) setWarehouseName(wh.name);
           } catch {}
         }
-        if (v.client_name) {
+        if (v.client_name && user?.company_id) {
           try {
-            const clientVaults: any[] = await api.get(
-              `/api/boxes?client_name=${encodeURIComponent(v.client_name)}`
-            );
-            if (Array.isArray(clientVaults)) {
-              const idx = clientVaults.findIndex(cv => cv.box_id === id);
-              if (idx >= 0) setNOfM({ n: idx + 1, m: clientVaults.length });
-            }
+            const filter = `company_id="${sf(user.company_id)}" && client_name="${sf(v.client_name)}"`;
+            const sorted = await pb.collection('vaults').getFullList({
+              filter,
+              fields: 'id,created',
+              sort: 'created',
+            });
+            const idx = sorted.findIndex(cv => cv.id === id);
+            if (sorted.length > 1) setNOfM({ n: idx >= 0 ? idx + 1 : 1, m: sorted.length });
           } catch {}
         }
       })
