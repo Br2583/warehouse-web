@@ -21,6 +21,7 @@ import {
   QrCodeIcon,
   WrenchScrewdriverIcon,
   TrashIcon,
+  UserCircleIcon,
 } from '@heroicons/react/24/outline';
 
 const TABS = [
@@ -30,16 +31,25 @@ const TABS = [
   { href: '/chat',       label: 'Chat',       icon: ChatBubbleLeftRightIcon },
 ] as const;
 
-const GRID_ITEMS = [
-  { href: '/storage',   label: 'Storage',   icon: ArchiveBoxIcon,             managerOnly: false },
-  { href: '/search',    label: 'Search',    icon: MagnifyingGlassIcon,        managerOnly: false },
-  { href: '/stats',     label: 'Stats',     icon: ChartBarSquareIcon,         managerOnly: false },
-  { href: '/scan',      label: 'Scan QR',   icon: QrCodeIcon,                 managerOnly: false },
-  { href: '/snapshots', label: 'Snapshots', icon: CameraIcon,                 managerOnly: false },
+type GridItem = {
+  href: string;
+  label: string;
+  icon: React.ComponentType<{ className?: string }>;
+  managerOnly: boolean;
+  highlight?: boolean;
+};
+
+const GRID_ITEMS: GridItem[] = [
+  { href: '/scan',       label: 'Scan QR',        icon: QrCodeIcon,                 managerOnly: false, highlight: true },
+  { href: '/storage',    label: 'Storage',        icon: ArchiveBoxIcon,             managerOnly: false },
+  { href: '/search',     label: 'Search',         icon: MagnifyingGlassIcon,        managerOnly: false },
+  { href: '/stats',      label: 'Stats',          icon: ChartBarSquareIcon,         managerOnly: false },
+  { href: '/snapshots',  label: 'Snapshots',      icon: CameraIcon,                 managerOnly: false },
   { href: '/production', label: 'Production',     icon: WrenchScrewdriverIcon,      managerOnly: false },
-  { href: '/activity',  label: 'Activity',       icon: ClipboardDocumentCheckIcon, managerOnly: true },
-  { href: '/deleted',   label: 'Deleted Vaults', icon: TrashIcon,                  managerOnly: true },
-  { href: '/settings',  label: 'Settings',       icon: Cog6ToothIcon,              managerOnly: false },
+  { href: '/activity',   label: 'Activity',       icon: ClipboardDocumentCheckIcon, managerOnly: true  },
+  { href: '/deleted',    label: 'Deleted Vaults', icon: TrashIcon,                  managerOnly: true  },
+  { href: '/settings',   label: 'Settings',       icon: Cog6ToothIcon,              managerOnly: false },
+  { href: '/profile',    label: 'Profile',        icon: UserCircleIcon,             managerOnly: false },
 ];
 
 export default function NativeBottomNav() {
@@ -89,7 +99,7 @@ export default function NativeBottomNav() {
               boxShadow: '0 -4px 32px rgba(0,0,0,0.12), 0 2px 8px rgba(0,0,0,0.06)',
             }}
           >
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8 }}>
               {visibleGrid.map(item => {
                 const Icon = item.icon;
                 const active = pathname === item.href || pathname.startsWith(item.href + '/');
@@ -105,14 +115,14 @@ export default function NativeBottomNav() {
                       gap: 5,
                       padding: '10px 4px',
                       borderRadius: 14,
-                      background: active ? '#eff6ff' : '#F9FAFB',
+                      background: active ? '#eff6ff' : item.highlight ? '#EFF6FF' : '#F9FAFB',
                       border: 'none',
                       cursor: 'pointer',
                       width: '100%',
                     }}
                   >
-                    <Icon className={`w-6 h-6 ${active ? 'text-blue-600' : 'text-gray-600'}`} />
-                    <span style={{ fontSize: 10, fontWeight: 700, color: active ? '#2563eb' : '#374151' }}>
+                    <Icon className={`w-6 h-6 ${active ? 'text-blue-600' : item.highlight ? 'text-blue-500' : 'text-gray-600'}`} />
+                    <span style={{ fontSize: 10, fontWeight: 700, color: active ? '#2563eb' : item.highlight ? '#3b82f6' : '#374151' }}>
                       {item.label}
                     </span>
                   </button>
