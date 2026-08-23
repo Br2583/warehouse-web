@@ -64,7 +64,14 @@ export default function SnapshotsPage() {
     setCreatingSnap(warehouseId);
     setActionError('');
     try {
-      await api.post(`/api/snapshots/create/${warehouseId}`, {});
+      const res = await fetch(`/api/snapshots/create/${warehouseId}`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${pb.authStore.token}` },
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err?.error || 'Failed to create snapshot');
+      }
       fetchSnapshots();
     } catch (e: any) {
       setActionError(e.message || 'Failed to create snapshot');
