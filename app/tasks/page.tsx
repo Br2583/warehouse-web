@@ -6,7 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   PlusIcon, XMarkIcon, TrashIcon, CalendarIcon, UserCircleIcon,
   ExclamationCircleIcon, ListBulletIcon, ViewColumnsIcon, PencilIcon,
-  ClipboardDocumentListIcon, MagnifyingGlassIcon, ArchiveBoxIcon,
+  ClipboardDocumentListIcon, MagnifyingGlassIcon, ArchiveBoxIcon, ArrowPathIcon,
 } from '@/components/icons';
 import Link from 'next/link';
 import Sidebar from '@/components/Sidebar';
@@ -868,6 +868,14 @@ function TasksPageInner() {
             </p>
           </div>
           <div className="flex items-center gap-2">
+            <button
+              onClick={loadTasks}
+              className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-xl transition-colors"
+              aria-label="Refresh"
+              title="Refresh"
+            >
+              <ArrowPathIcon className="w-4 h-4" />
+            </button>
             {isOwner && (
               <div className="hidden md:flex items-center border border-gray-200 rounded-xl overflow-hidden">
                 <button

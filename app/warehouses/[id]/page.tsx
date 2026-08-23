@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   ArchiveBoxIcon, PlusIcon, MagnifyingGlassIcon, TrashIcon, XMarkIcon, CameraIcon,
   Squares2X2Icon, ListBulletIcon, PencilIcon, ChevronLeftIcon, ChevronRightIcon,
-  QrCodeIcon, Cog6ToothIcon, ArrowsRightLeftIcon,
+  QrCodeIcon, Cog6ToothIcon, ArrowsRightLeftIcon, ArrowPathIcon,
 } from '@/components/icons';
 import ConfirmModal from '@/components/ConfirmModal';
 import Sidebar from '@/components/Sidebar';
@@ -572,6 +572,14 @@ export default function WarehouseDetailPage() {
             </p>
           </div>
           <div className="flex items-center gap-2">
+            <button
+              onClick={() => fetchBoxes()}
+              className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-xl transition-colors"
+              aria-label="Refresh"
+              title="Refresh"
+            >
+              <ArrowPathIcon className="w-4 h-4" />
+            </button>
             {activeTab === 'vaults' ? (
               <>
                 {canManage && (
@@ -1539,7 +1547,7 @@ export default function WarehouseDetailPage() {
                   </div>
                   <div className="bg-amber-50 border border-amber-100 rounded-xl p-4 mb-4">
                     <p className="text-sm text-amber-800 font-medium">{moveOccupant.client_name} · {moveOccupant.job_type}</p>
-                    <p className="text-xs text-amber-600 mt-1">at {moveOccupant.position}</p>
+                    <p className="text-xs text-amber-600 mt-1">at {moveOccupant.position} · {allWarehouses.find(w => w.id === moveDest.warehouse_id)?.name ?? 'this warehouse'}</p>
                   </div>
                   <p className="text-sm text-gray-600 mb-4">Swap both vaults?</p>
                   {moveError && <p className="text-sm text-red-600 mb-3">{moveError}</p>}

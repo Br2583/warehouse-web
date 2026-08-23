@@ -181,6 +181,14 @@ export default function ActivityPage() {
             <h1 className="text-2xl font-bold text-gray-900">Activity Log</h1>
             {!loading && <p className="text-sm text-gray-400 mt-0.5">{totalItems} {totalItems === 1 ? 'event' : 'events'}</p>}
           </div>
+          <button
+            onClick={() => fetchActivity(1, false)}
+            className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-xl transition-colors"
+            aria-label="Refresh"
+            title="Refresh"
+          >
+            <ArrowPathIcon className="w-4 h-4" />
+          </button>
         </div>
 
         {/* Filters */}
