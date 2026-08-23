@@ -4,7 +4,8 @@
     "namespace": "android_app",
     "package_name": "com.pixelcore.warehousemanager",
     "sha256_cert_fingerprints": [
-      "05:24:64:F7:80:9A:D8:66:44:96:E1:B8:AA:14:9B:13:0F:42:D0:B6:55:6C:0D:FB:B0:3C:58:74:8E:1F:9F:3E"
+      "05:24:64:F7:80:9A:D8:66:44:96:E1:B8:AA:14:9B:13:0F:42:D0:B6:55:6C:0D:FB:B0:3C:58:74:8E:1F:9F:3E",
+      "BF:95:9C:E1:71:F6:50:87:54:34:06:5A:26:69:58:7B:C1:3F:CC:A7:BA:5E:20:99:06:76:BD:1D:30:C0:81:1E"
     ]
   }
 }]
