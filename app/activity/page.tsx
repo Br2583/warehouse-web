@@ -6,6 +6,7 @@ import {
   ClipboardDocumentListIcon, PlusCircleIcon, PencilSquareIcon,
   TrashIcon, ArrowPathIcon, ArrowsRightLeftIcon, ExclamationCircleIcon,
   FunnelIcon, ArrowUturnLeftIcon, ArrowUpTrayIcon,
+  ChevronDownIcon, ChevronUpIcon,
 } from '@/components/icons';
 import Sidebar from '@/components/Sidebar';
 import { api } from '@/lib/api';
@@ -93,6 +94,12 @@ export default function ActivityPage() {
   const [totalPages, setTotalPages] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
 
+  // Expand state
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [expandedData, setExpandedData] = useState<Record<string, any>>({});
+  const [expandingId, setExpandingId] = useState<string | null>(null);
+  const [warehouseMap, setWarehouseMap] = useState<Record<string, string>>({});
+
   // Revert / Restore state
   const [revertConfirm, setRevertConfirm] = useState<ActivityItem | null>(null);
   const [restoreConfirm, setRestoreConfirm] = useState<ActivityItem | null>(null);
@@ -106,7 +113,33 @@ export default function ActivityPage() {
 
   useEffect(() => {
     api.get('/api/company/members').then((ms: any[]) => setMembers(ms)).catch(() => {});
+    api.get('/api/warehouses').then((whs: any[]) => {
+      const map: Record<string, string> = {};
+      (whs || []).forEach((w: any) => { map[w.id] = w.name; });
+      setWarehouseMap(map);
+    }).catch(() => {});
   }, []);
+
+  async function handleExpandItem(item: ActivityItem) {
+    if (expandedId === item.id) { setExpandedId(null); return; }
+    setExpandedId(item.id);
+    if (expandedData[item.id] || item.entity_type !== 'vault') return;
+
+    if (item.before_data) {
+      try {
+        const parsed = JSON.parse(item.before_data);
+        setExpandedData(d => ({ ...d, [item.id]: parsed }));
+        return;
+      } catch {}
+    }
+
+    setExpandingId(item.id);
+    try {
+      const vault = await api.get(`/api/boxes/${item.entity_id}`);
+      if (vault) setExpandedData(d => ({ ...d, [item.id]: vault }));
+    } catch {}
+    finally { setExpandingId(null); }
+  }
 
   const fetchActivity = useCallback(async (pageNum: number, append: boolean) => {
     setLoadError(null);
@@ -270,6 +303,8 @@ export default function ActivityPage() {
               const href = entityHref(item);
               const showRevert  = canRevert(item);
               const showRestore = canRestore(item);
+              const isVault = item.entity_type === 'vault';
+              const isExpanded = expandedId === item.id;
               return (
                 <motion.div
                   key={item.id}
@@ -278,21 +313,50 @@ export default function ActivityPage() {
                   transition={{ delay: Math.min(i * 0.03, 0.3) }}
                 >
                   <div className="flex items-center gap-3 px-4 py-3.5 hover:bg-gray-50 transition-colors group">
-                    <Link href={href} className="flex items-center gap-3 flex-1 min-w-0 cursor-pointer">
-                      <InitialAvatar name={item.user_name} />
-                      <div className="flex-1 min-w-0">
-                        <div className="flex flex-wrap items-baseline gap-x-1.5 gap-y-0.5">
-                          <span className="text-sm font-semibold text-gray-900 truncate">{item.user_name}</span>
-                          <span className={`inline-flex items-center gap-0.5 text-xs font-medium px-1.5 py-0.5 rounded-md ${cfg.bg} ${cfg.color}`}>
-                            <ActionIcon className="w-3 h-3" />
-                            {cfg.label}
-                          </span>
-                          <span className="text-xs text-gray-500 truncate max-w-[240px] sm:max-w-none">{ENTITY_LABELS[item.entity_type]}</span>
+                    {isVault ? (
+                      <button
+                        onClick={() => handleExpandItem(item)}
+                        className="flex items-center gap-3 flex-1 min-w-0 text-left"
+                      >
+                        <InitialAvatar name={item.user_name} />
+                        <div className="flex-1 min-w-0">
+                          <div className="flex flex-wrap items-baseline gap-x-1.5 gap-y-0.5">
+                            <span className="text-sm font-semibold text-gray-900 truncate">{item.user_name}</span>
+                            <span className={`inline-flex items-center gap-0.5 text-xs font-medium px-1.5 py-0.5 rounded-md ${cfg.bg} ${cfg.color}`}>
+                              <ActionIcon className="w-3 h-3" />
+                              {cfg.label}
+                            </span>
+                            <span className="text-xs text-gray-500 truncate max-w-[240px] sm:max-w-none">{ENTITY_LABELS[item.entity_type]}</span>
+                          </div>
+                          <p className="text-xs text-gray-500 truncate mt-0.5">{item.entity_label}</p>
                         </div>
-                        <p className="text-xs text-gray-500 truncate mt-0.5">{item.entity_label}</p>
-                      </div>
-                      <span className="text-xs text-gray-400 flex-shrink-0 ml-2">{timeAgo(item.created)}</span>
-                    </Link>
+                        <span className="text-xs text-gray-400 flex-shrink-0 ml-2">{timeAgo(item.created)}</span>
+                      </button>
+                    ) : (
+                      <Link href={href} className="flex items-center gap-3 flex-1 min-w-0 cursor-pointer">
+                        <InitialAvatar name={item.user_name} />
+                        <div className="flex-1 min-w-0">
+                          <div className="flex flex-wrap items-baseline gap-x-1.5 gap-y-0.5">
+                            <span className="text-sm font-semibold text-gray-900 truncate">{item.user_name}</span>
+                            <span className={`inline-flex items-center gap-0.5 text-xs font-medium px-1.5 py-0.5 rounded-md ${cfg.bg} ${cfg.color}`}>
+                              <ActionIcon className="w-3 h-3" />
+                              {cfg.label}
+                            </span>
+                            <span className="text-xs text-gray-500 truncate max-w-[240px] sm:max-w-none">{ENTITY_LABELS[item.entity_type]}</span>
+                          </div>
+                          <p className="text-xs text-gray-500 truncate mt-0.5">{item.entity_label}</p>
+                        </div>
+                        <span className="text-xs text-gray-400 flex-shrink-0 ml-2">{timeAgo(item.created)}</span>
+                      </Link>
+                    )}
+                    {isVault && (
+                      <button
+                        onClick={() => handleExpandItem(item)}
+                        className="flex-shrink-0 p-1 text-gray-300 hover:text-gray-500 rounded transition-colors"
+                      >
+                        {isExpanded ? <ChevronUpIcon className="w-4 h-4" /> : <ChevronDownIcon className="w-4 h-4" />}
+                      </button>
+                    )}
                     {showRestore && (
                       <button
                         onClick={() => { setRevertResult(null); setRestoreConfirm(item); }}
@@ -314,6 +378,45 @@ export default function ActivityPage() {
                       </button>
                     )}
                   </div>
+                  {/* Expanded vault detail */}
+                  {isExpanded && isVault && (
+                    <div className="px-4 py-3 bg-gray-50 border-t border-gray-100">
+                      {expandingId === item.id && (
+                        <div className="flex items-center gap-2 text-xs text-gray-400">
+                          <div className="w-3 h-3 border-2 border-gray-200 border-t-blue-500 rounded-full animate-spin" />
+                          Loading details...
+                        </div>
+                      )}
+                      {expandedData[item.id] && (() => {
+                        const d = expandedData[item.id];
+                        const wName = warehouseMap[d.warehouse_id] || '';
+                        const level = d.level === 2 ? 'Upper' : 'Lower';
+                        const pos = d.row && d.column ? `Row ${d.row}, Col ${d.column} · ${level}` : '';
+                        return (
+                          <div className="grid grid-cols-2 gap-x-6 gap-y-1.5 text-xs">
+                            {d.client_name && (
+                              <><span className="text-gray-400">Client</span><span className="text-gray-700 font-medium truncate">{d.client_name}</span></>
+                            )}
+                            {pos && (
+                              <><span className="text-gray-400">Position</span><span className="text-gray-700 font-medium">{pos}</span></>
+                            )}
+                            {wName && (
+                              <><span className="text-gray-400">Warehouse</span><span className="text-gray-700 font-medium truncate">{wName}</span></>
+                            )}
+                            {d.job_type && (
+                              <><span className="text-gray-400">Type</span><span className="text-gray-700 font-medium">{d.job_type}</span></>
+                            )}
+                            {(d.estado || d.status) && (
+                              <><span className="text-gray-400">Status</span><span className="text-gray-700 font-medium">{d.estado || d.status}</span></>
+                            )}
+                          </div>
+                        );
+                      })()}
+                      {!expandingId && !expandedData[item.id] && (
+                        <p className="text-xs text-gray-400">No details available</p>
+                      )}
+                    </div>
+                  )}
                 </motion.div>
               );
             })}

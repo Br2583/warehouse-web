@@ -363,7 +363,7 @@ export default function WarehouseDetailPage() {
     setShowMove(true);
   };
 
-  const handleMove = async (confirmSwap = false) => {
+  const handleMove = async () => {
     if (!moveTarget) return;
     setMoveSaving(true);
     setMoveError('');
@@ -373,19 +373,18 @@ export default function WarehouseDetailPage() {
         row: moveDest.row,
         col: moveDest.col,
         level: moveDest.level,
-        confirmSwap,
       });
       if (result?.unchanged) {
         setMoveError('The vault is already at this position');
       } else if (result?.occupied) {
-        setMoveOccupant(result.occupant);
+        setMoveError(`Position taken by ${result.occupant?.client_name || 'another vault'}`);
       } else {
         setShowMove(false);
         setMoveTarget(null);
         setMoveOccupant(null);
         setSelected(null);
         fetchBoxes();
-        showToast(result?.swapped ? 'Vaults swapped' : 'Vault moved');
+        showToast('Vault moved');
       }
     } catch (err: any) {
       setMoveError(err?.message || 'Failed to move vault');
@@ -1461,115 +1460,112 @@ export default function WarehouseDetailPage() {
               className="bg-white rounded-2xl p-6 w-full max-w-sm shadow-xl"
               onClick={e => e.stopPropagation()}
             >
-              {!moveOccupant ? (
-                <>
-                  <div className="flex items-center justify-between mb-4">
-                    <h2 className="text-lg font-bold text-gray-900">Move Vault</h2>
-                    <button onClick={() => { setShowMove(false); setMoveTarget(null); }} className="p-2 -mr-2 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-50">
-                      <XMarkIcon className="w-5 h-5" />
-                    </button>
-                  </div>
-                  <p className="text-sm text-gray-500 mb-5">{moveTarget.client_name} · {moveTarget.position}</p>
-                  <div className="space-y-4">
-                    <div>
-                      <label className="block text-xs text-gray-500 mb-1">Warehouse</label>
-                      <select
-                        value={moveDest.warehouse_id}
-                        onChange={e => setMoveDest(d => ({ ...d, warehouse_id: e.target.value }))}
-                        className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      >
-                        {allWarehouses.length > 0
-                          ? allWarehouses.map(w => <option key={w.id} value={w.id}>{w.name}</option>)
-                          : <option value={warehouseId}>{warehouseName || 'Current warehouse'}</option>
-                        }
-                      </select>
-                    </div>
-                    <div className="grid grid-cols-3 gap-3">
-                      <div>
-                        <label className="block text-xs text-gray-500 mb-1">Row</label>
-                        <select
-                          value={moveDest.row}
-                          onChange={e => setMoveDest(d => ({ ...d, row: e.target.value }))}
-                          className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        >
-                          {(() => {
-                            const destWh = allWarehouses.find(w => w.id === moveDest.warehouse_id);
-                            const maxRows = destWh ? destWh.rows : (moveDest.warehouse_id === warehouseId ? warehouseRows : 10);
-                            return ROWS.slice(0, maxRows).map(r => <option key={r} value={r}>{r}</option>);
-                          })()}
-                        </select>
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-lg font-bold text-gray-900">Move Vault</h2>
+                <button onClick={() => { setShowMove(false); setMoveTarget(null); }} className="p-2 -mr-2 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-50">
+                  <XMarkIcon className="w-5 h-5" />
+                </button>
+              </div>
+              <p className="text-sm text-gray-500 mb-5">{moveTarget.client_name} · {moveTarget.position}</p>
+              <div className="space-y-4">
+                {/* Warehouse */}
+                <div>
+                  <label className="block text-xs text-gray-500 mb-1">Warehouse</label>
+                  <select
+                    value={moveDest.warehouse_id}
+                    onChange={e => { setMoveDest(d => ({ ...d, warehouse_id: e.target.value, row: 'A', col: 1 })); setMoveError(''); }}
+                    className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    {allWarehouses.length > 0
+                      ? allWarehouses.map(w => <option key={w.id} value={w.id}>{w.name}</option>)
+                      : <option value={warehouseId}>{warehouseName || 'Current warehouse'}</option>
+                    }
+                  </select>
+                </div>
+
+                {/* Position grid */}
+                <div>
+                  <label className="block text-xs text-gray-500 mb-2">
+                    Position — Row <span className="font-semibold text-gray-700">{moveDest.row}</span>, Col <span className="font-semibold text-gray-700">{moveDest.col}</span>
+                  </label>
+                  {(() => {
+                    const destWh = allWarehouses.find(w => w.id === moveDest.warehouse_id);
+                    const maxRows = destWh ? destWh.rows : warehouseRows;
+                    const maxCols = destWh ? destWh.cols : warehouseCols;
+                    const isCurrent = moveDest.warehouse_id === warehouseId;
+                    const occupiedSet = isCurrent
+                      ? new Set(
+                          boxes
+                            .filter(b => b.box_id !== moveTarget.box_id && b.level === moveDest.level)
+                            .map(b => `${b.row}${b.column}`)
+                        )
+                      : new Set<string>();
+                    return (
+                      <div className="border border-gray-200 rounded-xl overflow-auto max-h-52 p-1.5">
+                        {ROWS.slice(0, maxRows).map(r => (
+                          <div key={r} className="flex gap-1 mb-1">
+                            <span className="w-5 text-[10px] font-medium text-gray-400 flex items-center justify-center flex-shrink-0">{r}</span>
+                            {COLUMNS.slice(0, maxCols).map(c => {
+                              const posKey = `${r}${c}`;
+                              const isOccupied = occupiedSet.has(posKey);
+                              const isSelected = moveDest.row === r && moveDest.col === c;
+                              return (
+                                <button
+                                  key={c}
+                                  type="button"
+                                  disabled={isOccupied}
+                                  onClick={() => { setMoveDest(d => ({ ...d, row: r, col: c })); setMoveError(''); }}
+                                  className={`flex-1 min-w-[26px] h-7 text-[10px] font-medium rounded-md transition-colors ${
+                                    isSelected
+                                      ? 'bg-blue-600 text-white'
+                                      : isOccupied
+                                      ? 'bg-gray-100 text-gray-300 cursor-not-allowed'
+                                      : 'bg-gray-50 text-gray-500 hover:bg-blue-50 hover:text-blue-600'
+                                  }`}
+                                >
+                                  {c}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        ))}
                       </div>
-                      <div>
-                        <label className="block text-xs text-gray-500 mb-1">Column</label>
-                        <select
-                          value={moveDest.col}
-                          onChange={e => setMoveDest(d => ({ ...d, col: Number(e.target.value) }))}
-                          className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        >
-                          {(() => {
-                            const destWh = allWarehouses.find(w => w.id === moveDest.warehouse_id);
-                            const maxCols = destWh ? destWh.cols : (moveDest.warehouse_id === warehouseId ? warehouseCols : 8);
-                            return COLUMNS.slice(0, maxCols).map(c => <option key={c} value={c}>{c}</option>);
-                          })()}
-                        </select>
-                      </div>
-                      <div>
-                        <label className="block text-xs text-gray-500 mb-1">Level</label>
-                        <select
-                          value={moveDest.level}
-                          onChange={e => setMoveDest(d => ({ ...d, level: Number(e.target.value) }))}
-                          className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        >
-                          <option value={1}>Lower</option>
-                          <option value={2}>Upper</option>
-                        </select>
-                      </div>
-                    </div>
-                    {moveError && <p className="text-sm text-red-600">{moveError}</p>}
-                    <button
-                      onClick={() => handleMove(false)}
-                      disabled={moveSaving}
-                      className="w-full py-2.5 bg-gray-950 text-white text-sm font-medium rounded-full hover:bg-gray-800 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
-                    >
-                      {moveSaving
-                        ? <><div className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" /> Moving...</>
-                        : 'Move Vault'}
-                    </button>
-                  </div>
-                </>
-              ) : (
-                <>
-                  <div className="flex items-center justify-between mb-4">
-                    <h2 className="text-lg font-bold text-gray-900">Position Taken</h2>
-                    <button onClick={() => setMoveOccupant(null)} className="p-2 -mr-2 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-50">
-                      <XMarkIcon className="w-5 h-5" />
-                    </button>
-                  </div>
-                  <div className="bg-amber-50 border border-amber-100 rounded-xl p-4 mb-4">
-                    <p className="text-sm text-amber-800 font-medium">{moveOccupant.client_name} · {moveOccupant.job_type}</p>
-                    <p className="text-xs text-amber-600 mt-1">at {moveOccupant.position} · {allWarehouses.find(w => w.id === moveDest.warehouse_id)?.name ?? 'this warehouse'}</p>
-                  </div>
-                  <p className="text-sm text-gray-600 mb-4">Swap both vaults?</p>
-                  {moveError && <p className="text-sm text-red-600 mb-3">{moveError}</p>}
+                    );
+                  })()}
+                </div>
+
+                {/* Level */}
+                <div>
+                  <label className="block text-xs text-gray-500 mb-2">Level</label>
                   <div className="flex gap-2">
-                    <button
-                      onClick={() => setMoveOccupant(null)}
-                      className="flex-1 py-2.5 text-sm text-gray-600 border border-gray-200 rounded-full hover:bg-gray-50 transition-colors"
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      onClick={() => handleMove(true)}
-                      disabled={moveSaving}
-                      className="flex-1 py-2.5 bg-gray-950 text-white text-sm font-medium rounded-full hover:bg-gray-800 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
-                    >
-                      {moveSaving
-                        ? <><div className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" /> Swapping...</>
-                        : 'Swap'}
-                    </button>
+                    {([{ v: 1, l: 'Lower' }, { v: 2, l: 'Upper' }] as const).map(({ v, l }) => (
+                      <button
+                        key={v}
+                        type="button"
+                        onClick={() => { setMoveDest(d => ({ ...d, level: v })); setMoveError(''); }}
+                        className={`flex-1 py-2 text-sm font-medium rounded-xl border transition-colors ${
+                          moveDest.level === v
+                            ? 'bg-blue-600 text-white border-blue-600'
+                            : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'
+                        }`}
+                      >
+                        {l}
+                      </button>
+                    ))}
                   </div>
-                </>
-              )}
+                </div>
+
+                {moveError && <p className="text-sm text-red-600">{moveError}</p>}
+                <button
+                  onClick={() => handleMove()}
+                  disabled={moveSaving}
+                  className="w-full py-2.5 bg-gray-950 text-white text-sm font-medium rounded-full hover:bg-gray-800 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                >
+                  {moveSaving
+                    ? <><div className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" /> Moving...</>
+                    : 'Move Vault'}
+                </button>
+              </div>
             </motion.div>
           </div>
         )}
