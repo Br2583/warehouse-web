@@ -244,15 +244,6 @@ export default function TopBar({ onOpenNav }: TopBarProps) {
           <p className="text-[11px] text-gray-400">{timeStr}</p>
         </div>
 
-        {/* Quick add task */}
-        <Link
-          href="/tasks?new=1"
-          className="flex items-center gap-1.5 px-3.5 py-2 bg-gray-950 text-white text-sm font-medium rounded-full hover:bg-gray-800 transition-colors flex-shrink-0"
-        >
-          <PlusIcon className="w-4 h-4" />
-          Add Task
-        </Link>
-
         {/* Bell */}
         {bellBtn}
 

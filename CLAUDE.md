@@ -23,11 +23,10 @@
 |-------|-------------|
 | `/` | Landing — video bg, portal access, typewriter |
 | `/login` | Google OAuth / create company / join with invite code |
-| `/dashboard` | Stats overview, inventory, production, quick actions |
+| `/dashboard` | Stats overview, inventory, tasks, quick actions |
 | `/warehouses` | List 3 warehouses with volt counts |
 | `/warehouses/[id]` | Map grid + list view, CRUD volts, photo lightbox |
 | `/search` | Global search across all warehouses |
-| `/production` | Work orders (Cleaning/Restoration/Delivery) |
 | `/stats` | Analytics — status/job/warehouse/client breakdown |
 | `/snapshots` | Daily snapshots, printable report, email via EmailJS |
 | `/chat` | Team chat, polling every 10s |

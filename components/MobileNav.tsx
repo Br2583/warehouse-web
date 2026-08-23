@@ -8,13 +8,13 @@ import {
   HomeIcon, BuildingOffice2Icon, ArchiveBoxIcon, ClipboardDocumentListIcon,
   MagnifyingGlassIcon, ChartBarSquareIcon, CameraIcon, ChatBubbleLeftRightIcon,
   ArrowRightOnRectangleIcon, XMarkIcon, QrCodeIcon, Cog6ToothIcon,
-  ClipboardDocumentCheckIcon, WrenchScrewdriverIcon, TrashIcon,
+  ClipboardDocumentCheckIcon, TrashIcon,
   HomeIcon as HomeSolid, BuildingOffice2Icon as BuildingSolid, ArchiveBoxIcon as ArchiveSolid,
   ClipboardDocumentListIcon as TasksSolid, MagnifyingGlassIcon as SearchSolid,
   ChartBarSquareIcon as ChartSolid, CameraIcon as CameraSolid,
   ChatBubbleLeftRightIcon as ChatSolid, Cog6ToothIcon as CogSolid,
   ClipboardDocumentCheckIcon as ActivitySolid,
-  WrenchScrewdriverIcon as WrenchSolid, TrashIcon as TrashSolid,
+  TrashIcon as TrashSolid,
 } from '@/components/icons';
 import { useNavData } from '@/lib/nav-data-context';
 
@@ -27,7 +27,6 @@ const NAV_ITEMS = [
   { href: '/stats',       label: 'Stats',          icon: ChartBarSquareIcon,           iconActive: ChartSolid },
   { href: '/snapshots',  label: 'Snapshots',      icon: CameraIcon,                   iconActive: CameraSolid },
   { href: '/chat',       label: 'Chat',           icon: ChatBubbleLeftRightIcon,      iconActive: ChatSolid },
-  { href: '/production', label: 'Production',     icon: WrenchScrewdriverIcon,        iconActive: WrenchSolid },
   { href: '/activity',   label: 'Activity',       icon: ClipboardDocumentCheckIcon,   iconActive: ActivitySolid, managerOnly: true },
   { href: '/deleted',    label: 'Deleted Vaults', icon: TrashIcon,                    iconActive: TrashSolid,    managerOnly: true },
   { href: '/settings',   label: 'Settings',       icon: Cog6ToothIcon,                iconActive: CogSolid },

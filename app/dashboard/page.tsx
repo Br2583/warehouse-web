@@ -279,7 +279,7 @@ export default function DashboardPage() {
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             {[
               { label: 'Add Vault', icon: PlusIcon, href: '/warehouses', color: 'bg-blue-50 text-blue-600 hover:bg-blue-100' },
-              { label: 'New Order', icon: ClipboardDocumentListIcon, href: '/production', color: 'bg-amber-50 text-amber-600 hover:bg-amber-100' },
+              { label: 'New Task', icon: ClipboardDocumentListIcon, href: '/tasks?new=1', color: 'bg-amber-50 text-amber-600 hover:bg-amber-100' },
               { label: 'Search', icon: MagnifyingGlassIcon, href: '/search', color: 'bg-green-50 text-green-600 hover:bg-green-100' },
               { label: 'Chat', icon: ChatBubbleLeftRightIcon, href: '/chat', color: 'bg-purple-50 text-purple-600 hover:bg-purple-100' },
             ].map((action) => {

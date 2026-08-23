@@ -19,7 +19,6 @@ import {
   Cog6ToothIcon,
   Squares2X2Icon,
   QrCodeIcon,
-  WrenchScrewdriverIcon,
   TrashIcon,
   UserCircleIcon,
 } from '@heroicons/react/24/outline';
@@ -45,7 +44,6 @@ const GRID_ITEMS: GridItem[] = [
   { href: '/search',     label: 'Search',         icon: MagnifyingGlassIcon,        managerOnly: false },
   { href: '/stats',      label: 'Stats',          icon: ChartBarSquareIcon,         managerOnly: false },
   { href: '/snapshots',  label: 'Snapshots',      icon: CameraIcon,                 managerOnly: false },
-  { href: '/production', label: 'Production',     icon: WrenchScrewdriverIcon,      managerOnly: false },
   { href: '/activity',   label: 'Activity',       icon: ClipboardDocumentCheckIcon, managerOnly: true  },
   { href: '/deleted',    label: 'Deleted Vaults', icon: TrashIcon,                  managerOnly: true  },
   { href: '/settings',   label: 'Settings',       icon: Cog6ToothIcon,              managerOnly: false },
