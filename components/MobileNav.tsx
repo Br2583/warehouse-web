@@ -79,10 +79,8 @@ export default function MobileNav({ open, onClose }: MobileNavProps) {
 
         {/* Nav items */}
         <nav className="flex-1 p-4 space-y-0.5 overflow-y-auto">
-          {NAV_ITEMS.filter(item => !item.managerOnly || canManage).map(({ href, label, icon: Icon, iconActive: IconActive }) => {
+          {NAV_ITEMS.filter(item => !item.managerOnly || canManage).map(({ href, label, icon: Icon }) => {
             const active = pathname === href || pathname.startsWith(href + '/');
-            const ActiveIcon = IconActive;
-            const InactiveIcon = Icon;
             const badge = href === '/chat' ? unreadChat : href === '/tasks' ? pendingTasks : 0;
             return (
               <Link key={href} href={href} onClick={onClose}>
@@ -90,10 +88,7 @@ export default function MobileNav({ open, onClose }: MobileNavProps) {
                   active ? 'bg-blue-50 text-blue-600' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-700'
                 }`}>
                   <div className="relative flex-shrink-0">
-                    {active
-                      ? <ActiveIcon className="w-5 h-5 text-blue-600" />
-                      : <InactiveIcon className="w-5 h-5" />
-                    }
+                    <Icon className={`w-5 h-5 ${active ? 'text-blue-600' : ''}`} />
                     {badge > 0 && (
                       <span className="absolute -top-1 -right-1.5 min-w-[14px] h-[14px] bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center px-0.5">
                         {badge > 9 ? '9+' : badge}

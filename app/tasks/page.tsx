@@ -108,6 +108,49 @@ const emptyForm = {
   storage_id:  '',
 };
 
+// ── 3-step status picker ──────────────────────────────────────────────────────
+function TaskStatusPicker({ status, isOwner, loading, onChange }: {
+  status:  TaskStatus;
+  isOwner: boolean;
+  loading: boolean;
+  onChange: (s: TaskStatus) => void;
+}) {
+  const steps: { value: TaskStatus; label: string }[] = [
+    { value: 'PENDING',     label: 'Pending'  },
+    { value: 'IN_PROGRESS', label: 'In Progress' },
+    { value: 'DONE',        label: 'Done'     },
+  ];
+  const currentIdx = steps.findIndex(s => s.value === status);
+
+  return (
+    <div className="flex items-stretch rounded-lg overflow-hidden border border-gray-200 mt-2">
+      {steps.map(({ value, label }, idx) => {
+        const isActive  = value === status;
+        const isNext    = idx === currentIdx + 1;
+        const canClick  = isOwner ? !isActive : isNext;
+        const bgActive  = value === 'PENDING' ? 'bg-gray-200 text-gray-700'
+          : value === 'IN_PROGRESS' ? 'bg-amber-400 text-white'
+          : 'bg-green-500 text-white';
+        const bgPassive = 'bg-white text-gray-400 hover:bg-gray-50';
+        return (
+          <button
+            key={value}
+            type="button"
+            disabled={!canClick || loading}
+            onClick={canClick && !loading ? () => onChange(value) : undefined}
+            className={`flex-1 py-1.5 text-[10px] font-semibold text-center transition-colors border-r border-gray-200 last:border-r-0
+              ${isActive ? bgActive : bgPassive}
+              ${canClick && !loading ? 'cursor-pointer' : 'cursor-default'}
+              disabled:opacity-60`}
+          >
+            {loading && isActive ? '…' : label}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
 // ── Kanban card ───────────────────────────────────────────────────────────────
 function TaskCard({ task, members, isOwner, onStatus, onDelete, onEdit, statusLoading, vault }: {
   task:          Task;
@@ -120,9 +163,6 @@ function TaskCard({ task, members, isOwner, onStatus, onDelete, onEdit, statusLo
   vault?:        VaultResult;
 }) {
   const assignee    = members.find(m => m.user_id === task.assigned_to);
-  const [statusMenu, setStatusMenu] = useState(false);
-  const nextSt      = NEXT_STATUS[task.status];
-  const nextLabel   = task.status === 'PENDING' ? 'Start' : 'Mark Done';
 
   return (
     <div className="bg-white rounded-xl border border-gray-100 p-3.5 shadow-sm hover:shadow-md transition-shadow group">
@@ -207,51 +247,12 @@ function TaskCard({ task, members, isOwner, onStatus, onDelete, onEdit, statusLo
       )}
 
       {/* Status control */}
-      {isOwner ? (
-        <div className="relative mt-1">
-          <button
-            onClick={() => setStatusMenu(m => !m)}
-            className={`w-full py-1.5 text-xs font-medium rounded-lg transition-colors flex items-center justify-center gap-1 ${STATUS_STYLE[task.status]}`}
-          >
-            {STATUS_LABEL[task.status]}
-            <span className="opacity-40">▾</span>
-          </button>
-          {statusMenu && (
-            <>
-              <div className="fixed inset-0 z-10" onClick={() => setStatusMenu(false)} />
-              <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-xl shadow-lg z-20 overflow-hidden">
-                {(['PENDING', 'IN_PROGRESS', 'DONE'] as TaskStatus[]).map(s => (
-                  <button
-                    key={s}
-                    onClick={() => { onStatus(task.id, s); setStatusMenu(false); }}
-                    className={`w-full text-left px-3 py-2 text-xs font-medium transition-colors ${
-                      task.status === s
-                        ? 'bg-gray-50 text-gray-400 cursor-default'
-                        : 'hover:bg-gray-50 text-gray-700'
-                    }`}
-                  >
-                    {STATUS_LABEL[s]}
-                  </button>
-                ))}
-              </div>
-            </>
-          )}
-        </div>
-      ) : nextSt && (
-        <button
-          onClick={() => onStatus(task.id, nextSt)}
-          disabled={statusLoading}
-          className={`w-full mt-1 py-1.5 text-xs font-medium rounded-lg border transition-colors disabled:opacity-50 flex items-center justify-center gap-1.5 ${
-            nextSt === 'IN_PROGRESS'
-              ? 'border-amber-200 text-amber-600 hover:bg-amber-50'
-              : 'border-green-200 text-green-600 hover:bg-green-50'
-          }`}
-        >
-          {statusLoading
-            ? <span className="w-3 h-3 border border-current border-t-transparent rounded-full animate-spin" />
-            : nextLabel}
-        </button>
-      )}
+      <TaskStatusPicker
+        status={task.status}
+        isOwner={isOwner}
+        loading={statusLoading}
+        onChange={s => onStatus(task.id, s)}
+      />
     </div>
   );
 }
@@ -270,7 +271,6 @@ function TaskRow({ task, members, isOwner, onStatus, onDelete, onEdit, statusLoa
   const assignee  = members.find(m => m.user_id === task.assigned_to);
   const todayStr = new Date().toLocaleDateString('en-CA');
   const isOverdue = !!task.due_date && task.status !== 'DONE' && task.due_date.split(/[ T]/)[0] < todayStr;
-  const nextSt    = NEXT_STATUS[task.status];
 
   return (
     <div className={`flex items-center gap-3 rounded-xl border px-4 py-3 hover:shadow-sm transition-shadow group ${
@@ -329,38 +329,15 @@ function TaskRow({ task, members, isOwner, onStatus, onDelete, onEdit, statusLoa
         </div>
       </div>
 
-      {/* Quick status toggle — same for owners and workers */}
-      {task.status === 'DONE' ? (
-        isOwner ? (
-          <button
-            onClick={() => onStatus(task.id, 'PENDING')}
-            disabled={statusLoading}
-            className="flex-shrink-0 text-xs font-medium px-3 py-1.5 border border-gray-200 text-gray-400 hover:text-gray-600 hover:bg-gray-50 rounded-lg transition-colors disabled:opacity-50 flex items-center gap-1"
-          >
-            {statusLoading
-              ? <span className="w-3 h-3 border border-current border-t-transparent rounded-full animate-spin" />
-              : <><span>↩</span><span className="hidden sm:inline ml-0.5">Reopen</span></>}
-          </button>
-        ) : (
-          <span className="flex-shrink-0 text-xs font-medium px-2.5 py-1 rounded-full bg-green-50 text-green-700">
-            Done
-          </span>
-        )
-      ) : nextSt ? (
-        <button
-          onClick={() => onStatus(task.id, nextSt)}
-          disabled={statusLoading}
-          className={`flex-shrink-0 text-xs font-medium px-3 py-1.5 border rounded-lg transition-colors disabled:opacity-50 flex items-center gap-1.5 ${
-            nextSt === 'IN_PROGRESS'
-              ? 'border-amber-200 text-amber-700 hover:bg-amber-50'
-              : 'border-green-200 text-green-700 hover:bg-green-50'
-          }`}
-        >
-          {statusLoading
-            ? <span className="w-3 h-3 border border-current border-t-transparent rounded-full animate-spin" />
-            : nextSt === 'IN_PROGRESS' ? '→ Start' : '✓ Done'}
-        </button>
-      ) : null}
+      {/* 3-step status picker */}
+      <div className="flex-shrink-0 w-[160px]">
+        <TaskStatusPicker
+          status={task.status}
+          isOwner={isOwner}
+          loading={statusLoading}
+          onChange={s => onStatus(task.id, s)}
+        />
+      </div>
 
       {isOwner && (
         <div className="flex items-center gap-0.5 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity flex-shrink-0">

@@ -380,10 +380,11 @@ async function routeGet(path: string): Promise<any> {
     if (!cid) return { items: [], totalPages: 0, totalItems: 0, page: 1 };
     const actRole = pb.authStore.model?.role as string | undefined;
     if (actRole !== 'owner' && actRole !== 'manager') return { items: [], totalPages: 0, totalItems: 0, page: 1 };
-    const pageNum  = Number(q.get('page') || '1');
-    const perPage  = Number(q.get('perPage') || '25');
-    const period   = q.get('period') || '';
+    const pageNum   = Number(q.get('page') || '1');
+    const perPage   = Number(q.get('perPage') || '25');
+    const period    = q.get('period') || '';
     const filterUid = q.get('userId') || '';
+    const filterAct = q.get('action') || '';
     let filter = `company_id="${cid}"`;
     if (period === 'today') {
       const start = new Date(); start.setHours(0, 0, 0, 0);
@@ -394,6 +395,7 @@ async function routeGet(path: string): Promise<any> {
       filter += ` && created >= "${new Date(Date.now() - 30 * 86400000).toISOString()}"`;
     }
     if (filterUid) filter += ` && user_id="${sf(filterUid)}"`;
+    if (filterAct) filter += ` && action="${sf(filterAct)}"`;
     const result = await pb.collection('activity_logs').getList(pageNum, perPage, {
       filter,
       sort: '-created',

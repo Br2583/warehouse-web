@@ -32,7 +32,7 @@ export default function Sidebar() {
       <nav className="flex-1 p-4 space-y-0.5 overflow-y-auto">
         {NAV_ITEMS.filter(item => !item.managerOnly || canManage).map((item) => {
           const active = pathname === item.href || pathname.startsWith(item.href + '/');
-          const Icon = active ? item.iconActive : item.icon;
+          const Icon = item.icon;
           return (
             <Link key={item.href} href={item.href}>
               <motion.div

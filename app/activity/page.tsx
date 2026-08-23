@@ -74,9 +74,10 @@ export default function ActivityPage() {
   const [loading, setLoading]   = useState(true);
   const [loadMore, setLoadMore] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
-  const [period, setPeriod]     = useState('');
+  const [period, setPeriod]       = useState('');
   const [filterUser, setFilterUser] = useState('');
-  const [members, setMembers]   = useState<{ user_id: string; name: string }[]>([]);
+  const [actionFilter, setActionFilter] = useState('');
+  const [members, setMembers]     = useState<{ user_id: string; name: string }[]>([]);
   const [page, setPage]         = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
@@ -87,9 +88,10 @@ export default function ActivityPage() {
   const [expandingId, setExpandingId] = useState<string | null>(null);
   const [warehouseMap, setWarehouseMap] = useState<Record<string, string>>({});
 
-  // Revert / Restore state
+  // Revert / Restore / Perm-delete state
   const [revertConfirm, setRevertConfirm] = useState<ActivityItem | null>(null);
   const [restoreConfirm, setRestoreConfirm] = useState<ActivityItem | null>(null);
+  const [permDeleteConfirm, setPermDeleteConfirm] = useState<ActivityItem | null>(null);
   const [reverting, setReverting] = useState(false);
   const [revertResult, setRevertResult] = useState<{ id: string; ok: boolean; msg: string } | null>(null);
 
@@ -155,8 +157,9 @@ export default function ActivityPage() {
     if (append) setLoadMore(true); else setLoading(true);
     try {
       let url = `/api/activity?page=${pageNum}&perPage=25`;
-      if (period)     url += `&period=${period}`;
-      if (filterUser) url += `&userId=${filterUser}`;
+      if (period)       url += `&period=${period}`;
+      if (filterUser)   url += `&userId=${filterUser}`;
+      if (actionFilter) url += `&action=${actionFilter}`;
       const data = await api.get(url);
       setItems(prev => append ? [...prev, ...(data.items || [])] : (data.items || []));
       setTotalPages(data.totalPages || 1);
@@ -168,7 +171,7 @@ export default function ActivityPage() {
       setLoading(false);
       setLoadMore(false);
     }
-  }, [period, filterUser]);
+  }, [period, filterUser, actionFilter]);
 
   useEffect(() => {
     fetchActivity(1, false);
@@ -201,6 +204,22 @@ export default function ActivityPage() {
     } catch (e: any) {
       setRevertResult({ id: restoreConfirm.id, ok: false, msg: e?.message || 'Failed to restore. The vault may have already been restored or permanently deleted.' });
       setRestoreConfirm(null);
+    } finally {
+      setReverting(false);
+    }
+  }
+
+  async function handlePermDelete() {
+    if (!permDeleteConfirm) return;
+    setReverting(true);
+    try {
+      await api.delete(`/api/deleted-boxes/${permDeleteConfirm.entity_id}`);
+      setRevertResult({ id: permDeleteConfirm.id, ok: true, msg: 'Vault permanently deleted.' });
+      setPermDeleteConfirm(null);
+      fetchActivity(1, false);
+    } catch (e: any) {
+      setRevertResult({ id: permDeleteConfirm.id, ok: false, msg: e?.message || 'Failed to permanently delete. Try again.' });
+      setPermDeleteConfirm(null);
     } finally {
       setReverting(false);
     }
@@ -264,6 +283,25 @@ export default function ActivityPage() {
               ))}
             </select>
           )}
+
+          {/* Action filter chips */}
+          <div className="flex items-center gap-1 bg-white border border-gray-200 rounded-xl px-2 py-1.5 flex-wrap">
+            {(['', 'CREATED', 'EDITED', 'DELETED', 'RESTORED', 'MOVED'] as const).map(a => (
+              <button
+                key={a || 'all'}
+                onClick={() => setActionFilter(a)}
+                className={`px-2.5 py-1 text-xs font-medium rounded-lg transition-colors ${
+                  actionFilter === a
+                    ? a === 'DELETED' ? 'bg-red-500 text-white'
+                      : a === 'RESTORED' ? 'bg-green-600 text-white'
+                      : 'bg-blue-600 text-white'
+                    : 'text-gray-500 hover:text-gray-800 hover:bg-gray-50'
+                }`}
+              >
+                {a === '' ? 'All actions' : a.charAt(0) + a.slice(1).toLowerCase().replace('_', ' ')}
+              </button>
+            ))}
+          </div>
         </div>
 
         {/* Revert result banner */}
@@ -367,14 +405,23 @@ export default function ActivityPage() {
                       </button>
                     )}
                     {showRestore && (
-                      <button
-                        onClick={() => { setRevertResult(null); setRestoreConfirm(item); }}
-                        title="Restore this vault back to inventory"
-                        className="flex-shrink-0 flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium text-green-700 bg-green-50 border border-green-200 rounded-lg hover:bg-green-100 transition-colors opacity-0 group-hover:opacity-100"
-                      >
-                        <ArrowUpTrayIcon className="w-3.5 h-3.5" />
-                        Restore
-                      </button>
+                      <>
+                        <button
+                          onClick={() => { setRevertResult(null); setRestoreConfirm(item); }}
+                          title="Restore this vault back to inventory"
+                          className="flex-shrink-0 flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium text-green-700 bg-green-50 border border-green-200 rounded-lg hover:bg-green-100 transition-colors opacity-0 group-hover:opacity-100"
+                        >
+                          <ArrowUpTrayIcon className="w-3.5 h-3.5" />
+                          Restore
+                        </button>
+                        <button
+                          onClick={() => { setRevertResult(null); setPermDeleteConfirm(item); }}
+                          title="Permanently delete this vault — cannot be undone"
+                          className="flex-shrink-0 flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium text-red-700 bg-red-50 border border-red-200 rounded-lg hover:bg-red-100 transition-colors opacity-0 group-hover:opacity-100"
+                        >
+                          Permanently Delete
+                        </button>
+                      </>
                     )}
                     {showRevert && (
                       <button
@@ -479,6 +526,44 @@ export default function ActivityPage() {
               >
                 {reverting && <ArrowPathIcon className="w-3.5 h-3.5 animate-spin" />}
                 {reverting ? 'Restoring…' : 'Restore'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Permanently Delete confirm modal */}
+      {permDeleteConfirm && (
+        <div className="fixed inset-0 z-[55] flex items-center justify-center bg-black/40 px-4">
+          <div className="bg-white rounded-2xl shadow-xl p-6 w-full max-w-sm">
+            <div className="flex items-start gap-3 mb-4">
+              <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center flex-shrink-0">
+                <ExclamationCircleIcon className="w-5 h-5 text-red-600" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-gray-900 text-sm">Permanently delete this vault?</h3>
+                <p className="text-xs text-gray-500 mt-1">
+                  This cannot be undone. All data and photos for this vault will be destroyed.
+                </p>
+                <p className="text-xs font-medium text-gray-700 mt-2 bg-gray-50 rounded-lg px-3 py-2 truncate">
+                  {permDeleteConfirm.entity_label}
+                </p>
+              </div>
+            </div>
+            <div className="flex gap-2 justify-end">
+              <button
+                onClick={() => setPermDeleteConfirm(null)}
+                className="px-4 py-2 text-sm text-gray-600 bg-gray-100 rounded-xl hover:bg-gray-200 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handlePermDelete}
+                disabled={reverting}
+                className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-xl hover:bg-red-700 disabled:opacity-50 transition-colors"
+              >
+                {reverting && <ArrowPathIcon className="w-3.5 h-3.5 animate-spin" />}
+                {reverting ? 'Deleting…' : 'Delete forever'}
               </button>
             </div>
           </div>

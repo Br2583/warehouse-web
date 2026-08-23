@@ -19,7 +19,6 @@ import {
   Cog6ToothIcon,
   Squares2X2Icon,
   QrCodeIcon,
-  TrashIcon,
   UserCircleIcon,
 } from '@/components/icons';
 
@@ -45,7 +44,6 @@ const GRID_ITEMS: GridItem[] = [
   { href: '/stats',      label: 'Stats',          icon: ChartBarSquareIcon,         managerOnly: false },
   { href: '/snapshots',  label: 'Snapshots',      icon: CameraIcon,                 managerOnly: false },
   { href: '/activity',   label: 'Activity',       icon: ClipboardDocumentCheckIcon, managerOnly: true  },
-  { href: '/deleted',    label: 'Deleted Vaults', icon: TrashIcon,                  managerOnly: true  },
   { href: '/settings',   label: 'Settings',       icon: Cog6ToothIcon,              managerOnly: false },
   { href: '/profile',    label: 'Profile',        icon: UserCircleIcon,             managerOnly: false },
 ];

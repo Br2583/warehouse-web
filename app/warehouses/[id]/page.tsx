@@ -149,6 +149,7 @@ export default function WarehouseDetailPage() {
   const [moveSaving, setMoveSaving] = useState(false);
   const [moveError, setMoveError] = useState('');
   const [moveOccupant, setMoveOccupant] = useState<{ id: string; client_name: string; job_type: string; position: string } | null>(null);
+  const [destBoxes, setDestBoxes] = useState<Box[]>([]);
 
   // Loose Items state
   const [activeTab, setActiveTab] = useState<'vaults' | 'loose'>('vaults');
@@ -360,7 +361,25 @@ export default function WarehouseDetailPage() {
     setMoveDest({ warehouse_id: warehouseId, row: box.row, col: Number(box.column), level: Number(box.level) });
     setMoveError('');
     setMoveOccupant(null);
+    setDestBoxes(boxes); // pre-populate with current warehouse boxes
     setShowMove(true);
+  };
+
+  // When destination warehouse changes inside the Move dialog, load its vaults for occupancy
+  const handleMoveWarehouseChange = (newWhId: string) => {
+    setMoveDest(d => ({ ...d, warehouse_id: newWhId, row: 'A', col: 1 }));
+    setMoveError('');
+    if (newWhId === warehouseId) {
+      setDestBoxes(boxes);
+    } else {
+      api.get(`/api/boxes?warehouse_id=${newWhId}`)
+        .then((data: any) => {
+          if (Array.isArray(data)) setDestBoxes(data);
+          else if (data?.boxes) setDestBoxes(data.boxes);
+          else setDestBoxes([]);
+        })
+        .catch(() => setDestBoxes([]));
+    }
   };
 
   const handleMove = async (confirmSwap = false) => {
@@ -1475,7 +1494,7 @@ export default function WarehouseDetailPage() {
                   <label className="block text-xs text-gray-500 mb-1">Warehouse</label>
                   <select
                     value={moveDest.warehouse_id}
-                    onChange={e => { setMoveDest(d => ({ ...d, warehouse_id: e.target.value, row: 'A', col: 1 })); setMoveError(''); }}
+                    onChange={e => handleMoveWarehouseChange(e.target.value)}
                     className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                   >
                     {allWarehouses.length > 0
@@ -1495,13 +1514,12 @@ export default function WarehouseDetailPage() {
                     const maxRows = destWh ? destWh.rows : warehouseRows;
                     const maxCols = destWh ? destWh.cols : warehouseCols;
                     const isCurrent = moveDest.warehouse_id === warehouseId;
-                    const occupiedSet = isCurrent
-                      ? new Set(
-                          boxes
-                            .filter(b => b.box_id !== moveTarget.box_id && b.level === moveDest.level)
-                            .map(b => `${b.row}${b.column}`)
-                        )
-                      : new Set<string>();
+                    const sourceBoxes = isCurrent ? boxes : destBoxes;
+                    const occupiedSet = new Set(
+                      sourceBoxes
+                        .filter(b => b.box_id !== moveTarget?.box_id && Number(b.level) === moveDest.level)
+                        .map(b => `${b.row}${b.column}`)
+                    );
                     return (
                       <div className="border border-gray-200 rounded-xl overflow-auto max-h-52 p-1.5">
                         {ROWS.slice(0, maxRows).map(r => (
@@ -1521,7 +1539,7 @@ export default function WarehouseDetailPage() {
                                     isSelected
                                       ? 'bg-blue-600 text-white'
                                       : isOccupied
-                                      ? 'bg-gray-100 text-gray-300 cursor-not-allowed'
+                                      ? 'bg-red-100 text-red-400 cursor-not-allowed'
                                       : 'bg-gray-50 text-gray-500 hover:bg-blue-50 hover:text-blue-600'
                                   }`}
                                 >
