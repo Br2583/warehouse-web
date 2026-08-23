@@ -133,12 +133,34 @@ export default function ActivityPage() {
       } catch {}
     }
 
-    setExpandingId(item.id);
+    // For non-deleted vaults try to fetch current data
+    if (item.action !== 'DELETED') {
+      setExpandingId(item.id);
+      try {
+        const vault = await api.get(`/api/boxes/${item.entity_id}`);
+        if (vault) setExpandedData(d => ({ ...d, [item.id]: vault }));
+      } catch {}
+      finally { setExpandingId(null); }
+      return;
+    }
+
+    // For deleted vaults with no before_data: parse entity_label as fallback
+    // entity_label format: "Vault {row}{col}-L{level} · {client_name}"
     try {
-      const vault = await api.get(`/api/boxes/${item.entity_id}`);
-      if (vault) setExpandedData(d => ({ ...d, [item.id]: vault }));
+      const label = item.entity_label || '';
+      const match = label.match(/Vault\s+([A-J])(\d+)-L(\d+)\s+·\s+(.+)/);
+      if (match) {
+        setExpandedData(d => ({
+          ...d,
+          [item.id]: {
+            client_name: match[4].trim(),
+            row: match[1],
+            column: Number(match[2]),
+            level: Number(match[3]),
+          },
+        }));
+      }
     } catch {}
-    finally { setExpandingId(null); }
   }
 
   const fetchActivity = useCallback(async (pageNum: number, append: boolean) => {

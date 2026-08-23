@@ -963,7 +963,7 @@ async function routeDelete(path: string): Promise<any> {
       deleted_by: userId() || '',
       reason: 'manual',
     }) : null;
-    logActivity({ action: 'DELETED', entity_type: 'vault', entity_id: deletedRecord?.id || vaultId, entity_label: `Vault ${position} · ${v.client_name || '—'}` });
+    logActivity({ action: 'DELETED', entity_type: 'vault', entity_id: deletedRecord?.id || vaultId, entity_label: `Vault ${position} · ${v.client_name || '—'}`, before_data: mapVault(v) });
     return null;
   }
 
