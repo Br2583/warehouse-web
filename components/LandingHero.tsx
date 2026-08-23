@@ -219,7 +219,7 @@ export default function LandingHero() {
 
     /* ═══ TOUR CONTROLLER ═══ */
     const TOUR_SCREENS=['scnWarehouse','scnSearch','scnStats','scnChat'];
-    const TOUR_SIDEBAR:{[k:string]:string}={scnWarehouse:'Warehouses',scnSearch:'Search',scnStats:'Statistics',scnChat:'Chat'};
+    const TOUR_SIDEBAR:{[k:string]:string}={scnWarehouse:'Warehouses',scnSearch:'Search',scnStats:'Stats',scnChat:'Chat'};
     const TOUR_DUR:{[k:string]:number}={scnWarehouse:5000,scnSearch:7000,scnStats:6000,scnChat:7000};
     let tourIdx=0;
 
@@ -431,7 +431,7 @@ export default function LandingHero() {
                   <div className="sb-item" title="Storage"><svg fill="none" stroke="currentColor" strokeWidth="1.8" width="14" height="14" viewBox="0 0 24 24"><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/></svg></div>
                   <div className="sb-item" title="Tasks"><svg fill="none" stroke="currentColor" strokeWidth="1.8" width="14" height="14" viewBox="0 0 24 24"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="9" y1="7" x2="15" y2="7"/><line x1="9" y1="11" x2="15" y2="11"/><line x1="9" y1="15" x2="13" y2="15"/></svg><span className="sb-badge">3</span></div>
                   <div className="sb-item" title="Search"><svg fill="none" stroke="currentColor" strokeWidth="1.8" width="14" height="14" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg></div>
-                  <div className="sb-item" title="Statistics"><svg fill="none" stroke="currentColor" strokeWidth="1.8" width="14" height="14" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg></div>
+                  <div className="sb-item" title="Stats"><svg fill="none" stroke="currentColor" strokeWidth="1.8" width="14" height="14" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg></div>
                   <div className="sb-item" title="Snapshots"><svg fill="none" stroke="currentColor" strokeWidth="1.8" width="14" height="14" viewBox="0 0 24 24"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3z"/><circle cx="12" cy="13" r="3"/></svg></div>
                   <div className="sb-item" title="Chat"><svg fill="none" stroke="currentColor" strokeWidth="1.8" width="14" height="14" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg><span className="sb-badge">2</span></div>
                   <div className="sb-item" title="Settings"><svg fill="none" stroke="currentColor" strokeWidth="1.8" width="14" height="14" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></div>

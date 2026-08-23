@@ -43,7 +43,7 @@ const FEATURES = [
   },
 ];
 
-const SIDEBAR_ITEMS = ['Dashboard', 'Warehouses', 'Storage', 'Production', 'Statistics', 'Chat'];
+const SIDEBAR_ITEMS = ['Dashboard', 'Warehouses', 'Storage', 'Production', 'Stats', 'Chat'];
 const KPI = [
   { label: 'Total Vaults', val: '24', bg: '#eff6ff', dot: '#2563eb' },
   { label: 'Work Orders', val: '8',  bg: '#fff7ed', dot: '#ea580c' },
