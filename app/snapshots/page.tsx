@@ -108,12 +108,162 @@ export default function SnapshotsPage() {
   };
 
   const handlePrint = async () => {
+    if (!report) return;
     const isNative = !!(window as any).Capacitor?.isNativePlatform?.();
     if (isNative && navigator.share) {
       try { await navigator.share({ title: 'Inventory Report', url: window.location.href }); } catch {}
-    } else {
-      window.print();
+      return;
     }
+
+    const { snap, boxes } = report;
+    const tot  = boxes.length;
+    const pend = boxes.filter(b => (b.estado || b.status) === 'PENDING').length;
+    const rdy  = boxes.filter(b => (b.estado || b.status) === 'READY').length;
+    const dlv  = boxes.filter(b => (b.estado || b.status) === 'DELIVERED').length;
+
+    // Client breakdown
+    const clientMap: Record<string, { total: number; pending: number; ready: number; delivered: number }> = {};
+    for (const b of boxes) {
+      const cl = b.client_name || '(No client)';
+      const st = b.estado || b.status || 'PENDING';
+      if (!clientMap[cl]) clientMap[cl] = { total: 0, pending: 0, ready: 0, delivered: 0 };
+      clientMap[cl].total++;
+      if (st === 'PENDING')   clientMap[cl].pending++;
+      if (st === 'READY')     clientMap[cl].ready++;
+      if (st === 'DELIVERED') clientMap[cl].delivered++;
+    }
+    const clients = Object.entries(clientMap).sort((a, b) => b[1].total - a[1].total);
+
+    // Job type breakdown
+    const jobMap: Record<string, number> = {};
+    for (const b of boxes) { const jt = b.job_type || '—'; jobMap[jt] = (jobMap[jt] || 0) + 1; }
+    const jobs = Object.entries(jobMap).sort((a, b) => b[1] - a[1]);
+
+    // Content type breakdown
+    const ctMap: Record<string, number> = {};
+    for (const b of boxes) { const ct = b.content_type || b.contents_type || '—'; ctMap[ct] = (ctMap[ct] || 0) + 1; }
+    const contents = Object.entries(ctMap).sort((a, b) => b[1] - a[1]);
+
+    const badge = (n: number, cls: string) =>
+      n > 0 ? `<span class="badge ${cls}">${n}</span>` : '<span style="color:#ccc">—</span>';
+
+    const clientRows = clients.map(([name, c]) => `
+      <tr>
+        <td>${name}</td>
+        <td class="num-col">${c.total}</td>
+        <td class="num-col">${badge(c.pending, 'b-pend')}</td>
+        <td class="num-col">${badge(c.ready, 'b-rdy')}</td>
+        <td class="num-col">${badge(c.delivered, 'b-dlv')}</td>
+      </tr>`).join('');
+
+    const jobRows = jobs.map(([name, count]) => `
+      <tr>
+        <td>${name}</td>
+        <td class="num-col">${count}</td>
+        <td class="num-col">${tot > 0 ? Math.round(count / tot * 100) : 0}%</td>
+      </tr>`).join('');
+
+    const ctRows = contents.map(([name, count]) => `
+      <tr><td>${name}</td><td class="num-col">${count}</td></tr>`).join('');
+
+    const date    = formatSnapDate(snap.date);
+    const printed = new Date().toLocaleString();
+
+    const html = `<!DOCTYPE html><html><head><meta charset="UTF-8">
+<title>Report — ${snap.warehouse_name}</title>
+<style>
+  @page { size: A4 portrait; margin: 1.4cm 1.5cm; }
+  *  { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, Arial, sans-serif; font-size: 11px; color: #111; background: #fff; }
+
+  .header { display: flex; justify-content: space-between; align-items: flex-end;
+            padding-bottom: 10px; border-bottom: 2px solid #111; margin-bottom: 14px; }
+  .header h1 { font-size: 20px; font-weight: 800; line-height: 1.1; }
+  .header p  { font-size: 10px; color: #666; margin-top: 3px; }
+  .header-right { text-align: right; font-size: 9px; color: #999; }
+
+  .summary { display: grid; grid-template-columns: repeat(4,1fr); gap: 8px; margin-bottom: 16px; }
+  .stat { background: #f8f8f8; border: 1px solid #e8e8e8; border-radius: 8px; padding: 10px 12px; }
+  .stat .n { font-size: 26px; font-weight: 800; line-height: 1; }
+  .stat .l { font-size: 9px; color: #999; margin-top: 3px; text-transform: uppercase; letter-spacing: .05em; }
+  .s-pend .n { color: #d97706; }
+  .s-rdy  .n { color: #059669; }
+  .s-dlv  .n { color: #2563eb; }
+
+  .cols { display: grid; grid-template-columns: 2fr 1fr; gap: 14px; }
+  .sec h2 { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em;
+             color: #aaa; margin-bottom: 5px; }
+  .sec + .sec { margin-top: 12px; }
+
+  table { width: 100%; border-collapse: collapse; font-size: 10px; }
+  th { background: #f4f4f4; text-align: left; padding: 4px 7px; font-weight: 600;
+       border-bottom: 1px solid #ddd; color: #555; font-size: 9px; }
+  td { padding: 3px 7px; border-bottom: 1px solid #f0f0f0; }
+  tr:last-child td { border-bottom: none; }
+  .num-col { text-align: center; }
+
+  .badge, .b-pend, .b-rdy, .b-dlv {
+    display: inline-block; padding: 1px 5px; border-radius: 3px; font-size: 9px; font-weight: 600; }
+  .b-pend { background: #fef3c7; color: #92400e; }
+  .b-rdy  { background: #d1fae5; color: #065f46; }
+  .b-dlv  { background: #dbeafe; color: #1e40af; }
+
+  .footer { margin-top: 14px; padding-top: 7px; border-top: 1px solid #e8e8e8;
+            display: flex; justify-content: space-between; font-size: 9px; color: #ccc; }
+</style></head><body>
+
+<div class="header">
+  <div>
+    <h1>${snap.warehouse_name}</h1>
+    <p>Inventory Report · ${date}</p>
+  </div>
+  <div class="header-right">Printed ${printed}</div>
+</div>
+
+<div class="summary">
+  <div class="stat">       <div class="n">${tot}</div><div class="l">Total Vaults</div></div>
+  <div class="stat s-pend"><div class="n">${pend}</div><div class="l">Pending</div></div>
+  <div class="stat s-rdy"> <div class="n">${rdy}</div><div class="l">Ready</div></div>
+  <div class="stat s-dlv"> <div class="n">${dlv}</div><div class="l">Delivered</div></div>
+</div>
+
+<div class="cols">
+  <div class="sec">
+    <h2>By Client</h2>
+    <table>
+      <thead><tr><th>Client</th><th>Total</th><th>Pending</th><th>Ready</th><th>Delivered</th></tr></thead>
+      <tbody>${clientRows}</tbody>
+    </table>
+  </div>
+  <div>
+    <div class="sec">
+      <h2>By Job Type</h2>
+      <table>
+        <thead><tr><th>Type</th><th>Count</th><th>%</th></tr></thead>
+        <tbody>${jobRows}</tbody>
+      </table>
+    </div>
+    ${contents.length > 1 ? `
+    <div class="sec">
+      <h2>By Content</h2>
+      <table>
+        <thead><tr><th>Content</th><th>Count</th></tr></thead>
+        <tbody>${ctRows}</tbody>
+      </table>
+    </div>` : ''}
+  </div>
+</div>
+
+<div class="footer">
+  <span>${snap.warehouse_name} · ${date}</span>
+  <span>Warehouse Manager</span>
+</div>
+
+<script>window.onload = function(){ window.print(); setTimeout(function(){ window.close(); }, 500); }</script>
+</body></html>`;
+
+    const w = window.open('', '_blank', 'width=900,height=700');
+    if (w) { w.document.write(html); w.document.close(); }
   };
 
   const sendEmail = async () => {
@@ -155,63 +305,8 @@ export default function SnapshotsPage() {
 
   return (
     <>
-      {/* Print / PDF styles */}
-      <style>{`
-        @media print {
-          @page { size: A4 landscape; margin: 1cm; }
-          body * { visibility: hidden; }
-          #print-report, #print-report * { visibility: visible; }
-
-          /* Reset modal overlay — make it a plain block so it doesn't clip */
-          .snap-overlay {
-            position: static !important;
-            background: transparent !important;
-            padding: 0 !important;
-            overflow: visible !important;
-            display: block !important;
-          }
-          /* Reset modal card — remove max-width constraint */
-          .snap-modal {
-            max-width: none !important;
-            width: 100% !important;
-            box-shadow: none !important;
-            border-radius: 0 !important;
-            margin: 0 !important;
-            overflow: visible !important;
-          }
-
-          #print-report {
-            width: 100% !important;
-            overflow: visible !important;
-            background: white;
-            -webkit-print-color-adjust: exact; print-color-adjust: exact;
-          }
-          /* Remove overflow scroll containers — let table flow */
-          #print-report .overflow-x-auto { overflow: visible !important; }
-          /* Hide gradient fade overlay */
-          #print-report .pointer-events-none { display: none !important; }
-          /* Fit table to printable width with fixed layout */
-          #print-report table {
-            width: 100% !important;
-            min-width: 0 !important;
-            font-size: 8px !important;
-            table-layout: fixed !important;
-          }
-          #print-report table td,
-          #print-report table th {
-            min-width: 0 !important;
-            padding: 2px 3px !important;
-            overflow: hidden !important;
-            word-break: break-word !important;
-          }
-          /* Remove Tailwind min-w-[480px] on the table */
-          #print-report .min-w-\\[480px\\] { min-width: 0 !important; }
-          /* Force status summary to 4 columns */
-          #print-report .grid { grid-template-columns: repeat(4,1fr) !important; }
-          /* Keep each level grid on one page if possible */
-          #print-report .space-y-8 > div { page-break-inside: avoid; }
-        }
-      `}</style>
+      {/* Hide everything if Ctrl+P is pressed on the page itself — actual print goes via window.open */}
+      <style>{`@media print { body * { display: none !important; } }`}</style>
 
       <div className="flex min-h-screen bg-gray-50">
         <Sidebar />
