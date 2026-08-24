@@ -950,8 +950,8 @@ export default function WarehouseDetailPage() {
                   </div>
                 </div>
 
-                {/* Zone panel */}
-                <div className="lg:w-1/2">
+                {/* Zone panel — desktop side panel */}
+                <div className="hidden lg:block lg:w-1/2">
                   {selectedZone ? (
                     <div className="bg-white rounded-2xl border border-gray-100 p-4">
                       <div className="flex items-center justify-between mb-4">
@@ -965,85 +965,55 @@ export default function WarehouseDetailPage() {
                         </div>
                         <div className="flex items-center gap-2">
                           {canManage && (
-                            <button
-                              onClick={openAddLooseItem}
-                              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-gray-950 text-white rounded-full hover:bg-gray-800 transition-colors"
-                            >
+                            <button onClick={openAddLooseItem}
+                              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-gray-950 text-white rounded-full hover:bg-gray-800 transition-colors">
                               <PlusIcon className="w-3 h-3" /> Add Item
                             </button>
                           )}
-                          <button
-                            onClick={() => { setSelectedZone(null); setShowLooseForm(false); }}
-                            className="p-1.5 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-50"
-                          >
+                          <button onClick={() => { setSelectedZone(null); setShowLooseForm(false); }}
+                            className="p-1.5 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-50">
                             <XMarkIcon className="w-4 h-4" />
                           </button>
                         </div>
                       </div>
-
-                      {/* Items list */}
                       <div className="space-y-3 max-h-[60vh] overflow-y-auto">
-                          {looseZoneItems.map(item => (
-                            <div key={item.id} className="flex gap-3 p-3 bg-gray-50 rounded-xl">
-                              <span className="text-2xl flex-shrink-0 leading-none pt-0.5">{getItemEmoji(item)}</span>
-                              <div className="flex-1 min-w-0">
-                                <div className="flex items-center justify-between gap-2">
-                                  <p className="text-sm font-medium text-gray-900 truncate">{item.client_name || '(No client)'}</p>
-                                  {canManage && (
-                                    <div className="flex gap-1 flex-shrink-0">
-                                      <button onClick={() => openEditLooseItem(item)} className="p-1 text-gray-400 hover:text-blue-600 rounded hover:bg-blue-50 transition-colors">
-                                        <PencilIcon className="w-3.5 h-3.5" />
-                                      </button>
-                                      <button onClick={() => deleteLooseItemFn(item.id)} className="p-1 text-gray-400 hover:text-red-600 rounded hover:bg-red-50 transition-colors">
-                                        <TrashIcon className="w-3.5 h-3.5" />
-                                      </button>
-                                    </div>
-                                  )}
-                                </div>
-                                <p className="text-xs text-gray-500 mt-0.5">
-                                  {item.item_type}{item.furniture_type ? ` · ${item.furniture_type}` : ''}{item.color ? ` · ${item.color}` : ''}
-                                </p>
-                                {item.condition.length > 0 && (
-                                  <div className="flex flex-wrap gap-1 mt-1.5">
-                                    {item.condition.map(c => (
-                                      <span key={c} className="text-[10px] px-1.5 py-0.5 bg-amber-100 text-amber-700 rounded-full">{c}</span>
-                                    ))}
-                                  </div>
-                                )}
-                                <div className="flex items-center justify-between mt-1.5">
-                                  <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full ${STATUS_COLORS[item.status] || 'bg-gray-100 text-gray-600'}`}>
-                                    {item.status}
-                                  </span>
-                                  {item.photos.length > 0 && (
-                                    <span className="text-[10px] text-gray-400 flex items-center gap-0.5">
-                                      <CameraIcon className="w-3 h-3" />{item.photos.length}
-                                    </span>
-                                  )}
-                                </div>
-                                {item.photos.length > 0 && (
-                                  <div className="flex gap-1 mt-2">
-                                    {item.photos.slice(0, 3).map((photo, i) => (
-                                      <img key={i} src={photo} alt="" onClick={() => setLightbox({ photos: item.photos, index: i })}
-                                        className="w-12 h-12 object-cover rounded-lg cursor-pointer hover:opacity-90 transition-opacity" />
-                                    ))}
-                                    {item.photos.length > 3 && (
-                                      <button className="w-12 h-12 bg-gray-200 rounded-lg flex items-center justify-center text-xs text-gray-500 font-medium"
-                                        onClick={() => setLightbox({ photos: item.photos, index: 3 })}>
-                                        +{item.photos.length - 3}
-                                      </button>
-                                    )}
+                        {looseZoneItems.map(item => (
+                          <div key={item.id} className="flex gap-3 p-3 bg-gray-50 rounded-xl">
+                            <span className="text-2xl flex-shrink-0 leading-none pt-0.5">{getItemEmoji(item)}</span>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center justify-between gap-2">
+                                <p className="text-sm font-medium text-gray-900 truncate">{item.client_name || '(No client)'}</p>
+                                {canManage && (
+                                  <div className="flex gap-1 flex-shrink-0">
+                                    <button onClick={() => openEditLooseItem(item)} className="p-1 text-gray-400 hover:text-blue-600 rounded hover:bg-blue-50 transition-colors"><PencilIcon className="w-3.5 h-3.5" /></button>
+                                    <button onClick={() => deleteLooseItemFn(item.id)} className="p-1 text-gray-400 hover:text-red-600 rounded hover:bg-red-50 transition-colors"><TrashIcon className="w-3.5 h-3.5" /></button>
                                   </div>
                                 )}
                               </div>
+                              <p className="text-xs text-gray-500 mt-0.5">{item.item_type}{item.furniture_type ? ` · ${item.furniture_type}` : ''}{item.color ? ` · ${item.color}` : ''}</p>
+                              {item.condition.length > 0 && (
+                                <div className="flex flex-wrap gap-1 mt-1.5">{item.condition.map(c => <span key={c} className="text-[10px] px-1.5 py-0.5 bg-amber-100 text-amber-700 rounded-full">{c}</span>)}</div>
+                              )}
+                              <div className="flex items-center justify-between mt-1.5">
+                                <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full ${STATUS_COLORS[item.status] || 'bg-gray-100 text-gray-600'}`}>{item.status}</span>
+                                {item.photos.length > 0 && <span className="text-[10px] text-gray-400 flex items-center gap-0.5"><CameraIcon className="w-3 h-3" />{item.photos.length}</span>}
+                              </div>
+                              {item.photos.length > 0 && (
+                                <div className="flex gap-1 mt-2">
+                                  {item.photos.slice(0, 3).map((photo, i) => <img key={i} src={photo} alt="" onClick={() => setLightbox({ photos: item.photos, index: i })} className="w-12 h-12 object-cover rounded-lg cursor-pointer hover:opacity-90 transition-opacity" />)}
+                                  {item.photos.length > 3 && <button className="w-12 h-12 bg-gray-200 rounded-lg flex items-center justify-center text-xs text-gray-500 font-medium" onClick={() => setLightbox({ photos: item.photos, index: 3 })}>+{item.photos.length - 3}</button>}
+                                </div>
+                              )}
                             </div>
-                          ))}
-                          {looseZoneItems.length === 0 && (
-                            <div className="text-center py-10 text-gray-400">
-                              <p className="text-sm">No items in this zone</p>
-                              {canManage && <p className="text-xs mt-1">Click &quot;Add Item&quot; to add one</p>}
-                            </div>
-                          )}
-                        </div>
+                          </div>
+                        ))}
+                        {looseZoneItems.length === 0 && (
+                          <div className="text-center py-10 text-gray-400">
+                            <p className="text-sm">No items in this zone</p>
+                            {canManage && <p className="text-xs mt-1">Click &quot;Add Item&quot; to add one</p>}
+                          </div>
+                        )}
+                      </div>
                     </div>
                   ) : (
                     <div className="bg-white rounded-2xl border border-gray-100 h-full flex items-center justify-center min-h-[200px]">
@@ -1054,6 +1024,80 @@ export default function WarehouseDetailPage() {
                     </div>
                   )}
                 </div>
+
+                {/* Zone panel — mobile modal */}
+                <AnimatePresence>
+                  {selectedZone && (
+                    <div className="lg:hidden fixed inset-0 bg-black/40 flex items-center justify-center z-[55] p-4"
+                      onClick={() => { setSelectedZone(null); setShowLooseForm(false); }}>
+                      <motion.div
+                        initial={{ opacity: 0, scale: 0.95, y: 8 }}
+                        animate={{ opacity: 1, scale: 1, y: 0 }}
+                        exit={{ opacity: 0, scale: 0.95, y: 8 }}
+                        transition={{ duration: 0.18, ease: 'easeOut' }}
+                        className="bg-white rounded-2xl p-4 w-full max-w-sm shadow-xl max-h-[80vh] flex flex-col"
+                        onClick={e => e.stopPropagation()}
+                      >
+                        <div className="flex items-center justify-between mb-4 flex-shrink-0">
+                          <div>
+                            <h3 className="font-semibold text-gray-900">Zone {selectedZone.split('-')[0]}–{selectedZone.split('-')[1]}</h3>
+                            <p className="text-xs text-gray-400 mt-0.5">{looseZoneItems.length} {looseZoneItems.length === 1 ? 'item' : 'items'}</p>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            {canManage && (
+                              <button onClick={openAddLooseItem}
+                                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-gray-950 text-white rounded-full hover:bg-gray-800 transition-colors">
+                                <PlusIcon className="w-3 h-3" /> Add Item
+                              </button>
+                            )}
+                            <button onClick={() => { setSelectedZone(null); setShowLooseForm(false); }}
+                              className="p-1.5 text-gray-400 hover:text-gray-600 rounded-lg">
+                              <XMarkIcon className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </div>
+                        <div className="space-y-3 overflow-y-auto flex-1">
+                          {looseZoneItems.map(item => (
+                            <div key={item.id} className="flex gap-3 p-3 bg-gray-50 rounded-xl">
+                              <span className="text-2xl flex-shrink-0 leading-none pt-0.5">{getItemEmoji(item)}</span>
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center justify-between gap-2">
+                                  <p className="text-sm font-medium text-gray-900 truncate">{item.client_name || '(No client)'}</p>
+                                  {canManage && (
+                                    <div className="flex gap-1 flex-shrink-0">
+                                      <button onClick={() => openEditLooseItem(item)} className="p-1 text-gray-400 hover:text-blue-600 rounded hover:bg-blue-50 transition-colors"><PencilIcon className="w-3.5 h-3.5" /></button>
+                                      <button onClick={() => deleteLooseItemFn(item.id)} className="p-1 text-gray-400 hover:text-red-600 rounded hover:bg-red-50 transition-colors"><TrashIcon className="w-3.5 h-3.5" /></button>
+                                    </div>
+                                  )}
+                                </div>
+                                <p className="text-xs text-gray-500 mt-0.5">{item.item_type}{item.furniture_type ? ` · ${item.furniture_type}` : ''}{item.color ? ` · ${item.color}` : ''}</p>
+                                {item.condition.length > 0 && (
+                                  <div className="flex flex-wrap gap-1 mt-1.5">{item.condition.map(c => <span key={c} className="text-[10px] px-1.5 py-0.5 bg-amber-100 text-amber-700 rounded-full">{c}</span>)}</div>
+                                )}
+                                <div className="flex items-center justify-between mt-1.5">
+                                  <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full ${STATUS_COLORS[item.status] || 'bg-gray-100 text-gray-600'}`}>{item.status}</span>
+                                  {item.photos.length > 0 && <span className="text-[10px] text-gray-400 flex items-center gap-0.5"><CameraIcon className="w-3 h-3" />{item.photos.length}</span>}
+                                </div>
+                                {item.photos.length > 0 && (
+                                  <div className="flex gap-1 mt-2">
+                                    {item.photos.slice(0, 3).map((photo, i) => <img key={i} src={photo} alt="" onClick={() => setLightbox({ photos: item.photos, index: i })} className="w-12 h-12 object-cover rounded-lg cursor-pointer hover:opacity-90 transition-opacity" />)}
+                                    {item.photos.length > 3 && <button className="w-12 h-12 bg-gray-200 rounded-lg flex items-center justify-center text-xs text-gray-500 font-medium" onClick={() => setLightbox({ photos: item.photos, index: 3 })}>+{item.photos.length - 3}</button>}
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          ))}
+                          {looseZoneItems.length === 0 && (
+                            <div className="text-center py-10 text-gray-400">
+                              <p className="text-sm">No items in this zone</p>
+                              {canManage && <p className="text-xs mt-1">Tap &quot;Add Item&quot; to add one</p>}
+                            </div>
+                          )}
+                        </div>
+                      </motion.div>
+                    </div>
+                  )}
+                </AnimatePresence>
               </div>
             )}
           </>

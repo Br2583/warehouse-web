@@ -198,14 +198,6 @@ export default function WarehousesPage() {
                   transition={{ delay: i * 0.1 }}
                 >
                   <div className="relative group h-full">
-                    {user?.role === 'owner' && (
-                      <button
-                        onClick={e => { e.preventDefault(); deleteWarehouse(wh.id, wh.name); }}
-                        className="absolute top-3 right-3 z-10 p-1.5 rounded-lg text-gray-300 hover:text-red-500 hover:bg-red-50 md:opacity-0 md:group-hover:opacity-100 transition-all"
-                      >
-                        <TrashIcon className="w-4 h-4" />
-                      </button>
-                    )}
                     <Link href={`/warehouses/${wh.id}`} className="h-full block">
                       <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden hover:shadow-md transition-all cursor-pointer h-full flex flex-col">
                         {/* Color accent bar */}
@@ -219,7 +211,17 @@ export default function WarehousesPage() {
                             >
                               <BuildingOffice2Icon className="w-5 h-5 md:w-6 md:h-6" style={{ color: accent }} />
                             </div>
-                            <ChevronRightIcon className="w-4 h-4 md:w-5 md:h-5 text-gray-300 group-hover:text-blue-500 transition-colors mt-2 md:mt-3" />
+                            <div className="flex items-center gap-1">
+                              {user?.role === 'owner' && (
+                                <button
+                                  onClick={e => { e.preventDefault(); deleteWarehouse(wh.id, wh.name); }}
+                                  className="p-1.5 rounded-lg text-gray-300 hover:text-red-500 hover:bg-red-50 md:opacity-0 md:group-hover:opacity-100 transition-all"
+                                >
+                                  <TrashIcon className="w-4 h-4" />
+                                </button>
+                              )}
+                              <ChevronRightIcon className="w-4 h-4 md:w-5 md:h-5 text-gray-300 group-hover:text-blue-500 transition-colors mt-0.5" />
+                            </div>
                           </div>
                           <h2 className="text-base md:text-lg font-semibold text-gray-900 truncate pr-2">{wh.name}</h2>
                           {wh.address

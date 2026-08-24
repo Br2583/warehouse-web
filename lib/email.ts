@@ -464,52 +464,9 @@ export function snapshotReportEmail(opts: {
   pending: number;
   ready: number;
   delivered: number;
-  vaults: { row: string; column: number; level: number; client_name: string; estado?: string; status?: string }[];
+  vaults: { row: string; column: number; level: number; client_name: string; job_type?: string; estado?: string; status?: string }[];
 }) {
   const { warehouseName, date, total, pending, ready, delivered, vaults } = opts;
-  const ROWS = ['A','B','C','D','E','F','G','H','I','J'];
-  const maxCol = vaults.length ? Math.max(8, ...vaults.map(v => Number(v.column))) : 8;
-  const COLS = Array.from({ length: maxCol }, (_, i) => i + 1);
-
-  const stColor = (s: string) =>
-    s === 'READY' ? '#dcfce7' : s === 'DELIVERED' ? '#dbeafe' : s === 'PENDING' ? '#fef9c3' : '#f1f5f9';
-  const stText = (s: string) =>
-    s === 'READY' ? '#15803d' : s === 'DELIVERED' ? '#1d4ed8' : s === 'PENDING' ? '#a16207' : '#94a3b8';
-
-  const buildGrid = (level: number) => {
-    const label = level === 1 ? 'Lower Level' : 'Upper Level';
-    // Compute per-cell width so total table fits within 560px (620px card - 60px for padding/row header)
-    const cellPx = Math.max(36, Math.floor((556 - (COLS.length + 1) * 3 - 30) / COLS.length));
-    const nameLen = Math.max(4, Math.floor(cellPx / 6)); // chars that fit at ~6px per char
-    let rowsHtml = '';
-    ROWS.forEach(row => {
-      let cells = '';
-      COLS.forEach(col => {
-        const v = vaults.find(b => b.row === row && Number(b.column) === col && Number(b.level) === level);
-        const st = v ? (v.estado || v.status || 'PENDING') : '';
-        cells += v
-          ? `<td style="padding:4px 2px;text-align:center;background:${stColor(st)};border:1px solid #e2e8f0;border-radius:4px;width:${cellPx}px;max-width:${cellPx}px;">
-               <div style="font-size:9px;font-weight:700;color:${stText(st)};line-height:1.3;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:${cellPx - 4}px;">${esc(v.client_name).slice(0, nameLen)}</div>
-               <div style="font-size:8px;color:${stText(st)};opacity:.75;">${esc(st).slice(0,3)}</div>
-             </td>`
-          : `<td style="padding:4px 2px;text-align:center;background:#f8fafc;border:1px solid #f1f5f9;border-radius:4px;width:${cellPx}px;max-width:${cellPx}px;"><span style="color:#e2e8f0;font-size:11px;">—</span></td>`;
-      });
-      rowsHtml += `<tr>
-        <td style="padding:3px 6px 3px 0;font-size:11px;font-weight:700;color:#64748b;text-align:right;width:24px;">${row}</td>
-        ${cells}
-      </tr>`;
-    });
-    const headerCols = COLS.map(c => `<td style="padding:3px 2px;text-align:center;font-size:9px;font-weight:600;color:#94a3b8;width:${cellPx}px;">C${c}</td>`).join('');
-
-    return `
-      <div style="margin-bottom:24px;">
-        <p style="margin:0 0 8px;font-size:11px;font-weight:700;color:#64748b;letter-spacing:1px;text-transform:uppercase;">${label}</p>
-        <table cellpadding="0" cellspacing="3" style="border-collapse:separate;table-layout:fixed;width:100%;">
-          <thead><tr><td style="width:24px;"></td>${headerCols}</tr></thead>
-          <tbody>${rowsHtml}</tbody>
-        </table>
-      </div>`;
-  };
 
   /* KPI card */
   const kpi = (val: number, lbl: string, bg: string, fg: string, border: string) =>
@@ -519,6 +476,53 @@ export function snapshotReportEmail(opts: {
          <div style="font-size:11px;color:${fg};margin-top:4px;font-weight:600;opacity:.8;">${lbl}</div>
        </div>
      </td>`;
+
+  /* Client & job breakdown */
+  const clientMap: Record<string, { total: number; pending: number; ready: number; delivered: number; jobTypes: Set<string> }> = {};
+  for (const v of vaults) {
+    const cl = v.client_name || '(No client)';
+    const st = v.estado || v.status || 'PENDING';
+    const jt = v.job_type || '';
+    if (!clientMap[cl]) clientMap[cl] = { total: 0, pending: 0, ready: 0, delivered: 0, jobTypes: new Set() };
+    clientMap[cl].total++;
+    if (st === 'PENDING')   clientMap[cl].pending++;
+    if (st === 'READY')     clientMap[cl].ready++;
+    if (st === 'DELIVERED') clientMap[cl].delivered++;
+    if (jt) clientMap[cl].jobTypes.add(jt);
+  }
+  const clients = Object.entries(clientMap).sort((a, b) => b[1].total - a[1].total);
+
+  const jobMap: Record<string, number> = {};
+  for (const v of vaults) { const jt = v.job_type || 'Other'; jobMap[jt] = (jobMap[jt] || 0) + 1; }
+  const jobs = Object.entries(jobMap).sort((a, b) => b[1] - a[1]);
+
+  const n = (val: number, bg: string, fg: string) =>
+    val > 0
+      ? `<span style="background:${bg};color:${fg};padding:2px 6px;border-radius:4px;font-size:11px;font-weight:700;">${val}</span>`
+      : `<span style="color:#d1d5db;">—</span>`;
+
+  const clientRows = clients.map(([name]) => {
+    const c = clientMap[name];
+    return `<tr>
+      <td style="padding:6px 8px;font-weight:600;color:#111827;font-size:12px;border-bottom:1px solid #f3f4f6;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${esc(name)}</td>
+      <td style="padding:6px 8px;text-align:center;font-size:11px;color:#6b7280;border-bottom:1px solid #f3f4f6;">${esc([...c.jobTypes].join(', ') || '—')}</td>
+      <td style="padding:6px 8px;text-align:center;font-weight:700;color:#111827;font-size:13px;border-bottom:1px solid #f3f4f6;">${c.total}</td>
+      <td style="padding:6px 8px;text-align:center;border-bottom:1px solid #f3f4f6;">${n(c.pending,'#fef3c7','#92400e')}</td>
+      <td style="padding:6px 8px;text-align:center;border-bottom:1px solid #f3f4f6;">${n(c.ready,'#d1fae5','#065f46')}</td>
+      <td style="padding:6px 8px;text-align:center;border-bottom:1px solid #f3f4f6;">${n(c.delivered,'#dbeafe','#1e40af')}</td>
+    </tr>`;
+  }).join('');
+
+  const jobRows = jobs.map(([name, count]) =>
+    `<tr>
+      <td style="padding:6px 8px;color:#111827;font-size:12px;border-bottom:1px solid #f3f4f6;">${esc(name)}</td>
+      <td style="padding:6px 8px;text-align:center;font-weight:700;color:#111827;font-size:13px;border-bottom:1px solid #f3f4f6;">${count}</td>
+      <td style="padding:6px 8px;text-align:center;color:#6b7280;font-size:12px;border-bottom:1px solid #f3f4f6;">${total > 0 ? Math.round(count / total * 100) : 0}%</td>
+    </tr>`
+  ).join('');
+
+  const thStyle = 'padding:6px 8px;text-align:left;font-size:10px;font-weight:700;color:#9ca3af;text-transform:uppercase;letter-spacing:.05em;background:#f9fafb;';
+  const thCStyle = 'padding:6px 8px;text-align:center;font-size:10px;font-weight:700;color:#9ca3af;text-transform:uppercase;letter-spacing:.05em;background:#f9fafb;';
 
   const bodyContent = `
     <!-- Warehouse + date strip -->
@@ -538,34 +542,32 @@ export function snapshotReportEmail(opts: {
       </tr>
     </table>
 
-    <!-- Grid section -->
-    <div style="border-top:1px solid #f1f5f9;padding-top:24px;">
-      <p style="margin:0 0 16px;font-size:12px;font-weight:700;color:#374151;letter-spacing:.6px;text-transform:uppercase;">Warehouse Grid</p>
-      ${buildGrid(1)}
-      ${buildGrid(2)}
+    <!-- Clients section -->
+    <div style="border-top:1px solid #f1f5f9;padding-top:20px;margin-bottom:20px;">
+      <p style="margin:0 0 10px;font-size:11px;font-weight:700;color:#9ca3af;letter-spacing:.07em;text-transform:uppercase;">Clients in this Warehouse</p>
+      <table cellpadding="0" cellspacing="0" width="100%" style="border-collapse:collapse;border:1px solid #e5e7eb;border-radius:8px;overflow:hidden;">
+        <thead><tr>
+          <th style="${thStyle}">Client</th>
+          <th style="${thStyle}">Job Type</th>
+          <th style="${thCStyle}">Vaults</th>
+          <th style="${thCStyle}">Pending</th>
+          <th style="${thCStyle}">Ready</th>
+          <th style="${thCStyle}">Delivered</th>
+        </tr></thead>
+        <tbody>${clientRows || '<tr><td colspan="6" style="padding:12px;text-align:center;color:#9ca3af;font-size:12px;">No client data</td></tr>'}</tbody>
+      </table>
+    </div>
 
-      <!-- Legend -->
-      <table cellpadding="0" cellspacing="0" style="margin-top:4px;">
-        <tr>
-          <td style="padding-right:14px;">
-            <table cellpadding="0" cellspacing="0"><tr>
-              <td style="padding-right:5px;"><div style="width:10px;height:10px;background:#fef9c3;border-radius:2px;"></div></td>
-              <td style="font-size:11px;color:#64748b;">Pending</td>
-            </tr></table>
-          </td>
-          <td style="padding-right:14px;">
-            <table cellpadding="0" cellspacing="0"><tr>
-              <td style="padding-right:5px;"><div style="width:10px;height:10px;background:#dcfce7;border-radius:2px;"></div></td>
-              <td style="font-size:11px;color:#64748b;">Ready</td>
-            </tr></table>
-          </td>
-          <td>
-            <table cellpadding="0" cellspacing="0"><tr>
-              <td style="padding-right:5px;"><div style="width:10px;height:10px;background:#dbeafe;border-radius:2px;"></div></td>
-              <td style="font-size:11px;color:#64748b;">Delivered</td>
-            </tr></table>
-          </td>
-        </tr>
+    <!-- Job types section -->
+    <div>
+      <p style="margin:0 0 10px;font-size:11px;font-weight:700;color:#9ca3af;letter-spacing:.07em;text-transform:uppercase;">By Job Type</p>
+      <table cellpadding="0" cellspacing="0" width="100%" style="border-collapse:collapse;border:1px solid #e5e7eb;border-radius:8px;overflow:hidden;">
+        <thead><tr>
+          <th style="${thStyle}">Type</th>
+          <th style="${thCStyle}">Count</th>
+          <th style="${thCStyle}">%</th>
+        </tr></thead>
+        <tbody>${jobRows || '<tr><td colspan="3" style="padding:12px;text-align:center;color:#9ca3af;font-size:12px;">No job data</td></tr>'}</tbody>
       </table>
     </div>
   `;

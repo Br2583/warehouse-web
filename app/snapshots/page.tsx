@@ -12,7 +12,6 @@ import { useToast } from '@/lib/toast-context';
 import { api } from '@/lib/api';
 import { pb } from '@/lib/pb';
 import { useAuth } from '@/lib/auth-context';
-import { STATUS_COLORS } from '@/lib/constants';
 
 function formatSnapDate(dateStr: string): string {
   if (!dateStr) return '';
@@ -109,12 +108,6 @@ export default function SnapshotsPage() {
 
   const handlePrint = () => {
     if (!report) return;
-    const isNative = !!(window as any).Capacitor?.isNativePlatform?.();
-    if (isNative && navigator.share) {
-      navigator.share({ title: 'Inventory Report', url: window.location.href }).catch(() => {});
-      return;
-    }
-
     const { snap, boxes } = report;
     const tot  = boxes.length;
     const pend = boxes.filter(b => (b.estado || b.status) === 'PENDING').length;
@@ -469,77 +462,106 @@ ${capacity > 0 ? `
                       ))}
                     </div>
 
-                    {/* Level grids */}
+                    {/* Stats breakdown */}
                     {report.boxes.length > 0 ? (
-                      <div className="space-y-8">
-                        {(() => {
-                          const maxCol = Math.max(8, ...report.boxes.map(b => Number(b.column) || 0));
-                          const allCols = Array.from({ length: maxCol }, (_, i) => i + 1);
-                          return [1, 2].map(level => {
-                          const levelName = level === 1 ? 'Lower' : 'Upper';
-                          const rowLetters = 'ABCDEFGHIJ';
-                          const usedRows = [...new Set(report.boxes.map((b: any) => b.row))].sort() as string[];
-                          const rows = usedRows.length > 0 ? usedRows : rowLetters.split('');
-                          const cols = allCols;
-                          const getBox = (row: string, col: number) =>
-                            report.boxes.find(b => b.row === row && Number(b.column) === col && Number(b.level) === level);
-                          const levelBoxes = report.boxes.filter(b => Number(b.level) === level);
+                      (() => {
+                        const tot = report.boxes.length;
+                        const maxRow = Math.max(0, ...report.boxes.map(b => b.row?.charCodeAt(0) - 64 || 0));
+                        const maxCol = Math.max(8, ...report.boxes.map(b => Number(b.column) || 0));
+                        const capacity = maxRow * maxCol * 2;
+                        const occupPct = capacity > 0 ? Math.round(tot / capacity * 100) : 0;
+                        const availPct = capacity > 0 ? Math.round((capacity - tot) / capacity * 100) : 0;
 
-                          return (
-                            <div key={level}>
-                              <div className="flex items-center gap-3 mb-3">
-                                <h2 className="font-bold text-gray-900 text-base">Level {level} - {levelName}</h2>
-                                <span className="text-xs text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">{levelBoxes.length} vaults</span>
+                        const clientMap: Record<string, { total: number; pending: number; ready: number; delivered: number; jobTypes: Set<string> }> = {};
+                        for (const b of report.boxes) {
+                          const cl = b.client_name || '(No client)';
+                          const st = b.estado || b.status || 'PENDING';
+                          const jt = b.job_type || '';
+                          if (!clientMap[cl]) clientMap[cl] = { total: 0, pending: 0, ready: 0, delivered: 0, jobTypes: new Set() };
+                          clientMap[cl].total++;
+                          if (st === 'PENDING')   clientMap[cl].pending++;
+                          if (st === 'READY')     clientMap[cl].ready++;
+                          if (st === 'DELIVERED') clientMap[cl].delivered++;
+                          if (jt) clientMap[cl].jobTypes.add(jt);
+                        }
+                        const clients = Object.entries(clientMap).sort((a, b) => b[1].total - a[1].total);
+
+                        const jobMap: Record<string, number> = {};
+                        for (const b of report.boxes) { const jt = b.job_type || 'Other'; jobMap[jt] = (jobMap[jt] || 0) + 1; }
+                        const jobs = Object.entries(jobMap).sort((a, b) => b[1] - a[1]);
+
+                        return (
+                          <div className="space-y-6">
+                            {capacity > 0 && (
+                              <div className="bg-gray-50 border border-gray-100 rounded-xl p-4 flex flex-col sm:flex-row items-start sm:items-center gap-3">
+                                <span className="text-sm text-gray-600 whitespace-nowrap">
+                                  <span className="text-lg font-bold text-gray-900">{tot}</span> / {capacity} positions occupied
+                                </span>
+                                <div className="flex-1 w-full bg-gray-200 rounded-full h-2">
+                                  <div className="bg-gray-900 h-2 rounded-full" style={{ width: `${occupPct}%` }} />
+                                </div>
+                                <span className="text-sm text-gray-600 whitespace-nowrap">
+                                  <span className="font-bold">{availPct}%</span> available
+                                </span>
                               </div>
+                            )}
 
-                              <div className="relative"><div className="pointer-events-none absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-white to-transparent z-10 md:hidden rounded-r-xl" /><div className="border border-gray-200 rounded-xl overflow-x-auto">
-                                <table className="w-full min-w-[480px] text-xs">
-                                  <thead>
-                                    <tr className="bg-gray-50 border-b border-gray-200">
-                                      <th className="px-3 py-2 text-gray-400 font-semibold w-8">Row</th>
-                                      {cols.map(c => (
-                                        <th key={c} className="px-2 py-2 text-center text-gray-500 font-semibold">Col {c}</th>
-                                      ))}
-                                    </tr>
-                                  </thead>
-                                  <tbody>
-                                    {rows.map(row => (
-                                      <tr key={row} className="border-b border-gray-100 last:border-0">
-                                        <td className="px-3 py-2 font-bold text-gray-500 bg-gray-50">{row}</td>
-                                        {cols.map(col => {
-                                          const box = getBox(row, col);
-                                          const status = box ? (box.estado || box.status || 'PENDING') : null;
-                                          return (
-                                            <td key={col} className="px-2 py-1.5 text-center align-top">
-                                              {box ? (
-                                                <div className={`rounded-lg px-1.5 py-1 ${
-                                                  status === 'READY' ? 'bg-green-50 border border-green-200' :
-                                                  status === 'DELIVERED' ? 'bg-blue-50 border border-blue-200' :
-                                                  'bg-amber-50 border border-amber-200'
-                                                }`}>
-                                                  <p className="font-semibold text-gray-900 leading-tight truncate max-w-[80px]">{box.client_name}</p>
-                                                  <p className="text-gray-400 text-[10px]">{box.job_type}</p>
-                                                  <span className={`text-[10px] font-medium px-1 rounded ${STATUS_COLORS[status!] || 'bg-gray-100 text-gray-500'}`}>
-                                                    {status}
-                                                  </span>
-                                                </div>
-                                              ) : (
-                                                <div className="text-gray-200 text-[10px]">-</div>
-                                              )}
-                                            </td>
-                                          );
-                                        })}
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                              <div>
+                                <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wide mb-3">Clients in this Warehouse</h3>
+                                <div className="border border-gray-100 rounded-xl overflow-hidden">
+                                  <table className="w-full text-sm">
+                                    <thead>
+                                      <tr className="bg-gray-50 text-xs text-gray-500">
+                                        <th className="px-3 py-2 text-left font-semibold">Client</th>
+                                        <th className="px-2 py-2 text-center font-semibold">Vaults</th>
+                                        <th className="px-2 py-2 text-center font-semibold">Pend</th>
+                                        <th className="px-2 py-2 text-center font-semibold">Ready</th>
+                                        <th className="px-2 py-2 text-center font-semibold">Dlv</th>
                                       </tr>
-                                    ))}
-                                  </tbody>
-                                </table>
+                                    </thead>
+                                    <tbody>
+                                      {clients.map(([name, c]) => (
+                                        <tr key={name} className="border-t border-gray-50 hover:bg-gray-50">
+                                          <td className="px-3 py-2 font-medium text-gray-900 max-w-[130px] truncate">{name}</td>
+                                          <td className="px-2 py-2 text-center font-bold text-gray-900">{c.total}</td>
+                                          <td className="px-2 py-2 text-center">{c.pending > 0 ? <span className="text-xs px-1.5 py-0.5 bg-amber-100 text-amber-800 rounded font-semibold">{c.pending}</span> : <span className="text-gray-200">—</span>}</td>
+                                          <td className="px-2 py-2 text-center">{c.ready > 0 ? <span className="text-xs px-1.5 py-0.5 bg-green-100 text-green-800 rounded font-semibold">{c.ready}</span> : <span className="text-gray-200">—</span>}</td>
+                                          <td className="px-2 py-2 text-center">{c.delivered > 0 ? <span className="text-xs px-1.5 py-0.5 bg-blue-100 text-blue-800 rounded font-semibold">{c.delivered}</span> : <span className="text-gray-200">—</span>}</td>
+                                        </tr>
+                                      ))}
+                                    </tbody>
+                                  </table>
+                                </div>
+                              </div>
+
+                              <div>
+                                <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wide mb-3">By Job Type</h3>
+                                <div className="border border-gray-100 rounded-xl overflow-hidden">
+                                  <table className="w-full text-sm">
+                                    <thead>
+                                      <tr className="bg-gray-50 text-xs text-gray-500">
+                                        <th className="px-3 py-2 text-left font-semibold">Type</th>
+                                        <th className="px-2 py-2 text-center font-semibold">Count</th>
+                                        <th className="px-2 py-2 text-center font-semibold">%</th>
+                                      </tr>
+                                    </thead>
+                                    <tbody>
+                                      {jobs.map(([name, count]) => (
+                                        <tr key={name} className="border-t border-gray-50 hover:bg-gray-50">
+                                          <td className="px-3 py-2 text-gray-900">{name}</td>
+                                          <td className="px-2 py-2 text-center font-bold text-gray-900">{count}</td>
+                                          <td className="px-2 py-2 text-center text-gray-500">{tot > 0 ? Math.round(count / tot * 100) : 0}%</td>
+                                        </tr>
+                                      ))}
+                                    </tbody>
+                                  </table>
+                                </div>
                               </div>
                             </div>
-                            </div>
-                          );
-                        });
-                        })()}
-                      </div>
+                          </div>
+                        );
+                      })()
                     ) : (
                       <p className="text-center py-8 text-gray-400">No vault data available for this snapshot.</p>
                     )}

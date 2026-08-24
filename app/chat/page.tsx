@@ -198,10 +198,10 @@ export default function ChatPage() {
             {canManage && messages.length > 0 && (
               <button
                 onClick={() => setConfirmClear(true)}
-                className="flex items-center gap-2 px-3 py-2 bg-red-50 text-red-600 text-sm font-semibold rounded-xl hover:bg-red-100 transition-colors border border-red-100 flex-shrink-0"
+                title="Clear all messages"
+                className="p-2 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors flex-shrink-0"
               >
                 <TrashIcon className="w-4 h-4" />
-                <span className="hidden sm:inline">Clear Chat</span>
               </button>
             )}
           </div>
