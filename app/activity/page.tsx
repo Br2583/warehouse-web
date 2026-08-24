@@ -409,7 +409,7 @@ export default function ActivityPage() {
                         <button
                           onClick={() => { setRevertResult(null); setRestoreConfirm(item); }}
                           title="Restore this vault back to inventory"
-                          className="flex-shrink-0 flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium text-green-700 bg-green-50 border border-green-200 rounded-lg hover:bg-green-100 transition-colors opacity-0 group-hover:opacity-100"
+                          className="flex-shrink-0 hidden md:flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium text-green-700 bg-green-50 border border-green-200 rounded-lg hover:bg-green-100 transition-colors opacity-0 group-hover:opacity-100"
                         >
                           <ArrowUpTrayIcon className="w-3.5 h-3.5" />
                           Restore
@@ -417,7 +417,7 @@ export default function ActivityPage() {
                         <button
                           onClick={() => { setRevertResult(null); setPermDeleteConfirm(item); }}
                           title="Permanently delete this vault — cannot be undone"
-                          className="flex-shrink-0 flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium text-red-700 bg-red-50 border border-red-200 rounded-lg hover:bg-red-100 transition-colors opacity-0 group-hover:opacity-100"
+                          className="flex-shrink-0 hidden md:flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium text-red-700 bg-red-50 border border-red-200 rounded-lg hover:bg-red-100 transition-colors opacity-0 group-hover:opacity-100"
                         >
                           Permanently Delete
                         </button>
@@ -427,7 +427,7 @@ export default function ActivityPage() {
                       <button
                         onClick={() => { setRevertResult(null); setRevertConfirm(item); }}
                         title="Revert vault to its previous state"
-                        className="flex-shrink-0 flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium text-amber-700 bg-amber-50 border border-amber-200 rounded-lg hover:bg-amber-100 transition-colors opacity-0 group-hover:opacity-100"
+                        className="flex-shrink-0 hidden md:flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium text-amber-700 bg-amber-50 border border-amber-200 rounded-lg hover:bg-amber-100 transition-colors opacity-0 group-hover:opacity-100"
                       >
                         <ArrowUturnLeftIcon className="w-3.5 h-3.5" />
                         Revert
@@ -470,6 +470,35 @@ export default function ActivityPage() {
                       })()}
                       {!expandingId && !expandedData[item.id] && (
                         <p className="text-xs text-gray-400">No details available</p>
+                      )}
+                      {/* Mobile-only action buttons (desktop shows them on row hover) */}
+                      {(showRestore || showRevert) && (
+                        <div className="flex gap-2 mt-3 md:hidden">
+                          {showRestore && (
+                            <>
+                              <button
+                                onClick={() => { setRevertResult(null); setRestoreConfirm(item); }}
+                                className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-medium text-green-700 bg-green-50 border border-green-200 rounded-xl hover:bg-green-100 transition-colors"
+                              >
+                                <ArrowUpTrayIcon className="w-3.5 h-3.5" /> Restore
+                              </button>
+                              <button
+                                onClick={() => { setRevertResult(null); setPermDeleteConfirm(item); }}
+                                className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-medium text-red-700 bg-red-50 border border-red-200 rounded-xl hover:bg-red-100 transition-colors"
+                              >
+                                Delete forever
+                              </button>
+                            </>
+                          )}
+                          {showRevert && (
+                            <button
+                              onClick={() => { setRevertResult(null); setRevertConfirm(item); }}
+                              className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-medium text-amber-700 bg-amber-50 border border-amber-200 rounded-xl hover:bg-amber-100 transition-colors"
+                            >
+                              <ArrowUturnLeftIcon className="w-3.5 h-3.5" /> Revert
+                            </button>
+                          )}
+                        </div>
                       )}
                     </div>
                   )}
