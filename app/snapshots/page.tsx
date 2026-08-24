@@ -161,29 +161,52 @@ export default function SnapshotsPage() {
           @page { size: A4 landscape; margin: 1cm; }
           body * { visibility: hidden; }
           #print-report, #print-report * { visibility: visible; }
+
+          /* Reset modal overlay — make it a plain block so it doesn't clip */
+          .snap-overlay {
+            position: static !important;
+            background: transparent !important;
+            padding: 0 !important;
+            overflow: visible !important;
+            display: block !important;
+          }
+          /* Reset modal card — remove max-width constraint */
+          .snap-modal {
+            max-width: none !important;
+            width: 100% !important;
+            box-shadow: none !important;
+            border-radius: 0 !important;
+            margin: 0 !important;
+            overflow: visible !important;
+          }
+
           #print-report {
-            position: absolute; top: 0; left: 0; width: 100%;
+            width: 100% !important;
+            overflow: visible !important;
             background: white;
             -webkit-print-color-adjust: exact; print-color-adjust: exact;
           }
           /* Remove overflow scroll containers — let table flow */
           #print-report .overflow-x-auto { overflow: visible !important; }
-          /* Hide the right-side gradient fade overlay */
+          /* Hide gradient fade overlay */
           #print-report .pointer-events-none { display: none !important; }
-          /* Fit table to printable width */
+          /* Fit table to printable width with fixed layout */
           #print-report table {
             width: 100% !important;
             min-width: 0 !important;
             font-size: 8px !important;
+            table-layout: fixed !important;
           }
           #print-report table td,
           #print-report table th {
             min-width: 0 !important;
             padding: 2px 3px !important;
+            overflow: hidden !important;
+            word-break: break-word !important;
           }
           /* Remove Tailwind min-w-[480px] on the table */
           #print-report .min-w-\\[480px\\] { min-width: 0 !important; }
-          /* Force status summary to 4 columns even on small print viewport */
+          /* Force status summary to 4 columns */
           #print-report .grid { grid-template-columns: repeat(4,1fr) !important; }
           /* Keep each level grid on one page if possible */
           #print-report .space-y-8 > div { page-break-inside: avoid; }
@@ -272,12 +295,12 @@ export default function SnapshotsPage() {
       {/* Report Modal */}
       <AnimatePresence>
         {report && (
-          <div className="fixed inset-0 bg-black/40 flex items-start justify-center z-[55] p-4 overflow-y-auto">
+          <div className="snap-overlay fixed inset-0 bg-black/40 flex items-start justify-center z-[55] p-4 overflow-y-auto">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: 20 }}
-              className="bg-white rounded-2xl w-full max-w-4xl shadow-2xl my-4"
+              className="snap-modal bg-white rounded-2xl w-full max-w-4xl shadow-2xl my-4"
             >
               {/* Modal toolbar (hidden on print) */}
               <div className="flex items-center justify-between gap-3 px-4 sm:px-6 py-4 border-b border-gray-100 print:hidden">

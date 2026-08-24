@@ -105,16 +105,21 @@ export default function VaultPrintPage() {
           /* Hide entire app shell — show only the label */
           body * { visibility: hidden !important; }
           #vault-print-label, #vault-print-label * { visibility: visible !important; }
+          /* Reset the flex centering wrapper so the label flows naturally */
+          .vault-print-wrapper {
+            display: block !important;
+            min-height: 0 !important;
+            padding: 0 !important;
+          }
           #vault-print-label {
-            position: absolute !important;
-            top: 0 !important; left: 0 !important;
             width: 100% !important;
-            max-width: 100% !important;
+            max-width: none !important;
+            box-shadow: none !important;
+            margin: 0 !important;
             box-sizing: border-box !important;
             -webkit-print-color-adjust: exact;
             print-color-adjust: exact;
           }
-          /* Ensure content inside doesn't overflow */
           #vault-print-label * { max-width: 100%; box-sizing: border-box; }
           .no-print { display: none !important; }
         }
@@ -147,7 +152,7 @@ export default function VaultPrintPage() {
       </div>
 
       {/* Label — gets id so print CSS can isolate it */}
-      <div className="min-h-screen flex items-center justify-center p-6">
+      <div className="vault-print-wrapper min-h-screen flex items-center justify-center p-6">
         <div id="vault-print-label" className="bg-white w-full max-w-2xl shadow-xl print:shadow-none print:max-w-none border border-gray-200" style={{ fontFamily: 'system-ui, sans-serif' }}>
 
           {/* ─── Header: company + position ─── */}
