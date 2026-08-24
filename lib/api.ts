@@ -460,28 +460,37 @@ async function routePost(path: string, body: any): Promise<any> {
       throw new Error('This position is already occupied. Choose a different cell or move the existing vault first.');
     }
     const qr_token = genCode();
-    const v = await pb.collection('vaults').create({
-      box_id:       genCode(),
-      company_id:   cid,
-      warehouse_id: body.warehouse_id,
-      row:          body.row,
-      col:          col,
-      level:        body.level,
-      position:     body.position || `${body.row}${col}-L${body.level}`,
-      client_name:  body.client_name,
-      client_id:    body.client_id,
-      job_type:     body.job_type,
-      content_type: body.content_type || body.contents_type,
-      room_location: body.room_location || [],
-      vault_status:  body.vault_status || [],
-      packer:       body.packer,
-      pack_date:    body.pack_date || '',
-      photos:       body.photos || [],
-      comments:     body.comments,
-      estado:       body.estado || body.status || 'PENDING',
-      qr_token,
-      created_by:   uid,
-    });
+    let v: any;
+    try {
+      v = await pb.collection('vaults').create({
+        box_id:       genCode(),
+        company_id:   cid,
+        warehouse_id: body.warehouse_id,
+        row:          body.row,
+        col:          col,
+        level:        body.level,
+        position:     body.position || `${body.row}${col}-L${body.level}`,
+        client_name:  body.client_name,
+        client_id:    body.client_id,
+        job_type:     body.job_type,
+        content_type: body.content_type || body.contents_type,
+        room_location: body.room_location || [],
+        vault_status:  body.vault_status || [],
+        packer:       body.packer,
+        pack_date:    body.pack_date || '',
+        photos:       body.photos || [],
+        comments:     body.comments,
+        estado:       body.estado || body.status || 'PENDING',
+        qr_token,
+        created_by:   uid,
+      });
+    } catch (e: any) {
+      // Unique constraint violation: another request created a vault at this position concurrently
+      if (e?.status === 400 && JSON.stringify(e?.data || {}).includes('not_unique')) {
+        throw new Error('This position was just taken by another user. Please choose a different cell.');
+      }
+      throw e;
+    }
     logActivity({ action: 'CREATED', entity_type: 'vault', entity_id: v.id, entity_label: `Vault ${v.row}${v.col}-L${v.level} · ${body.client_name || '—'} · ${body.job_type || '—'}` });
     return mapVault(v);
   }
@@ -781,29 +790,40 @@ async function routePut(path: string, body: any): Promise<any> {
         };
       }
       const oldPosition = source.position || `${source.row}${source.col}-L${source.level}`;
-      await pb.collection('vaults').update(vaultId, { warehouse_id, row, col: destCol, level: destLevel, position: newPosition });
+      // Helper: retry a PB PATCH up to 3 times with exponential backoff
+      const patchWithRetry = async (id: string, data: object, attempts = 3): Promise<void> => {
+        for (let i = 0; i < attempts; i++) {
+          try { await pb.collection('vaults').update(id, data); return; }
+          catch (e) {
+            if (i === attempts - 1) throw e;
+            await new Promise(r => setTimeout(r, 150 * Math.pow(2, i)));
+          }
+        }
+      };
+      // Step 1: move source to destination
+      await patchWithRetry(vaultId, { warehouse_id, row, col: destCol, level: destLevel, position: newPosition });
       try {
-        await pb.collection('vaults').update(occupant.id, {
+        // Step 2: move occupant to source's old position (3 retries with backoff)
+        await patchWithRetry(occupant.id, {
           warehouse_id: source.warehouse_id,
           row: source.row, col: Number(source.col), level: Number(source.level),
           position: oldPosition,
         });
       } catch {
-        // Rollback: put source back to its original position
-        let rollbackOk = true;
+        // Step 2 failed: rollback step 1 with retries
         try {
-          await pb.collection('vaults').update(vaultId, {
+          await patchWithRetry(vaultId, {
             warehouse_id: source.warehouse_id,
             row: source.row, col: Number(source.col), level: Number(source.level),
             position: oldPosition,
           });
-        } catch {
-          rollbackOk = false;
+          throw new Error('Swap failed — please try again');
+        } catch (rbErr: any) {
+          if (rbErr?.message === 'Swap failed — please try again') throw rbErr;
+          // Rollback also failed after retries — log and surface to user
+          logActivity({ action: 'MOVED', entity_type: 'vault', entity_id: vaultId, entity_label: `⚠️ Swap incomplete: ${newPosition} moved but ${occupant.position} rollback failed — manual correction needed` });
+          throw new Error('Swap partially failed — please refresh and verify positions manually');
         }
-        if (!rollbackOk) {
-          throw new Error('Swap failed and could not rollback — please refresh the page');
-        }
-        throw new Error('Swap failed — please try again');
       }
       logActivity({ action: 'MOVED', entity_type: 'vault', entity_id: vaultId, entity_label: `Vault swapped: ${source.position || `${source.row}${source.col}-L${source.level}`} ↔ ${newPosition}` });
       return { moved: true, swapped: true };
