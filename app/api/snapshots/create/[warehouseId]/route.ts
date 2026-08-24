@@ -25,7 +25,9 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ war
   if (!me.company_id) return NextResponse.json({ error: 'No company associated with this account' }, { status: 400 });
   if (me.role !== 'owner' && me.role !== 'manager') return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
-  const adminToken = await getPbAdminToken();
+  let adminToken: string;
+  try { adminToken = await getPbAdminToken(); }
+  catch { return NextResponse.json({ error: 'Admin auth failed — try again' }, { status: 500 }); }
 
   // Fetch vaults for this warehouse (or all if "all")
   let vaultFilter = `company_id="${me.company_id}"`;
@@ -48,6 +50,9 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ war
     );
     if (whRes.ok) {
       const wh = await whRes.json();
+      if (wh.company_id !== me.company_id) {
+        return NextResponse.json({ error: 'Warehouse not found' }, { status: 404 });
+      }
       warehouseName = wh.name || warehouseName;
     }
   }

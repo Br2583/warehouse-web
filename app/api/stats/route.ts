@@ -49,7 +49,7 @@ export async function GET(req: NextRequest) {
     by_warehouse[v.warehouse_id]       = (by_warehouse[v.warehouse_id]         || 0) + 1;
     job_types[v.job_type || 'Other']   = (job_types[v.job_type || 'Other']     || 0) + 1;
     if (s === 'PENDING') {
-      const dateStr = v.pack_date || v.created;
+      const dateStr = v.created;
       if (dateStr) {
         const ts = new Date(dateStr.replace(' ', 'T')).getTime();
         if (now - ts > 3 * 24 * 60 * 60 * 1000) sla_count++;

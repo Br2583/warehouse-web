@@ -1,6 +1,7 @@
 import type { NextConfig } from "next";
 
-const PB_URL = 'https://pocketbase-production-e699.up.railway.app';
+const PB_URL  = 'https://pocketbase-production-e699.up.railway.app';
+const PB_URL2 = 'https://storagemap-3.emergent.host';
 const AUTH_URL = 'https://auth.emergentagent.com';
 
 const securityHeaders = [
@@ -18,7 +19,7 @@ const securityHeaders = [
       "style-src 'self' 'unsafe-inline'",
       `img-src 'self' data: blob: https://lh3.googleusercontent.com https://*.openstreetmap.org`,
       `frame-src https://www.openstreetmap.org https://challenges.cloudflare.com`,
-      `connect-src 'self' ${PB_URL} ${AUTH_URL} https://nominatim.openstreetmap.org https://challenges.cloudflare.com https://cloudflareinsights.com`,
+      `connect-src 'self' ${PB_URL} ${PB_URL2} ${AUTH_URL} https://nominatim.openstreetmap.org https://challenges.cloudflare.com https://cloudflareinsights.com`,
       "media-src 'self' blob:",
       "font-src 'self'",
       "object-src 'none'",

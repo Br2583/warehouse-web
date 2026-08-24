@@ -303,10 +303,14 @@ async function routeGet(path: string): Promise<any> {
         }));
     }
     let looseItems: any[] = [];
-    if (q2 && cid) {
+    if (cid) {
       try {
+        let looseFilter = `company_id="${cid}"`;
+        if (q2) looseFilter += ` && (client_name~"${sf(q2)}" || comments~"${sf(q2)}" || furniture_type~"${sf(q2)}")`;
+        if (status) looseFilter += ` && status="${sf(status)}"`;
+        if (warehouseId) looseFilter += ` && warehouse_id="${sf(warehouseId)}"`;
         const raw = await pb.collection('loose_items').getFullList({
-          filter: `company_id="${cid}" && (client_name~"${sf(q2)}" || comments~"${sf(q2)}" || furniture_type~"${sf(q2)}")`,
+          filter: looseFilter,
           sort: '-id',
           fields: 'id,client_name,furniture_type,comments,warehouse_id,company_id,created',
         });

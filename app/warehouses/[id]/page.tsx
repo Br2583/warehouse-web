@@ -181,6 +181,9 @@ export default function WarehouseDetailPage() {
       .finally(() => setLoading(false));
   };
 
+  const tabParam  = searchParams?.get('tab')  ?? null;
+  const zoneParam = searchParams?.get('zone') ?? null;
+
   useEffect(() => {
     fetchBoxes();
     api.get('/api/warehouses').then((whs: any) => { if (Array.isArray(whs)) setAllWarehouses(whs); }).catch(() => {});
@@ -197,13 +200,11 @@ export default function WarehouseDetailPage() {
         setLooseCols(lc); setLooseColsInput(lc);
       }).catch(() => {})
     );
-    const tabParam = searchParams?.get('tab');
-    const zoneParam = searchParams?.get('zone');
     if (tabParam === 'loose') {
       setActiveTab('loose');
       if (zoneParam) setSelectedZone(zoneParam);
     }
-  }, [warehouseId, user?.company_id]);
+  }, [warehouseId, user?.company_id, tabParam, zoneParam]);
 
   // Load loose items when switching to loose tab
   useEffect(() => {
@@ -585,7 +586,7 @@ export default function WarehouseDetailPage() {
   return (
     <div className="flex min-h-screen bg-gray-50">
       <Sidebar />
-      <main className="md:ml-64 flex-1 min-w-0 px-4 pb-8 md:px-8 md:pb-8 topbar-offset">
+      <main className="md:ml-64 flex-1 min-w-0 px-4 pb-8 md:px-8 md:pb-8 topbar-offset native-bottom-pad">
         {/* Header */}
         <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
           <div>
