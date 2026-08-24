@@ -23,7 +23,7 @@ export async function GET(req: NextRequest) {
     const [users, companies, boxes, tasks] = await Promise.all([
       countCollection(token, 'users'),
       countCollection(token, 'companies'),
-      countCollection(token, 'boxes'),
+      countCollection(token, 'vaults'),
       countCollection(token, 'tasks'),
     ]);
     return NextResponse.json({ users, companies, boxes, tasks, ts: Date.now() });

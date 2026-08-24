@@ -225,7 +225,7 @@ export default function SettingsPage() {
         const d = await res.json().catch(() => ({}));
         throw new Error(d.error || 'Failed to delete account');
       }
-      logout();
+      await logout();
     } catch (e: any) {
       setDeleteError(e?.message || 'Failed to delete account');
       setDeleteSaving(false);
@@ -244,7 +244,7 @@ export default function SettingsPage() {
         const d = await res.json().catch(() => ({}));
         throw new Error(d.error || 'Failed to leave company');
       }
-      logout();
+      await logout();
     } catch (e: any) {
       setLeaveError(e?.message || 'Failed to leave company');
       setLeaveSaving(false);

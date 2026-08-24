@@ -46,7 +46,8 @@ export async function GET(req: NextRequest) {
 
     const url = req.nextUrl;
     const perPage = Math.min(parseInt(url.searchParams.get('perPage') || '500', 10), 500).toString();
-    const sort    = url.searchParams.get('sort')    || 'sent_at';
+    const rawSort = url.searchParams.get('sort') || 'sent_at';
+    const sort    = ['sent_at', '-sent_at'].includes(rawSort) ? rawSort : 'sent_at';
 
     const res = await pbFetch(
       `${PB_URL}/api/collections/chat_messages/records?perPage=${encodeURIComponent(perPage)}&sort=${encodeURIComponent(sort)}&filter=${encodeURIComponent(`company_id="${companyId}"`)}&fields=id,author_name,author_id,content,sent_at`,

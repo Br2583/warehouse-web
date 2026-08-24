@@ -46,9 +46,9 @@ function safeError(e: any): never {
 }
 
 // Validate photos array (client-side guard; real enforcement is in PocketBase rules)
-function validatePhotos(photos: unknown): void {
+function validatePhotos(photos: unknown, maxPhotos = 6): void {
   if (!Array.isArray(photos)) return;
-  if (photos.length > 6) throw new Error('Maximum 6 photos allowed');
+  if (photos.length > maxPhotos) throw new Error(`Maximum ${maxPhotos} photos allowed`);
   for (const p of photos) {
     if (typeof p === 'string' && Math.ceil(p.length * 3 / 4) > 5 * 1024 * 1024) {
       throw new Error('Each photo must be under 5MB');
@@ -370,7 +370,7 @@ async function routeGet(path: string): Promise<any> {
     const items = await pb.collection('loose_items').getFullList({
       filter: `company_id="${cid}" && warehouse_id="${sf(wid)}"`,
       sort: 'id',
-      fields: 'id,warehouse_id,client_name,grid_x,grid_y,item_type,furniture_type,color,condition,status,comments,created',
+      fields: 'id,warehouse_id,client_name,grid_x,grid_y,item_type,furniture_type,color,condition,status,comments,photos,created',
     });
     return items.map(mapLooseItem);
   }
@@ -637,7 +637,7 @@ async function routePost(path: string, body: any): Promise<any> {
 
   // ── Loose Items ───────────────────────────────────────────────────────────
   if (p === '/api/loose-items') {
-    validatePhotos(body.photos);
+    validatePhotos(body.photos, 4);
     const token = getToken() || '';
     const r = await fetch('/api/loose-items', {
       method: 'POST',
@@ -808,7 +808,7 @@ async function routePut(path: string, body: any): Promise<any> {
     return { moved: true, swapped: false };
   }
 
-  // POST /api/activity/:id/revert — undo a vault edit using stored before_data
+  // PUT /api/activity/:id/revert — undo a vault edit using stored before_data
   const revertMatch = p.match(/^\/api\/activity\/([^/]+)\/revert$/);
   if (revertMatch) {
     const actId = revertMatch[1];
@@ -857,7 +857,7 @@ async function routePut(path: string, body: any): Promise<any> {
   // PUT /api/loose-items/:id
   const looseItemMatch = p.match(/^\/api\/loose-items\/([^/]+)$/);
   if (looseItemMatch) {
-    validatePhotos(body.photos);
+    validatePhotos(body.photos, 4);
     const token = getToken() || '';
     const r = await fetch(`/api/loose-items/${looseItemMatch[1]}`, {
       method: 'PUT',

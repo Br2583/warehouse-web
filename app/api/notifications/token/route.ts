@@ -75,12 +75,14 @@ export async function DELETE(req: NextRequest) {
   );
   const existingData = existing.ok ? await existing.json() : { items: [] };
 
-  for (const record of existingData.items || []) {
-    await fetch(`${PB_URL}/api/collections/device_tokens/records/${record.id}`, {
-      method: 'DELETE',
-      headers: { Authorization: `Bearer ${adminToken}` },
-    });
-  }
+  await Promise.allSettled(
+    (existingData.items || []).map((record: any) =>
+      fetch(`${PB_URL}/api/collections/device_tokens/records/${record.id}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${adminToken}` },
+      })
+    )
+  );
 
   return NextResponse.json({ ok: true });
 }

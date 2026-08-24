@@ -54,11 +54,10 @@ export async function POST(req: NextRequest) {
     const compRes = await fetch(`${PB_URL}/api/collections/companies/records/${me.company_id}`, {
       headers: { Authorization: `Bearer ${adminToken}` },
     });
-    if (compRes.ok) {
-      const comp = await compRes.json();
-      if (comp.owner_id && comp.owner_id !== me.id) {
-        return NextResponse.json({ error: 'Only the company owner can create tasks' }, { status: 403 });
-      }
+    if (!compRes.ok) return NextResponse.json({ error: 'Could not verify ownership' }, { status: 500 });
+    const comp = await compRes.json();
+    if (comp.owner_id && comp.owner_id !== me.id) {
+      return NextResponse.json({ error: 'Only the company owner can create tasks' }, { status: 403 });
     }
   }
 

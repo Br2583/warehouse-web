@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getPbAdminToken, PB_URL } from '@/lib/pb-admin';
 
-async function getAuthenticatedUser(req: NextRequest): Promise<{ id: string; company_id: string } | null> {
+async function getAuthenticatedUser(req: NextRequest): Promise<{ id: string; company_id: string; role: string } | null> {
   const token = (req.headers.get('authorization') || '').replace('Bearer ', '').trim();
   if (!token) return null;
   try {
@@ -22,6 +22,7 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
   const { id } = await params;
   const me = await getAuthenticatedUser(req);
   if (!me) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  if (me.role !== 'owner' && me.role !== 'manager') return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
   const adminToken = await getPbAdminToken();
 

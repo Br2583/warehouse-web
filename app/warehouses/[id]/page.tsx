@@ -203,7 +203,7 @@ export default function WarehouseDetailPage() {
       setActiveTab('loose');
       if (zoneParam) setSelectedZone(zoneParam);
     }
-  }, [warehouseId]);
+  }, [warehouseId, user?.company_id]);
 
   // Load loose items when switching to loose tab
   useEffect(() => {
@@ -301,10 +301,14 @@ export default function WarehouseDetailPage() {
     setConfirmModal({
       message: 'Delete this vault? You can recover it from the Deleted Vaults page.',
       onConfirm: async () => {
-        await api.delete(`/api/boxes/${boxId}`);
-        setSelected(null);
-        fetchBoxes();
-        showToast('Vault deleted');
+        try {
+          await api.delete(`/api/boxes/${boxId}`);
+          setSelected(null);
+          fetchBoxes();
+          showToast('Vault deleted');
+        } catch (err: any) {
+          showToast(err?.message || 'Failed to delete vault', 'error');
+        }
       },
     });
   };
