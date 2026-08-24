@@ -452,8 +452,7 @@ export default function WarehouseDetailPage() {
   const saveGridSize = async () => {
     setGridSaving(true);
     try {
-      const { pb } = await import('@/lib/pb');
-      await pb.collection('warehouses').update(warehouseId, { rows: gridRowsInput, cols: gridColsInput });
+      await api.put(`/api/warehouses/${warehouseId}/grid`, { rows: gridRowsInput, cols: gridColsInput });
       setWarehouseRows(gridRowsInput);
       setWarehouseCols(gridColsInput);
       setShowGridEdit(false);

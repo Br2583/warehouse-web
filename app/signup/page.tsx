@@ -9,18 +9,15 @@ import {
 import { Turnstile } from '@marsidev/react-turnstile';
 import { pb } from '@/lib/pb';
 import AuthShell from '@/components/AuthShell';
+import AuthRight from '@/components/AuthRight';
+import { iBase, iStyle, iFocus, iBlur } from '@/lib/auth-styles';
 
 const TURNSTILE_SITE_KEY = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY ?? '';
 
-/* ── light input helpers ── */
-const iBase  = 'w-full px-4 py-3 rounded-[10px] text-sm text-gray-900 placeholder-gray-300 outline-none transition-all';
-const iStyle = { background: '#f8fafc', border: '1.5px solid #cbd5e1' };
-const iFocus = (e: React.FocusEvent<HTMLInputElement>) => {
-  e.target.style.borderColor = '#3b82f6'; e.target.style.background = '#fff'; e.target.style.boxShadow = '0 0 0 3px rgba(59,130,246,.15)';
-};
-const iBlur = (e: React.FocusEvent<HTMLInputElement>) => {
-  e.target.style.borderColor = '#cbd5e1'; e.target.style.background = '#f8fafc'; e.target.style.boxShadow = 'none';
-};
+const SIGNUP_STATS = [
+  { n: 'Free',  l: 'No card needed' },
+  { n: '5 min', l: 'Setup time'     },
+];
 
 type Mode = 'create' | 'join';
 
@@ -234,44 +231,12 @@ export default function SignupPage() {
         </div>
 
         {/* ── RIGHT: Info panel (dark) ── */}
-        <div
-          className="hidden md:flex flex-col justify-between p-12 relative overflow-hidden text-white"
-          style={{
-            background: '#0a0a0a',
-            backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='90'%3E%3Ctext x='70' y='62' font-family='Impact' font-size='44' font-weight='900' fill='rgba(255%2C255%2C255%2C0.055)' text-anchor='middle' font-style='italic'%3EWM%3C/text%3E%3C/svg%3E")`,
-            backgroundRepeat: 'repeat',
-            backgroundSize: '140px 90px'
-          }}
-        >
-          {/* Ghost WM centered */}
-          <div className="absolute inset-0 flex items-center justify-center pointer-events-none select-none overflow-hidden">
-            <span className="font-black italic" style={{ fontSize: '220px', letterSpacing: '-12px', lineHeight: 1, color: 'rgba(255,255,255,0.035)' }}>WM</span>
-          </div>
-
-          {/* Top logo */}
-          <div className="flex items-center gap-3 relative z-10">
-            <span className="font-black italic select-none" style={{ fontSize: '38px', letterSpacing: '-2px', lineHeight: 1 }}>WM</span>
-            <span className="font-semibold text-[14px] text-white/60">Warehouse Manager</span>
-          </div>
-
-          {/* Mid content */}
-          <div className="relative z-10 space-y-5">
-            <h2 className="font-black leading-[1.15] tracking-tight" style={{ fontSize: 'clamp(28px,2.5vw,38px)', letterSpacing: '-1px' }}>
-              Start your<br />free account.
-            </h2>
-            <p className="text-sm text-white/60 leading-[1.65]">Set up your warehouse in minutes. No credit card required to get started.</p>
-            <div className="flex gap-7">
-              <div><div className="text-[22px] font-extrabold">Free</div><div className="text-[11px] text-white/50 mt-0.5">No card needed</div></div>
-              <div><div className="text-[22px] font-extrabold">5 min</div><div className="text-[11px] text-white/50 mt-0.5">Setup time</div></div>
-            </div>
-          </div>
-
-          {/* Quote */}
-          <div className="bg-white/[0.06] border border-white/[0.1] rounded-2xl px-5 py-4 text-[13px] text-white/70 leading-[1.65] relative z-10 hover:bg-white/[0.1] transition-colors cursor-default">
-            <strong className="text-white/90">&ldquo;We went live in under an hour.&rdquo;</strong>
-            <br />— Warehouse Director, LogiCorp
-          </div>
-        </div>
+        <AuthRight
+          title={<>Start your<br />free account.</>}
+          subtitle="Set up your warehouse in minutes. No credit card required to get started."
+          quote="We went live in under an hour."
+          stats={SIGNUP_STATS}
+        />
       </motion.div>
     </AuthShell>
   );

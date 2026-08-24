@@ -870,6 +870,17 @@ async function routePut(path: string, body: any): Promise<any> {
     return updated;
   }
 
+  // PUT /api/warehouses/:id/grid — update rows/cols
+  const gridMatch = p.match(/^\/api\/warehouses\/([^/]+)\/grid$/);
+  if (gridMatch) {
+    const wh = await pb.collection('warehouses').getOne(gridMatch[1]);
+    if (wh.company_id !== cid) throw new Error('Forbidden');
+    const rows = Math.min(10, Math.max(1, Number(body.rows) || wh.rows));
+    const cols = Math.min(11, Math.max(1, Number(body.cols) || wh.cols));
+    await pb.collection('warehouses').update(gridMatch[1], { rows, cols });
+    return { rows, cols };
+  }
+
   // PUT /api/warehouses/:id/loose-grid
   const looseGridMatch = p.match(/^\/api\/warehouses\/([^/]+)\/loose-grid$/);
   if (looseGridMatch) {
