@@ -101,7 +101,7 @@ export default function VaultPrintPage() {
       <title>{title}</title>
       <style>{`
         @media print {
-          @page { size: letter portrait; margin: 0.5in; }
+          @page { size: letter portrait; margin: 0; }
           /* Hide entire app shell — show only the label */
           body * { visibility: hidden !important; }
           #vault-print-label, #vault-print-label * { visibility: visible !important; }
@@ -112,15 +112,21 @@ export default function VaultPrintPage() {
             padding: 0 !important;
           }
           #vault-print-label {
-            width: 100% !important;
-            max-width: none !important;
+            width: 8.5in !important;
+            height: 11in !important;
+            max-width: 8.5in !important;
             box-shadow: none !important;
             margin: 0 !important;
+            padding: 0.45in !important;
             box-sizing: border-box !important;
             -webkit-print-color-adjust: exact;
             print-color-adjust: exact;
+            display: flex !important;
+            flex-direction: column !important;
+            border: none !important;
           }
           #vault-print-label * { max-width: 100%; box-sizing: border-box; }
+          .print-grow { flex: 1 !important; }
           .no-print { display: none !important; }
         }
         body { background: #f1f5f9; margin: 0; font-family: system-ui, -apple-system, sans-serif; }
@@ -132,16 +138,16 @@ export default function VaultPrintPage() {
       {/* Toolbar — hidden on print */}
       <div className="no-print fixed top-[70px] md:top-4 right-4 flex gap-2 z-50">
         <button
-          onClick={async () => {
-            if (isNative && navigator.share) {
-              try { await navigator.share({ title, url: window.location.href }); } catch {}
+          onClick={() => {
+            if (isNative) {
+              window.open(window.location.href, '_system');
             } else {
               window.print();
             }
           }}
           className="px-4 py-2 bg-gray-900 text-white text-sm font-medium rounded-xl hover:bg-gray-700 transition-colors"
         >
-          {isNative ? 'Open in Browser' : 'Print / Save PDF'}
+          Print / Save PDF
         </button>
         <button
           onClick={() => { window.opener ? window.close() : router.push('/dashboard'); }}
@@ -185,12 +191,12 @@ export default function VaultPrintPage() {
               )}
             </div>
             <div className="flex-shrink-0 p-2 border-2 border-gray-200 rounded-xl">
-              <QRCodeSVG value={qrUrl} size={120} bgColor="#ffffff" fgColor="#111827" level="H" />
+              <QRCodeSVG value={qrUrl} size={180} bgColor="#ffffff" fgColor="#111827" level="H" />
             </div>
           </div>
 
           {/* ─── Checkboxes ─── */}
-          <div className="grid grid-cols-2 gap-0 border-b border-gray-200">
+          <div className="print-grow grid grid-cols-2 gap-0 border-b border-gray-200">
             <div className="px-5 py-4 border-r border-gray-200">
               <p className="text-[10px] uppercase tracking-widest text-gray-500 font-semibold mb-3">Type of Loss</p>
               <div className="space-y-2.5">

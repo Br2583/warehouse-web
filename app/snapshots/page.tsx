@@ -172,13 +172,13 @@ export default function SnapshotsPage() {
 body { font-family: Arial, Helvetica, sans-serif; font-size: 10.5px; color: #111; background: #fff; }
 
 .hdr { display: flex; justify-content: space-between; align-items: flex-end;
-       padding-bottom: 9px; border-bottom: 2.5px solid #111; margin-bottom: 13px; }
+       padding-bottom: 9px; border-bottom: 2.5px solid #111; margin-bottom: 10px; }
 .hdr h1 { font-size: 19px; font-weight: 800; }
 .hdr p  { font-size: 9.5px; color: #666; margin-top: 2px; }
 .hdr-r  { text-align: right; font-size: 9px; color: #999; line-height: 1.5; }
 
-.summary { display: grid; grid-template-columns: repeat(4,1fr); gap: 7px; margin-bottom: 13px; }
-.stat { border: 1.5px solid #e5e5e5; border-radius: 7px; padding: 9px 11px; }
+.summary { display: grid; grid-template-columns: repeat(4,1fr); gap: 5px; margin-bottom: 10px; }
+.stat { border: 1.5px solid #e5e5e5; border-radius: 7px; padding: 7px 9px; }
 .stat .n { font-size: 24px; font-weight: 800; line-height: 1; }
 .stat .l { font-size: 8.5px; color: #999; margin-top: 3px; text-transform: uppercase; letter-spacing: .05em; }
 .s-pend { border-color: #fbbf24; } .s-pend .n { color: #d97706; }
@@ -186,21 +186,21 @@ body { font-family: Arial, Helvetica, sans-serif; font-size: 10.5px; color: #111
 .s-dlv  { border-color: #60a5fa; } .s-dlv  .n { color: #2563eb; }
 
 .avail { background: #f9fafb; border: 1.5px solid #e5e5e5; border-radius: 7px;
-         padding: 8px 12px; margin-bottom: 13px; display: flex; align-items: center; gap: 16px; }
+         padding: 8px 12px; margin-bottom: 9px; display: flex; align-items: center; gap: 16px; }
 .avail .bar-wrap { flex: 1; background: #e5e7eb; border-radius: 99px; height: 8px; overflow: hidden; }
 .avail .bar-fill { height: 100%; background: #111; border-radius: 99px; }
 .avail p { font-size: 9.5px; white-space: nowrap; }
 .avail .big { font-size: 13px; font-weight: 700; }
 
-.cols { display: grid; grid-template-columns: 1.7fr 1fr; gap: 13px; margin-bottom: 13px; }
+.cols { display: grid; grid-template-columns: 1.7fr 1fr; gap: 9px; margin-bottom: 9px; }
 .sec h2 { font-size: 8.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .07em;
            color: #aaa; margin-bottom: 5px; padding-bottom: 3px; border-bottom: 1px solid #f0f0f0; }
 .sec + .sec { margin-top: 11px; }
 
 table { width: 100%; border-collapse: collapse; font-size: 9.5px; }
-th { background: #f5f5f5; text-align: left; padding: 4px 6px; font-weight: 700;
+th { background: #f5f5f5; text-align: left; padding: 3px 5px; font-weight: 700;
      border-bottom: 1px solid #ddd; color: #555; font-size: 8.5px; text-transform: uppercase; }
-td { padding: 3.5px 6px; border-bottom: 1px solid #f3f3f3; vertical-align: middle; }
+td { padding: 2.5px 5px; border-bottom: 1px solid #f3f3f3; vertical-align: middle; }
 tr:last-child td { border-bottom: none; }
 tr:hover td { background: #fafafa; }
 .c    { text-align: center; }
@@ -212,7 +212,7 @@ tr:hover td { background: #fafafa; }
 .rdy  { background: #d1fae5; color: #065f46; padding: 1px 4px; border-radius: 3px; font-weight: 600; font-size: 9px; }
 .dlv  { background: #dbeafe; color: #1e40af; padding: 1px 4px; border-radius: 3px; font-weight: 600; font-size: 9px; }
 
-.footer { padding-top: 7px; border-top: 1px solid #e8e8e8;
+.footer { padding-top: 5px; border-top: 1px solid #e8e8e8;
           display: flex; justify-content: space-between; font-size: 8.5px; color: #ccc; }
 </style></head><body>
 
@@ -258,6 +258,13 @@ ${capacity > 0 ? `
 </div>
 
 </body></html>`;
+
+    // On native (Capacitor Android): window.print() is silently ignored — open in external Chrome
+    const isNative = !!(window as any).Capacitor?.isNativePlatform?.();
+    if (isNative) {
+      window.open('data:text/html,' + encodeURIComponent(html), '_system');
+      return;
+    }
 
     // Hidden iframe — no popup blocker issues
     const iframe = document.createElement('iframe');
