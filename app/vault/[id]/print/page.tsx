@@ -6,6 +6,7 @@ import { QRCodeSVG } from 'qrcode.react';
 import { api, sf } from '@/lib/api';
 import { pb } from '@/lib/pb';
 import { useAuth } from '@/lib/auth-context';
+import { Browser } from '@capacitor/browser';
 
 function VaultPrintContent() {
   const { id } = useParams();
@@ -140,14 +141,12 @@ function VaultPrintContent() {
       {/* Toolbar — hidden on print */}
       <div className="no-print fixed top-[70px] md:top-4 right-4 flex gap-2 z-50">
         <button
-          onClick={() => {
+          onClick={async () => {
             if (isNative) {
-              const base = `${window.location.origin}${window.location.pathname}`;
+              const base = `${process.env.NEXT_PUBLIC_APP_URL || 'https://managerwarehouse.cc'}${window.location.pathname}`;
               const token = pb.authStore.token;
-              const shareUrl = `${base}${token ? `?tk=${encodeURIComponent(token)}` : ''}`;
-              if (navigator.share) {
-                navigator.share({ title, url: shareUrl }).catch(() => {});
-              }
+              const url = `${base}${token ? `?tk=${encodeURIComponent(token)}` : ''}`;
+              await Browser.open({ url, presentationStyle: 'fullscreen' });
             } else {
               window.print();
             }

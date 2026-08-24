@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { Browser } from '@capacitor/browser';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   CameraIcon, TrashIcon, PlusIcon, PrinterIcon, XMarkIcon,
@@ -106,7 +107,7 @@ export default function SnapshotsPage() {
     setReport({ snap, boxes });
   };
 
-  const handlePrint = () => {
+  const handlePrint = async () => {
     if (!report) return;
     const { snap, boxes } = report;
     const tot  = boxes.length;
@@ -259,16 +260,12 @@ ${capacity > 0 ? `
 
 </body></html>`;
 
-    // On native (Capacitor Android): window.print() is silently ignored.
-    // Share a URL to Chrome via navigator.share — token embedded so Chrome can authenticate.
     const isNative = !!(window as any).Capacitor?.isNativePlatform?.();
     if (isNative) {
       const base = (process.env.NEXT_PUBLIC_APP_URL || 'https://managerwarehouse.cc');
       const token = pb.authStore.token;
       const printUrl = `${base}/snapshots/${snap.id}/print${token ? `?tk=${encodeURIComponent(token)}` : ''}`;
-      if (navigator.share) {
-        navigator.share({ title: `${snap.warehouse_name} — Inventory Report`, url: printUrl }).catch(() => {});
-      }
+      await Browser.open({ url: printUrl, presentationStyle: 'fullscreen' });
       return;
     }
 
