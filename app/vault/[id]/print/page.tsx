@@ -101,17 +101,21 @@ export default function VaultPrintPage() {
       <title>{title}</title>
       <style>{`
         @media print {
-          @page { size: letter; margin: 0.5in; }
+          @page { size: letter portrait; margin: 0.5in; }
           /* Hide entire app shell — show only the label */
           body * { visibility: hidden !important; }
           #vault-print-label, #vault-print-label * { visibility: visible !important; }
           #vault-print-label {
-            position: fixed !important;
+            position: absolute !important;
             top: 0 !important; left: 0 !important;
             width: 100% !important;
+            max-width: 100% !important;
+            box-sizing: border-box !important;
             -webkit-print-color-adjust: exact;
             print-color-adjust: exact;
           }
+          /* Ensure content inside doesn't overflow */
+          #vault-print-label * { max-width: 100%; box-sizing: border-box; }
           .no-print { display: none !important; }
         }
         body { background: #f1f5f9; margin: 0; font-family: system-ui, -apple-system, sans-serif; }

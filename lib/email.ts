@@ -478,6 +478,9 @@ export function snapshotReportEmail(opts: {
 
   const buildGrid = (level: number) => {
     const label = level === 1 ? 'Lower Level' : 'Upper Level';
+    // Compute per-cell width so total table fits within 560px (620px card - 60px for padding/row header)
+    const cellPx = Math.max(36, Math.floor((556 - (COLS.length + 1) * 3 - 30) / COLS.length));
+    const nameLen = Math.max(4, Math.floor(cellPx / 6)); // chars that fit at ~6px per char
     let rowsHtml = '';
     ROWS.forEach(row => {
       let cells = '';
@@ -485,28 +488,26 @@ export function snapshotReportEmail(opts: {
         const v = vaults.find(b => b.row === row && Number(b.column) === col && Number(b.level) === level);
         const st = v ? (v.estado || v.status || 'PENDING') : '';
         cells += v
-          ? `<td style="padding:5px 3px;text-align:center;background:${stColor(st)};border:1px solid #e2e8f0;border-radius:4px;min-width:52px;">
-               <div style="font-size:9px;font-weight:700;color:${stText(st)};line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:52px;">${esc(v.client_name).slice(0,9)}</div>
+          ? `<td style="padding:4px 2px;text-align:center;background:${stColor(st)};border:1px solid #e2e8f0;border-radius:4px;width:${cellPx}px;max-width:${cellPx}px;">
+               <div style="font-size:9px;font-weight:700;color:${stText(st)};line-height:1.3;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:${cellPx - 4}px;">${esc(v.client_name).slice(0, nameLen)}</div>
                <div style="font-size:8px;color:${stText(st)};opacity:.75;">${esc(st).slice(0,3)}</div>
              </td>`
-          : `<td style="padding:5px 3px;text-align:center;background:#f8fafc;border:1px solid #f1f5f9;border-radius:4px;min-width:52px;"><span style="color:#e2e8f0;font-size:11px;">—</span></td>`;
+          : `<td style="padding:4px 2px;text-align:center;background:#f8fafc;border:1px solid #f1f5f9;border-radius:4px;width:${cellPx}px;max-width:${cellPx}px;"><span style="color:#e2e8f0;font-size:11px;">—</span></td>`;
       });
       rowsHtml += `<tr>
-        <td style="padding:3px 8px 3px 0;font-size:11px;font-weight:700;color:#64748b;text-align:right;">${row}</td>
+        <td style="padding:3px 6px 3px 0;font-size:11px;font-weight:700;color:#64748b;text-align:right;width:24px;">${row}</td>
         ${cells}
       </tr>`;
     });
-    const headerCols = COLS.map(c => `<td style="padding:3px;text-align:center;font-size:10px;font-weight:600;color:#94a3b8;">C${c}</td>`).join('');
+    const headerCols = COLS.map(c => `<td style="padding:3px 2px;text-align:center;font-size:9px;font-weight:600;color:#94a3b8;width:${cellPx}px;">C${c}</td>`).join('');
 
     return `
       <div style="margin-bottom:24px;">
         <p style="margin:0 0 8px;font-size:11px;font-weight:700;color:#64748b;letter-spacing:1px;text-transform:uppercase;">${label}</p>
-        <div style="overflow-x:auto;">
-          <table cellpadding="0" cellspacing="3" style="border-collapse:separate;">
-            <thead><tr><td style="width:24px;"></td>${headerCols}</tr></thead>
-            <tbody>${rowsHtml}</tbody>
-          </table>
-        </div>
+        <table cellpadding="0" cellspacing="3" style="border-collapse:separate;table-layout:fixed;width:100%;">
+          <thead><tr><td style="width:24px;"></td>${headerCols}</tr></thead>
+          <tbody>${rowsHtml}</tbody>
+        </table>
       </div>`;
   };
 
