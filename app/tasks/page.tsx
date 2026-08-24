@@ -257,6 +257,173 @@ function TaskCard({ task, members, isOwner, onStatus, onDelete, onEdit, statusLo
   );
 }
 
+// ── Task Detail Sheet ─────────────────────────────────────────────────────────
+function TaskDetailSheet({ task, members, isOwner, onStatus, onDelete, onEdit, onClose, statusLoading, vault }: {
+  task:          Task;
+  members:       Member[];
+  isOwner:       boolean;
+  onStatus:      (id: string, s: TaskStatus) => void;
+  onDelete:      (id: string) => void;
+  onEdit:        (t: Task) => void;
+  onClose:       () => void;
+  statusLoading: boolean;
+  vault?:        VaultResult;
+}) {
+  const assignee  = members.find(m => m.user_id === task.assigned_to);
+  const createdBy = members.find(m => m.user_id === task.created_by);
+  const todayStr  = new Date().toLocaleDateString('en-CA');
+  const isOverdue = !!task.due_date && task.status !== 'DONE' && task.due_date.split(/[ T]/)[0] < todayStr;
+
+  return (
+    <div className="fixed inset-0 z-[60] flex items-end justify-center bg-black/40" onClick={onClose}>
+      <motion.div
+        initial={{ y: '100%' }}
+        animate={{ y: 0 }}
+        exit={{ y: '100%' }}
+        transition={{ type: 'spring', damping: 32, stiffness: 300 }}
+        onClick={e => e.stopPropagation()}
+        className="bg-white rounded-t-2xl w-full max-w-lg shadow-2xl max-h-[85vh] overflow-y-auto"
+      >
+        {/* Handle */}
+        <div className="flex justify-center pt-3 pb-1">
+          <div className="w-10 h-1 bg-gray-200 rounded-full" />
+        </div>
+
+        <div className="px-5 pb-8 pt-2">
+          {/* Header row */}
+          <div className="flex items-start justify-between gap-3 mb-4">
+            <div className="flex-1 min-w-0">
+              <div className="flex flex-wrap items-center gap-1.5 mb-2">
+                {task.priority === 'urgent' && (
+                  <span className="text-[9px] font-bold px-1.5 py-0.5 bg-red-50 text-red-600 border border-red-100 rounded-full tracking-wide">URGENT</span>
+                )}
+                <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded-md border ${TYPE_STYLE[task.type] || ''}`}>
+                  {task.type}
+                </span>
+                <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded-md ${STATUS_STYLE[task.status]}`}>
+                  {STATUS_LABEL[task.status]}
+                </span>
+              </div>
+              <h2 className="text-lg font-bold text-gray-900 leading-snug">{task.title}</h2>
+            </div>
+            <button onClick={onClose} className="flex-shrink-0 p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors mt-0.5">
+              <XMarkIcon className="w-5 h-5" />
+            </button>
+          </div>
+
+          {/* Details grid */}
+          <div className="space-y-3 mb-4">
+            {assignee && (
+              <div className="flex items-center gap-2.5">
+                <UserAvatar picture={assignee.picture} name={assignee.name} size={28} />
+                <div>
+                  <p className="text-[10px] text-gray-400 leading-none mb-0.5">Assigned to</p>
+                  <p className="text-sm font-medium text-gray-800">{assignee.name}</p>
+                </div>
+              </div>
+            )}
+
+            {createdBy && createdBy.user_id !== task.assigned_to && (
+              <div className="flex items-center gap-2.5">
+                <div className="w-7 h-7 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0">
+                  <UserCircleIcon className="w-4 h-4 text-gray-400" />
+                </div>
+                <div>
+                  <p className="text-[10px] text-gray-400 leading-none mb-0.5">Created by</p>
+                  <p className="text-sm font-medium text-gray-800">{createdBy.name}</p>
+                </div>
+              </div>
+            )}
+
+            {task.due_date && (
+              <div className="flex items-center gap-2.5">
+                <div className={`w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 ${isOverdue ? 'bg-red-50' : 'bg-gray-50'}`}>
+                  <CalendarIcon className={`w-4 h-4 ${isOverdue ? 'text-red-500' : 'text-gray-400'}`} />
+                </div>
+                <div>
+                  <p className="text-[10px] text-gray-400 leading-none mb-0.5">Due date</p>
+                  <p className={`text-sm font-medium ${isOverdue ? 'text-red-600' : 'text-gray-800'}`}>
+                    {formatDate(task.due_date)}{isOverdue && ' · Overdue'}
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {task.notes && (
+              <div className={`rounded-xl px-3.5 py-3 ${task.type === 'Free' ? 'bg-purple-50 border border-purple-100' : 'bg-gray-50 border border-gray-100'}`}>
+                <p className={`text-[10px] font-medium mb-1 ${task.type === 'Free' ? 'text-purple-500' : 'text-gray-400'}`}>
+                  {task.type === 'Free' ? 'Description' : 'Notes'}
+                </p>
+                <p className={`text-sm leading-relaxed whitespace-pre-wrap ${task.type === 'Free' ? 'text-purple-800' : 'text-gray-700'}`}>
+                  {task.notes}
+                </p>
+              </div>
+            )}
+
+            {(task.vault_id || task.storage_id) && (
+              <div className="flex flex-wrap gap-2">
+                {task.vault_id && vault ? (
+                  <Link
+                    href={`/warehouses/${vault.warehouse_id}?vault=${task.vault_id}`}
+                    onClick={onClose}
+                    className="flex items-center gap-1.5 text-sm font-medium text-blue-600 bg-blue-50 border border-blue-100 px-3 py-2 rounded-xl hover:bg-blue-100 transition-colors"
+                  >
+                    <ArchiveBoxIcon className="w-4 h-4 flex-shrink-0" />
+                    <span>{vault.client_name || vault.position} · {vault.position}</span>
+                  </Link>
+                ) : task.vault_id ? (
+                  <Link href={`/vault/${task.vault_id}`} onClick={onClose}
+                    className="flex items-center gap-1.5 text-sm font-medium text-blue-600 bg-blue-50 border border-blue-100 px-3 py-2 rounded-xl hover:bg-blue-100 transition-colors">
+                    <ArchiveBoxIcon className="w-4 h-4" />
+                    Open Vault
+                  </Link>
+                ) : null}
+                {task.storage_id && (
+                  <Link href={`/storage/${task.storage_id}`} onClick={onClose}
+                    className="flex items-center gap-1.5 text-sm font-medium text-gray-600 bg-gray-50 border border-gray-100 px-3 py-2 rounded-xl hover:bg-gray-100 transition-colors">
+                    Open Storage
+                  </Link>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Status picker */}
+          <div className="mb-4">
+            <p className="text-xs text-gray-400 mb-1.5">Status</p>
+            <TaskStatusPicker
+              status={task.status}
+              isOwner={isOwner}
+              loading={statusLoading}
+              onChange={s => onStatus(task.id, s)}
+            />
+          </div>
+
+          {/* Owner actions */}
+          {isOwner && (
+            <div className="flex gap-2 pt-2 border-t border-gray-100">
+              <button
+                onClick={() => { onEdit(task); onClose(); }}
+                className="flex-1 flex items-center justify-center gap-1.5 py-2.5 border border-gray-200 text-gray-600 text-sm font-medium rounded-xl hover:bg-gray-50 transition-colors"
+              >
+                <PencilIcon className="w-4 h-4" />
+                Edit
+              </button>
+              <button
+                onClick={() => { onDelete(task.id); onClose(); }}
+                className="flex-1 flex items-center justify-center gap-1.5 py-2.5 border border-red-100 text-red-600 bg-red-50 text-sm font-medium rounded-xl hover:bg-red-100 transition-colors"
+              >
+                <TrashIcon className="w-4 h-4" />
+                Delete
+              </button>
+            </div>
+          )}
+        </div>
+      </motion.div>
+    </div>
+  );
+}
+
 // ── List row ──────────────────────────────────────────────────────────────────
 function TaskRow({ task, members, isOwner, onStatus, onDelete, onEdit, statusLoading, vault }: {
   task:          Task;
@@ -268,90 +435,98 @@ function TaskRow({ task, members, isOwner, onStatus, onDelete, onEdit, statusLoa
   statusLoading: boolean;
   vault?:        VaultResult;
 }) {
+  const [sheetOpen, setSheetOpen] = useState(false);
   const assignee  = members.find(m => m.user_id === task.assigned_to);
   const todayStr = new Date().toLocaleDateString('en-CA');
   const isOverdue = !!task.due_date && task.status !== 'DONE' && task.due_date.split(/[ T]/)[0] < todayStr;
 
   return (
-    <div className={`flex items-center gap-3 rounded-xl border px-4 py-3 hover:shadow-sm transition-shadow group ${
-      isOverdue ? 'bg-red-50/50 border-red-200' : 'bg-white border-gray-100'
-    }`}>
-      <div className={`w-2 h-2 rounded-full flex-shrink-0 ${
-        task.priority === 'urgent' ? 'bg-red-500' : isOverdue ? 'bg-red-400' : 'bg-gray-200'
-      }`} />
+    <>
+      <div
+        onClick={() => setSheetOpen(true)}
+        className={`flex items-center gap-3 rounded-xl border px-4 py-3 hover:shadow-sm transition-shadow cursor-pointer group ${
+          isOverdue ? 'bg-red-50/50 border-red-200' : 'bg-white border-gray-100'
+        }`}
+      >
+        <div className={`w-2 h-2 rounded-full flex-shrink-0 ${
+          task.priority === 'urgent' ? 'bg-red-500' : isOverdue ? 'bg-red-400' : 'bg-gray-200'
+        }`} />
 
-      <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-2 flex-wrap">
-          <p className="text-sm font-semibold text-gray-900 truncate">{task.title}</p>
-          <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded-md border ${TYPE_STYLE[task.type] || ''}`}>
-            {task.type}
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 flex-wrap">
+            <p className="text-sm font-semibold text-gray-900 truncate">{task.title}</p>
+            <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded-md border ${TYPE_STYLE[task.type] || ''}`}>
+              {task.type}
+            </span>
+          </div>
+          <div className="flex items-center gap-3 mt-0.5 flex-wrap">
+            {assignee && (
+              <span className="flex items-center gap-1 text-xs text-gray-400">
+                <UserCircleIcon className="w-3 h-3 flex-shrink-0" />
+                <span className="truncate max-w-[100px]">{assignee.name}</span>
+              </span>
+            )}
+            {task.due_date && (
+              <span className={`flex items-center gap-1 text-xs ${isOverdue ? 'text-red-500 font-medium' : 'text-gray-400'}`}>
+                <CalendarIcon className="w-3 h-3 flex-shrink-0" />
+                {formatDate(task.due_date)}
+                {isOverdue && <span>· Overdue</span>}
+              </span>
+            )}
+            {/* Notes preview for all types */}
+            {task.notes && (
+              <span className={`text-xs italic truncate max-w-[160px] ${task.type === 'Free' ? 'text-purple-500' : 'text-gray-400'}`}>
+                {task.notes}
+              </span>
+            )}
+          </div>
+        </div>
+
+        {/* Status badge (compact) — desktop shows picker, mobile shows badge */}
+        <div className="flex-shrink-0">
+          <div className="hidden md:block w-[160px]" onClick={e => e.stopPropagation()}>
+            <TaskStatusPicker
+              status={task.status}
+              isOwner={isOwner}
+              loading={statusLoading}
+              onChange={s => onStatus(task.id, s)}
+            />
+          </div>
+          <span className={`md:hidden text-[10px] font-semibold px-2 py-1 rounded-full ${STATUS_STYLE[task.status]}`}>
+            {STATUS_LABEL[task.status]}
           </span>
         </div>
-        <div className="flex items-center gap-3 mt-0.5 flex-wrap">
-          {assignee && (
-            <span className="flex items-center gap-1 text-xs text-gray-400">
-              <UserCircleIcon className="w-3 h-3 flex-shrink-0" />
-              <span className="truncate max-w-[100px]">{assignee.name}</span>
-            </span>
-          )}
-          {task.due_date && (
-            <span className={`flex items-center gap-1 text-xs ${isOverdue ? 'text-red-500 font-medium' : 'text-gray-400'}`}>
-              <CalendarIcon className="w-3 h-3 flex-shrink-0" />
-              {formatDate(task.due_date)}
-              {isOverdue && <span>· Overdue</span>}
-            </span>
-          )}
-          {task.vault_id && vault ? (
-            <Link
-              href={`/warehouses/${vault.warehouse_id}?vault=${task.vault_id}`}
-              title={`${vault.client_name} · ${vault.position}`}
-              className="flex items-center gap-1 text-[10px] font-medium text-blue-600 bg-blue-50 border border-blue-100 px-2 py-0.5 rounded-full hover:bg-blue-100 transition-colors max-w-[160px]"
-            >
-              <ArchiveBoxIcon className="w-2.5 h-2.5 flex-shrink-0" />
-              <span className="truncate">{vault.client_name || vault.position}</span>
-            </Link>
-          ) : task.vault_id ? (
-            <Link href={`/vault/${task.vault_id}`} className="text-xs text-blue-500 hover:underline">
-              → Vault
-            </Link>
-          ) : null}
-          {task.storage_id && (
-            <Link href={`/storage/${task.storage_id}`}
-              className="flex items-center gap-1 text-[10px] font-medium text-gray-500 bg-gray-50 border border-gray-100 px-2 py-0.5 rounded-full hover:bg-gray-100 transition-colors">
-              → Storage
-            </Link>
-          )}
-          {task.type === 'Free' && task.notes && (
-            <span className="text-xs text-purple-600 italic truncate max-w-[200px]" title={task.notes}>
-              {task.notes}
-            </span>
-          )}
-        </div>
+
+        {isOwner && (
+          <div className="hidden md:flex items-center gap-0.5 md:opacity-0 md:group-hover:opacity-100 transition-opacity flex-shrink-0" onClick={e => e.stopPropagation()}>
+            <button onClick={() => onEdit(task)}
+              className="p-1 text-gray-300 hover:text-blue-500 hover:bg-blue-50 rounded-lg transition-colors">
+              <PencilIcon className="w-3.5 h-3.5" />
+            </button>
+            <button onClick={() => onDelete(task.id)}
+              className="p-1 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors">
+              <TrashIcon className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        )}
       </div>
 
-      {/* 3-step status picker */}
-      <div className="flex-shrink-0 w-[160px]">
-        <TaskStatusPicker
-          status={task.status}
-          isOwner={isOwner}
-          loading={statusLoading}
-          onChange={s => onStatus(task.id, s)}
-        />
-      </div>
-
-      {isOwner && (
-        <div className="hidden md:flex items-center gap-0.5 md:opacity-0 md:group-hover:opacity-100 transition-opacity flex-shrink-0">
-          <button onClick={() => onEdit(task)}
-            className="p-1 text-gray-300 hover:text-blue-500 hover:bg-blue-50 rounded-lg transition-colors">
-            <PencilIcon className="w-3.5 h-3.5" />
-          </button>
-          <button onClick={() => onDelete(task.id)}
-            className="p-1 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors">
-            <TrashIcon className="w-3.5 h-3.5" />
-          </button>
-        </div>
-      )}
-    </div>
+      <AnimatePresence>
+        {sheetOpen && (
+          <TaskDetailSheet
+            task={task}
+            members={members}
+            isOwner={isOwner}
+            onStatus={onStatus}
+            onDelete={onDelete}
+            onEdit={onEdit}
+            onClose={() => setSheetOpen(false)}
+            statusLoading={statusLoading}
+            vault={vault}
+          />
+        )}
+      </AnimatePresence>
+    </>
   );
 }
 
