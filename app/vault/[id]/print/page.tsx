@@ -1,16 +1,22 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { Suspense, useEffect, useState } from 'react';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { QRCodeSVG } from 'qrcode.react';
 import { api, sf } from '@/lib/api';
 import { pb } from '@/lib/pb';
 import { useAuth } from '@/lib/auth-context';
 
-export default function VaultPrintPage() {
+function VaultPrintContent() {
   const { id } = useParams();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { user } = useAuth();
+
+  useEffect(() => {
+    const tk = searchParams.get('tk');
+    if (tk) pb.authStore.save(tk, null as any);
+  }, [searchParams]);
   const [vault, setVault] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -140,7 +146,12 @@ export default function VaultPrintPage() {
         <button
           onClick={() => {
             if (isNative) {
-              window.open(window.location.href, '_system');
+              const base = `${window.location.origin}${window.location.pathname}`;
+              const token = pb.authStore.token;
+              const shareUrl = `${base}${token ? `?tk=${encodeURIComponent(token)}` : ''}`;
+              if (navigator.share) {
+                navigator.share({ title, url: shareUrl }).catch(() => {});
+              }
             } else {
               window.print();
             }
@@ -266,5 +277,17 @@ export default function VaultPrintPage() {
         </div>
       </div>
     </>
+  );
+}
+
+export default function VaultPrintPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="w-8 h-8 border-4 border-gray-900 border-t-transparent rounded-full animate-spin" />
+      </div>
+    }>
+      <VaultPrintContent />
+    </Suspense>
   );
 }

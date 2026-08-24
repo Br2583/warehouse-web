@@ -259,10 +259,16 @@ ${capacity > 0 ? `
 
 </body></html>`;
 
-    // On native (Capacitor Android): window.print() is silently ignored — open in external Chrome
+    // On native (Capacitor Android): window.print() is silently ignored.
+    // Share a URL to Chrome via navigator.share — token embedded so Chrome can authenticate.
     const isNative = !!(window as any).Capacitor?.isNativePlatform?.();
     if (isNative) {
-      window.open('data:text/html,' + encodeURIComponent(html), '_system');
+      const base = (process.env.NEXT_PUBLIC_APP_URL || 'https://managerwarehouse.cc');
+      const token = pb.authStore.token;
+      const printUrl = `${base}/snapshots/${snap.id}/print${token ? `?tk=${encodeURIComponent(token)}` : ''}`;
+      if (navigator.share) {
+        navigator.share({ title: `${snap.warehouse_name} — Inventory Report`, url: printUrl }).catch(() => {});
+      }
       return;
     }
 
