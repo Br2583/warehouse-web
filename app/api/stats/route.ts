@@ -26,13 +26,19 @@ export async function GET(req: NextRequest) {
   const adminToken = await getPbAdminToken();
 
   const cFilter = encodeURIComponent(`company_id="${companyId}"`);
-  const [vaultsData, warehousesData] = await Promise.all([
-    pbGet(`/api/collections/vaults/records?perPage=5000&filter=${cFilter}&fields=id,estado,warehouse_id,job_type,created,pack_date,client_name,position`, adminToken),
-    pbGet(`/api/collections/warehouses/records?perPage=100&filter=${cFilter}&fields=id,name`, adminToken),
-  ]);
-
-  const vaults: any[]     = vaultsData.items    || [];
+  const warehousesData = await pbGet(`/api/collections/warehouses/records?perPage=100&filter=${cFilter}&fields=id,name`, adminToken);
   const warehouses: any[] = warehousesData.items || [];
+
+  // Paginate vaults to avoid silent truncation at server-side perPage limits
+  const vaults: any[] = [];
+  let vPage = 1;
+  while (true) {
+    const vd = await pbGet(`/api/collections/vaults/records?perPage=500&page=${vPage}&filter=${cFilter}&fields=id,estado,warehouse_id,job_type,created,client_name,position`, adminToken);
+    const items: any[] = vd.items || [];
+    vaults.push(...items);
+    if (items.length < 500) break;
+    vPage++;
+  }
 
   const whMap: Record<string, string> = {};
   for (const w of warehouses) whMap[w.id] = w.name;

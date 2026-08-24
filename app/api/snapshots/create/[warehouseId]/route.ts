@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getPbAdminToken, PB_URL } from '@/lib/pb-admin';
 
+const sf = (v: string) => v.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+
 async function getAuthenticatedUser(req: NextRequest): Promise<{ id: string; company_id: string; name: string; role: string } | null> {
   const token = (req.headers.get('authorization') || '').replace('Bearer ', '').trim();
   if (!token) return null;
@@ -29,17 +31,25 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ war
   try { adminToken = await getPbAdminToken(); }
   catch { return NextResponse.json({ error: 'Admin auth failed — try again' }, { status: 500 }); }
 
-  // Fetch vaults for this warehouse (or all if "all")
-  let vaultFilter = `company_id="${me.company_id}"`;
-  if (warehouseId && warehouseId !== 'all') vaultFilter += ` && warehouse_id="${warehouseId}"`;
+  // Fetch vaults for this warehouse (or all if "all") — paginate to avoid truncation
+  let vaultFilter = `company_id="${sf(me.company_id)}"`;
+  if (warehouseId && warehouseId !== 'all') vaultFilter += ` && warehouse_id="${sf(warehouseId)}"`;
 
-  const vaultsRes = await fetch(
-    `${PB_URL}/api/collections/vaults/records?filter=${encodeURIComponent(vaultFilter)}&perPage=2000&fields=id,warehouse_id,row,col,level,position,client_name,job_type,vault_status,content_type,room_location,packer,pack_date,comments,estado,company_id`,
-    { headers: { Authorization: `Bearer ${adminToken}` } }
-  );
-  if (!vaultsRes.ok) return NextResponse.json({ error: 'Failed to fetch vaults' }, { status: 502 });
-  const vaultsData = await vaultsRes.json();
-  const vaults = vaultsData.items || [];
+  const vaults: any[] = [];
+  const FIELDS = 'id,warehouse_id,row,col,level,position,client_name,job_type,vault_status,content_type,room_location,packer,pack_date,comments,estado,company_id';
+  let page = 1;
+  while (true) {
+    const vaultsRes = await fetch(
+      `${PB_URL}/api/collections/vaults/records?filter=${encodeURIComponent(vaultFilter)}&perPage=500&page=${page}&fields=${FIELDS}`,
+      { headers: { Authorization: `Bearer ${adminToken}` } }
+    );
+    if (!vaultsRes.ok) return NextResponse.json({ error: 'Failed to fetch vaults' }, { status: 502 });
+    const vaultsData = await vaultsRes.json();
+    const items: any[] = vaultsData.items || [];
+    vaults.push(...items);
+    if (items.length < 500) break;
+    page++;
+  }
 
   // Get warehouse name
   let warehouseName = 'All Warehouses';

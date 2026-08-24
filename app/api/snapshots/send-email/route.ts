@@ -21,9 +21,8 @@ async function getAuthenticatedUser(req: NextRequest): Promise<{ id: string; ema
 
 export async function POST(req: NextRequest) {
   const me = await getAuthenticatedUser(req);
-  if (!me) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
+  if (!me) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  if (!me.company_id) return NextResponse.json({ error: 'No company associated with this account' }, { status: 400 });
 
   try {
     const body = await req.json();

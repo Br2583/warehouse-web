@@ -66,6 +66,8 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json(msgs);
   } catch (e: any) {
+    if (e?.message === 'Unauthorized') return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (e?.message === 'No company associated with this account') return NextResponse.json({ error: e.message }, { status: 400 });
     const msg = e?.name === 'AbortError' ? 'Connection timed out' : (e?.message || 'Failed to load messages');
     return NextResponse.json({ error: msg }, { status: 500 });
   }
