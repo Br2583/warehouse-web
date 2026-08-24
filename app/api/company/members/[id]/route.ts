@@ -42,8 +42,9 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
 
   // If promoting to manager, check max 5 managers
   if (newRole === 'manager') {
+    const managersFilter = encodeURIComponent(`company_id="${me.company_id}" && role="manager"`);
     const managersRes = await fetch(
-      `${PB_URL}/api/collections/users/records?filter=company_id%3D%22${me.company_id}%22%20%26%26%20role%3D%22manager%22&perPage=10&fields=id`,
+      `${PB_URL}/api/collections/users/records?filter=${managersFilter}&perPage=10&fields=id`,
       { headers: { Authorization: `Bearer ${adminToken}` } }
     );
     if (managersRes.ok) {

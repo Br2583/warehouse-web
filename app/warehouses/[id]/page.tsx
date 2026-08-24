@@ -754,8 +754,8 @@ export default function WarehouseDetailPage() {
                 </div>
 
                 {/* Grid */}
-                <div className="bg-white rounded-2xl border border-gray-100 p-2 md:p-6">
-                  <div>
+                <div className="bg-white rounded-2xl border border-gray-100 p-2 md:p-6 overflow-x-auto">
+                  <div style={{ minWidth: `${Math.max(activeCols.length * 44 + 32, 0)}px` }}>
                     {/* Column headers */}
                     <div className="flex gap-1 md:gap-1.5 mb-1 md:mb-1.5 ml-6 md:ml-8">
                       {activeCols.map(col => (

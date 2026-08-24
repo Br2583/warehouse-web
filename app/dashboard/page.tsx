@@ -47,6 +47,7 @@ export default function DashboardPage() {
   const [workStats, setWorkStats] = useState({ total: 0, pending: 0, in_progress: 0, completed: 0 });
   const [warehouseNames, setWarehouseNames] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
+  const [statsError, setStatsError] = useState(false);
   const [activityItems, setActivityItems] = useState<any[]>([]);
   const [activityLoading, setActivityLoading] = useState(true);
   useEffect(() => {
@@ -58,7 +59,8 @@ export default function DashboardPage() {
         api.get('/api/warehouses'),
       ]);
 
-      if (globalStats.status === 'fulfilled') setStats(globalStats.value);
+      if (globalStats.status === 'fulfilled') { setStats(globalStats.value); setStatsError(false); }
+      else setStatsError(true);
 
       if (taskList.status === 'fulfilled' && Array.isArray(taskList.value)) {
         const t = taskList.value;
@@ -126,6 +128,14 @@ export default function DashboardPage() {
           </h1>
           <p className="text-gray-500 text-sm mt-1">{user?.company_name}</p>
         </motion.div>
+
+        {/* Stats error banner */}
+        {statsError && !loading && (
+          <div className="flex items-center gap-2 bg-amber-50 border border-amber-100 text-amber-700 text-sm px-4 py-3 rounded-xl mb-4">
+            <ExclamationTriangleIcon className="w-4 h-4 flex-shrink-0" />
+            <span className="flex-1">Could not load statistics. Numbers may be outdated.</span>
+          </div>
+        )}
 
         {/* Overview Cards */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 mb-5 md:mb-8">

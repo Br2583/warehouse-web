@@ -594,7 +594,7 @@ async function routePost(path: string, body: any): Promise<any> {
     } catch {
       try {
         dv = await pb.collection('deleted_vaults').getFirstListItem(
-          `company_id="${cid}" && vault_data~"${sf(restoreMatch[1])}"`
+          `company_id="${cid}" && vault_data~'"id":"${sf(restoreMatch[1])}"'`
         );
       } catch {
         throw new Error('This vault has already been restored or permanently deleted.');

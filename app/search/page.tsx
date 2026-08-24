@@ -51,8 +51,8 @@ function SearchContent() {
   }, []);
 
   useEffect(() => {
-    if (!statusFilter) return;
-    setFilterStatus(statusFilter);
+    // If there's already a text query, the live-search effect below will handle it (includes filters)
+    if (!statusFilter || query.length >= 2) return;
     runSearch('', statusFilter);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [statusFilter]);
