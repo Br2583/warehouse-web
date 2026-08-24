@@ -580,18 +580,20 @@ async function routePost(path: string, body: any): Promise<any> {
     if (!cid) throw new Error('No company');
     const role = pb.authStore.model?.role as string | undefined;
     if (role !== 'owner' && role !== 'manager') throw new Error('Only managers and owners can restore vaults');
-    // Try by deleted_vaults record ID first; fall back to searching by original vault ID
-    // (activity log entries before the Aug-08 fix stored the vault PB ID as entity_id)
+    // Find deleted_vaults record: try by ID using list rule (avoids getOne View-rule restrictions),
+    // then fall back to searching vault_data for old entries that stored the original vault PB ID.
     let dv: any;
     try {
-      dv = await pb.collection('deleted_vaults').getOne(restoreMatch[1]);
+      dv = await pb.collection('deleted_vaults').getFirstListItem(
+        `id="${sf(restoreMatch[1])}" && company_id="${cid}"`
+      );
     } catch {
       try {
         dv = await pb.collection('deleted_vaults').getFirstListItem(
           `company_id="${cid}" && vault_data~"${sf(restoreMatch[1])}"`
         );
       } catch {
-        throw new Error('Vault not found in deleted records — it may have already been restored or permanently deleted.');
+        throw new Error('This vault has already been restored or permanently deleted.');
       }
     }
     if (dv.company_id !== cid) throw new Error('Forbidden');
@@ -942,9 +944,22 @@ async function routeDelete(path: string): Promise<any> {
   // DELETE /api/deleted-boxes/:id — permanent delete
   const delMatch = p.match(/^\/api\/deleted-boxes\/([^/]+)$/);
   if (delMatch) {
-    const dv = await pb.collection('deleted_vaults').getOne(delMatch[1]);
+    let dv: any;
+    try {
+      dv = await pb.collection('deleted_vaults').getFirstListItem(
+        `id="${sf(delMatch[1])}" && company_id="${cid}"`
+      );
+    } catch {
+      try {
+        dv = await pb.collection('deleted_vaults').getFirstListItem(
+          `company_id="${cid}" && vault_data~"${sf(delMatch[1])}"`
+        );
+      } catch {
+        throw new Error('This vault has already been restored or permanently deleted.');
+      }
+    }
     if (dv.company_id !== cid) throw new Error('Forbidden');
-    await pb.collection('deleted_vaults').delete(delMatch[1]);
+    await pb.collection('deleted_vaults').delete(dv.id);
     return null;
   }
 
