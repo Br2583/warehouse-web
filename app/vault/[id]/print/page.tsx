@@ -63,7 +63,7 @@ function VaultPrintContent() {
       })
       .catch(() => setError('Vault not found'))
       .finally(() => setLoading(false));
-  }, [id]);
+  }, [id, user?.company_id]);
 
   const handlePrint = async () => {
     if (isNative) {
@@ -123,7 +123,9 @@ function VaultPrintContent() {
   const formatDate = (d: string) => {
     if (!d) return '—';
     try {
-      const [y, m, day] = d.split('-').map(Number);
+      const datePart = d.split(/[ T]/)[0]; // strip time if present
+      const [y, m, day] = datePart.split('-').map(Number);
+      if (!y || !m || !day) return d;
       return `${String(m).padStart(2,'0')} / ${String(day).padStart(2,'0')} / ${y}`;
     } catch { return d; }
   };

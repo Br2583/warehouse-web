@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Browser } from '@capacitor/browser';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   CameraIcon, TrashIcon, PlusIcon, PrinterIcon, XMarkIcon,
@@ -142,13 +141,17 @@ export default function SnapshotsPage() {
     for (const b of boxes) { const jt = b.job_type || 'Other'; jobMap[jt] = (jobMap[jt] || 0) + 1; }
     const jobs = Object.entries(jobMap).sort((a, b) => b[1] - a[1]);
 
+    const esc = (s: string) => String(s)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+
     const n = (v: number, cls: string) =>
       v > 0 ? `<span class="${cls}">${v}</span>` : `<span class="zero">—</span>`;
 
     const clientRows = clients.map(([name, c]) => `
       <tr>
-        <td class="client-name">${name}</td>
-        <td class="jt">${[...c.jobTypes].join(', ') || '—'}</td>
+        <td class="client-name">${esc(name)}</td>
+        <td class="jt">${esc([...c.jobTypes].join(', ') || '—')}</td>
         <td class="c bold">${c.total}</td>
         <td class="c">${n(c.pending, 'pend')}</td>
         <td class="c">${n(c.ready, 'rdy')}</td>
@@ -157,7 +160,7 @@ export default function SnapshotsPage() {
 
     const jobRows = jobs.map(([name, count]) => `
       <tr>
-        <td>${name}</td>
+        <td>${esc(name)}</td>
         <td class="c bold">${count}</td>
         <td class="c">${tot > 0 ? Math.round(count / tot * 100) : 0}%</td>
       </tr>`).join('');
@@ -166,7 +169,7 @@ export default function SnapshotsPage() {
     const printed = new Date().toLocaleString();
 
     const html = `<!DOCTYPE html><html><head><meta charset="UTF-8">
-<title>${snap.warehouse_name} — Report</title>
+<title>${esc(snap.warehouse_name)} — Report</title>
 <style>
 @page { size: A4 portrait; margin: 1.2cm 1.4cm; }
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -218,7 +221,7 @@ tr:hover td { background: #fafafa; }
 </style></head><body>
 
 <div class="hdr">
-  <div><h1>${snap.warehouse_name}</h1><p>Inventory Report · ${date}</p></div>
+  <div><h1>${esc(snap.warehouse_name)}</h1><p>Inventory Report · ${esc(date)}</p></div>
   <div class="hdr-r"><span>${printed}</span></div>
 </div>
 
@@ -254,7 +257,7 @@ ${capacity > 0 ? `
 </div>
 
 <div class="footer">
-  <span>${snap.warehouse_name} · ${date}</span>
+  <span>${esc(snap.warehouse_name)} · ${esc(date)}</span>
   <span>Warehouse Manager · ${tot} vaults · ${clients.length} clients</span>
 </div>
 
@@ -265,7 +268,12 @@ ${capacity > 0 ? `
       const base = (process.env.NEXT_PUBLIC_APP_URL || 'https://managerwarehouse.cc');
       const token = pb.authStore.token;
       const printUrl = `${base}/snapshots/${snap.id}/print${token ? `?tk=${encodeURIComponent(token)}` : ''}`;
-      await Browser.open({ url: printUrl, presentationStyle: 'fullscreen' });
+      try {
+        const { Browser } = await import('@capacitor/browser');
+        await Browser.open({ url: printUrl, presentationStyle: 'fullscreen' });
+      } catch {
+        window.open(printUrl, '_blank');
+      }
       return;
     }
 
