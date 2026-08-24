@@ -107,11 +107,11 @@ export default function SnapshotsPage() {
     setReport({ snap, boxes });
   };
 
-  const handlePrint = async () => {
+  const handlePrint = () => {
     if (!report) return;
     const isNative = !!(window as any).Capacitor?.isNativePlatform?.();
     if (isNative && navigator.share) {
-      try { await navigator.share({ title: 'Inventory Report', url: window.location.href }); } catch {}
+      navigator.share({ title: 'Inventory Report', url: window.location.href }).catch(() => {});
       return;
     }
 
@@ -121,149 +121,163 @@ export default function SnapshotsPage() {
     const rdy  = boxes.filter(b => (b.estado || b.status) === 'READY').length;
     const dlv  = boxes.filter(b => (b.estado || b.status) === 'DELIVERED').length;
 
+    // Max possible positions in the warehouse (rows × cols × 2 levels)
+    const maxRow  = Math.max(0, ...boxes.map(b => b.row?.charCodeAt(0) - 64 || 0));
+    const maxCol  = Math.max(8, ...boxes.map(b => Number(b.column) || 0));
+    const capacity = maxRow * maxCol * 2;
+    const occupPct = capacity > 0 ? Math.round(tot / capacity * 100) : 0;
+    const availPct = capacity > 0 ? Math.round((capacity - tot) / capacity * 100) : 0;
+
     // Client breakdown
-    const clientMap: Record<string, { total: number; pending: number; ready: number; delivered: number }> = {};
+    const clientMap: Record<string, { total: number; pending: number; ready: number; delivered: number; jobTypes: Set<string> }> = {};
     for (const b of boxes) {
       const cl = b.client_name || '(No client)';
       const st = b.estado || b.status || 'PENDING';
-      if (!clientMap[cl]) clientMap[cl] = { total: 0, pending: 0, ready: 0, delivered: 0 };
+      const jt = b.job_type || '';
+      if (!clientMap[cl]) clientMap[cl] = { total: 0, pending: 0, ready: 0, delivered: 0, jobTypes: new Set() };
       clientMap[cl].total++;
       if (st === 'PENDING')   clientMap[cl].pending++;
       if (st === 'READY')     clientMap[cl].ready++;
       if (st === 'DELIVERED') clientMap[cl].delivered++;
+      if (jt) clientMap[cl].jobTypes.add(jt);
     }
     const clients = Object.entries(clientMap).sort((a, b) => b[1].total - a[1].total);
 
     // Job type breakdown
     const jobMap: Record<string, number> = {};
-    for (const b of boxes) { const jt = b.job_type || '—'; jobMap[jt] = (jobMap[jt] || 0) + 1; }
+    for (const b of boxes) { const jt = b.job_type || 'Other'; jobMap[jt] = (jobMap[jt] || 0) + 1; }
     const jobs = Object.entries(jobMap).sort((a, b) => b[1] - a[1]);
 
-    // Content type breakdown
-    const ctMap: Record<string, number> = {};
-    for (const b of boxes) { const ct = b.content_type || b.contents_type || '—'; ctMap[ct] = (ctMap[ct] || 0) + 1; }
-    const contents = Object.entries(ctMap).sort((a, b) => b[1] - a[1]);
-
-    const badge = (n: number, cls: string) =>
-      n > 0 ? `<span class="badge ${cls}">${n}</span>` : '<span style="color:#ccc">—</span>';
+    const n = (v: number, cls: string) =>
+      v > 0 ? `<span class="${cls}">${v}</span>` : `<span class="zero">—</span>`;
 
     const clientRows = clients.map(([name, c]) => `
       <tr>
-        <td>${name}</td>
-        <td class="num-col">${c.total}</td>
-        <td class="num-col">${badge(c.pending, 'b-pend')}</td>
-        <td class="num-col">${badge(c.ready, 'b-rdy')}</td>
-        <td class="num-col">${badge(c.delivered, 'b-dlv')}</td>
+        <td class="client-name">${name}</td>
+        <td class="jt">${[...c.jobTypes].join(', ') || '—'}</td>
+        <td class="c bold">${c.total}</td>
+        <td class="c">${n(c.pending, 'pend')}</td>
+        <td class="c">${n(c.ready, 'rdy')}</td>
+        <td class="c">${n(c.delivered, 'dlv')}</td>
       </tr>`).join('');
 
     const jobRows = jobs.map(([name, count]) => `
       <tr>
         <td>${name}</td>
-        <td class="num-col">${count}</td>
-        <td class="num-col">${tot > 0 ? Math.round(count / tot * 100) : 0}%</td>
+        <td class="c bold">${count}</td>
+        <td class="c">${tot > 0 ? Math.round(count / tot * 100) : 0}%</td>
       </tr>`).join('');
-
-    const ctRows = contents.map(([name, count]) => `
-      <tr><td>${name}</td><td class="num-col">${count}</td></tr>`).join('');
 
     const date    = formatSnapDate(snap.date);
     const printed = new Date().toLocaleString();
 
     const html = `<!DOCTYPE html><html><head><meta charset="UTF-8">
-<title>Report — ${snap.warehouse_name}</title>
+<title>${snap.warehouse_name} — Report</title>
 <style>
-  @page { size: A4 portrait; margin: 1.4cm 1.5cm; }
-  *  { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: -apple-system, Arial, sans-serif; font-size: 11px; color: #111; background: #fff; }
+@page { size: A4 portrait; margin: 1.2cm 1.4cm; }
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: Arial, Helvetica, sans-serif; font-size: 10.5px; color: #111; background: #fff; }
 
-  .header { display: flex; justify-content: space-between; align-items: flex-end;
-            padding-bottom: 10px; border-bottom: 2px solid #111; margin-bottom: 14px; }
-  .header h1 { font-size: 20px; font-weight: 800; line-height: 1.1; }
-  .header p  { font-size: 10px; color: #666; margin-top: 3px; }
-  .header-right { text-align: right; font-size: 9px; color: #999; }
+.hdr { display: flex; justify-content: space-between; align-items: flex-end;
+       padding-bottom: 9px; border-bottom: 2.5px solid #111; margin-bottom: 13px; }
+.hdr h1 { font-size: 19px; font-weight: 800; }
+.hdr p  { font-size: 9.5px; color: #666; margin-top: 2px; }
+.hdr-r  { text-align: right; font-size: 9px; color: #999; line-height: 1.5; }
 
-  .summary { display: grid; grid-template-columns: repeat(4,1fr); gap: 8px; margin-bottom: 16px; }
-  .stat { background: #f8f8f8; border: 1px solid #e8e8e8; border-radius: 8px; padding: 10px 12px; }
-  .stat .n { font-size: 26px; font-weight: 800; line-height: 1; }
-  .stat .l { font-size: 9px; color: #999; margin-top: 3px; text-transform: uppercase; letter-spacing: .05em; }
-  .s-pend .n { color: #d97706; }
-  .s-rdy  .n { color: #059669; }
-  .s-dlv  .n { color: #2563eb; }
+.summary { display: grid; grid-template-columns: repeat(4,1fr); gap: 7px; margin-bottom: 13px; }
+.stat { border: 1.5px solid #e5e5e5; border-radius: 7px; padding: 9px 11px; }
+.stat .n { font-size: 24px; font-weight: 800; line-height: 1; }
+.stat .l { font-size: 8.5px; color: #999; margin-top: 3px; text-transform: uppercase; letter-spacing: .05em; }
+.s-pend { border-color: #fbbf24; } .s-pend .n { color: #d97706; }
+.s-rdy  { border-color: #34d399; } .s-rdy  .n { color: #059669; }
+.s-dlv  { border-color: #60a5fa; } .s-dlv  .n { color: #2563eb; }
 
-  .cols { display: grid; grid-template-columns: 2fr 1fr; gap: 14px; }
-  .sec h2 { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em;
-             color: #aaa; margin-bottom: 5px; }
-  .sec + .sec { margin-top: 12px; }
+.avail { background: #f9fafb; border: 1.5px solid #e5e5e5; border-radius: 7px;
+         padding: 8px 12px; margin-bottom: 13px; display: flex; align-items: center; gap: 16px; }
+.avail .bar-wrap { flex: 1; background: #e5e7eb; border-radius: 99px; height: 8px; overflow: hidden; }
+.avail .bar-fill { height: 100%; background: #111; border-radius: 99px; }
+.avail p { font-size: 9.5px; white-space: nowrap; }
+.avail .big { font-size: 13px; font-weight: 700; }
 
-  table { width: 100%; border-collapse: collapse; font-size: 10px; }
-  th { background: #f4f4f4; text-align: left; padding: 4px 7px; font-weight: 600;
-       border-bottom: 1px solid #ddd; color: #555; font-size: 9px; }
-  td { padding: 3px 7px; border-bottom: 1px solid #f0f0f0; }
-  tr:last-child td { border-bottom: none; }
-  .num-col { text-align: center; }
+.cols { display: grid; grid-template-columns: 1.7fr 1fr; gap: 13px; margin-bottom: 13px; }
+.sec h2 { font-size: 8.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .07em;
+           color: #aaa; margin-bottom: 5px; padding-bottom: 3px; border-bottom: 1px solid #f0f0f0; }
+.sec + .sec { margin-top: 11px; }
 
-  .badge, .b-pend, .b-rdy, .b-dlv {
-    display: inline-block; padding: 1px 5px; border-radius: 3px; font-size: 9px; font-weight: 600; }
-  .b-pend { background: #fef3c7; color: #92400e; }
-  .b-rdy  { background: #d1fae5; color: #065f46; }
-  .b-dlv  { background: #dbeafe; color: #1e40af; }
+table { width: 100%; border-collapse: collapse; font-size: 9.5px; }
+th { background: #f5f5f5; text-align: left; padding: 4px 6px; font-weight: 700;
+     border-bottom: 1px solid #ddd; color: #555; font-size: 8.5px; text-transform: uppercase; }
+td { padding: 3.5px 6px; border-bottom: 1px solid #f3f3f3; vertical-align: middle; }
+tr:last-child td { border-bottom: none; }
+tr:hover td { background: #fafafa; }
+.c    { text-align: center; }
+.bold { font-weight: 700; }
+.client-name { font-weight: 600; max-width: 130px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.jt   { font-size: 8.5px; color: #999; }
+.zero { color: #ddd; }
+.pend { background: #fef3c7; color: #92400e; padding: 1px 4px; border-radius: 3px; font-weight: 600; font-size: 9px; }
+.rdy  { background: #d1fae5; color: #065f46; padding: 1px 4px; border-radius: 3px; font-weight: 600; font-size: 9px; }
+.dlv  { background: #dbeafe; color: #1e40af; padding: 1px 4px; border-radius: 3px; font-weight: 600; font-size: 9px; }
 
-  .footer { margin-top: 14px; padding-top: 7px; border-top: 1px solid #e8e8e8;
-            display: flex; justify-content: space-between; font-size: 9px; color: #ccc; }
+.footer { padding-top: 7px; border-top: 1px solid #e8e8e8;
+          display: flex; justify-content: space-between; font-size: 8.5px; color: #ccc; }
 </style></head><body>
 
-<div class="header">
-  <div>
-    <h1>${snap.warehouse_name}</h1>
-    <p>Inventory Report · ${date}</p>
-  </div>
-  <div class="header-right">Printed ${printed}</div>
+<div class="hdr">
+  <div><h1>${snap.warehouse_name}</h1><p>Inventory Report · ${date}</p></div>
+  <div class="hdr-r"><span>${printed}</span></div>
 </div>
 
 <div class="summary">
-  <div class="stat">       <div class="n">${tot}</div><div class="l">Total Vaults</div></div>
+  <div class="stat">       <div class="n">${tot}</div> <div class="l">Total Vaults</div></div>
   <div class="stat s-pend"><div class="n">${pend}</div><div class="l">Pending</div></div>
-  <div class="stat s-rdy"> <div class="n">${rdy}</div><div class="l">Ready</div></div>
-  <div class="stat s-dlv"> <div class="n">${dlv}</div><div class="l">Delivered</div></div>
+  <div class="stat s-rdy"> <div class="n">${rdy}</div> <div class="l">Ready to Go</div></div>
+  <div class="stat s-dlv"> <div class="n">${dlv}</div> <div class="l">Delivered</div></div>
 </div>
+
+${capacity > 0 ? `
+<div class="avail">
+  <p><span class="big">${tot}</span> / ${capacity} positions occupied</p>
+  <div class="bar-wrap"><div class="bar-fill" style="width:${occupPct}%"></div></div>
+  <p><span class="big">${availPct}%</span> available</p>
+</div>` : ''}
 
 <div class="cols">
   <div class="sec">
-    <h2>By Client</h2>
+    <h2>Clients in this Warehouse</h2>
     <table>
-      <thead><tr><th>Client</th><th>Total</th><th>Pending</th><th>Ready</th><th>Delivered</th></tr></thead>
+      <thead><tr><th>Client</th><th>Job Type</th><th>Vaults</th><th>Pending</th><th>Ready</th><th>Delivered</th></tr></thead>
       <tbody>${clientRows}</tbody>
     </table>
   </div>
-  <div>
-    <div class="sec">
-      <h2>By Job Type</h2>
-      <table>
-        <thead><tr><th>Type</th><th>Count</th><th>%</th></tr></thead>
-        <tbody>${jobRows}</tbody>
-      </table>
-    </div>
-    ${contents.length > 1 ? `
-    <div class="sec">
-      <h2>By Content</h2>
-      <table>
-        <thead><tr><th>Content</th><th>Count</th></tr></thead>
-        <tbody>${ctRows}</tbody>
-      </table>
-    </div>` : ''}
+  <div class="sec">
+    <h2>By Job Type</h2>
+    <table>
+      <thead><tr><th>Type</th><th>Count</th><th>%</th></tr></thead>
+      <tbody>${jobRows}</tbody>
+    </table>
   </div>
 </div>
 
 <div class="footer">
   <span>${snap.warehouse_name} · ${date}</span>
-  <span>Warehouse Manager</span>
+  <span>Warehouse Manager · ${tot} vaults · ${clients.length} clients</span>
 </div>
 
-<script>window.onload = function(){ window.print(); setTimeout(function(){ window.close(); }, 500); }</script>
 </body></html>`;
 
-    const w = window.open('', '_blank', 'width=900,height=700');
-    if (w) { w.document.write(html); w.document.close(); }
+    // Hidden iframe — no popup blocker issues
+    const iframe = document.createElement('iframe');
+    iframe.style.cssText = 'position:fixed;top:-9999px;left:-9999px;width:1px;height:1px;border:none;';
+    document.body.appendChild(iframe);
+    const doc = iframe.contentDocument || (iframe.contentWindow as any)?.document;
+    if (!doc) return;
+    doc.open(); doc.write(html); doc.close();
+    setTimeout(() => {
+      iframe.contentWindow?.focus();
+      iframe.contentWindow?.print();
+      setTimeout(() => document.body.removeChild(iframe), 1500);
+    }, 300);
   };
 
   const sendEmail = async () => {
