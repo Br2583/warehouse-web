@@ -45,7 +45,6 @@ export default function DashboardPage() {
   const { user, canManage } = useAuth();
   const [stats, setStats] = useState<any>(null);
   const [workStats, setWorkStats] = useState({ total: 0, pending: 0, in_progress: 0, completed: 0 });
-  const [warehouseNames, setWarehouseNames] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
   const [statsError, setStatsError] = useState(false);
   const [activityItems, setActivityItems] = useState<any[]>([]);
@@ -53,10 +52,9 @@ export default function DashboardPage() {
   useEffect(() => {
     if (!user?.company_id) return;
     const load = async () => {
-      const [globalStats, taskList, whs] = await Promise.allSettled([
+      const [globalStats, taskList] = await Promise.allSettled([
         api.get('/api/stats/global'),
         api.get('/api/tasks'),
-        api.get('/api/warehouses'),
       ]);
 
       if (globalStats.status === 'fulfilled') { setStats(globalStats.value); setStatsError(false); }
@@ -70,12 +68,6 @@ export default function DashboardPage() {
           in_progress: t.filter((x: any) => x.status === 'IN_PROGRESS').length,
           completed:   t.filter((x: any) => x.status === 'DONE').length,
         });
-      }
-
-      if (whs.status === 'fulfilled' && Array.isArray(whs.value)) {
-        const map: Record<string, string> = {};
-        whs.value.forEach((w: any) => { map[w.id] = w.name || w.id; });
-        setWarehouseNames(map);
       }
 
       setLoading(false);
@@ -119,7 +111,7 @@ export default function DashboardPage() {
   return (
     <div className="flex min-h-screen bg-gray-50">
       <Sidebar />
-      <main className="md:ml-64 flex-1 min-w-0 px-4 pb-8 md:px-8 md:pb-8 topbar-offset native-bottom-pad">
+      <main className="md:ml-64 flex-1 min-w-0 px-4 pb-8 md:px-8 md:pb-8 topbar-offset">
         {/* Header */}
         <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="mb-5 md:mb-8">
           <p className="text-gray-400 text-sm">{greeting()},</p>
@@ -221,7 +213,7 @@ export default function DashboardPage() {
                   {Object.entries(stats.by_warehouse).map(([whId, count]: any) => (
                     <div key={whId} className="bg-gray-50 rounded-xl p-3 text-center">
                       <p className="text-xl font-bold text-gray-900">{count}</p>
-                      <p className="text-xs text-gray-400 mt-0.5 truncate">{warehouseNames[whId] || 'Warehouse'}</p>
+                      <p className="text-xs text-gray-400 mt-0.5 truncate">{stats?.wh_map?.[whId] || 'Warehouse'}</p>
                     </div>
                   ))}
                 </div>

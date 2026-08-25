@@ -10,6 +10,7 @@ async function pbGet(path: string, adminToken: string) {
 }
 
 export async function GET(req: NextRequest) {
+  try {
   const authHeader = req.headers.get('authorization') || '';
   const userToken  = authHeader.replace('Bearer ', '').trim();
   if (!userToken) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -88,4 +89,7 @@ export async function GET(req: NextRequest) {
     histogram,
     wh_map: whMap,
   });
+  } catch (e: any) {
+    return NextResponse.json({ error: e?.message || 'Failed to load stats' }, { status: 500 });
+  }
 }
