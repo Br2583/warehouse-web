@@ -43,14 +43,12 @@ const FEATURES = [
   },
 ];
 
-const SIDEBAR_ITEMS = ['Dashboard', 'Warehouses', 'Storage', 'Tasks', 'Stats', 'Chat'];
-const KPI = [
-  { label: 'Total Vaults', val: '24', bg: '#eff6ff', dot: '#2563eb' },
-  { label: 'Work Orders', val: '8',  bg: '#fff7ed', dot: '#ea580c' },
-  { label: 'Ready',       val: '12', bg: '#f0fdf4', dot: '#16a34a' },
-  { label: 'Delivered',   val: '4',  bg: '#faf5ff', dot: '#7c3aed' },
+const STATS = [
+  { num: '10K+', lbl: 'Active Users' },
+  { num: '99%',  lbl: 'Uptime SLA' },
+  { num: '50+',  lbl: 'Countries' },
+  { num: '500+', lbl: 'Warehouses' },
 ];
-const BAR_HEIGHTS = [40, 65, 35, 80, 55, 90, 70];
 
 export default function Home() {
   const router = useRouter();
@@ -92,105 +90,22 @@ export default function Home() {
       {/* ── Hero (new Manifesto design) ── */}
       <LandingHero />
 
-      {/* ── Platform preview ── */}
-      <section className="px-6 md:px-16 py-16 md:py-20" style={{ background: '#f8fafc' }}>
-        <div className="max-w-5xl mx-auto">
-          {/* Row: title + stats */}
-          <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-8 mb-12">
-            <div>
-              <div className="text-[11px] font-semibold text-blue-600 tracking-[1.5px] uppercase mb-2.5">Platform</div>
-              <h2 className="font-extrabold text-gray-900 leading-[1.15]" style={{ fontSize: 'clamp(28px,3vw,44px)', letterSpacing: '-1px' }}>
-                Your warehouse,<br />at a glance
-              </h2>
-            </div>
-            <div className="grid grid-cols-2 gap-5 md:flex md:divide-x md:divide-gray-200 md:gap-0">
-              {[{ num: '10K+', lbl: 'Active Users' }, { num: '99%', lbl: 'Uptime SLA' }, { num: '50+', lbl: 'Countries' }, { num: '500+', lbl: 'Warehouses' }].map(s => (
-                <div key={s.lbl} className="text-center md:px-5 md:first:pl-0 md:last:pr-0 cursor-default group">
-                  <div className="text-3xl md:text-[40px] font-black tracking-[-2px] leading-none text-gray-900 group-hover:text-blue-600 transition-colors">{s.num}</div>
-                  <div className="text-[11px] text-slate-400 mt-1.5 font-medium tracking-[.3px]">{s.lbl}</div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Dashboard mockup */}
-          <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden shadow-[0_20px_80px_rgba(0,0,0,.09)] hover:-translate-y-1.5 hover:shadow-[0_32px_100px_rgba(0,0,0,.13)] transition-all duration-300 cursor-default">
-            {/* Browser bar */}
-            <div className="flex items-center gap-2 px-5 py-3.5 bg-gray-50 border-b border-gray-200">
-              <div className="w-3 h-3 rounded-full bg-red-400 hover:scale-125 transition-transform cursor-pointer" />
-              <div className="w-3 h-3 rounded-full bg-amber-400 hover:scale-125 transition-transform cursor-pointer" />
-              <div className="w-3 h-3 rounded-full bg-green-500 hover:scale-125 transition-transform cursor-pointer" />
-              <div className="flex-1 bg-white border border-gray-200 rounded-md px-3 py-1 text-[12px] text-slate-400 text-center mx-12">
-                managerwarehouse.cc/dashboard
+      {/* ── Stats strip ── */}
+      <div className="border-b border-gray-100 bg-white">
+        <div className="max-w-5xl mx-auto px-6 md:px-16 py-10">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
+            {STATS.map(s => (
+              <div key={s.lbl} className="cursor-default group">
+                <div className="text-3xl md:text-[38px] font-black tracking-[-2px] leading-none text-gray-900 group-hover:text-blue-600 transition-colors">{s.num}</div>
+                <div className="text-[11px] text-slate-400 mt-1.5 font-medium tracking-[.3px]">{s.lbl}</div>
               </div>
-            </div>
-
-            {/* Body */}
-            <div className="grid md:grid-cols-[190px_1fr] min-h-[280px] md:min-h-[340px]">
-              {/* Sidebar */}
-              <div className="hidden md:flex flex-col bg-white border-r border-gray-100 p-3 gap-0.5">
-                <div className="flex items-center gap-1.5 px-2 pb-3 mb-2 border-b border-gray-100">
-                  <span className="font-black italic text-gray-950 select-none" style={{ fontSize: '16px', letterSpacing: '-0.5px', lineHeight: 1 }}>WM</span>
-                  <span className="text-xs font-bold text-gray-900">Warehouse</span>
-                </div>
-                {SIDEBAR_ITEMS.map((item, i) => (
-                  <div
-                    key={item}
-                    className={`flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-[12px] cursor-default transition-colors ${i === 0 ? 'bg-blue-50 text-blue-600 font-semibold' : 'text-slate-400 hover:bg-gray-50 hover:text-slate-600'}`}
-                  >
-                    <div className="w-1.5 h-1.5 rounded-full bg-current opacity-70" />
-                    {item}
-                  </div>
-                ))}
-              </div>
-
-              {/* Main content */}
-              <div className="p-4 md:p-5 flex flex-col gap-3" style={{ background: '#f8fafc' }}>
-                <div>
-                  <div className="text-[12px] text-slate-400">Good morning,</div>
-                  <div className="text-[20px] font-extrabold text-gray-900 tracking-tight leading-tight">Alex</div>
-                </div>
-
-                {/* KPI row */}
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5">
-                  {KPI.map(k => (
-                    <div key={k.label} className="bg-white border border-gray-100 rounded-xl p-3 shadow-sm hover:-translate-y-0.5 hover:shadow-md hover:border-blue-100 transition-all cursor-default">
-                      <div className="w-7 h-7 rounded-lg flex items-center justify-center mb-2.5" style={{ background: k.bg }}>
-                        <div className="w-2.5 h-2.5 rounded-full" style={{ background: k.dot }} />
-                      </div>
-                      <div className="text-[20px] font-extrabold text-gray-900 leading-none">{k.val}</div>
-                      <div className="text-[10px] text-slate-400 mt-0.5">{k.label}</div>
-                    </div>
-                  ))}
-                </div>
-
-                {/* Charts row */}
-                <div className="grid grid-cols-2 gap-2.5">
-                  <div className="bg-white border border-gray-100 rounded-xl p-3.5 shadow-sm">
-                    <div className="text-[11px] font-bold text-gray-800 mb-3">Inventory Status</div>
-                    <div className="flex items-end gap-1 h-14">
-                      {BAR_HEIGHTS.map((h, i) => (
-                        <div key={i} className={`flex-1 rounded-t-sm ${i === 3 || i === 5 ? 'bg-blue-500' : 'bg-blue-200'}`} style={{ height: `${h}%` }} />
-                      ))}
-                    </div>
-                  </div>
-                  <div className="bg-white border border-gray-100 rounded-xl p-3.5 shadow-sm">
-                    <div className="text-[11px] font-bold text-gray-800 mb-3">Production</div>
-                    <div className="space-y-1.5">
-                      <div className="text-[11px] text-slate-400">In Progress <strong className="text-gray-700">3</strong></div>
-                      <div className="text-[11px] text-slate-400">Completed <strong className="text-green-600">5</strong></div>
-                      <div className="text-[11px] text-slate-400">Pending <strong className="text-gray-700">2</strong></div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
+            ))}
           </div>
         </div>
-      </section>
+      </div>
 
       {/* ── Features ── */}
-      <section id="features" className="px-6 md:px-16 pb-16 md:pb-20" style={{ background: '#f8fafc' }}>
+      <section id="features" className="px-6 md:px-16 py-16 md:py-20" style={{ background: '#f8fafc' }}>
         <div className="max-w-5xl mx-auto">
           <div className="text-[11px] font-semibold text-blue-600 tracking-[1.5px] uppercase mb-2.5">Features</div>
           <h2 className="font-extrabold text-gray-900 mb-8" style={{ fontSize: 'clamp(28px,3vw,44px)', letterSpacing: '-1px' }}>
