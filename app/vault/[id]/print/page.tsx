@@ -1,7 +1,7 @@
 'use client';
 
 import { Suspense, useEffect, useRef, useState } from 'react';
-import { useParams, useRouter, useSearchParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import { QRCodeSVG } from 'qrcode.react';
 import { api, sf } from '@/lib/api';
 import { pb } from '@/lib/pb';
@@ -10,7 +10,6 @@ import { useAuth } from '@/lib/auth-context';
 function VaultPrintContent() {
   const { id } = useParams();
   const router = useRouter();
-  const searchParams = useSearchParams();
   const { user } = useAuth();
 
   const [vault, setVault] = useState<any>(null);
@@ -18,17 +17,10 @@ function VaultPrintContent() {
   const [error, setError] = useState('');
   const [warehouseName, setWarehouseName] = useState('');
   const [nOfM, setNOfM] = useState<{ n: number; m: number } | null>(null);
-  const [isNative, setIsNative] = useState(false);
   const [scale, setScale] = useState(1);
   const wrapperRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const tk = searchParams.get('tk');
-    if (tk) pb.authStore.save(tk, null as any);
-  }, [searchParams]);
-
-  useEffect(() => {
-    setIsNative(!!(window as any).Capacitor?.isNativePlatform?.());
     const LABEL_W = 8.5 * 96; // 816px
     const calc = () => {
       const vw = window.innerWidth;
@@ -65,21 +57,8 @@ function VaultPrintContent() {
       .finally(() => setLoading(false));
   }, [id, user?.company_id]);
 
-  const handlePrint = async () => {
-    if (isNative) {
-      const base = process.env.NEXT_PUBLIC_APP_URL || 'https://managerwarehouse.cc';
-      const path = window.location.pathname;
-      const token = pb.authStore.token;
-      const url = `${base}${path}${token ? `?tk=${encodeURIComponent(token)}` : ''}`;
-      try {
-        const { Browser } = await import('@capacitor/browser');
-        await Browser.open({ url, presentationStyle: 'fullscreen' });
-      } catch {
-        window.open(url, '_blank');
-      }
-    } else {
-      window.print();
-    }
+  const handlePrint = () => {
+    window.print();
   };
 
   if (loading) return (
@@ -163,7 +142,7 @@ function VaultPrintContent() {
         .cb-row{display:flex;align-items:center;gap:10px}
         .cb-txt{font-size:16px;font-weight:600}
         .cb-txt-on{font-size:16px;font-weight:800}
-        .no-print{display:flex;gap:8px;padding:12px 16px;justify-content:flex-end;background:#e9e9e9;position:sticky;top:0;z-index:50}
+        .no-print{display:flex;gap:8px;padding:12px 16px;justify-content:flex-end;background:#e9e9e9;position:fixed;top:env(safe-area-inset-top,0px);left:0;right:0;z-index:50}
         .btn{padding:8px 18px;border-radius:8px;border:none;cursor:pointer;font-size:13px;font-weight:700;font-family:'Archivo',sans-serif}
         .btn-dark{background:#000;color:#fff}
         .btn-light{background:#f1f5f9;color:#374151}
@@ -188,8 +167,8 @@ function VaultPrintContent() {
         </button>
       </div>
 
-      {/* Wrapper that accounts for scaled height so page scrolls correctly */}
-      <div className="label-wrapper" style={{ padding: '16px 0 48px', display: 'flex', justifyContent: 'center', minHeight: scaledH + 80 }}>
+      {/* Wrapper: padding-top clears the fixed toolbar (approx 56px + safe-area) */}
+      <div className="label-wrapper" style={{ paddingTop: 'calc(56px + env(safe-area-inset-top, 0px) + 16px)', paddingBottom: 48, display: 'flex', justifyContent: 'center', minHeight: scaledH + 80 }}>
         <div
           ref={wrapperRef}
           className="label-scaler"
