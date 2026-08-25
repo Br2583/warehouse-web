@@ -983,28 +983,17 @@ async function routeDelete(path: string): Promise<any> {
       }
     }
     if (dv.company_id !== cid) throw new Error('Forbidden');
-    await pb.collection('deleted_vaults').delete(dv.id);
-    // Clean up activity_log entries for this vault (fire-and-forget)
-    if (cid) {
-      const originalVaultId = (dv.vault_data as any)?.box_id as string | undefined;
-      const dvId = dv.id as string;
-      const companyCid = cid;
-      (async () => {
-        try {
-          const ids = new Set<string>();
-          if (originalVaultId) {
-            const r1 = await pb.collection('activity_logs').getFullList({
-              filter: `company_id="${sf(companyCid)}" && entity_id="${sf(originalVaultId)}"`, fields: 'id',
-            });
-            r1.forEach((l: any) => ids.add(l.id));
-          }
-          const r2 = await pb.collection('activity_logs').getFullList({
-            filter: `company_id="${sf(companyCid)}" && entity_id="${sf(dvId)}"`, fields: 'id',
-          });
-          r2.forEach((l: any) => ids.add(l.id));
-          await Promise.allSettled([...ids].map(lid => pb.collection('activity_logs').delete(lid)));
-        } catch {}
-      })();
+    const dvId = dv.id as string;
+    const originalVaultId = (dv.vault_data as any)?.box_id as string | undefined;
+    await pb.collection('deleted_vaults').delete(dvId);
+    // Clean up activity_log entries via server-side route (uses admin token to bypass PB rules)
+    const token = pb.authStore.token;
+    if (token && cid) {
+      fetch('/api/activity/cleanup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ originalVaultId, dvId, companyId: cid }),
+      }).catch(() => {});
     }
     return null;
   }
