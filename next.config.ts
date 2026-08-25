@@ -16,7 +16,8 @@ const securityHeaders = [
     value: [
       "default-src 'self'",
       "script-src 'self' 'unsafe-inline' https://challenges.cloudflare.com https://static.cloudflareinsights.com",
-      "style-src 'self' 'unsafe-inline'",
+      "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+      "font-src 'self' https://fonts.gstatic.com",
       `img-src 'self' data: blob: https://lh3.googleusercontent.com https://*.openstreetmap.org`,
       `frame-src https://www.openstreetmap.org https://challenges.cloudflare.com`,
       `connect-src 'self' ${PB_URL} ${PB_URL2} ${AUTH_URL} https://nominatim.openstreetmap.org https://challenges.cloudflare.com https://cloudflareinsights.com`,
