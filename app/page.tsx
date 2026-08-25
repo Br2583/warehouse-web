@@ -89,7 +89,7 @@ export default function Home() {
         <div className="max-w-5xl mx-auto">
           <div className="text-[11px] font-semibold text-blue-600 tracking-[1.5px] uppercase mb-2.5">Features</div>
           <h2 className="font-extrabold text-gray-900 mb-8" style={{ fontSize: 'clamp(28px,3vw,44px)', letterSpacing: '-1px' }}>
-            Everything your warehouse needs
+            Built for restoration and moving teams
           </h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3.5">
             {FEATURES.map(({ icon: Icon, bg, color, title, desc }) => (
@@ -269,9 +269,9 @@ export default function Home() {
         </div>
         <div className="relative z-10 max-w-2xl mx-auto">
           <h2 className="font-black mb-3" style={{ fontSize: 'clamp(28px,3.5vw,42px)', letterSpacing: '-1px' }}>
-            Ready to take control of your inventory?
+            Your warehouses, completely organized.
           </h2>
-          <p className="text-white/70 text-[17px] mb-9 leading-relaxed">Join thousands of teams already using Warehouse Manager.</p>
+          <p className="text-white/70 text-[17px] mb-9 leading-relaxed">Every vault tracked. Every client served. Every team aligned.</p>
           <button
             onClick={() => router.push('/login')}
             className="inline-flex items-center gap-2 bg-white text-gray-950 px-8 py-3.5 rounded-full text-[15px] font-bold hover:-translate-y-0.5 active:translate-y-0 transition-all shadow-[0_4px_20px_rgba(0,0,0,.3)] hover:shadow-[0_8px_28px_rgba(0,0,0,.4)]"

@@ -4,14 +4,25 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import './landing-hero.css';
 
-const KPI = [
-  { label: 'Total Vaults', val: '24', bg: '#eff6ff', dot: '#2563eb' },
-  { label: 'Work Orders',  val: '8',  bg: '#fff7ed', dot: '#ea580c' },
-  { label: 'Ready',        val: '12', bg: '#f0fdf4', dot: '#16a34a' },
-  { label: 'Delivered',    val: '4',  bg: '#faf5ff', dot: '#7c3aed' },
+type Cell = { s: 'e' | 'p' | 'r' | 'd'; c?: string };
+
+const ROWS = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'];
+const COLS = [1, 2, 3, 4, 5, 6, 7, 8];
+
+const GRID: Cell[][] = [
+  [{ s:'d',c:'Martinez' },{ s:'d',c:'Chen' },{ s:'e' },{ s:'p',c:'Smith' },{ s:'r',c:'Lopez' },{ s:'d',c:'Torres' },{ s:'e' },{ s:'r',c:'Kim' }],
+  [{ s:'p',c:'Brown' },{ s:'r',c:'Flores' },{ s:'d',c:'Rivera' },{ s:'r' },{ s:'e' },{ s:'p',c:'Davis' },{ s:'r',c:'Hall' },{ s:'d',c:'Clark' }],
+  [{ s:'r',c:'Lewis' },{ s:'e' },{ s:'d',c:'Young' },{ s:'p',c:'Allen' },{ s:'r' },{ s:'e' },{ s:'d',c:'Scott' },{ s:'p',c:'King' }],
+  [{ s:'d',c:'Hill' },{ s:'r',c:'Adams' },{ s:'e' },{ s:'r',c:'Baker' },{ s:'p' },{ s:'d',c:'Nelson' },{ s:'r' },{ s:'e' }],
+  [{ s:'e' },{ s:'p',c:'Mitchell' },{ s:'r',c:'Roberts' },{ s:'d',c:'Turner' },{ s:'r',c:'Phillips' },{ s:'e' },{ s:'p',c:'Evans' },{ s:'r' }],
+  [{ s:'r',c:'Stewart' },{ s:'d',c:'Morris' },{ s:'p' },{ s:'e' },{ s:'d',c:'Reed' },{ s:'r',c:'Cook' },{ s:'d' },{ s:'e' }],
+  [{ s:'d' },{ s:'e' },{ s:'r',c:'Carter' },{ s:'p',c:'Green' },{ s:'d',c:'Wilson' },{ s:'r' },{ s:'e' },{ s:'d',c:'Moore' }],
+  [{ s:'p',c:'Taylor' },{ s:'r' },{ s:'d',c:'Anderson' },{ s:'r',c:'Thomas' },{ s:'e' },{ s:'p' },{ s:'d',c:'Jackson' },{ s:'r' }],
 ];
-const BAR = [40, 65, 35, 80, 55, 90, 70];
-const NAV = ['Dashboard', 'Warehouses', 'Storage', 'Tasks', 'Stats', 'Chat'];
+
+const STATUS_CLS: Record<Cell['s'], string> = {
+  e: 'empty', p: 'pending', r: 'ready', d: 'delivered',
+};
 
 export default function LandingHero() {
   const router = useRouter();
@@ -69,12 +80,13 @@ export default function LandingHero() {
 
         {/* LEFT — copy */}
         <div className="h-copy">
-          <p className="h-eyebrow">Futuristic · Warehouse Management</p>
+          <p className="h-eyebrow">Vault Tracking · Job Management · Team Chat</p>
           <div className="h-hrow">
             <span className="h-num">05</span>
             <h1 className="h-h1">SMARTER.<br /><em>FASTER.</em></h1>
           </div>
           <div className="h-rule" />
+          <p className="h-sub">Track every vault, client, and job across all your warehouses — from mobile or desktop.</p>
           <div className="h-ctas">
             <button className="lh-btn-black" onClick={() => router.push('/login')}>Get access →</button>
             <button className="lh-btn-ghost" onClick={() => router.push('/login')}>Sign in</button>
@@ -107,7 +119,7 @@ export default function LandingHero() {
           </div>
         </div>
 
-        {/* RIGHT — dashboard mockup */}
+        {/* RIGHT — warehouse map mockup */}
         <div className="app-wrap">
           <div className="app-glow" />
           <div className="app-frame">
@@ -121,78 +133,74 @@ export default function LandingHero() {
                 <svg className="url-lock" width="8" height="8" viewBox="0 0 24 24" fill="currentColor">
                   <path d="M12 1C8.676 1 6 3.676 6 7v1H4v15h16V8h-2V7c0-3.324-2.676-6-6-6zm0 2c2.276 0 4 1.724 4 4v1H8V7c0-2.276 1.724-4 4-4zm0 9c1.1 0 2 .9 2 2s-.9 2-2 2-2-.9-2-2 .9-2 2-2z"/>
                 </svg>
-                managerwarehouse.cc/dashboard
+                managerwarehouse.cc/warehouses/main
                 <div className="url-live"><div className="url-live-dot" />LIVE</div>
               </div>
             </div>
 
-            {/* Dashboard body */}
-            <div className="dash-body">
+            {/* App shell */}
+            <div className="app-main">
 
-              {/* Sidebar — visible only on desktop */}
-              <div className="dash-sidebar">
-                <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '0 4px 10px', marginBottom: 6, borderBottom: '1px solid #f3f4f6' }}>
-                  <div style={{ width: 24, height: 24, borderRadius: 6, background: '#111827', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <span style={{ fontFamily: "Impact,'Arial Black',sans-serif", fontStyle: 'italic', fontSize: 9, color: '#fff', letterSpacing: '-0.5px' }}>WM</span>
-                  </div>
-                  <span style={{ fontSize: 11, fontWeight: 700, color: '#111' }}>Warehouse</span>
+              {/* Top bar */}
+              <div className="app-topbar">
+                <div>
+                  <div className="app-title">Main Warehouse</div>
+                  <div className="app-subtitle">Floor 1 · 50 of 64 vaults occupied</div>
                 </div>
-                {NAV.map((item, i) => (
-                  <div key={item} style={{
-                    display: 'flex', alignItems: 'center', gap: 6, padding: '5px 8px', borderRadius: 6,
-                    fontSize: 11, cursor: 'default',
-                    background: i === 0 ? '#eff6ff' : 'transparent',
-                    color: i === 0 ? '#2563eb' : '#9ca3af',
-                    fontWeight: i === 0 ? 600 : 400,
-                  }}>
-                    <div style={{ width: 5, height: 5, borderRadius: '50%', background: 'currentColor', opacity: 0.7 }} />
-                    {item}
+                <div className="app-topbar-r">
+                  <div className="view-toggle">
+                    <span className="vt-btn on">Map</span>
+                    <span className="vt-btn">List</span>
+                  </div>
+                  <div className="tb-add">+ Vault</div>
+                </div>
+              </div>
+
+              {/* Level + legend */}
+              <div className="level-bar">
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <span className="level-lbl">Level</span>
+                  <div className="level-toggle">
+                    <span className="lv-btn on">1</span>
+                    <span className="lv-btn">2</span>
+                  </div>
+                </div>
+                <div className="legend">
+                  <div className="leg-item"><div className="leg-dot" style={{ background: '#3b82f6' }} /><span className="leg-lbl">Delivered</span></div>
+                  <div className="leg-item"><div className="leg-dot" style={{ background: '#22c55e' }} /><span className="leg-lbl">Ready</span></div>
+                  <div className="leg-item"><div className="leg-dot" style={{ background: '#fbbf24' }} /><span className="leg-lbl">Pending</span></div>
+                </div>
+              </div>
+
+              {/* Stats chips */}
+              <div className="stats-strip">
+                <div className="ss-chip"><div className="ss-dot" style={{ background: '#3b82f6' }} />18 Delivered</div>
+                <div className="ss-chip"><div className="ss-dot" style={{ background: '#22c55e' }} />20 Ready</div>
+                <div className="ss-chip"><div className="ss-dot" style={{ background: '#fbbf24' }} />12 Pending</div>
+                <div className="ss-chip"><div className="ss-dot" style={{ background: '#d1d5db' }} />14 Empty</div>
+              </div>
+
+              {/* Warehouse grid */}
+              <div className="wh-grid-wrap">
+                {/* Column headers */}
+                <div className="wh-row">
+                  <div className="wh-row-lbl" />
+                  {COLS.map(n => <div key={n} className="wh-col-lbl">{n}</div>)}
+                </div>
+                {/* Grid rows */}
+                {GRID.map((row, ri) => (
+                  <div key={ri} className="wh-row">
+                    <div className="wh-row-lbl">{ROWS[ri]}</div>
+                    {row.map((cell, ci) => (
+                      <div key={ci} className={`wh-cell ${STATUS_CLS[cell.s]}`}>
+                        {cell.c && <div className="cell-client">{cell.c.slice(0, 7)}</div>}
+                      </div>
+                    ))}
                   </div>
                 ))}
               </div>
 
-              {/* Main content */}
-              <div style={{ flex: 1, background: '#f8fafc', padding: '16px 18px', display: 'flex', flexDirection: 'column', gap: 12, overflow: 'hidden', minWidth: 0 }}>
-                <div>
-                  <div style={{ fontSize: 11, color: '#9ca3af' }}>Good morning,</div>
-                  <div style={{ fontSize: 20, fontWeight: 800, color: '#111827', letterSpacing: '-0.5px', lineHeight: 1.2 }}>Alex</div>
-                </div>
-
-                {/* KPI cards */}
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 8 }}>
-                  {KPI.map(k => (
-                    <div key={k.label} style={{ background: '#fff', border: '1px solid #f3f4f6', borderRadius: 10, padding: '10px 8px', boxShadow: '0 1px 3px rgba(0,0,0,.04)' }}>
-                      <div style={{ width: 22, height: 22, borderRadius: 6, background: k.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 8 }}>
-                        <div style={{ width: 8, height: 8, borderRadius: '50%', background: k.dot }} />
-                      </div>
-                      <div style={{ fontSize: 18, fontWeight: 800, color: '#111827', letterSpacing: '-0.5px', lineHeight: 1 }}>{k.val}</div>
-                      <div style={{ fontSize: 9, color: '#9ca3af', marginTop: 2 }}>{k.label}</div>
-                    </div>
-                  ))}
-                </div>
-
-                {/* Charts */}
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
-                  <div style={{ background: '#fff', border: '1px solid #f3f4f6', borderRadius: 10, padding: '12px', boxShadow: '0 1px 3px rgba(0,0,0,.04)' }}>
-                    <div style={{ fontSize: 10, fontWeight: 700, color: '#111827', marginBottom: 10 }}>Inventory Status</div>
-                    <div style={{ display: 'flex', alignItems: 'flex-end', gap: 3, height: 48 }}>
-                      {BAR.map((h, i) => (
-                        <div key={i} style={{ flex: 1, borderRadius: '2px 2px 0 0', height: `${h}%`, background: i === 3 || i === 5 ? '#3b82f6' : '#bfdbfe' }} />
-                      ))}
-                    </div>
-                  </div>
-                  <div style={{ background: '#fff', border: '1px solid #f3f4f6', borderRadius: 10, padding: '12px', boxShadow: '0 1px 3px rgba(0,0,0,.04)' }}>
-                    <div style={{ fontSize: 10, fontWeight: 700, color: '#111827', marginBottom: 10 }}>Production</div>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                      <div style={{ fontSize: 10, color: '#9ca3af' }}>In Progress <strong style={{ color: '#374151' }}>3</strong></div>
-                      <div style={{ fontSize: 10, color: '#9ca3af' }}>Completed <strong style={{ color: '#16a34a' }}>5</strong></div>
-                      <div style={{ fontSize: 10, color: '#9ca3af' }}>Pending <strong style={{ color: '#374151' }}>2</strong></div>
-                    </div>
-                  </div>
-                </div>
-              </div>
             </div>
-
           </div>
           <div className="mob-scroll-glass" />
         </div>
