@@ -64,10 +64,12 @@ export async function GET(req: NextRequest) {
     }
   }
 
-  const recent = [...vaults]
-    .sort((a, b) => (b.created || '') > (a.created || '') ? 1 : -1)
+  // Oldest PENDING vaults — need most attention
+  const attention = vaults
+    .filter(v => (v.estado || 'PENDING') === 'PENDING')
+    .sort((a, b) => (a.created || '') > (b.created || '') ? 1 : -1)
     .slice(0, 5)
-    .map(v => ({ box_id: v.id, client_name: v.client_name, position: v.position, estado: v.estado, status: v.estado, created: v.created }));
+    .map(v => ({ box_id: v.id, client_name: v.client_name, position: v.position, warehouse_id: v.warehouse_id, estado: v.estado, created: v.created }));
 
   const histogram: { label: string; count: number }[] = [];
   for (let i = 6; i >= 0; i--) {
@@ -84,9 +86,8 @@ export async function GET(req: NextRequest) {
     statuses,
     by_warehouse,
     job_types,
-    recent,
+    attention,
     sla_count,
-    histogram,
     wh_map: whMap,
   });
   } catch (e: any) {
