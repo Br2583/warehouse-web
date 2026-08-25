@@ -756,8 +756,8 @@ export default function WarehouseDetailPage() {
                 </div>
 
                 {/* Grid */}
-                <div className="bg-white rounded-2xl border border-gray-100 p-2 md:p-6 overflow-x-auto">
-                  <div style={{ minWidth: `${Math.max(activeCols.length * 44 + 32, 0)}px` }}>
+                <div className="bg-white rounded-2xl border border-gray-100 p-2 md:p-6">
+                  <div>
                     {/* Column headers */}
                     <div className="flex gap-1 md:gap-1.5 mb-1 md:mb-1.5 ml-6 md:ml-8">
                       {activeCols.map(col => (
@@ -1569,7 +1569,7 @@ export default function WarehouseDetailPage() {
                         .map(b => `${b.row}${b.column}`)
                     );
                     return (
-                      <div className="border border-gray-200 rounded-xl overflow-auto max-h-52 p-1.5">
+                      <div className="border border-gray-200 rounded-xl overflow-y-auto max-h-52 p-1.5">
                         {ROWS.slice(0, maxRows).map(r => (
                           <div key={r} className="flex gap-1 mb-1">
                             <span className="w-5 text-[10px] font-medium text-gray-400 flex items-center justify-center flex-shrink-0">{r}</span>
@@ -1583,7 +1583,7 @@ export default function WarehouseDetailPage() {
                                   type="button"
                                   disabled={isOccupied}
                                   onClick={() => { setMoveDest(d => ({ ...d, row: r, col: c })); setMoveError(''); }}
-                                  className={`flex-1 min-w-[26px] h-7 text-[10px] font-medium rounded-md transition-colors ${
+                                  className={`flex-1 h-7 text-[10px] font-medium rounded-md transition-colors ${
                                     isSelected
                                       ? 'bg-blue-600 text-white'
                                       : isOccupied
