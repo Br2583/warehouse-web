@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState, useCallback, useRef } from 'react';
+import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   ArchiveBoxIcon, PlusIcon, MagnifyingGlassIcon, TrashIcon, XMarkIcon, CameraIcon,
@@ -109,6 +110,7 @@ const emptyLooseForm = (): LooseForm => ({
 export default function WarehouseDetailPage() {
   const { id } = useParams();
   const searchParams = useSearchParams();
+  const router = useRouter();
   const { canManage, user } = useAuth();
   const { showToast } = useToast();
   const warehouseId = id as string;
@@ -1178,15 +1180,13 @@ export default function WarehouseDetailPage() {
                       <QrCodeIcon className="w-4 h-4" />
                       {showQR ? 'Hide QR Code' : 'Show QR Code'}
                     </button>
-                    <a
-                      href={`/vault/${selected.box_id}/print`}
-                      target="_blank"
-                      rel="noopener noreferrer"
+                    <button
+                      onClick={() => router.push(`/vault/${selected.box_id}/print`)}
                       className="flex items-center gap-1.5 text-xs text-blue-600 hover:text-blue-800 font-medium transition-colors"
                     >
                       <QrCodeIcon className="w-3.5 h-3.5" />
                       Print QR Label
-                    </a>
+                    </button>
                   </div>
                   {showQR && (
                     <div className="mt-3 flex flex-col items-center gap-2 p-4 bg-gray-50 rounded-xl">

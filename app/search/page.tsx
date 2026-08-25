@@ -21,6 +21,7 @@ const STORAGE_STATUS_COLORS: Record<string, string> = {
 function SearchContent() {
   const searchParams = useSearchParams();
   const statusFilter = searchParams.get('status');
+  const jobTypeFilter = searchParams.get('jobType');
   const router = useRouter();
 
   const [query, setQuery]                     = useState(searchParams.get('q') || '');
@@ -30,12 +31,12 @@ function SearchContent() {
   const [loading, setLoading]                 = useState(false);
   const [searched, setSearched]               = useState(false);
   const [warehouses, setWarehouses]           = useState<{ id: string; name: string }[]>([]);
-  const [showFilters, setShowFilters]         = useState(false);
+  const [showFilters, setShowFilters]         = useState(!!(statusFilter || jobTypeFilter));
   const [searchError, setSearchError]         = useState<string | null>(null);
 
   // Filters
   const [filterStatus, setFilterStatus]       = useState(statusFilter || '');
-  const [filterJob, setFilterJob]             = useState('');
+  const [filterJob, setFilterJob]             = useState(jobTypeFilter || '');
   const [filterWarehouse, setFilterWarehouse] = useState('');
   const [filterPacker, setFilterPacker]       = useState('');
 
@@ -56,6 +57,12 @@ function SearchContent() {
     runSearch('', statusFilter);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [statusFilter]);
+
+  useEffect(() => {
+    if (!jobTypeFilter || query.length >= 2) return;
+    runSearch();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [jobTypeFilter]);
 
   // Live search — fires on query or filter change with 300ms debounce, min 2 chars
   useEffect(() => {

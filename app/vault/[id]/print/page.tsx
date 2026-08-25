@@ -148,10 +148,10 @@ function VaultPrintContent() {
         .btn-light{background:#f1f5f9;color:#374151}
         @page{size:letter portrait;margin:0}
         @media print{
-          body{background:#fff;padding:0}
+          html,body{margin:0;padding:0;height:11in;overflow:hidden}
           .no-print{display:none!important}
-          .label-scaler{transform:none!important;width:8.5in!important;height:11in!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
-          .label-wrapper{padding:0!important;height:11in!important}
+          .label-wrapper{padding:0!important;margin:0!important;height:11in!important;min-height:0!important;overflow:hidden!important;display:block!important}
+          .label-scaler{transform:none!important;width:8.5in!important;height:11in!important;overflow:hidden!important;page-break-inside:avoid;break-inside:avoid;-webkit-print-color-adjust:exact;print-color-adjust:exact}
           *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
         }
         @keyframes spin{to{transform:rotate(360deg)}}
@@ -159,7 +159,7 @@ function VaultPrintContent() {
 
       {/* Toolbar — sticky top, always reachable */}
       <div className="no-print">
-        <button className="btn btn-light" onClick={() => { window.opener ? window.close() : router.push('/dashboard'); }}>
+        <button className="btn btn-light" onClick={() => router.back()}>
           ← Back
         </button>
         <button className="btn btn-dark" onClick={handlePrint}>

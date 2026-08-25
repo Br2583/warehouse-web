@@ -50,28 +50,7 @@ function parseTs(raw: string): number {
   return new Date(iso.endsWith('Z') || iso.includes('+') ? iso : iso + 'Z').getTime();
 }
 
-type Period = '7d' | '30d' | '3m' | 'all';
 type ClientSort = 'count' | 'days' | 'az';
-
-const PERIOD_LABELS: Record<Period, string> = {
-  '7d': '7 days', '30d': '30 days', '3m': '3 months', 'all': 'All time',
-};
-
-function filterByPeriod(boxes: any[], period: Period): any[] {
-  if (period === 'all') return boxes;
-  const now = Date.now();
-  const ms: Record<Period, number> = {
-    '7d':  7  * 86400_000,
-    '30d': 30 * 86400_000,
-    '3m':  90 * 86400_000,
-    'all': 0,
-  };
-  const cutoff = now - ms[period];
-  return boxes.filter(b => {
-    const ts = parseTs(b.created || '');
-    return !isNaN(ts) && ts >= cutoff;
-  });
-}
 
 export default function StatsPage() {
   const router = useRouter();
@@ -80,7 +59,6 @@ export default function StatsPage() {
   const [storageUnits, setStorageUnits] = useState<any[]>([]);
   const [loading, setLoading]           = useState(true);
   const [loadError, setLoadError]       = useState<string | null>(null);
-  const [period, setPeriod]             = useState<Period>('all');
   const [expandedClient, setExpandedClient] = useState<string | null>(null);
   const [refreshing, setRefreshing]     = useState(false);
   const [clientSort, setClientSort]     = useState<ClientSort>('count');
@@ -136,7 +114,7 @@ export default function StatsPage() {
     return () => document.removeEventListener('visibilitychange', handleVisibility);
   }, [load]);
 
-  const filteredBoxes = useMemo(() => filterByPeriod(boxes, period), [boxes, period]);
+  const filteredBoxes = useMemo(() => boxes, [boxes]);
 
   const total     = filteredBoxes.length;
   const pending   = filteredBoxes.filter(b => (b.estado || b.status || 'PENDING') === 'PENDING').length;
@@ -267,26 +245,15 @@ export default function StatsPage() {
               </div>
               <p className="text-gray-500 text-sm ml-[52px]">
                 {boxes.length > 0
-                  ? `${total.toLocaleString()} vault${total !== 1 ? 's' : ''} · ${PERIOD_LABELS[period]}${total === 0 ? ` · ${boxes.length} total` : ''}`
+                  ? `${total.toLocaleString()} vault${total !== 1 ? 's' : ''} · All time`
                   : 'Real-time inventory intelligence'}
                 {lastLoaded && (
                   <span className="text-gray-400"> · Updated {formatLastLoaded(lastLoaded)}</span>
                 )}
               </p>
             </div>
-            {/* Period selector + refresh */}
+            {/* Refresh button */}
             <div className="flex items-center gap-2 self-start sm:self-auto">
-              <div className="flex items-center gap-1 bg-white/70 backdrop-blur-sm border border-gray-200 p-1 rounded-xl shadow-sm overflow-x-auto">
-                {(['7d', '30d', '3m', 'all'] as Period[]).map(p => (
-                  <button
-                    key={p}
-                    onClick={() => setPeriod(p)}
-                    className={`flex-shrink-0 px-3 py-1.5 text-xs font-semibold rounded-lg transition-all ${period === p ? 'bg-blue-600 text-white shadow-sm' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'}`}
-                  >
-                    {PERIOD_LABELS[p]}
-                  </button>
-                ))}
-              </div>
               <button
                 onClick={() => load(true)}
                 disabled={refreshing}
@@ -308,14 +275,6 @@ export default function StatsPage() {
             <ExclamationCircleIcon className="w-4 h-4 flex-shrink-0" />
             <span className="flex-1">{loadError}</span>
             <button onClick={() => { setLoadError(null); window.location.reload(); }} className="text-xs font-medium text-red-600 hover:text-red-800 underline">Retry</button>
-          </div>
-        )}
-
-        {!loadError && total === 0 && boxes.length > 0 && period !== 'all' && (
-          <div className="flex items-center gap-3 bg-amber-50 border border-amber-100 text-amber-700 text-sm px-4 py-3 rounded-xl mb-4">
-            <ExclamationCircleIcon className="w-4 h-4 flex-shrink-0" />
-            <span className="flex-1">No vaults were added in the last {PERIOD_LABELS[period].toLowerCase()}. Your {boxes.length} vault{boxes.length !== 1 ? 's' : ''} are older than this period.</span>
-            <button onClick={() => setPeriod('all')} className="text-xs font-semibold text-amber-700 hover:text-amber-900 underline whitespace-nowrap">Show All time</button>
           </div>
         )}
 
@@ -386,7 +345,7 @@ export default function StatsPage() {
                 ) : (
                   <>
                     {clientList.length} client{clientList.length !== 1 ? 's' : ''}
-                    {' · '}{filteredBoxes.length} vault{filteredBoxes.length !== 1 ? 's' : ''} · {PERIOD_LABELS[period]}
+                    {' · '}{filteredBoxes.length} vault{filteredBoxes.length !== 1 ? 's' : ''}
                   </>
                 )}
               </p>
@@ -667,7 +626,7 @@ export default function StatsPage() {
               style={{ boxShadow: '0 1px 4px rgba(0,0,0,0.04)' }}
             >
               <h2 className="font-bold text-gray-900 mb-0.5">By Job Type</h2>
-              <p className="text-xs text-gray-400 mb-5">Vaults per restoration category</p>
+              <p className="text-xs text-gray-400 mb-5">Tap a bar to search vaults by job type</p>
               {jobData.length > 0 ? (
                 <ResponsiveContainer width="100%" height={180}>
                   <BarChart data={jobData} barSize={32} margin={{ top: 4, right: 4, left: -24, bottom: 0 }}>
@@ -675,7 +634,15 @@ export default function StatsPage() {
                     <XAxis dataKey="name" tick={{ fontSize: 11, fill: '#9ca3af' }} axisLine={false} tickLine={false} />
                     <YAxis tick={{ fontSize: 11, fill: '#9ca3af' }} axisLine={false} tickLine={false} allowDecimals={false} />
                     <Tooltip content={<ChartTooltip />} cursor={{ fill: 'rgba(0,0,0,0.03)', radius: 6 }} />
-                    <Bar dataKey="value" name="Vaults" radius={[8, 8, 0, 0]} animationBegin={400} animationDuration={900}>
+                    <Bar
+                      dataKey="value"
+                      name="Vaults"
+                      radius={[8, 8, 0, 0]}
+                      animationBegin={400}
+                      animationDuration={900}
+                      cursor="pointer"
+                      onClick={(data: any) => router.push(`/search?jobType=${encodeURIComponent(data.name)}`)}
+                    >
                       {jobData.map((e, i) => <Cell key={i} fill={e.fill} />)}
                     </Bar>
                   </BarChart>

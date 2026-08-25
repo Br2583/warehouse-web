@@ -984,6 +984,28 @@ async function routeDelete(path: string): Promise<any> {
     }
     if (dv.company_id !== cid) throw new Error('Forbidden');
     await pb.collection('deleted_vaults').delete(dv.id);
+    // Clean up activity_log entries for this vault (fire-and-forget)
+    if (cid) {
+      const originalVaultId = (dv.vault_data as any)?.box_id as string | undefined;
+      const dvId = dv.id as string;
+      const companyCid = cid;
+      (async () => {
+        try {
+          const ids = new Set<string>();
+          if (originalVaultId) {
+            const r1 = await pb.collection('activity_logs').getFullList({
+              filter: `company_id="${sf(companyCid)}" && entity_id="${sf(originalVaultId)}"`, fields: 'id',
+            });
+            r1.forEach((l: any) => ids.add(l.id));
+          }
+          const r2 = await pb.collection('activity_logs').getFullList({
+            filter: `company_id="${sf(companyCid)}" && entity_id="${sf(dvId)}"`, fields: 'id',
+          });
+          r2.forEach((l: any) => ids.add(l.id));
+          await Promise.allSettled([...ids].map(lid => pb.collection('activity_logs').delete(lid)));
+        } catch {}
+      })();
+    }
     return null;
   }
 

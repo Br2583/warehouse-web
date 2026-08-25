@@ -5,7 +5,7 @@ import { motion } from 'framer-motion';
 import {
   ArchiveBoxIcon, ClipboardDocumentListIcon, CheckCircleIcon, TruckIcon,
   ClockIcon, PlayIcon, CheckIcon, PlusIcon, MagnifyingGlassIcon,
-  ChatBubbleLeftRightIcon, ExclamationTriangleIcon,
+  ChatBubbleLeftRightIcon,
 } from '@/components/icons';
 import { useAuth } from '@/lib/auth-context';
 import { api } from '@/lib/api';
@@ -105,8 +105,6 @@ export default function DashboardPage() {
   const pending   = stats?.statuses?.PENDING || 0;
   const ready     = stats?.statuses?.READY || 0;
   const delivered = stats?.statuses?.DELIVERED || 0;
-  const slaCount  = stats?.sla_count ?? 0;
-
   const attentionBoxes: any[] = stats?.attention || [];
 
   // Job types: only show types that have at least 1 vault, ordered by standard list
@@ -136,7 +134,6 @@ export default function DashboardPage() {
         {/* Stats error banner */}
         {statsError && !loading && (
           <div className="flex items-center gap-2 bg-amber-50 border border-amber-100 text-amber-700 text-sm px-4 py-3 rounded-xl mb-4">
-            <ExclamationTriangleIcon className="w-4 h-4 flex-shrink-0" />
             <span className="flex-1">Could not load statistics. Numbers may be outdated.</span>
           </div>
         )}
@@ -176,10 +173,9 @@ export default function DashboardPage() {
           }
         </div>
 
-        {/* Inventory Status + SLA Alert */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 mb-5 md:mb-8">
-          {/* Inventory Status — col-span-2 */}
-          <motion.div custom={4} variants={fadeUp} initial="hidden" animate="show" className="md:col-span-2 bg-white rounded-2xl border border-gray-100 p-4 md:p-6">
+        {/* Inventory Status */}
+        <div className="mb-5 md:mb-8">
+          <motion.div custom={4} variants={fadeUp} initial="hidden" animate="show" className="bg-white rounded-2xl border border-gray-100 p-4 md:p-6">
             <h2 className="font-semibold text-gray-900 mb-3 md:mb-5">Inventory Status</h2>
             <div className="flex flex-wrap gap-2 md:gap-4 mb-3 md:mb-5">
               {[
@@ -247,25 +243,6 @@ export default function DashboardPage() {
             </div>
           </motion.div>
 
-          {/* SLA Alert */}
-          <motion.div custom={5} variants={fadeUp} initial="hidden" animate="show" className="bg-white rounded-2xl border border-gray-100 p-4 md:p-6 flex flex-col">
-            <h2 className="font-semibold text-gray-900 mb-1">SLA Alert</h2>
-            <p className="text-xs text-gray-400 mb-5">PENDING vaults over 3 days</p>
-            <div className="flex-1 flex flex-col items-center justify-center">
-              <div className={`w-20 h-20 rounded-2xl flex items-center justify-center mb-3 ${slaCount > 0 ? 'bg-red-50' : 'bg-green-50'}`}>
-                <ExclamationTriangleIcon className={`w-8 h-8 ${slaCount > 0 ? 'text-red-500' : 'text-green-400'}`} />
-              </div>
-              <p className={`text-4xl font-bold mb-1 ${slaCount > 0 ? 'text-red-600' : 'text-green-600'}`}>{slaCount}</p>
-              <p className="text-xs text-gray-400 text-center">
-                {slaCount === 0 ? 'All vaults on time' : `vault${slaCount !== 1 ? 's' : ''} need attention`}
-              </p>
-            </div>
-            {slaCount > 0 && (
-              <Link href="/search?status=PENDING" className="mt-4 w-full text-center text-xs text-red-600 font-medium py-2 rounded-xl bg-red-50 hover:bg-red-100 transition-colors">
-                View pending vaults →
-              </Link>
-            )}
-          </motion.div>
         </div>
 
         {/* Quick Actions */}
