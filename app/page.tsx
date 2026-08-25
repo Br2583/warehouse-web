@@ -249,7 +249,7 @@ export default function Home() {
       )}
 
       {/* ── Get the App ── */}
-      <section className="px-6 md:px-16 py-16 md:py-20 bg-white">
+      <section id="download" className="px-6 md:px-16 py-16 md:py-20 bg-white">
         <div className="max-w-5xl mx-auto">
           <div className="text-[11px] font-semibold text-blue-600 tracking-[1.5px] uppercase mb-2.5">Download</div>
           <h2 className="font-extrabold text-gray-900 mb-2" style={{ fontSize: 'clamp(28px,3vw,44px)', letterSpacing: '-1px' }}>
