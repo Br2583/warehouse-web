@@ -43,12 +43,6 @@ const FEATURES = [
   },
 ];
 
-const STATS = [
-  { num: '10K+', lbl: 'Active Users' },
-  { num: '99%',  lbl: 'Uptime SLA' },
-  { num: '50+',  lbl: 'Countries' },
-  { num: '500+', lbl: 'Warehouses' },
-];
 
 export default function Home() {
   const router = useRouter();
@@ -89,20 +83,6 @@ export default function Home() {
 
       {/* ── Hero (new Manifesto design) ── */}
       <LandingHero />
-
-      {/* ── Stats strip ── */}
-      <div className="border-b border-gray-100 bg-white">
-        <div className="max-w-5xl mx-auto px-6 md:px-16 py-10">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
-            {STATS.map(s => (
-              <div key={s.lbl} className="cursor-default group">
-                <div className="text-3xl md:text-[38px] font-black tracking-[-2px] leading-none text-gray-900 group-hover:text-blue-600 transition-colors">{s.num}</div>
-                <div className="text-[11px] text-slate-400 mt-1.5 font-medium tracking-[.3px]">{s.lbl}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
 
       {/* ── Features ── */}
       <section id="features" className="px-6 md:px-16 py-16 md:py-20" style={{ background: '#f8fafc' }}>

@@ -4,24 +4,14 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import './landing-hero.css';
 
-const GRID: { row: string; cells: string[] }[] = [
-  { row: 'A', cells: ['pending','empty','ready','ready','empty','delivered','pending','empty'] },
-  { row: 'B', cells: ['ready','pending','empty','ready','ready','empty','pending','delivered'] },
-  { row: 'C', cells: ['delivered','ready','ready','empty','pending','ready','empty','ready'] },
-  { row: 'D', cells: ['empty','delivered','pending','ready','empty','ready','ready','pending'] },
-  { row: 'E', cells: ['ready','empty','ready','pending','delivered','empty','ready','empty'] },
+const KPI = [
+  { label: 'Total Vaults', val: '24', bg: '#eff6ff', dot: '#2563eb' },
+  { label: 'Work Orders',  val: '8',  bg: '#fff7ed', dot: '#ea580c' },
+  { label: 'Ready',        val: '12', bg: '#f0fdf4', dot: '#16a34a' },
+  { label: 'Delivered',    val: '4',  bg: '#faf5ff', dot: '#7c3aed' },
 ];
-const LABELS = ['MA', 'JO', 'SM', 'DA', 'WI', 'TA'];
-const TASKS = [
-  { type: 'Fire',   bg: '#fff7ed', fg: '#c2410c', client: 'Martinez', st: 'ts-progress', stl: 'In Progress' },
-  { type: 'Water',  bg: '#eff6ff', fg: '#1d4ed8', client: 'Johnson',  st: 'ts-pending',  stl: 'Pending' },
-  { type: 'Moving', bg: '#f5f3ff', fg: '#7c3aed', client: 'Smith',    st: 'ts-done',     stl: 'Done' },
-];
-const CHAT = [
-  { name: 'Maria',  msg: 'Vault B4 is ready 🟢',  me: false, color: '#16a34a' },
-  { name: 'You',    msg: 'Moving job updated',     me: true,  color: '#2563eb' },
-  { name: 'Carlos', msg: 'Fire job assigned',      me: false, color: '#ea580c' },
-];
+const BAR = [40, 65, 35, 80, 55, 90, 70];
+const NAV = ['Dashboard', 'Warehouses', 'Storage', 'Tasks', 'Stats', 'Chat'];
 
 export default function LandingHero() {
   const router = useRouter();
@@ -122,7 +112,7 @@ export default function LandingHero() {
           <div className="app-glow" />
           <div className="app-frame">
 
-            {/* Browser chrome */}
+            {/* Browser bar */}
             <div className="browser-bar">
               <div className="btr">
                 <div className="bt bt-r" /><div className="bt bt-y" /><div className="bt bt-g" />
@@ -136,135 +126,74 @@ export default function LandingHero() {
               </div>
             </div>
 
-            {/* App body */}
-            <div className="app-body">
+            {/* Dashboard body */}
+            <div className="dash-body">
 
-              {/* Sidebar */}
-              <div className="app-sidebar">
-                <div className="sb-header">
-                  <div className="sb-logo-box"><span className="sb-logo-txt">WM</span></div>
+              {/* Sidebar — visible only on desktop */}
+              <div className="dash-sidebar">
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '0 4px 10px', marginBottom: 6, borderBottom: '1px solid #f3f4f6' }}>
+                  <div style={{ width: 24, height: 24, borderRadius: 6, background: '#111827', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <span style={{ fontFamily: "Impact,'Arial Black',sans-serif", fontStyle: 'italic', fontSize: 9, color: '#fff', letterSpacing: '-0.5px' }}>WM</span>
+                  </div>
+                  <span style={{ fontSize: 11, fontWeight: 700, color: '#111' }}>Warehouse</span>
                 </div>
-                <div className="sb-nav">
-                  {[true, false, false, false, false, false].map((active, i) => (
-                    <div key={i} className={`sb-item${active ? ' active' : ''}`}>
-                      <div style={{ width: 16, height: 16, borderRadius: 4, background: active ? '#2563eb' : '#e5e7eb' }} />
-                      {i === 3 && <div className="sb-badge">3</div>}
-                      {i === 5 && <div className="sb-badge">2</div>}
-                    </div>
-                  ))}
-                </div>
-                <div className="sb-footer">
-                  <div className="sb-avatar">A</div>
-                </div>
+                {NAV.map((item, i) => (
+                  <div key={item} style={{
+                    display: 'flex', alignItems: 'center', gap: 6, padding: '5px 8px', borderRadius: 6,
+                    fontSize: 11, cursor: 'default',
+                    background: i === 0 ? '#eff6ff' : 'transparent',
+                    color: i === 0 ? '#2563eb' : '#9ca3af',
+                    fontWeight: i === 0 ? 600 : 400,
+                  }}>
+                    <div style={{ width: 5, height: 5, borderRadius: '50%', background: 'currentColor', opacity: 0.7 }} />
+                    {item}
+                  </div>
+                ))}
               </div>
 
               {/* Main content */}
-              <div className="app-main">
-
-                {/* Topbar */}
-                <div className="app-topbar">
-                  <div>
-                    <div className="app-title">Good morning, Alex</div>
-                    <div className="app-subtitle">Warehouse A · 54 active vaults</div>
-                  </div>
-                  <div className="app-topbar-r">
-                    <div className="tb-add">
-                      <svg width="8" height="8" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
-                      Add Vault
-                    </div>
-                  </div>
+              <div style={{ flex: 1, background: '#f8fafc', padding: '16px 18px', display: 'flex', flexDirection: 'column', gap: 12, overflow: 'hidden', minWidth: 0 }}>
+                <div>
+                  <div style={{ fontSize: 11, color: '#9ca3af' }}>Good morning,</div>
+                  <div style={{ fontSize: 20, fontWeight: 800, color: '#111827', letterSpacing: '-0.5px', lineHeight: 1.2 }}>Alex</div>
                 </div>
 
-                {/* Stats chips */}
-                <div className="stats-strip">
-                  {[
-                    { color: '#2563eb', label: '24 Total' },
-                    { color: '#fbbf24', label: '8 Pending' },
-                    { color: '#22c55e', label: '12 Ready' },
-                    { color: '#3b82f6', label: '4 Delivered' },
-                  ].map(({ color, label }) => (
-                    <div key={label} className="ss-chip">
-                      <div className="ss-dot" style={{ background: color }} />{label}
-                    </div>
-                  ))}
-                </div>
-
-                {/* Level bar */}
-                <div className="level-bar">
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                    <span className="level-lbl">LEVEL</span>
-                    <div className="level-toggle">
-                      <div className="lv-btn on">Lower</div>
-                      <div className="lv-btn">Upper</div>
-                    </div>
-                  </div>
-                  <div className="legend">
-                    {[
-                      { color: '#fbbf24', label: 'Pending' },
-                      { color: '#22c55e', label: 'Ready' },
-                      { color: '#3b82f6', label: 'Delivered' },
-                    ].map(({ color, label }) => (
-                      <div key={label} className="leg-item">
-                        <div className="leg-dot" style={{ background: color }} />
-                        <div className="leg-lbl">{label}</div>
+                {/* KPI cards */}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 8 }}>
+                  {KPI.map(k => (
+                    <div key={k.label} style={{ background: '#fff', border: '1px solid #f3f4f6', borderRadius: 10, padding: '10px 8px', boxShadow: '0 1px 3px rgba(0,0,0,.04)' }}>
+                      <div style={{ width: 22, height: 22, borderRadius: 6, background: k.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 8 }}>
+                        <div style={{ width: 8, height: 8, borderRadius: '50%', background: k.dot }} />
                       </div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Warehouse grid */}
-                <div className="wh-grid-wrap">
-                  <div className="wh-row">
-                    <div className="wh-row-lbl" />
-                    {[1,2,3,4,5,6,7,8].map(c => <div key={c} className="wh-col-lbl">{c}</div>)}
-                  </div>
-                  {GRID.map(({ row, cells }) => (
-                    <div key={row} className="wh-row">
-                      <div className="wh-row-lbl">{row}</div>
-                      {cells.map((st, i) => (
-                        <div key={i} className={`wh-cell ${st}`}>
-                          {st !== 'empty' && <div className="cell-client">{LABELS[i % LABELS.length]}</div>}
-                          {st === 'empty'  && <div className="cell-plus">+</div>}
-                        </div>
-                      ))}
+                      <div style={{ fontSize: 18, fontWeight: 800, color: '#111827', letterSpacing: '-0.5px', lineHeight: 1 }}>{k.val}</div>
+                      <div style={{ fontSize: 9, color: '#9ca3af', marginTop: 2 }}>{k.label}</div>
                     </div>
                   ))}
                 </div>
 
-                {/* Tasks + Chat split */}
-                <div className="app-split">
-                  <div className="split-col">
-                    <div className="split-hd">Tasks</div>
-                    <div className="task-items">
-                      {TASKS.map(({ type, bg, fg, client, st, stl }) => (
-                        <div key={client} className="task-row">
-                          <div className="task-type-pill" style={{ background: bg, color: fg }}>{type}</div>
-                          <div className="task-detail"><div className="task-client">{client}</div></div>
-                          <div className={`task-st ${st}`}>{stl}</div>
-                        </div>
+                {/* Charts */}
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+                  <div style={{ background: '#fff', border: '1px solid #f3f4f6', borderRadius: 10, padding: '12px', boxShadow: '0 1px 3px rgba(0,0,0,.04)' }}>
+                    <div style={{ fontSize: 10, fontWeight: 700, color: '#111827', marginBottom: 10 }}>Inventory Status</div>
+                    <div style={{ display: 'flex', alignItems: 'flex-end', gap: 3, height: 48 }}>
+                      {BAR.map((h, i) => (
+                        <div key={i} style={{ flex: 1, borderRadius: '2px 2px 0 0', height: `${h}%`, background: i === 3 || i === 5 ? '#3b82f6' : '#bfdbfe' }} />
                       ))}
                     </div>
                   </div>
-                  <div className="split-col">
-                    <div className="split-hd">Team Chat</div>
-                    <div className="chat-items">
-                      {CHAT.map(({ name, msg, me, color }) => (
-                        <div key={name} className={`chat-msg${me ? ' me' : ''}`}>
-                          <div className="chat-av" style={{ background: color }}>{name[0]}</div>
-                          <div className="chat-bw">
-                            <div className="chat-name">{name}</div>
-                            <div className="chat-bubble">{msg}</div>
-                          </div>
-                        </div>
-                      ))}
+                  <div style={{ background: '#fff', border: '1px solid #f3f4f6', borderRadius: 10, padding: '12px', boxShadow: '0 1px 3px rgba(0,0,0,.04)' }}>
+                    <div style={{ fontSize: 10, fontWeight: 700, color: '#111827', marginBottom: 10 }}>Production</div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                      <div style={{ fontSize: 10, color: '#9ca3af' }}>In Progress <strong style={{ color: '#374151' }}>3</strong></div>
+                      <div style={{ fontSize: 10, color: '#9ca3af' }}>Completed <strong style={{ color: '#16a34a' }}>5</strong></div>
+                      <div style={{ fontSize: 10, color: '#9ca3af' }}>Pending <strong style={{ color: '#374151' }}>2</strong></div>
                     </div>
                   </div>
                 </div>
-
               </div>
             </div>
+
           </div>
-          {/* Touch pass-through on mobile so page still scrolls over the frame */}
           <div className="mob-scroll-glass" />
         </div>
 
