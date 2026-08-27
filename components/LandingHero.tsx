@@ -1,6 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
+import { APP_VERSION } from '@/lib/constants';
 import './landing-hero.css';
 
 export default function LandingHero() {
@@ -71,7 +72,7 @@ export default function LandingHero() {
             <span className="wm-status-dot" aria-hidden="true" />
             <div>
               <div className="wm-status-title">All systems operational</div>
-              <div className="wm-status-sub">Latest release v2.6</div>
+              <div className="wm-status-sub">Latest release v{APP_VERSION}</div>
             </div>
           </div>
         </div>

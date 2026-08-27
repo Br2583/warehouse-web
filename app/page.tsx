@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { pb } from '@/lib/pb';
 import AppFooter from '@/components/AppFooter';
 import LandingHero from '@/components/LandingHero';
+import { APP_VERSION } from '@/lib/constants';
 
 const MARKS = Array.from({ length: 28 }, (_, i) => i);
 
@@ -82,12 +83,20 @@ export default function Home() {
     return () => window.removeEventListener('beforeinstallprompt', handler);
   }, [router]);
 
+  useEffect(() => {
+    if (!iosModal) return;
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setIosModal(false); };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [iosModal]);
+
   if (!show) return <div style={{ minHeight: '100vh', background: '#fff' }} />;
 
   const isAndroid = platform === 'android';
   const isIOS = platform === 'ios';
-  const isWin = platform === 'windows' || (!isAndroid && !isIOS && !!installPrompt);
-  const isOther = !isAndroid && !isIOS && !isWin;
+  // Only badge the desktop card when the UA really is Windows — a Mac or Linux
+  // visitor must not be told "Windows" is their device.
+  const isWindows = platform === 'windows';
 
   const DownArrow = () => (
     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -96,7 +105,7 @@ export default function Home() {
   );
 
   return (
-    <div style={{ fontFamily: "var(--font-archivo,'Archivo',sans-serif)", color: '#0a0a0a', background: '#ffffff', overflowX: 'hidden', minHeight: '100vh', WebkitFontSmoothing: 'antialiased' }}>
+    <div style={{ fontFamily: "var(--font-archivo,'Archivo',sans-serif)", color: '#0a0a0a', background: '#ffffff', minHeight: '100vh', WebkitFontSmoothing: 'antialiased' }}>
 
       <LandingHero />
 
@@ -180,7 +189,7 @@ export default function Home() {
             <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: '0.18em', textTransform: 'uppercase', color: '#8a8a88' }}>Download</div>
             <h2 style={{ margin: '12px 0 0', fontSize: 28, fontWeight: 600, letterSpacing: '-0.03em' }}>Install on your device</h2>
           </div>
-          <div style={{ fontSize: 14, color: '#7a7a78' }}>No App Store required · Version 2.6</div>
+          <div style={{ fontSize: 14, color: '#7a7a78' }}>No App Store required · Version {APP_VERSION}</div>
         </div>
 
         <div style={{ marginTop: 26, display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(290px,1fr))', gap: 14 }}>
@@ -201,7 +210,7 @@ export default function Home() {
             <div style={{ marginTop: 16, fontSize: 14, lineHeight: 1.6, color: '#6a6a68', flex: 1 }}>Camera scanning, push notifications and full offline support.</div>
             <DlBtn href="/downloads/warehouse-manager.apk">
               <DownArrow />
-              Download APK v2.6
+              Download APK v{APP_VERSION}
             </DlBtn>
           </div>
 
@@ -226,8 +235,8 @@ export default function Home() {
           </div>
 
           {/* Windows / Desktop */}
-          <div style={{ position: 'relative', border: (isWin || isOther) ? '1.5px solid #2563eb' : '1px solid #e6e6e4', borderRadius: 16, padding: 24, display: 'flex', flexDirection: 'column', background: (isWin || isOther) ? '#fafbff' : '#fff' }}>
-            {(isWin || isOther) && <div style={{ position: 'absolute', top: -9, right: 20, fontSize: 10.5, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', background: '#2563eb', color: '#fff', padding: '3px 10px', borderRadius: 999 }}>Your device</div>}
+          <div style={{ position: 'relative', border: isWindows ? '1.5px solid #2563eb' : '1px solid #e6e6e4', borderRadius: 16, padding: 24, display: 'flex', flexDirection: 'column', background: isWindows ? '#fafbff' : '#fff' }}>
+            {isWindows && <div style={{ position: 'absolute', top: -9, right: 20, fontSize: 10.5, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', background: '#2563eb', color: '#fff', padding: '3px 10px', borderRadius: 999 }}>Your device</div>}
             <div style={{ display: 'flex', alignItems: 'center', gap: 11 }}>
               <span style={{ width: 38, height: 38, borderRadius: 10, background: '#e6edfd', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                 <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#2563eb" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -275,8 +284,8 @@ export default function Home() {
             </div>
           </div>
           <div className="wm-help-btns" style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-            <a href="/login" style={{ fontSize: 14, fontWeight: 600, padding: '11px 18px', borderRadius: 10, border: '1px solid #d8d8d6', background: '#fff', textDecoration: 'none', color: '#0a0a0a', display: 'inline-flex', alignItems: 'center' }}>
-              Setup guide
+            <a href="#download" style={{ fontSize: 14, fontWeight: 600, padding: '11px 18px', borderRadius: 10, border: '1px solid #d8d8d6', background: '#fff', textDecoration: 'none', color: '#0a0a0a', display: 'inline-flex', alignItems: 'center' }}>
+              Install guide
             </a>
             <a href="mailto:support@managerwarehouse.cc" style={{ fontSize: 14, fontWeight: 600, padding: '11px 18px', borderRadius: 10, background: '#0a0a0a', color: '#fff', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', boxShadow: '0 1px 2px rgba(0,0,0,0.24), inset 0 1px 0 rgba(255,255,255,0.14)' }}>
               Contact support

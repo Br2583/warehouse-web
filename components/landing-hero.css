@@ -1,5 +1,8 @@
 html { scroll-behavior: smooth; }
 
+/* Anchor targets clear the 66px sticky nav */
+#whats-inside, #download, #help { scroll-margin-top: 82px; }
+
 /* ── NATIVE APP OVERRIDES ── */
 .native-app .wm-nav { display: none !important; }
 .native-app .wm-hero { padding-top: calc(env(safe-area-inset-top, 24px) + 24px) !important; }
