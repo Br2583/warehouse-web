@@ -131,7 +131,9 @@ export default function Home() {
             Fire. Water. Mold. Moving. Storage.
           </div>
           <div style={{ display: 'flex', gap: 34, flexWrap: 'wrap' }}>
-            {[['3', 'Warehouses'], ['479', 'Vaults'], ['24/7', 'Live sync']].map(([val, lbl]) => (
+            {/* Capability statements, not live counters — the landing is public and
+                has no company data to read, so real figures would be misleading. */}
+            {[['Unlimited', 'Warehouses'], ['Real time', 'Inventory'], ['24/7', 'Team access']].map(([val, lbl]) => (
               <div key={lbl}>
                 <div style={{ fontSize: 27, fontWeight: 600, letterSpacing: '-0.03em', fontVariantNumeric: 'tabular-nums' }}>{val}</div>
                 <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.16em', textTransform: 'uppercase', color: '#8a8a88', marginTop: 4 }}>{lbl}</div>

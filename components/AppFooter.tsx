@@ -12,11 +12,12 @@ const SERVICES = [
   'Multi-Warehouse Control',
 ];
 
+// Public routes only — this footer also renders for signed-out visitors on the
+// landing and login pages, where app routes would bounce them to /login.
 const LINKS = [
-  { label: 'Dashboard', href: '/dashboard' },
-  { label: 'Warehouses', href: '/warehouses' },
-  { label: 'Tasks', href: '/tasks' },
+  { label: 'Download the app', href: '/#download' },
   { label: 'Terms & Conditions', href: '/terms' },
+  { label: 'Privacy Policy', href: '/privacy' },
 ];
 
 export default function AppFooter() {
@@ -101,9 +102,14 @@ export default function AppFooter() {
           <p className="text-[12px] text-white/25">
             &copy; {new Date().getFullYear()} PixelCore &mdash; Warehouse Manager. All rights reserved.
           </p>
-          <Link href="/terms" className="text-[12px] text-white/25 hover:text-white/55 transition-colors py-2 px-1">
-            Terms &amp; Conditions
-          </Link>
+          <div className="flex items-center gap-5">
+            <Link href="/terms" className="text-[12px] text-white/25 hover:text-white/55 transition-colors py-2 px-1">
+              Terms &amp; Conditions
+            </Link>
+            <Link href="/privacy" className="text-[12px] text-white/25 hover:text-white/55 transition-colors py-2 px-1">
+              Privacy
+            </Link>
+          </div>
         </div>
       </div>
     </footer>
