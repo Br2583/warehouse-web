@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Inter, Syne, DM_Sans } from "next/font/google";
+import { Inter, Archivo } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/lib/auth-context";
 import AppShell from "@/components/AppShell";
@@ -8,8 +8,7 @@ import ToastContainer from "@/components/ToastContainer";
 import CapacitorInit from "@/components/CapacitorInit";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
-const syne = Syne({ subsets: ["latin"], weight: ["700", "800"], variable: "--font-syne" });
-const dmSans = DM_Sans({ subsets: ["latin"], weight: ["400", "500", "600"], variable: "--font-dm-sans" });
+const archivo = Archivo({ subsets: ["latin"], weight: ["400", "500", "600", "700"], variable: "--font-archivo" });
 
 export const viewport: Viewport = {
   width: "device-width",
@@ -36,7 +35,7 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
-      <body className={`${inter.variable} ${syne.variable} ${dmSans.variable} ${inter.className} bg-gray-50`}>
+      <body className={`${inter.variable} ${archivo.variable} ${inter.className} bg-gray-50`}>
         <AuthProvider>
           <ToastProvider>
             <CapacitorInit />

@@ -3,117 +3,313 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { pb } from '@/lib/pb';
-import AppFooter from '@/components/AppFooter';
 import LandingHero from '@/components/LandingHero';
-import {
-  BuildingOffice2Icon,
-  ChartBarSquareIcon,
-  ChatBubbleLeftRightIcon,
-  UsersIcon,
-} from '@/components/icons';
 
-const FEATURES = [
-  {
-    icon: BuildingOffice2Icon,
-    bg: '#eff6ff',
-    color: '#2563eb',
-    title: 'Multi-Warehouse',
-    desc: 'Manage multiple warehouse locations from one centralized dashboard in real time.',
-  },
-  {
-    icon: ChartBarSquareIcon,
-    bg: '#fff7ed',
-    color: '#ea580c',
-    title: 'Live Analytics',
-    desc: 'Track inventory, production and delivery status with live charts and reports.',
-  },
-  {
-    icon: ChatBubbleLeftRightIcon,
-    bg: '#f0fdf4',
-    color: '#16a34a',
-    title: 'Team Chat',
-    desc: 'Built-in messaging to keep your entire team aligned and moving fast.',
-  },
-  {
-    icon: UsersIcon,
-    bg: '#faf5ff',
-    color: '#7c3aed',
-    title: 'Role-Based Access',
-    desc: 'Invite your team with owner and worker permission levels built in.',
-  },
-];
+const MARKS = Array.from({ length: 28 }, (_, i) => i);
 
+function WmMark({ size, color }: { size: number; color: string }) {
+  return (
+    <svg
+      viewBox="20 13 238 159"
+      style={{ width: size, flexShrink: 0, color }}
+      aria-hidden="true"
+    >
+      <g transform="translate(28,0) skewX(-8)" mask="url(#pt-cut)">
+        <polyline points="30,28 56,156 84,62 112,156 140,28" fill="none" stroke="currentColor" strokeWidth="30" strokeLinejoin="miter" />
+        <polyline points="140,156 140,28 176,98 212,28 212,156" fill="none" stroke="currentColor" strokeWidth="30" strokeLinejoin="miter" />
+      </g>
+    </svg>
+  );
+}
+
+function DlBtn({ children, href, onClick, blue }: { children: React.ReactNode; href?: string; onClick?: () => void; blue?: boolean }) {
+  const s: React.CSSProperties = {
+    marginTop: 22,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 9,
+    fontSize: 14.5,
+    fontWeight: 600,
+    padding: '12px 0',
+    borderRadius: 10,
+    width: '100%',
+    cursor: 'pointer',
+    fontFamily: 'inherit',
+    textDecoration: 'none',
+    ...(blue
+      ? { background: '#2563eb', color: '#fff', border: 'none', boxShadow: '0 1px 2px rgba(0,0,0,0.24), inset 0 1px 0 rgba(255,255,255,0.14)' }
+      : { background: '#0a0a0a', color: '#fff', border: 'none', boxShadow: '0 1px 2px rgba(0,0,0,0.24), inset 0 1px 0 rgba(255,255,255,0.14)' }),
+  };
+  if (href) return <a href={href} style={s} download={href.endsWith('.apk') ? 'WarehouseManager.apk' : undefined}>{children}</a>;
+  return <button onClick={onClick} style={s}>{children}</button>;
+}
+
+function DlOutlineBtn({ children, onClick }: { children: React.ReactNode; onClick?: () => void }) {
+  return (
+    <button
+      onClick={onClick}
+      style={{ marginTop: 22, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 9, fontSize: 14.5, fontWeight: 600, padding: '12px 0', borderRadius: 10, width: '100%', cursor: 'pointer', fontFamily: 'inherit', border: '1px solid #d8d8d6', background: '#fff', color: '#0a0a0a' }}
+    >
+      {children}
+    </button>
+  );
+}
 
 export default function Home() {
   const router = useRouter();
   const [show, setShow] = useState(false);
-  const [installPrompt, setInstallPrompt] = useState<any>(null);
+  const [installPrompt, setInstallPrompt] = useState<Event & { prompt(): void; userChoice: Promise<{ outcome: string }> } | null>(null);
   const [platform, setPlatform] = useState<'ios' | 'android' | 'windows' | 'other'>('other');
   const [iosModal, setIosModal] = useState(false);
 
   useEffect(() => {
-    // Synchronous checks first — no async needed for these
     if (pb.authStore.isValid) { router.replace('/dashboard'); return; }
-    // Capacitor injects window.Capacitor synchronously in the native WebView
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    if ((window as any)?.Capacitor?.isNativePlatform?.()) { router.replace('/native-welcome'); return; }
-    // Confirmed: web visitor, not logged in — show landing page
+    import('@capacitor/core').then(({ Capacitor }) => {
+      if (Capacitor.isNativePlatform()) { router.replace('/native-welcome'); return; }
+    }).catch(() => {});
     setShow(true);
     fetch('/api/ping').catch(() => {});
 
-    // Platform detection for install section
     const ua = navigator.userAgent;
-    const isIOS = /iPad|iPhone|iPod/.test(ua);
-    const isAndroid = /Android/.test(ua);
-    const isWindows = /Windows/.test(ua);
-    if (isIOS) setPlatform('ios');
-    else if (isAndroid) setPlatform('android');
-    else if (isWindows) setPlatform('windows');
+    if (/iPad|iPhone|iPod/.test(ua) && !(window as unknown as Record<string, unknown>).MSStream) setPlatform('ios');
+    else if (/Android/.test(ua)) setPlatform('android');
+    else if (/Windows/.test(ua)) setPlatform('windows');
 
-    // Capture PWA install prompt (works on Chrome Android + Chrome/Edge Windows)
-    const handler = (e: any) => { e.preventDefault(); setInstallPrompt(e); };
+    const handler = (e: Event) => { e.preventDefault(); setInstallPrompt(e as typeof installPrompt); };
     window.addEventListener('beforeinstallprompt', handler);
     return () => window.removeEventListener('beforeinstallprompt', handler);
   }, [router]);
 
   if (!show) return <div style={{ minHeight: '100vh', background: '#fff' }} />;
 
-  return (
-    <div className="min-h-screen bg-white text-gray-900 overflow-x-hidden">
+  const isAndroid = platform === 'android';
+  const isIOS = platform === 'ios';
+  const isWin = platform === 'windows' || (!isAndroid && !isIOS && !!installPrompt);
+  const isOther = !isAndroid && !isIOS && !isWin;
 
-      {/* ── Hero (new Manifesto design) ── */}
+  const DownArrow = () => (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M12 3v12" /><path d="M7 11l5 5 5-5" /><path d="M5 21h14" />
+    </svg>
+  );
+
+  return (
+    <div style={{ fontFamily: "var(--font-archivo,'Archivo',sans-serif)", color: '#0a0a0a', background: '#ffffff', overflowX: 'hidden', minHeight: '100vh', WebkitFontSmoothing: 'antialiased' }}>
+
       <LandingHero />
 
-      {/* ── Features ── */}
-      <section id="features" className="px-6 md:px-16 py-16 md:py-20" style={{ background: '#f8fafc' }}>
-        <div className="max-w-5xl mx-auto">
-          <div className="text-[11px] font-semibold text-blue-600 tracking-[1.5px] uppercase mb-2.5">Features</div>
-          <h2 className="font-extrabold text-gray-900 mb-8" style={{ fontSize: 'clamp(28px,3vw,44px)', letterSpacing: '-1px' }}>
-            Built for restoration and moving teams
-          </h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3.5">
-            {FEATURES.map(({ icon: Icon, bg, color, title, desc }) => (
-              <div
-                key={title}
-                className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm hover:shadow-[0_4px_12px_rgba(0,0,0,.09),0_20px_40px_rgba(0,0,0,.07)] hover:-translate-y-1 hover:border-blue-100 transition-all cursor-default"
-              >
-                <div className="w-11 h-11 rounded-xl flex items-center justify-center mb-4 hover:scale-110 hover:-rotate-6 transition-transform" style={{ background: bg, color }}>
-                  <Icon className="w-5 h-5" />
-                </div>
-                <h3 className="text-sm font-bold text-gray-900 mb-2">{title}</h3>
-                <p className="text-[13px] text-slate-500 leading-[1.65]">{desc}</p>
+      {/* ── BRAND BAND ── */}
+      <div style={{ marginTop: 72, position: 'relative', background: '#0a0a0a', color: '#fff', overflow: 'hidden' }}>
+        {/* Marquee watermark */}
+        <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', opacity: 0.07, pointerEvents: 'none', overflow: 'hidden' }}>
+          <div
+            className="wm-drift-track"
+            style={{ display: 'flex', alignItems: 'center', width: 'max-content', gap: 26, animation: 'wm-drift 46s linear infinite' }}
+          >
+            {[...MARKS, ...MARKS].map((_, i) => (
+              <WmMark key={i} size={112} color="#fff" />
+            ))}
+          </div>
+        </div>
+
+        <div
+          className="wm-brand-band-inner wm-page-section"
+          style={{ position: 'relative', maxWidth: 1180, margin: '0 auto', padding: '44px 32px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 40, flexWrap: 'wrap' }}
+        >
+          <div style={{ fontSize: 'clamp(20px,2.4vw,27px)', fontWeight: 600, letterSpacing: '-0.03em', lineHeight: 1.25, maxWidth: '22ch', textWrap: 'balance' }}>
+            Fire. Water. Mold. Moving. Storage.
+          </div>
+          <div style={{ display: 'flex', gap: 34, flexWrap: 'wrap' }}>
+            {[['3', 'Warehouses'], ['479', 'Vaults'], ['24/7', 'Live sync']].map(([val, lbl]) => (
+              <div key={lbl}>
+                <div style={{ fontSize: 27, fontWeight: 600, letterSpacing: '-0.03em', fontVariantNumeric: 'tabular-nums' }}>{val}</div>
+                <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.16em', textTransform: 'uppercase', color: '#8a8a88', marginTop: 4 }}>{lbl}</div>
               </div>
             ))}
           </div>
         </div>
-      </section>
+      </div>
 
-      {/* ── iOS install guide modal ── */}
+      {/* ── WHAT'S INSIDE ── */}
+      <div id="whats-inside" className="wm-page-section" style={{ maxWidth: 1180, margin: '0 auto', padding: '64px 32px 0' }}>
+        <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: '0.18em', textTransform: 'uppercase', color: '#8a8a88' }}>What's inside</div>
+        <div style={{ marginTop: 22, display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(230px,1fr))', gap: 14 }}>
+          {[
+            {
+              bg: '#eef3fe', stroke: '#2563eb',
+              icon: <><path d="M3 9l9-5 9 5" /><path d="M5 9v11h14V9" /><path d="M10 20v-6h4v6" /></>,
+              title: 'Multi-warehouse',
+              desc: 'Every location on one dashboard, updating in real time.',
+            },
+            {
+              bg: '#fef6e9', stroke: '#d97706',
+              icon: <><path d="M4 20V11" /><path d="M10 20V5" /><path d="M16 20v-6" /></>,
+              title: 'Live analytics',
+              desc: 'Inventory, production and delivery status as it happens.',
+            },
+            {
+              bg: '#effaf3', stroke: '#16a34a',
+              icon: <path d="M4 5h16v11H9l-5 4z" />,
+              title: 'Team chat',
+              desc: 'Messaging tied to each job, so context stays with the work.',
+            },
+            {
+              bg: '#f4f0fd', stroke: '#7c3aed',
+              icon: <><circle cx="9" cy="8" r="3.2" /><path d="M3.5 19.5c0-3 2.5-5.5 5.5-5.5s5.5 2.5 5.5 5.5" /><path d="M16 5.6a3.2 3.2 0 010 4.8" /></>,
+              title: 'Role-based access',
+              desc: 'Owner and worker permission levels, built in.',
+            },
+          ].map(({ bg, stroke, icon, title, desc }) => (
+            <div key={title} className="wm-feature-card">
+              <span style={{ width: 36, height: 36, borderRadius: 10, background: bg, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={stroke} strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{icon}</svg>
+              </span>
+              <div style={{ marginTop: 16, fontSize: 16, fontWeight: 600, letterSpacing: '-0.015em' }}>{title}</div>
+              <div style={{ marginTop: 6, fontSize: 14, lineHeight: 1.55, color: '#6a6a68' }}>{desc}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* ── DOWNLOAD ── */}
+      <div id="download" className="wm-page-section" style={{ maxWidth: 1180, margin: '0 auto', padding: '64px 32px 0' }}>
+        <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 24, flexWrap: 'wrap' }}>
+          <div>
+            <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: '0.18em', textTransform: 'uppercase', color: '#8a8a88' }}>Download</div>
+            <h2 style={{ margin: '12px 0 0', fontSize: 28, fontWeight: 600, letterSpacing: '-0.03em' }}>Install on your device</h2>
+          </div>
+          <div style={{ fontSize: 14, color: '#7a7a78' }}>No App Store required · Version 2.6</div>
+        </div>
+
+        <div style={{ marginTop: 26, display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(290px,1fr))', gap: 14 }}>
+          {/* Android */}
+          <div style={{ position: 'relative', border: isAndroid ? '1.5px solid #16a34a' : '1px solid #e6e6e4', borderRadius: 16, padding: 24, display: 'flex', flexDirection: 'column', background: isAndroid ? '#f7fdf9' : '#fff' }}>
+            {isAndroid && <div style={{ position: 'absolute', top: -9, right: 20, fontSize: 10.5, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', background: '#16a34a', color: '#fff', padding: '3px 10px', borderRadius: 999 }}>Your device</div>}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 11 }}>
+              <span style={{ width: 38, height: 38, borderRadius: 10, background: '#effaf3', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#16a34a" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <rect x="6" y="8" width="12" height="12" rx="2" /><path d="M8.5 8L7 5" /><path d="M15.5 8L17 5" /><path d="M10 13h.01" /><path d="M14 13h.01" />
+                </svg>
+              </span>
+              <div>
+                <div style={{ fontSize: 16, fontWeight: 600, letterSpacing: '-0.015em' }}>Android</div>
+                <div style={{ fontSize: 12.5, color: '#8a8a88' }}>Native app · APK</div>
+              </div>
+            </div>
+            <div style={{ marginTop: 16, fontSize: 14, lineHeight: 1.6, color: '#6a6a68', flex: 1 }}>Camera scanning, push notifications and full offline support.</div>
+            <DlBtn href="/downloads/warehouse-manager.apk">
+              <DownArrow />
+              Download APK v2.6
+            </DlBtn>
+          </div>
+
+          {/* iPhone / iPad */}
+          <div style={{ position: 'relative', border: isIOS ? '1.5px solid #0a0a0a' : '1px solid #e6e6e4', borderRadius: 16, padding: 24, display: 'flex', flexDirection: 'column', background: '#fff' }}>
+            {isIOS && <div style={{ position: 'absolute', top: -9, right: 20, fontSize: 10.5, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', background: '#0a0a0a', color: '#fff', padding: '3px 10px', borderRadius: 999 }}>Your device</div>}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 11 }}>
+              <span style={{ width: 38, height: 38, borderRadius: 10, background: '#f2f2f0', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#0a0a0a" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <rect x="7" y="3" width="10" height="18" rx="2.4" /><path d="M11 18h2" />
+                </svg>
+              </span>
+              <div>
+                <div style={{ fontSize: 16, fontWeight: 600, letterSpacing: '-0.015em' }}>iPhone / iPad</div>
+                <div style={{ fontSize: 12.5, color: '#8a8a88' }}>Home screen app</div>
+              </div>
+            </div>
+            <div style={{ marginTop: 16, fontSize: 14, lineHeight: 1.6, color: '#6a6a68', flex: 1 }}>Add from Safari. Works like a native app — no App Store required.</div>
+            <DlOutlineBtn onClick={() => setIosModal(true)}>
+              How to add to iPhone
+            </DlOutlineBtn>
+          </div>
+
+          {/* Windows / Desktop */}
+          <div style={{ position: 'relative', border: (isWin || isOther) ? '1.5px solid #2563eb' : '1px solid #e6e6e4', borderRadius: 16, padding: 24, display: 'flex', flexDirection: 'column', background: (isWin || isOther) ? '#fafbff' : '#fff' }}>
+            {(isWin || isOther) && <div style={{ position: 'absolute', top: -9, right: 20, fontSize: 10.5, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', background: '#2563eb', color: '#fff', padding: '3px 10px', borderRadius: 999 }}>Your device</div>}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 11 }}>
+              <span style={{ width: 38, height: 38, borderRadius: 10, background: '#e6edfd', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#2563eb" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <rect x="3" y="5" width="18" height="12" rx="1.6" /><path d="M8 21h8" /><path d="M12 17v4" />
+                </svg>
+              </span>
+              <div>
+                <div style={{ fontSize: 16, fontWeight: 600, letterSpacing: '-0.015em' }}>Windows / Desktop</div>
+                <div style={{ fontSize: 12.5, color: '#7a7a78' }}>Runs in its own window</div>
+              </div>
+            </div>
+            <div style={{ marginTop: 16, fontSize: 14, lineHeight: 1.6, color: '#5a5a58', flex: 1 }}>Install via Chrome or Edge — no browser UI, launches like any desktop app.</div>
+            {installPrompt ? (
+              <DlBtn blue onClick={async () => {
+                installPrompt.prompt();
+                const r = await installPrompt.userChoice;
+                if (r.outcome === 'accepted') setInstallPrompt(null);
+              }}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <circle cx="12" cy="12" r="9" /><path d="M8 12l3 3 5-6" />
+                </svg>
+                Install on this PC
+              </DlBtn>
+            ) : (
+              <div style={{ marginTop: 22, fontSize: 13, color: '#7a7a78', lineHeight: 1.6 }}>
+                Open in <strong style={{ color: '#0a0a0a' }}>Chrome</strong> or <strong style={{ color: '#0a0a0a' }}>Edge</strong>, then tap the install icon (⊕) in the address bar.
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* ── HELP ── */}
+      <div id="help" className="wm-page-section" style={{ maxWidth: 1180, margin: '0 auto', padding: '64px 32px 88px' }}>
+        <div className="wm-help-row" style={{ border: '1px solid #e6e6e4', borderRadius: 16, padding: '26px 28px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 28, flexWrap: 'wrap', background: '#fbfbfa' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+            <span style={{ width: 42, height: 42, borderRadius: 11, background: '#fff', border: '1px solid #e6e6e4', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#0a0a0a" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <circle cx="12" cy="12" r="9" /><path d="M9.6 9.4a2.5 2.5 0 114 2.2c-.9.6-1.6 1-1.6 2" /><path d="M12 17.2h.01" />
+              </svg>
+            </span>
+            <div>
+              <div style={{ fontSize: 16, fontWeight: 600, letterSpacing: '-0.015em' }}>Trouble installing or signing in?</div>
+              <div style={{ fontSize: 14, color: '#6a6a68', marginTop: 3 }}>Setup guides, printable vault labels and direct support for your team.</div>
+            </div>
+          </div>
+          <div className="wm-help-btns" style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+            <a href="/login" style={{ fontSize: 14, fontWeight: 600, padding: '11px 18px', borderRadius: 10, border: '1px solid #d8d8d6', background: '#fff', textDecoration: 'none', color: '#0a0a0a', display: 'inline-flex', alignItems: 'center' }}>
+              Setup guide
+            </a>
+            <a href="mailto:support@managerwarehouse.cc" style={{ fontSize: 14, fontWeight: 600, padding: '11px 18px', borderRadius: 10, background: '#0a0a0a', color: '#fff', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', boxShadow: '0 1px 2px rgba(0,0,0,0.24), inset 0 1px 0 rgba(255,255,255,0.14)' }}>
+              Contact support
+            </a>
+          </div>
+        </div>
+      </div>
+
+      {/* ── FOOTER ── */}
+      <footer style={{ background: '#0a0a0a', color: '#fff' }}>
+        <div className="wm-page-section" style={{ maxWidth: 1180, margin: '0 auto', padding: '34px 32px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 24, flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 11 }}>
+            <span style={{ width: 30, height: 30, borderRadius: 8, background: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+              <WmMark size={15} color="#0a0a0a" />
+            </span>
+            <span style={{ fontSize: 13, color: '#8a8a88' }}>© 2026 Warehouse Manager</span>
+          </div>
+          <div style={{ display: 'flex', gap: 24 }}>
+            <a href="/login" className="wm-footer-link">Privacy</a>
+            <a href="/login" className="wm-footer-link">Terms</a>
+            <a href="#help" className="wm-footer-link">Support</a>
+          </div>
+        </div>
+      </footer>
+
+      {/* ── iOS MODAL ── */}
       {iosModal && (
         <div
           className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4"
           style={{ background: 'rgba(0,0,0,0.55)' }}
           onClick={() => setIosModal(false)}
+          role="dialog"
+          aria-modal="true"
+          aria-label="Add to iPhone instructions"
         >
           <div
             className="bg-white rounded-2xl p-7 w-full max-w-sm shadow-2xl"
@@ -121,7 +317,7 @@ export default function Home() {
           >
             <div className="flex items-center justify-between mb-5">
               <span className="text-[17px] font-black text-gray-900">Add to iPhone</span>
-              <button onClick={() => setIosModal(false)} className="text-gray-400 hover:text-gray-600 text-xl font-bold leading-none">✕</button>
+              <button onClick={() => setIosModal(false)} className="text-gray-400 hover:text-gray-600 text-xl font-bold leading-none" aria-label="Close">✕</button>
             </div>
             <ol className="space-y-4">
               {[
@@ -136,154 +332,10 @@ export default function Home() {
                 </li>
               ))}
             </ol>
-            <div className="mt-6 text-center text-[12px] text-slate-400">
-              The app will appear on your home screen like a native app
-            </div>
+            <div className="mt-6 text-center text-[12px] text-slate-400">The app will appear on your home screen like a native app</div>
           </div>
         </div>
       )}
-
-      {/* ── Get the App ── */}
-      <section id="download" className="px-6 md:px-16 py-16 md:py-20 bg-white">
-        <div className="max-w-5xl mx-auto">
-          <div className="text-[11px] font-semibold text-blue-600 tracking-[1.5px] uppercase mb-2.5">Download</div>
-          <h2 className="font-extrabold text-gray-900 mb-2" style={{ fontSize: 'clamp(28px,3vw,44px)', letterSpacing: '-1px' }}>
-            Available on every device
-          </h2>
-          <p className="text-slate-500 text-[15px] mb-10">Install the app on Android, iPhone or Windows — no App Store needed.</p>
-
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-
-            {/* Android */}
-            <div className={`border rounded-2xl p-6 flex flex-col gap-4 transition-all ${platform === 'android' ? 'border-blue-200 bg-blue-50/40 shadow-sm' : 'border-gray-200 bg-white'}`}>
-              <div className="flex items-center gap-3">
-                <div className="w-11 h-11 rounded-xl bg-[#e8f5e9] flex items-center justify-center flex-shrink-0">
-                  {/* Android robot icon */}
-                  <svg viewBox="0 0 24 24" className="w-6 h-6" fill="#2e7d32">
-                    <path d="M6 18c0 .55.45 1 1 1h1v3.5c0 .83.67 1.5 1.5 1.5s1.5-.67 1.5-1.5V19h2v3.5c0 .83.67 1.5 1.5 1.5s1.5-.67 1.5-1.5V19h1c.55 0 1-.45 1-1V8H6v10zM3.5 8C2.67 8 2 8.67 2 9.5v7c0 .83.67 1.5 1.5 1.5S5 17.33 5 16.5v-7C5 8.67 4.33 8 3.5 8zm17 0c-.83 0-1.5.67-1.5 1.5v7c0 .83.67 1.5 1.5 1.5s1.5-.67 1.5-1.5v-7c0-.83-.67-1.5-1.5-1.5zm-4.97-5.84l1.3-1.3c.2-.2.2-.51 0-.71-.2-.2-.51-.2-.71 0l-1.48 1.48C14.15 1.23 13.1 1 12 1c-1.1 0-2.15.23-3.12.63L7.4.15c-.2-.2-.51-.2-.71 0-.2.2-.2.51 0 .71l1.31 1.31C6.01 3.07 4.96 4.99 4.96 7h14.07c0-2.01-1.04-3.93-2.5-4.84zM10 5H9V4h1v1zm5 0h-1V4h1v1z"/>
-                  </svg>
-                </div>
-                <div>
-                  <div className="font-bold text-gray-900 text-[15px]">Android</div>
-                  {platform === 'android' && <div className="text-[11px] text-blue-600 font-semibold">Your device detected</div>}
-                </div>
-              </div>
-              <p className="text-[13px] text-slate-500 leading-relaxed flex-1">
-                Install the full native app with camera, push notifications and offline support.
-              </p>
-              <div className="flex flex-col gap-2">
-                <a
-                  href="/downloads/warehouse-manager.apk"
-                  download="WarehouseManager.apk"
-                  className="flex items-center justify-center gap-2 bg-gray-900 text-white rounded-xl px-4 py-2.5 text-[13px] font-bold hover:bg-gray-700 transition-colors"
-                >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
-                  Download APK v2.6
-                </a>
-                {installPrompt && platform === 'android' && (
-                  <button
-                    onClick={async () => { installPrompt.prompt(); const r = await installPrompt.userChoice; if (r.outcome === 'accepted') setInstallPrompt(null); }}
-                    className="flex items-center justify-center gap-2 border border-blue-600 text-blue-600 rounded-xl px-4 py-2.5 text-[13px] font-bold hover:bg-blue-50 transition-colors"
-                  >
-                    Install PWA (no download)
-                  </button>
-                )}
-              </div>
-            </div>
-
-            {/* iPhone */}
-            <div className={`border rounded-2xl p-6 flex flex-col gap-4 transition-all ${platform === 'ios' ? 'border-blue-200 bg-blue-50/40 shadow-sm' : 'border-gray-200 bg-white'}`}>
-              <div className="flex items-center gap-3">
-                <div className="w-11 h-11 rounded-xl bg-gray-100 flex items-center justify-center flex-shrink-0">
-                  {/* Apple icon */}
-                  <svg viewBox="0 0 24 24" className="w-5 h-5" fill="#1c1c1e">
-                    <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/>
-                  </svg>
-                </div>
-                <div>
-                  <div className="font-bold text-gray-900 text-[15px]">iPhone / iPad</div>
-                  {platform === 'ios' && <div className="text-[11px] text-blue-600 font-semibold">Your device detected</div>}
-                </div>
-              </div>
-              <p className="text-[13px] text-slate-500 leading-relaxed flex-1">
-                Add to your home screen from Safari. Works like a native app — no App Store required.
-              </p>
-              <button
-                onClick={() => setIosModal(true)}
-                className="flex items-center justify-center gap-2 bg-gray-900 text-white rounded-xl px-4 py-2.5 text-[13px] font-bold hover:bg-gray-700 transition-colors"
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M12 4v12m0-12l-3 3m3-3l3 3M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1"/></svg>
-                How to Add to iPhone
-              </button>
-            </div>
-
-            {/* Windows / Desktop */}
-            <div className={`border rounded-2xl p-6 flex flex-col gap-4 transition-all ${platform === 'windows' ? 'border-blue-200 bg-blue-50/40 shadow-sm' : 'border-gray-200 bg-white'}`}>
-              <div className="flex items-center gap-3">
-                <div className="w-11 h-11 rounded-xl bg-[#e3f2fd] flex items-center justify-center flex-shrink-0">
-                  {/* Windows logo */}
-                  <svg viewBox="0 0 24 24" className="w-5 h-5" fill="#0078d4">
-                    <path d="M0 3.449L9.75 2.1v9.451H0m10.949-9.602L24 0v11.4H10.949M0 12.6h9.75v9.451L0 20.699M10.949 12.6H24V24l-12.9-1.801"/>
-                  </svg>
-                </div>
-                <div>
-                  <div className="font-bold text-gray-900 text-[15px]">Windows / Desktop</div>
-                  {platform === 'windows' && <div className="text-[11px] text-blue-600 font-semibold">Your device detected</div>}
-                </div>
-              </div>
-              <p className="text-[13px] text-slate-500 leading-relaxed flex-1">
-                Install as a desktop app via Chrome or Edge — runs in its own window with no browser UI.
-              </p>
-              {installPrompt ? (
-                <button
-                  onClick={async () => { installPrompt.prompt(); const r = await installPrompt.userChoice; if (r.outcome === 'accepted') setInstallPrompt(null); }}
-                  className="flex items-center justify-center gap-2 bg-blue-600 text-white rounded-xl px-4 py-2.5 text-[13px] font-bold hover:bg-blue-700 transition-colors"
-                >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                  Install on this PC
-                </button>
-              ) : (
-                <div className="text-[12px] text-slate-400 bg-gray-50 rounded-xl px-4 py-3 leading-relaxed">
-                  Open this page in <strong className="text-gray-600">Chrome</strong> or <strong className="text-gray-600">Edge</strong> on Windows, then look for the install icon (⊕) in the address bar.
-                </div>
-              )}
-            </div>
-
-          </div>
-        </div>
-      </section>
-
-      {/* ── CTA ── */}
-      <section
-        id="about"
-        className="relative px-6 md:px-16 py-20 text-white text-center overflow-hidden"
-        style={{
-          background: '#0a0a0a',
-          backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='90'%3E%3Ctext x='70' y='62' font-family='Impact' font-size='44' font-weight='900' fill='rgba(255%2C255%2C255%2C0.055)' text-anchor='middle' font-style='italic'%3EWM%3C/text%3E%3C/svg%3E")`,
-          backgroundRepeat: 'repeat',
-          backgroundSize: '140px 90px'
-        }}
-      >
-        <div className="absolute inset-0 flex items-center justify-center pointer-events-none select-none overflow-hidden">
-          <span className="font-black italic" style={{ fontSize: '320px', letterSpacing: '-16px', lineHeight: 1, color: 'rgba(255,255,255,0.03)' }}>WM</span>
-        </div>
-        <div className="relative z-10 max-w-2xl mx-auto">
-          <h2 className="font-black mb-3" style={{ fontSize: 'clamp(28px,3.5vw,42px)', letterSpacing: '-1px' }}>
-            Your warehouses, completely organized.
-          </h2>
-          <p className="text-white/70 text-[17px] mb-9 leading-relaxed">Every vault tracked. Every client served. Every team aligned.</p>
-          <button
-            onClick={() => router.push('/login')}
-            className="inline-flex items-center gap-2 bg-white text-gray-950 px-8 py-3.5 rounded-full text-[15px] font-bold hover:-translate-y-0.5 active:translate-y-0 transition-all shadow-[0_4px_20px_rgba(0,0,0,.3)] hover:shadow-[0_8px_28px_rgba(0,0,0,.4)]"
-          >
-            Get Access
-          </button>
-        </div>
-      </section>
-
-      <div id="contact">
-        <AppFooter />
-      </div>
 
     </div>
   );
