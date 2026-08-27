@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { pb } from '@/lib/pb';
+import AppFooter from '@/components/AppFooter';
 import LandingHero from '@/components/LandingHero';
 
 const MARKS = Array.from({ length: 28 }, (_, i) => i);
@@ -285,21 +286,7 @@ export default function Home() {
       </div>
 
       {/* ── FOOTER ── */}
-      <footer style={{ background: '#0a0a0a', color: '#fff' }}>
-        <div className="wm-page-section" style={{ maxWidth: 1180, margin: '0 auto', padding: '34px 32px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 24, flexWrap: 'wrap' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 11 }}>
-            <span style={{ width: 30, height: 30, borderRadius: 8, background: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-              <WmMark size={15} color="#0a0a0a" />
-            </span>
-            <span style={{ fontSize: 13, color: '#8a8a88' }}>© 2026 Warehouse Manager</span>
-          </div>
-          <div style={{ display: 'flex', gap: 24 }}>
-            <a href="/login" className="wm-footer-link">Privacy</a>
-            <a href="/login" className="wm-footer-link">Terms</a>
-            <a href="#help" className="wm-footer-link">Support</a>
-          </div>
-        </div>
-      </footer>
+      <AppFooter />
 
       {/* ── iOS MODAL ── */}
       {iosModal && (

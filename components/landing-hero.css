@@ -190,15 +190,6 @@ html { scroll-behavior: smooth; }
 }
 .wm-feature-card:hover { border-color: #c8c8c6; }
 
-/* ── FOOTER LINKS ── */
-.wm-footer-link {
-  font-size: 13px;
-  color: #b4b4b2;
-  text-decoration: none;
-  transition: color 0.12s;
-}
-.wm-footer-link:hover { color: #fff; }
-
 /* ── RESPONSIVE ── */
 @media (max-width: 760px) {
   .wm-nav-inner { padding: 0 20px; }
