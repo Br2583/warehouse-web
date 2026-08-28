@@ -1,21 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getPbAdminToken, PB_URL } from '@/lib/pb-admin';
-
-async function verifyUser(token: string) {
-  const res = await fetch(`${PB_URL}/api/collections/users/auth-refresh`, {
-    method: 'POST',
-    headers: { Authorization: `Bearer ${token}` },
-  });
-  if (!res.ok) return null;
-  const { record } = await res.json();
-  return record as { id: string; company_id: string } | null;
-}
+import { getPbAdminToken, PB_URL, verifySessionUser } from '@/lib/pb-admin';
 
 export async function POST(req: NextRequest) {
   const authHeader = req.headers.get('Authorization')?.replace('Bearer ', '').trim();
   if (!authHeader) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  const me = await verifyUser(authHeader);
+  const me = await verifySessionUser(authHeader);
   if (!me) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   const { token, platform } = await req.json();
@@ -58,7 +48,7 @@ export async function DELETE(req: NextRequest) {
   const authHeader = req.headers.get('Authorization')?.replace('Bearer ', '').trim();
   if (!authHeader) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  const me = await verifyUser(authHeader);
+  const me = await verifySessionUser(authHeader);
   if (!me) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   const { token } = await req.json();

@@ -1,23 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getPbAdminToken, PB_URL } from '@/lib/pb-admin';
+import { getPbAdminToken, PB_URL, verifySessionUser } from '@/lib/pb-admin';
 import { sendEmail, taskAssignedEmail } from '@/lib/email';
 import { sendPush, getTokensForUser } from '@/lib/push';
-
-async function verifyUser(token: string) {
-  const res = await fetch(`${PB_URL}/api/collections/users/auth-refresh`, {
-    method: 'POST',
-    headers: { Authorization: `Bearer ${token}` },
-  });
-  if (!res.ok) return null;
-  const { record } = await res.json();
-  return record as { id: string; company_id: string; role: string } | null;
-}
 
 export async function GET(req: NextRequest) {
   const token = req.headers.get('Authorization')?.replace('Bearer ', '').trim();
   if (!token) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  const me = await verifyUser(token);
+  const me = await verifySessionUser(token);
   if (!me?.company_id) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   let adminToken: string;
@@ -41,7 +31,7 @@ export async function POST(req: NextRequest) {
   const token = req.headers.get('Authorization')?.replace('Bearer ', '').trim();
   if (!token) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  const me = await verifyUser(token);
+  const me = await verifySessionUser(token);
   if (!me?.company_id) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   if (me.role !== 'owner' && me.role !== 'manager') return NextResponse.json({ error: 'Only managers and owners can create tasks' }, { status: 403 });
 

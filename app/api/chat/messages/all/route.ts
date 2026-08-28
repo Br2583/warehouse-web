@@ -1,23 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getPbAdminToken, PB_URL } from '@/lib/pb-admin';
-
-async function verifyOwner(token: string) {
-  const res = await fetch(`${PB_URL}/api/collections/users/auth-refresh`, {
-    method: 'POST',
-    headers: { Authorization: `Bearer ${token}` },
-  });
-  if (!res.ok) return null;
-  const { record } = await res.json();
-  if (record?.role !== 'owner') return null;
-  return record as { id: string; company_id: string };
-}
+import { getPbAdminToken, PB_URL, verifySessionUser } from '@/lib/pb-admin';
 
 export async function DELETE(req: NextRequest) {
   const token = req.headers.get('Authorization')?.replace('Bearer ', '').trim();
   if (!token) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  const me = await verifyOwner(token);
-  if (!me) return NextResponse.json({ error: 'Only owners can clear chat' }, { status: 403 });
+  const me = await verifySessionUser(token);
+  if (!me?.company_id) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  if (me.role !== 'owner') {
+    return NextResponse.json({ error: 'Only owners can clear chat' }, { status: 403 });
+  }
 
   let adminToken: string;
   try { adminToken = await getPbAdminToken(); }

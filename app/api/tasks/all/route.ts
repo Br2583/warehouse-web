@@ -1,21 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getPbAdminToken, PB_URL } from '@/lib/pb-admin';
-
-async function verifyUser(token: string) {
-  const res = await fetch(`${PB_URL}/api/collections/users/auth-refresh`, {
-    method: 'POST',
-    headers: { Authorization: `Bearer ${token}` },
-  });
-  if (!res.ok) return null;
-  const { record } = await res.json();
-  return record as { id: string; company_id: string; role: string } | null;
-}
+import { getPbAdminToken, PB_URL, verifySessionUser } from '@/lib/pb-admin';
 
 export async function DELETE(req: NextRequest) {
   const token = req.headers.get('Authorization')?.replace('Bearer ', '').trim();
   if (!token) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  const me = await verifyUser(token);
+  const me = await verifySessionUser(token);
   if (!me?.company_id) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   // Owner-only, matching the Clear All button's own {isOwner} gate and the
   // equivalent chat endpoint. Managers never see the button; the API used to

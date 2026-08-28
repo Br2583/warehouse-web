@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getPbAdminToken, PB_URL } from '@/lib/pb-admin';
+import { getPbAdminToken, PB_URL, verifySessionUser } from '@/lib/pb-admin';
 import { sendEmail, taskStatusEmail } from '@/lib/email';
 import { sendPush, getTokensForUser } from '@/lib/push';
 
@@ -7,21 +7,11 @@ function fmtStatus(s: string): string {
   return s === 'IN_PROGRESS' ? 'In Progress' : s.charAt(0) + s.slice(1).toLowerCase();
 }
 
-async function verifyUser(token: string) {
-  const res = await fetch(`${PB_URL}/api/collections/users/auth-refresh`, {
-    method: 'POST',
-    headers: { Authorization: `Bearer ${token}` },
-  });
-  if (!res.ok) return null;
-  const { record } = await res.json();
-  return record as { id: string; company_id: string; role: string } | null;
-}
-
 export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const token = req.headers.get('Authorization')?.replace('Bearer ', '').trim();
   if (!token) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  const me = await verifyUser(token);
+  const me = await verifySessionUser(token);
   if (!me?.company_id) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   const { id } = await params;
@@ -151,7 +141,7 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
   const token = req.headers.get('Authorization')?.replace('Bearer ', '').trim();
   if (!token) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  const me = await verifyUser(token);
+  const me = await verifySessionUser(token);
   if (!me?.company_id) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   if (me.role !== 'owner' && me.role !== 'manager') return NextResponse.json({ error: 'Only managers and owners can delete tasks' }, { status: 403 });
 

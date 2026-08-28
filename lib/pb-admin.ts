@@ -23,4 +23,34 @@ export async function getPbAdminToken(): Promise<string> {
   return _inflight;
 }
 
+export type SessionUser = {
+  id: string;
+  company_id: string;
+  role: string;
+};
+
+/**
+ * Verifies the caller's PocketBase session from an API route's Bearer token.
+ * Returns null for a missing, expired or invalid token — the caller decides
+ * the status code, and checks `role` itself when the route needs one.
+ *
+ * Seven routes each carried their own copy of this. A security fix applied to
+ * one of them would have silently left the other six behind.
+ */
+export async function verifySessionUser(token: string | undefined | null): Promise<SessionUser | null> {
+  if (!token) return null;
+  try {
+    const res = await fetch(`${PB_URL}/api/collections/users/auth-refresh`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!res.ok) return null;
+    const { record } = await res.json();
+    if (!record?.id) return null;
+    return record as SessionUser;
+  } catch {
+    return null;
+  }
+}
+
 export { PB_URL };
