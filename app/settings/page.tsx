@@ -872,7 +872,13 @@ export default function SettingsPage() {
         </div>
       </main>
       </div>
-      {!isNative && <AppFooter />}
+      {/* Sidebar is fixed at w-64, so the footer needs the same offset or it
+          renders underneath it and loses its first column on desktop. */}
+      {!isNative && (
+        <div className="md:ml-64">
+          <AppFooter />
+        </div>
+      )}
 
       {confirmDelete && (
         <ConfirmModal
