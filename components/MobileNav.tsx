@@ -54,7 +54,7 @@ export default function MobileNav({ open, onClose }: MobileNavProps) {
 
         {/* User profile card */}
         <Link
-          href="/profile"
+          href="/settings"
           onClick={onClose}
           className="mx-4 mb-3 p-3 bg-gray-50 rounded-2xl flex items-center gap-3 active:bg-gray-100 transition-colors"
         >

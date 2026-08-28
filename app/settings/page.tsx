@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
 import AppFooter from '@/components/AppFooter';
@@ -10,12 +10,14 @@ import {
   BuildingOffice2Icon, KeyIcon, EyeIcon, EyeSlashIcon, PlusIcon,
   DocumentDuplicateIcon, XMarkIcon, TrashIcon, EnvelopeIcon, PhoneIcon,
   ExclamationCircleIcon, ArrowUpIcon, ArrowDownIcon,
+  PencilSquareIcon, ShieldCheckIcon,
 } from '@/components/icons';
 import Sidebar from '@/components/Sidebar';
 import { UserAvatar } from '@/components/UserAvatar';
 import { useAuth } from '@/lib/auth-context';
 import { api } from '@/lib/api';
 import { pb } from '@/lib/pb';
+import { compressAvatar } from '@/lib/compress-image';
 import { useToast } from '@/lib/toast-context';
 import ConfirmModal from '@/components/ConfirmModal';
 
@@ -23,13 +25,27 @@ const card = 'bg-white rounded-2xl border border-gray-100 p-6 mb-4';
 const sectionTitle = 'text-xs font-semibold text-gray-400 uppercase tracking-wider mb-4';
 
 export default function SettingsPage() {
-  const { user, logout, canManage } = useAuth();
+  const { user, logout, canManage, refreshUser, updatePicture } = useAuth();
   const { showToast } = useToast();
   const isOwner = user?.role === 'owner';
 
   const [company, setCompany] = useState<any>(null);
   const [members, setMembers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // Profile — merged in from the old /profile page
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [avatarSaving, setAvatarSaving] = useState(false);
+  const [avatarError, setAvatarError] = useState('');
+  const photoInputRef = useRef<HTMLInputElement>(null);
+  const [editingName, setEditingName] = useState(false);
+  const [nameValue, setNameValue] = useState('');
+  const [nameSaving, setNameSaving] = useState(false);
+  const [nameError, setNameError] = useState('');
+  const [editingCompany, setEditingCompany] = useState(false);
+  const [companyNameValue, setCompanyNameValue] = useState('');
+  const [companySaving, setCompanySaving] = useState(false);
+  const [companyError, setCompanyError] = useState('');
 
   // PWA
   const [pwaInstalled, setPwaInstalled] = useState(false);
@@ -84,6 +100,14 @@ export default function SettingsPage() {
       })
       .catch(() => {})
       .finally(() => setLoading(false));
+  }, []);
+
+  useEffect(() => {
+    if (!pb.authStore.token) return;
+    fetch('/api/profile/is-admin', { headers: { Authorization: `Bearer ${pb.authStore.token}` } })
+      .then(r => r.json())
+      .then(d => setIsAdmin(!!d?.isAdmin))
+      .catch(() => {});
   }, []);
 
   useEffect(() => {
@@ -169,6 +193,60 @@ export default function SettingsPage() {
     } finally {
       setGeneratingCode(false);
     }
+  };
+
+  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file || !user) return;
+    setAvatarSaving(true);
+    setAvatarError('');
+    try {
+      const dataUrl = await compressAvatar(file);
+      await pb.collection('users').update(user.id, { avatar_base64: dataUrl });
+      updatePicture(dataUrl);
+      showToast('Photo updated');
+    } catch (err: any) {
+      setAvatarError(err?.message || 'Failed to upload photo');
+    }
+    setAvatarSaving(false);
+  };
+
+  const saveName = async () => {
+    if (!nameValue.trim() || nameValue.trim() === user?.name) {
+      setEditingName(false);
+      return;
+    }
+    setNameSaving(true);
+    setNameError('');
+    try {
+      await api.put('/api/profile', { name: nameValue.trim() });
+      await refreshUser();
+      setEditingName(false);
+      showToast('Name updated');
+    } catch (err: any) {
+      setNameError(err?.message || 'Failed to update name');
+    }
+    setNameSaving(false);
+  };
+
+  const saveCompanyName = async () => {
+    if (!companyNameValue.trim() || companyNameValue.trim() === company?.name) {
+      setEditingCompany(false);
+      return;
+    }
+    setCompanySaving(true);
+    setCompanyError('');
+    try {
+      await api.put('/api/company/info', { name: companyNameValue.trim() });
+      setCompany((prev: any) => ({ ...prev, name: companyNameValue.trim() }));
+      await refreshUser();
+      setEditingCompany(false);
+      showToast('Company name updated');
+    } catch (err: any) {
+      setCompanyError(err?.message || 'Failed to update company name');
+    }
+    setCompanySaving(false);
   };
 
   const removeMember = async (memberId: string) => {
@@ -277,18 +355,82 @@ export default function SettingsPage() {
           <motion.div custom={0} variants={fade} initial="hidden" animate="show">
             <p className={sectionTitle}>Account</p>
             <div className={card}>
-              <Link href="/profile" className="flex items-center gap-4 group">
-                <UserAvatar picture={user?.picture} name={user?.name} size={52} />
+              <div className="flex items-center gap-4">
+                <button
+                  onClick={() => photoInputRef.current?.click()}
+                  disabled={avatarSaving}
+                  title="Change photo"
+                  className="relative rounded-full flex-shrink-0 group disabled:opacity-60"
+                >
+                  <UserAvatar picture={user?.picture} name={user?.name} size={52} />
+                  <span className="absolute inset-0 rounded-full bg-black/45 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                    {avatarSaving
+                      ? <span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin block" />
+                      : <PencilSquareIcon className="w-4 h-4 text-white" />
+                    }
+                  </span>
+                </button>
+                <input
+                  ref={photoInputRef}
+                  type="file"
+                  accept="image/png,image/jpeg,image/webp"
+                  onChange={handlePhotoUpload}
+                  className="hidden"
+                />
+
                 <div className="flex-1 min-w-0">
-                  <p className="font-semibold text-gray-900 truncate">{user?.name}</p>
+                  {editingName ? (
+                    <div className="flex items-center gap-2">
+                      <input
+                        value={nameValue}
+                        onChange={e => setNameValue(e.target.value)}
+                        onKeyDown={e => { if (e.key === 'Enter') saveName(); if (e.key === 'Escape') setEditingName(false); }}
+                        autoFocus
+                        aria-label="Your name"
+                        className="flex-1 min-w-0 text-sm font-semibold text-gray-900 border border-gray-200 rounded-lg px-2.5 py-1.5 focus:outline-none focus:border-blue-500"
+                      />
+                      <button onClick={saveName} disabled={nameSaving} className="text-sm font-medium text-blue-600 disabled:opacity-40 flex-shrink-0">
+                        {nameSaving ? '…' : 'Save'}
+                      </button>
+                      <button onClick={() => setEditingName(false)} className="text-sm text-gray-400 flex-shrink-0">Cancel</button>
+                    </div>
+                  ) : (
+                    <button
+                      onClick={() => { setNameValue(user?.name || ''); setNameError(''); setEditingName(true); }}
+                      className="flex items-center gap-1.5 group max-w-full"
+                    >
+                      <span className="font-semibold text-gray-900 truncate">{user?.name}</span>
+                      <PencilSquareIcon className="w-3.5 h-3.5 text-gray-300 group-hover:text-blue-600 transition-colors flex-shrink-0" />
+                    </button>
+                  )}
                   <p className="text-sm text-gray-400 truncate">{user?.email}</p>
                   <span className="text-xs font-medium text-blue-600 capitalize">{user?.role}</span>
                 </div>
-                <div className="flex items-center gap-1 text-sm text-blue-600 font-medium group-hover:gap-2 transition-all flex-shrink-0">
-                  Edit Profile
-                  <ChevronRightIcon className="w-4 h-4" />
+              </div>
+
+              {(avatarError || nameError) && (
+                <div className="flex items-center gap-2 bg-red-50 border border-red-100 text-red-700 text-sm rounded-xl px-3 py-2 mt-3">
+                  <ExclamationCircleIcon className="w-4 h-4 flex-shrink-0" />
+                  <span className="flex-1">{avatarError || nameError}</span>
+                  <button onClick={() => { setAvatarError(''); setNameError(''); }}><XMarkIcon className="w-4 h-4" /></button>
                 </div>
-              </Link>
+              )}
+
+              {isAdmin && (
+                <Link
+                  href="/admin-k9x2m7"
+                  className="flex items-center gap-3 mt-5 pt-5 border-t border-gray-50 group"
+                >
+                  <div className="w-9 h-9 bg-gray-900 rounded-xl flex items-center justify-center flex-shrink-0">
+                    <ShieldCheckIcon className="w-4 h-4 text-white" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-gray-900">Administration</p>
+                    <p className="text-xs text-gray-400">Approve companies and manage accounts</p>
+                  </div>
+                  <ChevronRightIcon className="w-4 h-4 text-gray-300 group-hover:text-gray-600 transition-colors flex-shrink-0" />
+                </Link>
+              )}
             </div>
           </motion.div>
 
@@ -309,10 +451,43 @@ export default function SettingsPage() {
                       <BuildingOffice2Icon className="w-5 h-5 text-blue-600" />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="font-semibold text-gray-900 truncate">{company?.name || user?.company_name || '—'}</p>
+                      {editingCompany ? (
+                        <div className="flex items-center gap-2">
+                          <input
+                            value={companyNameValue}
+                            onChange={e => setCompanyNameValue(e.target.value)}
+                            onKeyDown={e => { if (e.key === 'Enter') saveCompanyName(); if (e.key === 'Escape') setEditingCompany(false); }}
+                            autoFocus
+                            aria-label="Company name"
+                            className="flex-1 min-w-0 text-sm font-semibold text-gray-900 border border-gray-200 rounded-lg px-2.5 py-1.5 focus:outline-none focus:border-blue-500"
+                          />
+                          <button onClick={saveCompanyName} disabled={companySaving} className="text-sm font-medium text-blue-600 disabled:opacity-40 flex-shrink-0">
+                            {companySaving ? '…' : 'Save'}
+                          </button>
+                          <button onClick={() => setEditingCompany(false)} className="text-sm text-gray-400 flex-shrink-0">Cancel</button>
+                        </div>
+                      ) : isOwner ? (
+                        <button
+                          onClick={() => { setCompanyNameValue(company?.name || ''); setCompanyError(''); setEditingCompany(true); }}
+                          className="flex items-center gap-1.5 group max-w-full"
+                        >
+                          <span className="font-semibold text-gray-900 truncate">{company?.name || user?.company_name || '—'}</span>
+                          <PencilSquareIcon className="w-3.5 h-3.5 text-gray-300 group-hover:text-blue-600 transition-colors flex-shrink-0" />
+                        </button>
+                      ) : (
+                        <p className="font-semibold text-gray-900 truncate">{company?.name || user?.company_name || '—'}</p>
+                      )}
                       <p className="text-xs text-gray-400">{company?.industry || 'Warehousing'} · {members.length} {members.length === 1 ? 'member' : 'members'}</p>
                     </div>
                   </div>
+
+                  {companyError && (
+                    <div className="flex items-center gap-2 bg-red-50 border border-red-100 text-red-700 text-sm rounded-xl px-3 py-2 mb-3">
+                      <ExclamationCircleIcon className="w-4 h-4 flex-shrink-0" />
+                      <span className="flex-1">{companyError}</span>
+                      <button onClick={() => setCompanyError('')}><XMarkIcon className="w-4 h-4" /></button>
+                    </div>
+                  )}
 
                   {removeError && (
                     <div className="flex items-center gap-2 bg-red-50 border border-red-100 text-red-700 text-sm rounded-xl px-3 py-2 mb-3">

@@ -191,7 +191,7 @@ export default function TopBar({ onOpenNav }: TopBarProps) {
                   </div>
                 </div>
                 <div className="py-1">
-                  <Link href="/profile" onClick={() => setShowMobileProfile(false)}
+                  <Link href="/settings" onClick={() => setShowMobileProfile(false)}
                     className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 active:bg-gray-50 transition-colors">
                     <PencilSquareIcon className="w-4 h-4 text-gray-400" />
                     Edit Profile
@@ -264,7 +264,7 @@ export default function TopBar({ onOpenNav }: TopBarProps) {
 
               <div className="py-1">
                 <Link
-                  href="/profile"
+                  href="/settings"
                   onClick={() => setShowProfile(false)}
                   className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
                 >

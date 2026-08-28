@@ -67,7 +67,7 @@ export default function Sidebar() {
       {/* User footer */}
       <div className="p-3 border-t border-gray-100">
         <Link
-          href="/profile"
+          href="/settings"
           className="flex items-center gap-3 p-2.5 rounded-xl hover:bg-gray-50 transition-colors group"
         >
           <UserAvatar picture={user?.picture} name={user?.name} size={34} />

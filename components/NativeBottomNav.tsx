@@ -19,7 +19,6 @@ import {
   Cog6ToothIcon,
   Squares2X2Icon,
   QrCodeIcon,
-  UserCircleIcon,
 } from '@/components/icons';
 
 const TABS = [
@@ -45,7 +44,6 @@ const GRID_ITEMS: GridItem[] = [
   { href: '/snapshots',  label: 'Snapshots',      icon: CameraIcon,                 managerOnly: false },
   { href: '/activity',   label: 'Activity',       icon: ClipboardDocumentCheckIcon, managerOnly: true  },
   { href: '/settings',   label: 'Settings',       icon: Cog6ToothIcon,              managerOnly: false },
-  { href: '/profile',    label: 'Profile',        icon: UserCircleIcon,             managerOnly: false },
 ];
 
 export default function NativeBottomNav() {

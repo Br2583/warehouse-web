@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { TrashIcon, ArrowPathIcon, XMarkIcon, ExclamationCircleIcon } from '@/components/icons';
 import Sidebar from '@/components/Sidebar';
+import HistoryTabs from '@/components/HistoryTabs';
 import { api } from '@/lib/api';
 import { pb } from '@/lib/pb';
 import { useAuth } from '@/lib/auth-context';
@@ -83,10 +84,16 @@ export default function DeletedPage() {
     <div className="flex min-h-screen bg-gray-50">
       <Sidebar />
       <main className="md:ml-64 flex-1 min-w-0 px-4 pb-8 md:px-8 md:pb-8 topbar-offset">
-        <div className="mb-8">
+        <div className="mb-6">
           <h1 className="text-2xl font-bold text-gray-900">Deleted Vaults</h1>
-          <p className="text-gray-500 text-sm mt-1">{deleted.length} archived vaults</p>
+          {!loading && (
+            <p className="text-gray-500 text-sm mt-1">
+              {deleted.length} {deleted.length === 1 ? 'archived vault' : 'archived vaults'}
+            </p>
+          )}
         </div>
+
+        <HistoryTabs />
 
         <AnimatePresence>
           {error && (

@@ -8,6 +8,7 @@ import {
   ChevronDownIcon, ChevronUpIcon, ArrowPathIcon,
 } from '@/components/icons';
 import Sidebar from '@/components/Sidebar';
+import HistoryTabs from '@/components/HistoryTabs';
 import { api } from '@/lib/api';
 import { timeAgo } from '@/lib/utils';
 import { ACTION_CONFIG } from '@/lib/activity-config';
@@ -251,6 +252,8 @@ export default function ActivityPage() {
             <ArrowPathIcon className="w-4 h-4" />
           </button>
         </div>
+
+        <HistoryTabs />
 
         {/* Filters */}
         <div className="flex flex-wrap gap-2 mb-6">
