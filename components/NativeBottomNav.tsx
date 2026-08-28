@@ -6,27 +6,27 @@ import { usePathname, useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavData } from '@/lib/nav-data-context';
 import { useAuth } from '@/lib/auth-context';
+import { NAV_ITEMS } from '@/lib/nav-routes';
 import {
   HomeIcon,
   BuildingOffice2Icon,
   ClipboardDocumentListIcon,
   ChatBubbleLeftRightIcon,
-  ArchiveBoxIcon,
-  MagnifyingGlassIcon,
-  ChartBarSquareIcon,
-  CameraIcon,
-  ClipboardDocumentCheckIcon,
-  Cog6ToothIcon,
   Squares2X2Icon,
   QrCodeIcon,
 } from '@/components/icons';
 
+// The four routes that get their own tab in the bottom bar. Everything else in
+// NAV_ITEMS falls through to the "More" grid, so adding a section to the web
+// menu reaches Android too instead of silently going missing.
 const TABS = [
   { href: '/dashboard',  label: 'Home',       icon: HomeIcon },
   { href: '/warehouses', label: 'Warehouses', icon: BuildingOffice2Icon },
   { href: '/tasks',      label: 'Tasks',      icon: ClipboardDocumentListIcon },
   { href: '/chat',       label: 'Chat',       icon: ChatBubbleLeftRightIcon },
 ] as const;
+
+const TAB_HREFS = new Set<string>(TABS.map(t => t.href));
 
 type GridItem = {
   href: string;
@@ -37,13 +37,16 @@ type GridItem = {
 };
 
 const GRID_ITEMS: GridItem[] = [
-  { href: '/scan',       label: 'Scan QR',        icon: QrCodeIcon,                 managerOnly: false, highlight: true },
-  { href: '/storage',    label: 'Storage',        icon: ArchiveBoxIcon,             managerOnly: false },
-  { href: '/search',     label: 'Search',         icon: MagnifyingGlassIcon,        managerOnly: false },
-  { href: '/stats',      label: 'Stats',          icon: ChartBarSquareIcon,         managerOnly: false },
-  { href: '/snapshots',  label: 'Snapshots',      icon: CameraIcon,                 managerOnly: false },
-  { href: '/activity',   label: 'Activity',       icon: ClipboardDocumentCheckIcon, managerOnly: true  },
-  { href: '/settings',   label: 'Settings',       icon: Cog6ToothIcon,              managerOnly: false },
+  // Native-only — the web menu has no scanner because desktops have no camera.
+  { href: '/scan', label: 'Scan QR', icon: QrCodeIcon, managerOnly: false, highlight: true },
+  ...NAV_ITEMS
+    .filter(item => !TAB_HREFS.has(item.href))
+    .map(({ href, label, icon, managerOnly }) => ({
+      href,
+      label,
+      icon,
+      managerOnly: !!managerOnly,
+    })),
 ];
 
 export default function NativeBottomNav() {

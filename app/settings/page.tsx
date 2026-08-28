@@ -763,7 +763,7 @@ export default function SettingsPage() {
                 <div className="flex-1">
                   <p className="font-semibold text-gray-900 mb-0.5">Warehouse Manager</p>
                   <p className="text-sm text-gray-400 mb-4">
-                    Add to your home screen for faster access — works offline too.
+                    Add to your home screen for faster access — opens in its own window, without the browser bar.
                   </p>
 
                   {pwaInstalled || pwaSuccess ? (

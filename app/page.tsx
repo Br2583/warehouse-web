@@ -209,7 +209,7 @@ export default function Home() {
                 <div style={{ fontSize: 12.5, color: '#8a8a88' }}>Native app · APK</div>
               </div>
             </div>
-            <div style={{ marginTop: 16, fontSize: 14, lineHeight: 1.6, color: '#6a6a68', flex: 1 }}>Camera scanning, push notifications and full offline support.</div>
+            <div style={{ marginTop: 16, fontSize: 14, lineHeight: 1.6, color: '#6a6a68', flex: 1 }}>Scan vault labels with the camera and get push notifications on every job.</div>
             <DlBtn href="/downloads/warehouse-manager.apk">
               <DownArrow />
               Download APK v{APP_VERSION}

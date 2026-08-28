@@ -17,8 +17,11 @@ export async function DELETE(req: NextRequest) {
 
   const me = await verifyUser(token);
   if (!me?.company_id) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  if (me.role !== 'owner' && me.role !== 'manager') {
-    return NextResponse.json({ error: 'Only managers and owners can delete all tasks' }, { status: 403 });
+  // Owner-only, matching the Clear All button's own {isOwner} gate and the
+  // equivalent chat endpoint. Managers never see the button; the API used to
+  // accept them anyway.
+  if (me.role !== 'owner') {
+    return NextResponse.json({ error: 'Only owners can delete all tasks' }, { status: 403 });
   }
 
   let adminToken: string;
