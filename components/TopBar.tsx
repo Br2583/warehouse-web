@@ -10,7 +10,7 @@ import {
   BellIcon, PlusIcon,
   Cog6ToothIcon, ArrowRightOnRectangleIcon,
   ChatBubbleLeftRightIcon, ClipboardDocumentListIcon,
-  PencilSquareIcon, UserPlusIcon, Bars3Icon,
+  UserPlusIcon, Bars3Icon,
   BellIcon as BellSolid,
 } from '@/components/icons';
 
@@ -191,11 +191,6 @@ export default function TopBar({ onOpenNav }: TopBarProps) {
                   </div>
                 </div>
                 <div className="py-1">
-                  <Link href="/settings" onClick={() => setShowMobileProfile(false)}
-                    className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 active:bg-gray-50 transition-colors">
-                    <PencilSquareIcon className="w-4 h-4 text-gray-400" />
-                    Edit Profile
-                  </Link>
                   {user?.role === 'owner' && (
                     <Link href="/settings#invite" onClick={() => setShowMobileProfile(false)}
                       className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 active:bg-gray-50 transition-colors">
@@ -263,14 +258,6 @@ export default function TopBar({ onOpenNav }: TopBarProps) {
               </div>
 
               <div className="py-1">
-                <Link
-                  href="/settings"
-                  onClick={() => setShowProfile(false)}
-                  className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
-                >
-                  <PencilSquareIcon className="w-4 h-4 text-gray-400" />
-                  Edit Profile
-                </Link>
                 {user?.role === 'owner' && (
                   <Link
                     href="/settings#invite"
