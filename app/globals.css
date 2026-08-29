@@ -115,6 +115,29 @@ textarea::placeholder {
   display: none;
 }
 
+/* Warehouse map: a slim styled scrollbar (overrides the global scrollbar hide),
+   so scrolling the grid on mobile reads as deliberate instead of broken. */
+.grid-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: #cbd5e1 transparent;
+  -webkit-overflow-scrolling: touch;
+}
+.grid-scroll::-webkit-scrollbar {
+  display: block;
+  width: 6px;
+}
+.grid-scroll::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 9999px;
+}
+.grid-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+/* Native app: leave room for the floating bottom nav below the grid panel. */
+.native-app .grid-scroll {
+  max-height: calc(100dvh - 356px - 84px - env(safe-area-inset-bottom, 0px));
+}
+
 @keyframes orbFloat {
   0%, 100% { transform: translateY(0); }
   50% { transform: translateY(-24px); }
