@@ -15,6 +15,7 @@ import { useAuth } from '@/lib/auth-context';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { compressImage } from '@/lib/compress-image';
+import { photoSrc, usePhotoToken } from '@/lib/photo-url';
 
 const STATUS_CONFIG: Record<string, { color: string; label: string }> = {
   AVAILABLE:   { color: 'bg-green-100 text-green-700',  label: 'Available' },
@@ -50,6 +51,7 @@ export default function StorageDetailPage() {
   const [unit, setUnit] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [editMode, setEditMode] = useState(false);
+  const photoToken = usePhotoToken();
   const [form, setForm] = useState<any>({});
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
@@ -125,17 +127,17 @@ export default function StorageDetailPage() {
     } finally { setSaving(false); }
   };
 
-  const addPhotoB64 = (b64: string) => {
+  const addPhoto = (photo: string | File) => {
     setPhotoError('');
     setForm((f: any) => {
       if ((f.photos?.length || 0) >= MAX_PHOTOS) { setPhotoError(`Max ${MAX_PHOTOS} photos`); return f; }
-      return { ...f, photos: [...(f.photos || []), b64] };
+      return { ...f, photos: [...(f.photos || []), photo] };
     });
   };
 
   const addPhotos = async (files: FileList | null) => {
     for (const file of Array.from(files || [])) {
-      try { addPhotoB64(await compressImage(file)); } catch (err: any) { setPhotoError(err.message); }
+      try { addPhoto(await compressImage(file)); } catch (err: any) { setPhotoError(err.message); }
     }
   };
 
@@ -215,7 +217,8 @@ export default function StorageDetailPage() {
 
   const displayData = editMode ? form : unit;
   const sc = STATUS_CONFIG[displayData?.status] || STATUS_CONFIG.AVAILABLE;
-  const photos: string[] = displayData?.photos || [];
+  const photos: (string | File)[] = displayData?.photos || [];
+  const photoRef = { id: displayData?.id || '', collectionName: 'storage_units' };
 
   return (
     <div className="flex min-h-screen bg-gray-50">
@@ -255,9 +258,9 @@ export default function StorageDetailPage() {
             </div>
           ) : (
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-              {photos.map((src, i) => (
+              {photos.map((photo, i) => (
                 <div key={i} className="relative group aspect-square rounded-xl overflow-hidden cursor-pointer" onClick={() => setLightbox(i)}>
-                  <img src={src} alt={`photo-${i}`} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200" />
+                  <img src={photoSrc(photo, photoRef, 'grid', photoToken)} alt={`photo-${i}`} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200" />
                   {editMode && (
                     <button
                       onClick={(e) => { e.stopPropagation(); removePhoto(i); }}
@@ -272,7 +275,7 @@ export default function StorageDetailPage() {
           )}
           {editMode && photos.length < MAX_PHOTOS && (
             <div className="mt-3">
-              <PhotoAddButton onFiles={addPhotos} onPhotoNative={addPhotoB64} />
+              <PhotoAddButton onFiles={addPhotos} onPhotoNative={addPhoto} />
             </div>
           )}
           {photoError && <p className="text-xs text-red-500 mt-2">{photoError}</p>}
@@ -591,7 +594,7 @@ export default function StorageDetailPage() {
             <div className="fixed inset-0 bg-black/80 z-[60] flex items-center justify-center p-4" onClick={() => setLightbox(null)}>
               <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.9 }}
                 className="relative max-w-2xl w-full" onClick={e => e.stopPropagation()}>
-                <img src={photos[lightbox]} alt="Photo" className="w-full rounded-2xl object-contain max-h-[80vh]" />
+                <img src={photoSrc(photos[lightbox], photoRef, 'full', photoToken)} alt="Photo" className="w-full rounded-2xl object-contain max-h-[80vh]" />
                 <button onClick={() => setLightbox(null)} className="absolute top-3 right-3 w-8 h-8 bg-black/50 rounded-full flex items-center justify-center text-white hover:bg-black/70">
                   <XMarkIcon className="w-4 h-4" />
                 </button>

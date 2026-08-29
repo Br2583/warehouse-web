@@ -27,6 +27,8 @@ export async function GET(req: NextRequest) {
   const adminToken = await getPbAdminToken();
 
   const cFilter = encodeURIComponent(`company_id="${companyId}"`);
+  // Vaults in the recycle bin must not count towards any statistic
+  const vFilter = encodeURIComponent(`company_id="${companyId}" && deleted_at = ""`);
   const warehousesData = await pbGet(`/api/collections/warehouses/records?perPage=100&filter=${cFilter}&fields=id,name`, adminToken);
   const warehouses: any[] = warehousesData.items || [];
 
@@ -34,7 +36,7 @@ export async function GET(req: NextRequest) {
   const vaults: any[] = [];
   let vPage = 1;
   while (true) {
-    const vd = await pbGet(`/api/collections/vaults/records?perPage=500&page=${vPage}&filter=${cFilter}&fields=id,estado,warehouse_id,job_type,created,client_name,position`, adminToken);
+    const vd = await pbGet(`/api/collections/vaults/records?perPage=500&page=${vPage}&filter=${vFilter}&fields=id,estado,warehouse_id,job_type,created,client_name,position`, adminToken);
     const items: any[] = vd.items || [];
     vaults.push(...items);
     if (items.length < 500) break;

@@ -18,6 +18,7 @@ import { useAuth } from '@/lib/auth-context';
 import { useToast } from '@/lib/toast-context';
 import { useParams, useSearchParams } from 'next/navigation';
 import { compressImage } from '@/lib/compress-image';
+import { photoSrc, usePhotoToken } from '@/lib/photo-url';
 import { QRCodeSVG } from 'qrcode.react';
 import { STATUS_COLORS, STATUS_CELL } from '@/lib/constants';
 
@@ -35,7 +36,8 @@ interface Box {
   room_location: string[];
   packer: string;
   pack_date: string;
-  photos: string[];
+  photos: (string | File)[];
+  photo_ref?: { id: string; collectionName?: string };
   comments: string;
   estado: string;
   status: string;
@@ -53,7 +55,8 @@ interface LooseItem {
   color: string;
   condition: string[];
   status: string;
-  photos: string[];
+  photos: (string | File)[];
+  photo_ref?: { id: string; collectionName?: string };
   comments: string;
   created: string;
 }
@@ -65,7 +68,7 @@ interface LooseForm {
   color: string;
   condition: string[];
   status: string;
-  photos: string[];
+  photos: (string | File)[];
   comments: string;
 }
 
@@ -132,7 +135,8 @@ export default function WarehouseDetailPage() {
   const [editForm, setEditForm] = useState<VaultFormData | null>(null);
   const [editSaving, setEditSaving] = useState(false);
   const [editError, setEditError] = useState('');
-  const [lightbox, setLightbox] = useState<{ photos: string[]; index: number } | null>(null);
+  const [lightbox, setLightbox] = useState<{ photos: (string | File)[]; index: number; ref: { id: string; collectionName?: string } } | null>(null);
+  const photoToken = usePhotoToken();
   const [confirmModal, setConfirmModal] = useState<{ message: string; onConfirm: () => void } | null>(null);
   const [showQR, setShowQR] = useState(false);
   const [loadingPhotos, setLoadingPhotos] = useState(false);
@@ -549,8 +553,8 @@ export default function WarehouseDetailPage() {
     });
   };
 
-  const handleLoosePhotoAdd = async (b64: string) => {
-    setLooseForm(f => ({ ...f, photos: [...f.photos, b64].slice(0, 4) }));
+  const handleLoosePhotoAdd = async (photo: string | File) => {
+    setLooseForm(f => ({ ...f, photos: [...f.photos, photo].slice(0, 4) }));
   };
 
   const handleLoosePhotoFiles = async (files: FileList | null) => {
@@ -1003,8 +1007,8 @@ export default function WarehouseDetailPage() {
                               </div>
                               {item.photos.length > 0 && (
                                 <div className="flex gap-1 mt-2">
-                                  {item.photos.slice(0, 3).map((photo, i) => <img key={i} src={photo} alt="" onClick={() => setLightbox({ photos: item.photos, index: i })} className="w-12 h-12 object-cover rounded-lg cursor-pointer hover:opacity-90 transition-opacity" />)}
-                                  {item.photos.length > 3 && <button className="w-12 h-12 bg-gray-200 rounded-lg flex items-center justify-center text-xs text-gray-500 font-medium" onClick={() => setLightbox({ photos: item.photos, index: 3 })}>+{item.photos.length - 3}</button>}
+                                  {item.photos.slice(0, 3).map((photo: string | File, i: number) => <img key={i} src={photoSrc(photo, item.photo_ref || { id: item.id }, 'tile', photoToken)} alt="" onClick={() => setLightbox({ photos: item.photos, index: i, ref: item.photo_ref || { id: item.id } })} className="w-12 h-12 object-cover rounded-lg cursor-pointer hover:opacity-90 transition-opacity" />)}
+                                  {item.photos.length > 3 && <button className="w-12 h-12 bg-gray-200 rounded-lg flex items-center justify-center text-xs text-gray-500 font-medium" onClick={() => setLightbox({ photos: item.photos, index: 3, ref: item.photo_ref || { id: item.id } })}>+{item.photos.length - 3}</button>}
                                 </div>
                               )}
                             </div>
@@ -1083,8 +1087,8 @@ export default function WarehouseDetailPage() {
                                 </div>
                                 {item.photos.length > 0 && (
                                   <div className="flex gap-1 mt-2">
-                                    {item.photos.slice(0, 3).map((photo, i) => <img key={i} src={photo} alt="" onClick={() => setLightbox({ photos: item.photos, index: i })} className="w-12 h-12 object-cover rounded-lg cursor-pointer hover:opacity-90 transition-opacity" />)}
-                                    {item.photos.length > 3 && <button className="w-12 h-12 bg-gray-200 rounded-lg flex items-center justify-center text-xs text-gray-500 font-medium" onClick={() => setLightbox({ photos: item.photos, index: 3 })}>+{item.photos.length - 3}</button>}
+                                    {item.photos.slice(0, 3).map((photo: string | File, i: number) => <img key={i} src={photoSrc(photo, item.photo_ref || { id: item.id }, 'tile', photoToken)} alt="" onClick={() => setLightbox({ photos: item.photos, index: i, ref: item.photo_ref || { id: item.id } })} className="w-12 h-12 object-cover rounded-lg cursor-pointer hover:opacity-90 transition-opacity" />)}
+                                    {item.photos.length > 3 && <button className="w-12 h-12 bg-gray-200 rounded-lg flex items-center justify-center text-xs text-gray-500 font-medium" onClick={() => setLightbox({ photos: item.photos, index: 3, ref: item.photo_ref || { id: item.id } })}>+{item.photos.length - 3}</button>}
                                   </div>
                                 )}
                               </div>
@@ -1161,9 +1165,9 @@ export default function WarehouseDetailPage() {
                       {selected.photos.map((photo, i) => (
                         <img
                           key={i}
-                          src={photo}
+                          src={photoSrc(photo, selected.photo_ref || { id: selected.box_id }, 'grid', photoToken)}
                           alt={`Photo ${i + 1}`}
-                          onClick={() => setLightbox({ photos: selected.photos, index: i })}
+                          onClick={() => setLightbox({ photos: selected.photos, index: i, ref: selected.photo_ref || { id: selected.box_id } })}
                           className="w-full h-32 object-cover rounded-xl cursor-pointer hover:opacity-90 transition-opacity"
                         />
                       ))}
@@ -1336,7 +1340,7 @@ export default function WarehouseDetailPage() {
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0 }}
                 transition={{ duration: 0.2 }}
-                src={lightbox.photos[lightbox.index]}
+                src={photoSrc(lightbox.photos[lightbox.index], lightbox.ref, 'full', photoToken)}
                 alt=""
                 onClick={e => e.stopPropagation()}
                 className="max-h-[85vh] max-w-[90vw] object-contain rounded-xl shadow-2xl"
@@ -1475,7 +1479,7 @@ export default function WarehouseDetailPage() {
                     <div className="flex gap-2 flex-wrap">
                       {looseForm.photos.map((photo, i) => (
                         <div key={i} className="relative">
-                          <img src={photo} alt="" className="w-16 h-16 object-cover rounded-lg" />
+                          <img src={photoSrc(photo, { id: '' }, 'grid', photoToken)} alt="" className="w-16 h-16 object-cover rounded-lg" />
                           <button type="button"
                             onClick={() => setLooseForm(f => ({ ...f, photos: f.photos.filter((_, j) => j !== i) }))}
                             className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white rounded-full text-xs flex items-center justify-center leading-none">

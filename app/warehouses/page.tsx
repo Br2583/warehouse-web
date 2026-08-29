@@ -43,7 +43,7 @@ export default function WarehousesPage() {
     try {
       const [whs, vaults] = await Promise.all([
         pb.collection('warehouses').getFullList({ filter: `company_id="${cid}"` }),
-        pb.collection('vaults').getFullList({ filter: `company_id="${cid}"`, fields: 'id,warehouse_id' }),
+        pb.collection('vaults').getFullList({ filter: `company_id="${cid}" && deleted_at = ""`, fields: 'id,warehouse_id' }),
       ]);
       const counts: Record<string, number> = {};
       for (const v of vaults) counts[v.warehouse_id] = (counts[v.warehouse_id] || 0) + 1;
@@ -94,7 +94,7 @@ export default function WarehousesPage() {
       message: `Delete "${name}"? All vaults will be moved to Deleted (recoverable from /deleted).`,
       onConfirm: async () => {
         try {
-          const vaults = await pb.collection('vaults').getFullList({ filter: `warehouse_id="${id}"`, fields: 'id' });
+          const vaults = await pb.collection('vaults').getFullList({ filter: `warehouse_id="${id}" && deleted_at = ""`, fields: 'id' });
           // Delete in batches of 20 to avoid overwhelming PocketBase
           const BATCH = 20;
           for (let i = 0; i < vaults.length; i += BATCH) {

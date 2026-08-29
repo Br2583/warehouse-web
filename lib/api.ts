@@ -45,15 +45,36 @@ function safeError(e: any): never {
   throw new Error(internal ? 'Operation failed. Please try again.' : msg || 'An error occurred.');
 }
 
-// Validate photos array (client-side guard; real enforcement is in PocketBase rules)
+const MAX_PHOTO_BYTES = 2 * 1024 * 1024; // matches the maxSize on the PocketBase file fields
+
+/**
+ * Guards the photos payload before it reaches PocketBase. Entries are either
+ * File objects (a new upload) or strings (a filename already stored in R2 that
+ * the user is keeping), so only the Files need checking.
+ */
 function validatePhotos(photos: unknown, maxPhotos = 6): void {
   if (!Array.isArray(photos)) return;
   if (photos.length > maxPhotos) throw new Error(`Maximum ${maxPhotos} photos allowed`);
   for (const p of photos) {
-    if (typeof p === 'string' && Math.ceil(p.length * 3 / 4) > 5 * 1024 * 1024) {
-      throw new Error('Each photo must be under 5MB');
+    if (p instanceof File && p.size > MAX_PHOTO_BYTES) {
+      throw new Error('Each photo must be under 2MB after compression');
     }
   }
+}
+
+/**
+ * Turns the photos payload into what PocketBase expects for a file field.
+ *
+ * Sending kept filenames and new Files together in the same field sets the
+ * field to exactly that set — verified against the server. An empty array is
+ * ignored by the SDK, so clearing every photo needs an empty string instead.
+ */
+function photosPayload(photos: unknown): (string | File)[] | string {
+  const list = Array.isArray(photos) ? photos : [];
+  const keep = list.filter((p): p is string => typeof p === 'string' && !!p);
+  const files = list.filter((p): p is File => p instanceof File);
+  const all = [...keep, ...files];
+  return all.length ? all : '';
 }
 
 // Map a PocketBase vault record to the shape the pages expect
@@ -73,7 +94,9 @@ function mapVault(v: any) {
     room_location: v.room_location || [],
     packer:       v.packer,
     pack_date:    v.pack_date || '',
-    photos:       v.photos || [],
+    // Filenames stored in R2, not image data. Build a URL with photoUrl().
+    photos:       v.photo_files || [],
+    photo_ref:    { id: v.id, collectionName: 'vaults' },
     comments:     v.comments,
     estado:       v.estado,
     status:       v.estado,
@@ -84,12 +107,10 @@ function mapVault(v: any) {
 
 // Map a PocketBase storage_units record
 function mapStorage(s: any) {
-  const rawPhotos = s.photos;
-  const photos = Array.isArray(rawPhotos)
-    ? rawPhotos
-    : rawPhotos ? (typeof rawPhotos === 'string' ? JSON.parse(rawPhotos) : rawPhotos) : [];
+  const photos = Array.isArray(s.photo_files) ? s.photo_files : [];
   return {
     id:          s.id,
+    photo_ref:   { id: s.id, collectionName: 'storage_units' },
     unit_name:   s.unit_name,
     address:     s.address || '',
     city:        s.city || '',
@@ -110,9 +131,7 @@ function mapStorage(s: any) {
 
 // Map a PocketBase loose_items record
 function mapLooseItem(item: any) {
-  const photos = Array.isArray(item.photos)
-    ? item.photos
-    : item.photos ? (typeof item.photos === 'string' ? JSON.parse(item.photos) : item.photos) : [];
+  const photos = Array.isArray(item.photo_files) ? item.photo_files : [];
   const condition = Array.isArray(item.condition)
     ? item.condition
     : item.condition ? (typeof item.condition === 'string' ? JSON.parse(item.condition) : item.condition) : [];
@@ -128,6 +147,7 @@ function mapLooseItem(item: any) {
     condition,
     status:         item.status || 'PENDING',
     photos,
+    photo_ref:      { id: item.id, collectionName: 'loose_items' },
     comments:       item.comments || '',
     created:        item.created,
   };
@@ -167,12 +187,12 @@ async function routeGet(path: string): Promise<any> {
     if (!cid) return [];
     const warehouseId  = q.get('warehouse_id');
     const clientFilter = q.get('client_name');
-    let filter = `company_id="${cid}"`;
+    let filter = `company_id="${cid}" && deleted_at = ""`;
     if (warehouseId)  filter += ` && warehouse_id="${sf(warehouseId)}"`;
     if (clientFilter) filter += ` && client_name="${sf(clientFilter)}"`;
     const items = await pb.collection('vaults').getFullList({
       filter,
-      fields: 'id,warehouse_id,row,col,level,position,client_name,client_id,job_type,vault_status,content_type,room_location,packer,pack_date,comments,estado,qr_token,company_id,created',
+      fields: 'id,warehouse_id,row,col,level,position,client_name,client_id,job_type,vault_status,content_type,room_location,packer,pack_date,comments,estado,qr_token,company_id,created,photo_files',
     });
     return items.map(mapVault).sort((a: any, b: any) => a.created < b.created ? -1 : 1);
   }
@@ -181,6 +201,7 @@ async function routeGet(path: string): Promise<any> {
   const boxMatch = p.match(/^\/api\/boxes\/([^/]+)$/);
   if (boxMatch) {
     const v = await pb.collection('vaults').getOne(boxMatch[1]);
+    if (v.deleted_at) throw new Error('This vault is in the recycle bin.');
     if (v.company_id !== cid) throw new Error('Forbidden');
     return mapVault(v);
   }
@@ -269,7 +290,7 @@ async function routeGet(path: string): Promise<any> {
     const packer      = q.get('packer') || '';
     const hasFilter   = q2 || status || jobType || warehouseId || packer;
     if (!cid || !hasFilter) return { vaults: [], storageUnits: [] };
-    let filter = `company_id="${cid}"`;
+    let filter = `company_id="${cid}" && deleted_at = ""`;
     if (status)      filter += ` && estado="${sf(status)}"`;
     if (jobType)     filter += ` && job_type="${sf(jobType)}"`;
     if (warehouseId) filter += ` && warehouse_id="${sf(warehouseId)}"`;
@@ -277,7 +298,7 @@ async function routeGet(path: string): Promise<any> {
     if (q2)          filter += ` && (client_name~"${sf(q2)}" || packer~"${sf(q2)}" || position~"${sf(q2)}" || comments~"${sf(q2)}" || job_type~"${sf(q2)}")`;
     const items = await pb.collection('vaults').getFullList({
       filter,
-      fields: 'id,warehouse_id,row,col,level,position,client_name,client_id,job_type,vault_status,content_type,room_location,packer,pack_date,comments,estado,qr_token,company_id,created',
+      fields: 'id,warehouse_id,row,col,level,position,client_name,client_id,job_type,vault_status,content_type,room_location,packer,pack_date,comments,estado,qr_token,company_id,created,photo_files',
     });
     const vaults = items
       .sort((a: any, b: any) => a.created < b.created ? 1 : -1)
@@ -374,7 +395,7 @@ async function routeGet(path: string): Promise<any> {
     const items = await pb.collection('loose_items').getFullList({
       filter: `company_id="${cid}" && warehouse_id="${sf(wid)}"`,
       sort: 'id',
-      fields: 'id,warehouse_id,client_name,grid_x,grid_y,item_type,furniture_type,color,condition,status,comments,photos,created',
+      fields: 'id,warehouse_id,client_name,grid_x,grid_y,item_type,furniture_type,color,condition,status,comments,photo_files,created',
     });
     return items.map(mapLooseItem);
   }
@@ -389,7 +410,7 @@ async function routeGet(path: string): Promise<any> {
     const period    = q.get('period') || '';
     const filterUid = q.get('userId') || '';
     const filterAct = q.get('action') || '';
-    let filter = `company_id="${cid}"`;
+    let filter = `company_id="${cid}" && deleted_at = ""`;
     if (period === 'today') {
       const start = new Date(); start.setHours(0, 0, 0, 0);
       filter += ` && created >= "${start.toISOString()}"`;
@@ -411,24 +432,20 @@ async function routeGet(path: string): Promise<any> {
   // ── Deleted Vaults ────────────────────────────────────────────────────────
   if (p === '/api/deleted-boxes') {
     if (!cid) return [];
-    const items = await pb.collection('deleted_vaults').getFullList({
-      filter: `company_id="${cid}"`,
-      fields: 'id,company_id,created,vault_data',
-      sort: '-created',
+    // The bin is now just the vaults carrying a deleted_at mark
+    const items = await pb.collection('vaults').getFullList({
+      filter: `company_id="${cid}" && deleted_at != ""`,
+      fields: 'id,warehouse_id,position,client_name,deleted_at,row,col,level',
+      sort: '-deleted_at',
     });
-    return items
-      .map(d => {
-        const vd = (d.vault_data as any) || {};
-        return {
-          id:          d.id,
-          box_id:      vd.box_id || d.id,
-          client_name: vd.client_name || '—',
-          warehouse_id: vd.warehouse_id,
-          position:    vd.position || '',
-          deleted_at:  d.created,
-          vault_data:  d.vault_data,
-        };
-      });
+    return items.map(v => ({
+      id:           v.id,
+      box_id:       v.id,
+      client_name:  v.client_name || '—',
+      warehouse_id: v.warehouse_id,
+      position:     v.position || `${v.row}${v.col}-L${v.level}`,
+      deleted_at:   v.deleted_at,
+    }));
   }
 
   throw new Error(`Unknown GET path: ${p}`);
@@ -453,7 +470,7 @@ async function routePost(path: string, body: any): Promise<any> {
     // Reject if the target position is already occupied
     const col = body.column ?? body.col;
     const existing = await pb.collection('vaults').getFullList({
-      filter: `company_id="${cid}" && warehouse_id="${sf(body.warehouse_id)}" && row="${sf(body.row)}"`,
+      filter: `company_id="${cid}" && warehouse_id="${sf(body.warehouse_id)}" && row="${sf(body.row)}" && deleted_at = ""`,
       fields: 'id,col,level',
     });
     if (existing.some((v: any) => Number(v.col) === Number(col) && Number(v.level) === Number(body.level))) {
@@ -478,7 +495,8 @@ async function routePost(path: string, body: any): Promise<any> {
         vault_status:  body.vault_status || [],
         packer:       body.packer,
         pack_date:    body.pack_date || '',
-        photos:       body.photos || [],
+        // Files go to R2; the SDK turns the payload into FormData when it sees them
+        photo_files:  photosPayload(body.photos),
         comments:     body.comments,
         estado:       body.estado || body.status || 'PENDING',
         qr_token,
@@ -551,7 +569,7 @@ async function routePost(path: string, body: any): Promise<any> {
       capacity:    body.capacity || '',
       access_code: body.access_code || '',
       status:      body.status || 'AVAILABLE',
-      photos:      body.photos || [],
+      photo_files: photosPayload(body.photos),
       notes:       body.notes || '',
       intake_date: body.intake_date || '',
       created_by:  uid,
@@ -565,11 +583,11 @@ async function routePost(path: string, body: any): Promise<any> {
   if (snapCreateMatch) {
     if (!cid) throw new Error('No company');
     const warehouseRef = snapCreateMatch[1];
-    let filter = `company_id="${cid}"`;
+    let filter = `company_id="${cid}" && deleted_at = ""`;
     if (warehouseRef && warehouseRef !== 'all') filter += ` && warehouse_id="${sf(warehouseRef)}"`;
     const vaults = await pb.collection('vaults').getFullList({
       filter,
-      fields: 'id,warehouse_id,row,col,level,position,client_name,client_id,job_type,vault_status,content_type,room_location,packer,pack_date,comments,estado,qr_token,company_id,created',
+      fields: 'id,warehouse_id,row,col,level,position,client_name,client_id,job_type,vault_status,content_type,room_location,packer,pack_date,comments,estado,qr_token,company_id,created,photo_files',
     });
     const warehouses = await pb.collection('warehouses').getFullList({ filter: `company_id="${cid}"` });
     const wh = warehouses.find(w => w.id === warehouseRef);
@@ -593,74 +611,57 @@ async function routePost(path: string, body: any): Promise<any> {
     if (!cid) throw new Error('No company');
     const role = pb.authStore.model?.role as string | undefined;
     if (role !== 'owner' && role !== 'manager') throw new Error('Only managers and owners can restore vaults');
-    // Find deleted_vaults record: try by ID using list rule (avoids getOne View-rule restrictions),
-    // then fall back to searching vault_data for old entries that stored the original vault PB ID.
-    let dv: any;
+
+    // The vault was never destroyed — it is the same row, still carrying its
+    // id, box_id, qr_token and photos. Restoring is clearing the mark, so the
+    // QR label printed and stuck on the physical vault keeps working.
+    let v: any;
     try {
-      dv = await pb.collection('deleted_vaults').getFirstListItem(
-        `id="${sf(restoreMatch[1])}" && company_id="${cid}"`
+      v = await pb.collection('vaults').getFirstListItem(
+        `id="${sf(restoreMatch[1])}" && company_id="${cid}" && deleted_at != ""`
       );
     } catch {
-      try {
-        dv = await pb.collection('deleted_vaults').getFirstListItem(
-          `company_id="${cid}" && vault_data~'"id":"${sf(restoreMatch[1])}"'`
-        );
-      } catch {
-        throw new Error('This vault has already been restored or permanently deleted.');
-      }
+      throw new Error('This vault has already been restored or permanently deleted.');
     }
-    if (dv.company_id !== cid) throw new Error('Forbidden');
-    const vd = (dv.vault_data as any) || {};
-    // Block restore if the original position is already occupied
-    const restoreCol = vd.column ?? vd.col;
+
+    // Someone may have taken the slot while it sat in the bin
     const occupying = await pb.collection('vaults').getFullList({
-      filter: `company_id="${cid}" && warehouse_id="${sf(vd.warehouse_id)}" && row="${sf(vd.row)}"`,
+      filter: `company_id="${cid}" && warehouse_id="${sf(v.warehouse_id)}" && row="${sf(v.row)}" && deleted_at = ""`,
       fields: 'id,col,level,client_name,position',
     });
-    const occupant = occupying.find((v: any) => Number(v.col) === Number(restoreCol) && Number(v.level) === Number(vd.level));
+    const occupant = occupying.find((o: any) => Number(o.col) === Number(v.col) && Number(o.level) === Number(v.level));
     if (occupant) {
-      const pos = vd.position || `${vd.row}${restoreCol}-L${vd.level}`;
+      const pos = v.position || `${v.row}${v.col}-L${v.level}`;
       const who = occupant.client_name ? ` (${occupant.client_name})` : '';
       throw new Error(`Position ${pos} is already occupied${who}. Move or delete that vault first, then restore this one.`);
     }
-    await pb.collection('vaults').create({
-      box_id:        genCode(),
-      qr_token:      genCode(),
-      warehouse_id:  vd.warehouse_id,
-      row:           vd.row,
-      col:           vd.column ?? vd.col,
-      level:         vd.level,
-      position:      vd.position,
-      client_name:   vd.client_name,
-      client_id:     vd.client_id,
-      job_type:      vd.job_type,
-      content_type:  vd.content_type,
-      room_location: vd.room_location || [],
-      vault_status:  vd.vault_status || [],
-      packer:        vd.packer,
-      pack_date:     vd.pack_date || '',
-      photos:        vd.photos || [],
-      comments:      vd.comments,
-      estado:        vd.estado || 'PENDING',
-      company_id:    cid,
-      created_by:    uid || '',
-    });
-    await pb.collection('deleted_vaults').delete(dv.id);
-    logActivity({ action: 'RESTORED', entity_type: 'vault', entity_id: dv.id, entity_label: `Vault ${vd.position || '—'} · ${vd.client_name || '—'}` });
+
+    await pb.collection('vaults').update(v.id, { deleted_at: '', deleted_by: '' });
+    logActivity({ action: 'RESTORED', entity_type: 'vault', entity_id: v.id, entity_label: `Vault ${v.position || '—'} · ${v.client_name || '—'}` });
     return { success: true };
   }
 
   // ── Loose Items ───────────────────────────────────────────────────────────
   if (p === '/api/loose-items') {
+    if (!cid) throw new Error('No company');
     validatePhotos(body.photos, 4);
-    const token = getToken() || '';
-    const r = await fetch('/api/loose-items', {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
+    // Straight to PocketBase rather than through the API route: a File cannot
+    // survive JSON.stringify, and the collection already allows same-company writes.
+    const rec = await pb.collection('loose_items').create({
+      company_id:     cid,
+      warehouse_id:   body.warehouse_id,
+      client_name:    body.client_name || '',
+      grid_x:         String(body.grid_x ?? '1'),
+      grid_y:         String(body.grid_y ?? '1'),
+      item_type:      body.item_type || 'Boxes',
+      furniture_type: body.furniture_type || '',
+      color:          body.color || '',
+      condition:      body.condition || [],
+      status:         body.status || 'PENDING',
+      comments:       body.comments || '',
+      photo_files:    photosPayload(body.photos),
     });
-    if (!r.ok) throw new Error((await r.json().catch(() => ({}))).error || 'Failed to create item');
-    const created = mapLooseItem(await r.json());
+    const created = mapLooseItem(rec);
     logActivity({ action: 'CREATED', entity_type: 'loose_item', entity_id: created.id, entity_label: `Loose Item · ${created.client_name || '—'} · ${created.item_type || '—'}` });
     return created;
   }
@@ -701,6 +702,7 @@ async function routePut(path: string, body: any): Promise<any> {
   if (boxMatch) {
     const existing = await pb.collection('vaults').getOne(boxMatch[1]);
     if (existing.company_id !== cid) throw new Error('Forbidden');
+    if (existing.deleted_at) throw new Error('This vault is in the recycle bin. Restore it before editing.');
     validatePhotos(body.photos);
     const beforeSnapshot = mapVault(existing);
     const v = await pb.collection('vaults').update(boxMatch[1], {
@@ -712,7 +714,7 @@ async function routePut(path: string, body: any): Promise<any> {
       vault_status:  body.vault_status || [],
       packer:       body.packer,
       pack_date:    body.pack_date,
-      photos:       body.photos || [],
+      photo_files:  photosPayload(body.photos),
       comments:     body.comments,
       estado:       body.estado || body.status,
     });
@@ -735,7 +737,7 @@ async function routePut(path: string, body: any): Promise<any> {
       capacity:    body.capacity || '',
       access_code: body.access_code || '',
       status:      body.status || 'AVAILABLE',
-      photos:      body.photos || [],
+      photo_files: photosPayload(body.photos),
       notes:       body.notes || '',
       intake_date: body.intake_date ?? undefined,
       slots:       body.slots ?? undefined,
@@ -761,6 +763,7 @@ async function routePut(path: string, body: any): Promise<any> {
 
     const source = await pb.collection('vaults').getOne(vaultId);
     if (source.company_id !== cid) throw new Error('Forbidden');
+    if (source.deleted_at) throw new Error('This vault is in the recycle bin. Restore it before moving.');
 
     // No-op: already at the requested position
     if (
@@ -775,7 +778,7 @@ async function routePut(path: string, body: any): Promise<any> {
     const newPosition = `${row}${destCol}-L${destLevel}`;
     // Filter by company + warehouse + row, then check col/level in JS to avoid field-type ambiguity
     const candidates = await pb.collection('vaults').getFullList({
-      filter: `company_id="${cid}" && warehouse_id="${sf(warehouse_id)}" && row="${sf(row)}"`,
+      filter: `company_id="${cid}" && warehouse_id="${sf(warehouse_id)}" && row="${sf(row)}" && deleted_at = ""`,
       fields: 'id,client_name,job_type,position,row,col,level,warehouse_id',
     });
     const occupant = candidates.find((v: any) =>
@@ -844,8 +847,13 @@ async function routePut(path: string, body: any): Promise<any> {
     if (!log.before_data) throw new Error('No snapshot available for this action');
     let prev: Record<string, any>;
     try { prev = JSON.parse(log.before_data); } catch { throw new Error('Snapshot data is corrupted'); }
-    try { await pb.collection('vaults').getOne(log.entity_id, { fields: 'id,company_id' }); }
+    let target: any;
+    try { target = await pb.collection('vaults').getOne(log.entity_id, { fields: 'id,company_id,deleted_at' }); }
     catch { throw new Error('This vault has been deleted and cannot be reverted'); }
+    if (target.deleted_at) throw new Error('This vault is in the recycle bin. Restore it before reverting.');
+    // Photos are deliberately left alone: a photo removed in the edit being
+    // undone is already gone from R2, so "restoring" its filename would point
+    // at nothing. Reverting covers the text fields only.
     await pb.collection('vaults').update(log.entity_id, {
       client_name:   prev.client_name,
       client_id:     prev.client_id,
@@ -855,7 +863,6 @@ async function routePut(path: string, body: any): Promise<any> {
       vault_status:  prev.vault_status || [],
       packer:        prev.packer,
       pack_date:     prev.pack_date,
-      photos:        prev.photos || [],
       comments:      prev.comments,
       estado:        prev.estado,
     });
@@ -884,14 +891,21 @@ async function routePut(path: string, body: any): Promise<any> {
   const looseItemMatch = p.match(/^\/api\/loose-items\/([^/]+)$/);
   if (looseItemMatch) {
     validatePhotos(body.photos, 4);
-    const token = getToken() || '';
-    const r = await fetch(`/api/loose-items/${looseItemMatch[1]}`, {
-      method: 'PUT',
-      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
+    const existingLoose = await pb.collection('loose_items').getOne(looseItemMatch[1]);
+    if (existingLoose.company_id !== cid) throw new Error('Forbidden');
+    const rec = await pb.collection('loose_items').update(looseItemMatch[1], {
+      client_name:    body.client_name || '',
+      grid_x:         String(body.grid_x ?? existingLoose.grid_x ?? '1'),
+      grid_y:         String(body.grid_y ?? existingLoose.grid_y ?? '1'),
+      item_type:      body.item_type || 'Boxes',
+      furniture_type: body.furniture_type || '',
+      color:          body.color || '',
+      condition:      body.condition || [],
+      status:         body.status || 'PENDING',
+      comments:       body.comments || '',
+      photo_files:    photosPayload(body.photos),
     });
-    if (!r.ok) throw new Error((await r.json().catch(() => ({}))).error || 'Failed to update item');
-    const updated = mapLooseItem(await r.json());
+    const updated = mapLooseItem(rec);
     logActivity({ action: 'EDITED', entity_type: 'loose_item', entity_id: updated.id, entity_label: `Loose Item · ${updated.client_name || '—'} · ${updated.item_type || '—'}` });
     return updated;
   }
@@ -926,23 +940,23 @@ async function routeDelete(path: string): Promise<any> {
   const p   = url.pathname;
   const cid = companyId();
 
-  // DELETE /api/boxes/:id — soft delete (move to deleted_vaults)
+  // DELETE /api/boxes/:id — marks the vault deleted; the record and its photos stay put
   const boxMatch = p.match(/^\/api\/boxes\/([^/]+)$/);
   if (boxMatch) {
     const vaultId = boxMatch[1];
     const v = await pb.collection('vaults').getOne(vaultId);
     if (v.company_id !== cid) throw new Error('Forbidden');
+    if (v.deleted_at) return null; // ya estaba en la papelera
     const position = v.position || `${v.row}${v.col}-L${v.level}`;
-    // Delete vault first — if this fails, no phantom deleted_vaults record is created
-    await pb.collection('vaults').delete(vaultId);
-    const deletedRecord = cid ? await pb.collection('deleted_vaults').create({
-      company_id: cid,
-      vault_data: mapVault(v),
+    // Nothing is destroyed or copied: the row keeps its id, box_id, qr_token and
+    // photos, so a restore leaves the printed QR label still pointing at it. The
+    // unique position index is partial (WHERE deleted_at = ''), so the slot frees up.
+    await pb.collection('vaults').update(vaultId, {
+      deleted_at: new Date().toISOString(),
       deleted_by: userId() || '',
-      reason: 'manual',
-    }) : null;
+    });
     const { photos: _p, ...vaultSnap } = mapVault(v);
-    logActivity({ action: 'DELETED', entity_type: 'vault', entity_id: deletedRecord?.id || vaultId, entity_label: `Vault ${position} · ${v.client_name || '—'}`, before_data: vaultSnap });
+    logActivity({ action: 'DELETED', entity_type: 'vault', entity_id: vaultId, entity_label: `Vault ${position} · ${v.client_name || '—'}`, before_data: vaultSnap });
     return null;
   }
 
@@ -968,24 +982,19 @@ async function routeDelete(path: string): Promise<any> {
   // DELETE /api/deleted-boxes/:id — permanent delete
   const delMatch = p.match(/^\/api\/deleted-boxes\/([^/]+)$/);
   if (delMatch) {
+    // Only a vault already in the bin can be destroyed for good
     let dv: any;
     try {
-      dv = await pb.collection('deleted_vaults').getFirstListItem(
-        `id="${sf(delMatch[1])}" && company_id="${cid}"`
+      dv = await pb.collection('vaults').getFirstListItem(
+        `id="${sf(delMatch[1])}" && company_id="${cid}" && deleted_at != ""`
       );
     } catch {
-      try {
-        dv = await pb.collection('deleted_vaults').getFirstListItem(
-          `company_id="${cid}" && vault_data~"${sf(delMatch[1])}"`
-        );
-      } catch {
-        throw new Error('This vault has already been restored or permanently deleted.');
-      }
+      throw new Error('This vault has already been restored or permanently deleted.');
     }
-    if (dv.company_id !== cid) throw new Error('Forbidden');
     const dvId = dv.id as string;
-    const originalVaultId = (dv.vault_data as any)?.box_id as string | undefined;
-    await pb.collection('deleted_vaults').delete(dvId);
+    const originalVaultId = dvId;
+    // Removing the record also removes its photos from R2 — PocketBase handles that
+    await pb.collection('vaults').delete(dvId);
     // Clean up activity_log entries via server-side route (uses admin token to bypass PB rules)
     const token = pb.authStore.token;
     if (token && cid) {

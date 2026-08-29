@@ -44,7 +44,7 @@ function VaultPrintContent() {
         }
         if (v.client_name && user?.company_id) {
           try {
-            const filter = `company_id="${sf(user.company_id)}" && client_name="${sf(v.client_name)}"`;
+            const filter = `company_id="${sf(user.company_id)}" && client_name="${sf(v.client_name)}" && deleted_at = ""`;
             const sorted = await pb.collection('vaults').getFullList({
               filter, fields: 'id,created', sort: 'created',
             });

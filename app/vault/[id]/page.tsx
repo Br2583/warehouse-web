@@ -14,7 +14,7 @@ export default function VaultRedirectPage() {
   useEffect(() => {
     if (!id || !user?.company_id) return;
     pb.collection('vaults').getFirstListItem(
-      `id="${sf(String(id))}" && company_id="${sf(user.company_id)}"`,
+      `id="${sf(String(id))}" && company_id="${sf(user.company_id)}" && deleted_at = ""`,
       { fields: 'id,warehouse_id' }
     )
       .then(vault => {

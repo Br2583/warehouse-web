@@ -32,7 +32,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ war
   catch { return NextResponse.json({ error: 'Admin auth failed — try again' }, { status: 500 }); }
 
   // Fetch vaults for this warehouse (or all if "all") — paginate to avoid truncation
-  let vaultFilter = `company_id="${sf(me.company_id)}"`;
+  let vaultFilter = `company_id="${sf(me.company_id)}" && deleted_at = ""`;
   if (warehouseId && warehouseId !== 'all') vaultFilter += ` && warehouse_id="${sf(warehouseId)}"`;
 
   const vaults: any[] = [];

@@ -25,7 +25,7 @@ export default function ScanPage() {
     setState('searching');
     try {
       const records = await pb.collection('vaults').getFullList({
-        filter: `id="${sf(boxId)}" && company_id="${sf(user.company_id)}"`,
+        filter: `id="${sf(boxId)}" && company_id="${sf(user.company_id)}" && deleted_at = ""`,
         fields: 'id,box_id,warehouse_id',
       });
       if (records.length === 0) {

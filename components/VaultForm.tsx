@@ -5,6 +5,7 @@ import { XMarkIcon } from '@/components/icons';
 import { api } from '@/lib/api';
 import { useAuth } from '@/lib/auth-context';
 import PhotoAddButton from '@/components/PhotoAddButton';
+import { photoSrc, usePhotoToken } from '@/lib/photo-url';
 
 const JOB_TYPES       = ['Fire', 'Water', 'Mold', 'Moving', 'Storage'];
 const CONTENTS_TYPES  = ['Boxes', 'Furniture', 'Both'];
@@ -23,7 +24,9 @@ export interface VaultFormData {
   pack_date: string;
   status: string;
   comments: string;
-  photos: string[];
+  photos: (string | File)[];
+  /** Record the saved photos belong to, for building their URLs. */
+  photoRef?: { id: string; collectionName?: string };
   // add-only
   row?: string;
   column?: number;
@@ -70,6 +73,7 @@ export default function VaultForm({
 }: Props) {
   const set = (patch: Partial<VaultFormData>) => onChange({ ...value, ...patch });
   const { user } = useAuth();
+  const photoToken = usePhotoToken();
   const [members, setMembers] = useState<{ user_id: string; name: string }[]>([]);
   const onChangeRef = useRef(onChange);
   onChangeRef.current = onChange;
@@ -251,9 +255,9 @@ export default function VaultForm({
         <label className="block text-xs text-gray-500 mb-2">Photos (max 6)</label>
         {value.photos.length > 0 && (
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mb-2">
-            {value.photos.map((src, idx) => (
+            {value.photos.map((photo, idx) => (
               <div key={idx} className="relative group">
-                <img src={src} alt="" className="w-full h-20 object-cover rounded-xl" />
+                <img src={photoSrc(photo, value.photoRef || { id: '' }, 'grid', photoToken)} alt="" className="w-full h-20 object-cover rounded-xl" />
                 <button
                   type="button"
                   onClick={() => onRemovePhoto(idx)}

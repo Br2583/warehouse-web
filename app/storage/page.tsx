@@ -13,6 +13,7 @@ import { useAuth } from '@/lib/auth-context';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { compressImage } from '@/lib/compress-image';
+import { photoSrc, photoUrl, usePhotoToken } from '@/lib/photo-url';
 
 const STATUS_CONFIG: Record<string, { color: string; label: string }> = {
   AVAILABLE:   { color: 'bg-green-100 text-green-700',  label: 'Available' },
@@ -24,22 +25,23 @@ export default function StoragePage() {
   const { canManage } = useAuth();
   const router = useRouter();
 
+  const photoToken = usePhotoToken();
   const [units, setUnits] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [showCreate, setShowCreate] = useState(false);
   const [saving, setSaving] = useState(false);
   const [createError, setCreateError] = useState('');
-  const [form, setForm] = useState({ unit_name: '', address: '', city: '', state: '', client_name: '', capacity: '', access_code: '', status: 'AVAILABLE', notes: '', intake_date: new Date().toISOString().split('T')[0], photos: [] as string[] });
+  const [form, setForm] = useState({ unit_name: '', address: '', city: '', state: '', client_name: '', capacity: '', access_code: '', status: 'AVAILABLE', notes: '', intake_date: new Date().toISOString().split('T')[0], photos: [] as (string | File)[] });
 
-  const addCreatePhotoB64 = (b64: string) => {
-    setForm(f => ({ ...f, photos: [...f.photos, b64].slice(0, 6) }));
+  const addCreatePhoto = (photo: string | File) => {
+    setForm(f => ({ ...f, photos: [...f.photos, photo].slice(0, 4) }));
   };
 
   const handleCreatePhotoFiles = async (files: FileList | null) => {
     if (!files) return;
     for (const file of Array.from(files).slice(0, 6)) {
-      try { addCreatePhotoB64(await compressImage(file)); } catch (err: any) { setCreateError(err?.message || 'Photo too large'); }
+      try { addCreatePhoto(await compressImage(file)); } catch (err: any) { setCreateError(err?.message || 'Photo too large'); }
     }
   };
 
@@ -151,9 +153,9 @@ export default function StoragePage() {
                 <div className="md:col-span-2">
                   <label className="block text-xs text-gray-500 mb-2">Photos (optional, max 4)</label>
                   <div className="flex flex-wrap gap-2">
-                    {form.photos.map((src, i) => (
+                    {form.photos.map((photo, i) => (
                       <div key={i} className="relative w-16 h-16 rounded-xl overflow-hidden border border-gray-200 flex-shrink-0">
-                        <img src={src} alt="" className="w-full h-full object-cover" />
+                        <img src={photoSrc(photo, { id: '' }, 'grid', photoToken)} alt="" className="w-full h-full object-cover" />
                         <button
                           type="button"
                           onClick={() => setForm(f => ({ ...f, photos: f.photos.filter((_, j) => j !== i) }))}
@@ -163,7 +165,7 @@ export default function StoragePage() {
                     ))}
                     {form.photos.length < 4 && (
                       <div className="w-full mt-2">
-                        <PhotoAddButton onFiles={handleCreatePhotoFiles} onPhotoNative={addCreatePhotoB64} />
+                        <PhotoAddButton onFiles={handleCreatePhotoFiles} onPhotoNative={addCreatePhoto} />
                       </div>
                     )}
                   </div>
@@ -221,7 +223,7 @@ export default function StoragePage() {
                     <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden hover:shadow-md transition-all cursor-pointer group">
                       {hasPhoto ? (
                         <div className="h-36 overflow-hidden">
-                          <img src={unit.photos[0]} alt={unit.unit_name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+                          <img src={photoUrl(unit.photo_ref, unit.photos[0], 'grid', photoToken)} alt={unit.unit_name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
                         </div>
                       ) : (
                         <div className="h-36 bg-gradient-to-br from-blue-50 to-indigo-50 flex items-center justify-center">

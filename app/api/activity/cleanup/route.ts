@@ -42,7 +42,7 @@ export async function POST(req: NextRequest) {
     if (originalVaultId) {
       await collectIds(`company_id="${companyId}" && entity_id="${originalVaultId}"`);
     }
-    // DELETED / RESTORED logs use the deleted_vaults record id (dvId) as entity_id
+    // Since vaults are soft-deleted, every log for a vault shares the same entity_id
     if (dvId) {
       await collectIds(`company_id="${companyId}" && entity_id="${dvId}"`);
     }
