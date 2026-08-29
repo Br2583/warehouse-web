@@ -15,13 +15,12 @@
 - `components/AppShell.tsx` — shows BottomNav on auth routes
 - `components/Sidebar.tsx` — desktop only (hidden on mobile)
 - `components/BottomNav.tsx` — mobile bottom nav (5 items)
-- `proxy.ts` — checks portal_unlocked cookie, refreshes sliding 2h window (renamed from middleware.ts in Next.js 16)
-- `app/api/portal/route.ts` — server-side portal code check with rate limiting
+- `proxy.ts` — (1) HTTP→HTTPS in prod, (2) guards `/admin-k9x2m7` via `admin_session` cookie, (3) 30-day inactivity timeout on protected routes via `wm_last_active` cookie (renamed from middleware.ts in Next.js 16)
 
 ## Routes
 | Route | Description |
 |-------|-------------|
-| `/` | Landing — video bg, portal access, typewriter |
+| `/` | Landing — Claude Design redesign (Archivo font, warm palette, brand band) |
 | `/login` | Google OAuth / create company / join with invite code |
 | `/dashboard` | Stats overview, inventory, tasks, quick actions |
 | `/warehouses` | List 3 warehouses with volt counts |
@@ -34,10 +33,12 @@
 | `/profile` | User info, company, team members, change PIN |
 
 ## Security — Implemented
-- Portal code in `.env.local` as `PORTAL_CODE` (server-only, never in browser bundle)
-- `app/api/portal/route.ts` verifies server-side — 5 attempts max, 30s lockout per IP
-- Middleware enforces 2-hour sliding inactivity timeout on `portal_unlocked` cookie
+- **Multi-tenant isolation is enforced by PocketBase collection rules** (`company_id = @request.auth.company_id`) — the browser talks to PocketBase directly (`NEXT_PUBLIC_PB_URL` is public), so the rules ARE the boundary. Audited + verified 2026-08-29.
+- `/admin-k9x2m7` guarded server-side in `proxy.ts` (admin_session cookie: SHA-256 + salt + timing-safe compare); each `/api/admin/*` route also checks `isAdminRequest`
+- 30-day inactivity timeout on protected routes via `wm_last_active` cookie
 - Cookie set server-side: `SameSite=Lax` (Strict broke OAuth redirect), `Secure` in production
+- Filter injection guarded via `sf()` escape on every interpolated value
+- Rate limiting (chat, email verify/reset, admin-login, join, notify)
 - Security headers in `next.config.ts`: X-Content-Type-Options, X-Frame-Options, Referrer-Policy, Permissions-Policy
 - EmailJS keys in `.env.local` with NEXT_PUBLIC_ prefix
 - `api.delete` handles 204 No Content safely
@@ -48,7 +49,8 @@
 NEXT_PUBLIC_EMAILJS_SERVICE_ID=service_gxur23h
 NEXT_PUBLIC_EMAILJS_TEMPLATE_ID=warehouse_report  <- verify this is the real template ID in EmailJS dashboard
 NEXT_PUBLIC_EMAILJS_PUBLIC_KEY=I_NflBogOJ5lZnKiG
-PORTAL_CODE=2019   <- change here anytime, restart server for it to take effect
+# Server-only (no NEXT_PUBLIC): PB_ADMIN_EMAIL/PASSWORD, JWT_SECRET, ADMIN_SECRET,
+# ADMIN_SESSION_SALT, BREVO_API_KEY, FIREBASE_SERVICE_ACCOUNT_JSON, R2_* (bucket warehouse-manager)
 ```
 
 ## Data Model (Volt)
@@ -56,8 +58,12 @@ PORTAL_CODE=2019   <- change here anytime, restart server for it to take effect
 box_id, warehouse_id, row (A-J), column (1-8), level (1=lower / 2=upper), position
 client_name, job_type (Fire/Water/Moving/Storage), content_type (Boxes/Furniture/Both)
 room_location[], vault_status[] (Total Loss / Needs Cleaning / Ready to Go / Storage Only)
-packer, photos[] (base64, max 6, 5MB each), estado/status (PENDING/READY/DELIVERED), comments
+packer, estado/status (PENDING/READY/DELIVERED), comments
+photo_files[] (Cloudflare R2 via PocketBase S3, protected, max 6, ~2MB compressed, thumbs 300x300/100x100)
+deleted_at/deleted_by (soft-delete: mark instead of destroy; keeps id/box_id/qr_token so the printed QR label survives a restore)
 ```
+Photo URLs/tokens/thumbs are centralized in `lib/photo-url.ts`. Every vaults query
+must filter `deleted_at=""` (or `!= ""` for the trash) — the main soft-delete risk.
 
 ## Conventions
 - UI label: "Volt" (never "Box"). "Vault Status" = condition tags on a volt.
@@ -65,28 +71,20 @@ packer, photos[] (base64, max 6, 5MB each), estado/status (PENDING/READY/DELIVER
 - No console.log in production. No alert() to show invitation codes (they show inline).
 - Design: bg-gray-50 base, blue-600 accent, rounded-2xl cards, border-gray-100
 
-## Portal Code Runtime Change
-- `data/portal-code.json` — written by `POST /api/portal/change-code`, gitignored
-- `app/api/portal/route.ts` reads file first, falls back to `PORTAL_CODE` env var
-- Change requires current code as verification; owner-only UI in `/profile`
+## Deploy
+- **Railway** auto-despliega en cada `git push origin main` (NO usar `railway up`)
+- Backend PocketBase también en Railway; fotos en Cloudflare R2 (vía S3 de PocketBase)
+- App Android (Capacitor) usa `server.url = managerwarehouse.cc` → los cambios web/backend NO requieren APK nueva
+- Todas las variables de `.env.local` van en Railway → Variables panel
 
-## Deploy — Next Session
-- **Railway** — plataforma elegida ($5/mes, subdominio gratis `xxx.up.railway.app`)
-- Pasos: subir repo a GitHub → crear cuenta Railway → conectar repo → pegar variables de .env.local → listo
-- `data/portal-code.json` necesita volumen persistente en Railway (configurar en settings)
-- Build command: `npm run build` — Start command: `npm run start`
-- Todas las variables de .env.local van en Railway → Variables panel
-
-## Estado actual — Todo listo para producción
-- Build limpio: `npx next build` sin warnings ni errores
-- `middleware.ts` migrado a `proxy.ts` (Next.js 16 convention)
-- Todos los `alert()` reemplazados por banners de error inline
-- Todos los `console.error` eliminados de producción
-- `alt` en todas las imágenes
-- Mobile: landing, portal modal y login se ven bien en 375px
+## Estado actual — En producción
+- Desplegado en Railway (auto-deploy en cada push). Backend PocketBase + fotos R2 en vivo.
+- Build limpio: `npx next build` y `tsc --noEmit` sin errores
+- `proxy.ts` es la convención de middleware de Next.js 16
+- 0 `console.log`/`alert()` en producción; `alt` en todas las imágenes
 - SameSite=Lax en cookie (fix del loop infinito con Google OAuth)
-- ngrok instalado en `C:\Users\PC\ngrok\ngrok.exe` para testing local
+- Auditoría de seguridad + bugs completa 2026-08-29: sin huecos ni bugs funcionales
 
-## PENDING — Next Session
-1. **Desplegar en Railway** — usuario tiene $5, listo para hacerlo
-2. **Verificar EmailJS template ID** — confirmar que `warehouse_report` es el ID real en el dashboard de EmailJS
+## PENDING
+- Menores (ver memoria `auditoria-completa-2026-08-29`): eslint `any` gradual, campo `users.avatar` sin usar
+- Verificar EmailJS template ID `warehouse_report` en el dashboard de EmailJS

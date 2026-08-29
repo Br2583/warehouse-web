@@ -6,6 +6,9 @@ import { getPbAdminToken, PB_URL } from '@/lib/pb-admin';
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://managerwarehouse.cc';
 
+// Escape a value before interpolating it into a PocketBase filter string.
+function sf(v: string) { return v.replace(/\\/g, '\\\\').replace(/"/g, '\\"'); }
+
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   if (!isAdminRequest(req)) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
@@ -21,7 +24,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     fetch(`${PB_URL}/api/collections/companies/records/${id}`, {
       headers: { Authorization: `Bearer ${adminToken}` },
     }),
-    fetch(`${PB_URL}/api/collections/users/records?filter=(company_id="${id}")&fields=id,name,email,role&perPage=200`, {
+    fetch(`${PB_URL}/api/collections/users/records?filter=(company_id="${sf(id)}")&fields=id,name,email,role&perPage=200`, {
       headers: { Authorization: `Bearer ${adminToken}` },
     }),
   ]);
@@ -104,7 +107,7 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
     fetch(`${PB_URL}/api/collections/companies/records/${id}`, {
       headers: { Authorization: `Bearer ${adminToken}` },
     }),
-    fetch(`${PB_URL}/api/collections/users/records?filter=(company_id="${id}")&perPage=200`, {
+    fetch(`${PB_URL}/api/collections/users/records?filter=(company_id="${sf(id)}")&perPage=200`, {
       headers: { Authorization: `Bearer ${adminToken}` },
     }),
   ]);
