@@ -1071,7 +1071,7 @@ export default function WarehouseDetailPage() {
                         initial={{ opacity: 0, scale: 0.95, y: 8 }}
                         animate={{ opacity: 1, scale: 1, y: 0 }}
                         exit={{ opacity: 0, scale: 0.95, y: 8 }}
-                        transition={{ duration: 0.18, ease: 'easeOut' }}
+                        transition={{ type: 'spring', stiffness: 380, damping: 30 }}
                         className="bg-white rounded-2xl p-4 w-full max-w-sm shadow-xl max-h-[80vh] flex flex-col"
                         onClick={e => e.stopPropagation()}
                       >
@@ -1148,6 +1148,7 @@ export default function WarehouseDetailPage() {
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.95 }}
+                transition={{ type: 'spring', stiffness: 380, damping: 30 }}
                 className="bg-white rounded-2xl p-6 w-full max-w-lg shadow-xl max-h-[90vh] overflow-y-auto"
                 onClick={e => e.stopPropagation()}
               >
@@ -1269,6 +1270,7 @@ export default function WarehouseDetailPage() {
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.95 }}
+                transition={{ type: 'spring', stiffness: 380, damping: 30 }}
                 className="bg-white rounded-2xl p-6 w-full max-w-lg shadow-xl max-h-[90vh] overflow-y-auto"
                 onClick={e => e.stopPropagation()}
               >
@@ -1304,6 +1306,7 @@ export default function WarehouseDetailPage() {
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.95 }}
+                transition={{ type: 'spring', stiffness: 380, damping: 30 }}
                 className="bg-white rounded-2xl p-6 w-full max-w-lg shadow-xl max-h-[90vh] overflow-y-auto"
                 onClick={e => e.stopPropagation()}
               >
