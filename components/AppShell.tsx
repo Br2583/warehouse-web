@@ -2,6 +2,7 @@
 
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
+import { prefetchPhotoToken } from '@/lib/photo-url';
 import MobileNav from './MobileNav';
 import TopBar from './TopBar';
 import Tutorial from './Tutorial';
@@ -21,6 +22,11 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const { user, loading, sessionExpired } = useAuth();
+
+  // Ask for the photo access token the moment the session is up, so opening a
+  // vault does not spend a round trip before it can request the first image.
+  useEffect(() => { if (user) prefetchPhotoToken(); }, [user]);
+
   const { show: showTutorial, dismiss: dismissTutorial } = useTutorial(user?.id);
   const isProtected = AUTH_ROUTES.some(r => pathname === r || pathname.startsWith(r + '/'));
   const showNav = isProtected && pathname !== '/onboarding' && pathname !== '/scan' && !pathname.endsWith('/print');

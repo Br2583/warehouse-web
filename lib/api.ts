@@ -1,4 +1,5 @@
 import { pb } from './pb';
+import { warmThumbnails } from './photo-url';
 import { genCode } from './utils';
 
 // ─── Auth token helpers (now PocketBase manages the session) ──────────────────
@@ -410,7 +411,9 @@ async function routeGet(path: string): Promise<any> {
     const period    = q.get('period') || '';
     const filterUid = q.get('userId') || '';
     const filterAct = q.get('action') || '';
-    let filter = `company_id="${cid}" && deleted_at = ""`;
+    // activity_logs has no deleted_at — filtering on it makes PocketBase reject
+    // the whole query, which is what broke this page.
+    let filter = `company_id="${cid}"`;
     if (period === 'today') {
       const start = new Date(); start.setHours(0, 0, 0, 0);
       filter += ` && created >= "${start.toISOString()}"`;
@@ -509,6 +512,7 @@ async function routePost(path: string, body: any): Promise<any> {
       }
       throw e;
     }
+    warmThumbnails({ id: v.id, collectionName: 'vaults' }, v.photo_files);
     logActivity({ action: 'CREATED', entity_type: 'vault', entity_id: v.id, entity_label: `Vault ${v.row}${v.col}-L${v.level} · ${body.client_name || '—'} · ${body.job_type || '—'}` });
     return mapVault(v);
   }
@@ -661,6 +665,7 @@ async function routePost(path: string, body: any): Promise<any> {
       comments:       body.comments || '',
       photo_files:    photosPayload(body.photos),
     });
+    warmThumbnails({ id: rec.id, collectionName: 'loose_items' }, rec.photo_files);
     const created = mapLooseItem(rec);
     logActivity({ action: 'CREATED', entity_type: 'loose_item', entity_id: created.id, entity_label: `Loose Item · ${created.client_name || '—'} · ${created.item_type || '—'}` });
     return created;
@@ -718,6 +723,7 @@ async function routePut(path: string, body: any): Promise<any> {
       comments:     body.comments,
       estado:       body.estado || body.status,
     });
+    warmThumbnails({ id: v.id, collectionName: 'vaults' }, v.photo_files);
     logActivity({ action: 'EDITED', entity_type: 'vault', entity_id: v.id, entity_label: `Vault ${v.row}${v.col}-L${v.level} · ${v.client_name || '—'}`, before_data: beforeSnapshot });
     return mapVault(v);
   }
@@ -905,6 +911,7 @@ async function routePut(path: string, body: any): Promise<any> {
       comments:       body.comments || '',
       photo_files:    photosPayload(body.photos),
     });
+    warmThumbnails({ id: rec.id, collectionName: 'loose_items' }, rec.photo_files);
     const updated = mapLooseItem(rec);
     logActivity({ action: 'EDITED', entity_type: 'loose_item', entity_id: updated.id, entity_label: `Loose Item · ${updated.client_name || '—'} · ${updated.item_type || '—'}` });
     return updated;
