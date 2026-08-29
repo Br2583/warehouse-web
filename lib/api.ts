@@ -370,7 +370,7 @@ async function routeGet(path: string): Promise<any> {
     if (!cid) return [];
     const items = await pb.collection('storage_units').getFullList({
       filter: `company_id="${cid}"`,
-      fields: 'id,unit_name,address,city,state,client_name,capacity,access_code,status,notes,intake_date,photos,company_id,created,slots,grid_rows,grid_cols',
+      fields: 'id,unit_name,address,city,state,client_name,capacity,access_code,status,notes,intake_date,photo_files,company_id,created,slots,grid_rows,grid_cols',
     });
     return items
       .sort((a: any, b: any) => a.created < b.created ? 1 : -1)

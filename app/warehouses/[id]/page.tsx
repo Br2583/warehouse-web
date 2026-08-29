@@ -260,6 +260,8 @@ export default function WarehouseDetailPage() {
       status:        box.estado || box.status || 'PENDING',
       comments:      box.comments || '',
       photos:        box.photos || [],
+      // Needed to build URLs for the already-saved photos (filenames live in R2).
+      photoRef:      { id: box.box_id, collectionName: 'vaults' },
     });
     setEditError('');
     setShowEdit(true);
@@ -1479,7 +1481,7 @@ export default function WarehouseDetailPage() {
                     <div className="flex gap-2 flex-wrap">
                       {looseForm.photos.map((photo, i) => (
                         <div key={i} className="relative">
-                          <img src={photoSrc(photo, { id: '' }, 'grid', photoToken)} alt="" className="w-16 h-16 object-cover rounded-lg" />
+                          <img src={photoSrc(photo, editingLooseId ? { id: editingLooseId, collectionName: 'loose_items' } : { id: '' }, 'grid', photoToken)} alt="" className="w-16 h-16 object-cover rounded-lg" />
                           <button type="button"
                             onClick={() => setLooseForm(f => ({ ...f, photos: f.photos.filter((_, j) => j !== i) }))}
                             className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white rounded-full text-xs flex items-center justify-center leading-none">

@@ -9,9 +9,24 @@ const GalleryIcon = () => (
   </svg>
 );
 
+/**
+ * The native camera returns a base64 data URL, but the photo pipeline (R2 upload)
+ * works with File objects — the same as the web <input type=file>. Convert here so
+ * every consumer receives a File and the photo actually uploads.
+ */
+function dataUrlToFile(dataUrl: string): File {
+  const [head, body] = dataUrl.split(',');
+  const mime = head.match(/data:(.*?);/)?.[1] || 'image/jpeg';
+  const bin = atob(body || '');
+  const arr = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
+  const ext = mime.split('/')[1] || 'jpg';
+  return new File([arr], `camera-${Date.now()}.${ext}`, { type: mime });
+}
+
 export default function PhotoAddButton({ onFiles, onPhotoNative }: {
   onFiles: (files: FileList | null) => void;
-  onPhotoNative: (b64: string) => void;
+  onPhotoNative: (photo: File) => void;
 }) {
   const isNativeRef = useRef(false);
   const cameraInputRef = useRef<HTMLInputElement>(null);
@@ -39,7 +54,7 @@ export default function PhotoAddButton({ onFiles, onPhotoNative }: {
         resultType: CameraResultType.DataUrl,
         source: source === 'camera' ? CameraSource.Camera : CameraSource.Photos,
       });
-      if (photo.dataUrl) onPhotoNative(photo.dataUrl);
+      if (photo.dataUrl) onPhotoNative(dataUrlToFile(photo.dataUrl));
     } catch (err: any) {
       const msg = err?.message || String(err);
       if (!msg.includes('cancelled') && !msg.includes('cancel') && !msg.includes('No image')) {

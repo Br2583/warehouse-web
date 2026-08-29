@@ -43,7 +43,7 @@ interface Props {
   submitLabel?: string;
   onSubmit: (e: React.FormEvent) => void;
   onPhotos: (files: FileList | null) => void;
-  onPhotoNative: (b64: string) => void;
+  onPhotoNative: (photo: File) => void;
   onRemovePhoto: (idx: number) => void;
 }
 
