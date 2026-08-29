@@ -1,50 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getPbAdminToken, PB_URL, verifySessionUser } from '@/lib/pb-admin';
 
-export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const token = req.headers.get('Authorization')?.replace('Bearer ', '').trim();
-  if (!token) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-
-  const me = await verifySessionUser(token);
-  if (!me?.company_id) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  if (me.role !== 'owner' && me.role !== 'manager') {
-    return NextResponse.json({ error: 'Only managers and owners can edit items' }, { status: 403 });
-  }
-
-  const { id } = await params;
-
-  let adminToken: string;
-  try { adminToken = await getPbAdminToken(); }
-  catch { return NextResponse.json({ error: 'Admin auth failed' }, { status: 500 }); }
-
-  const itemRes = await fetch(`${PB_URL}/api/collections/loose_items/records/${id}`, {
-    headers: { Authorization: `Bearer ${adminToken}` },
-  });
-  if (!itemRes.ok) return NextResponse.json({ error: 'Item not found' }, { status: 404 });
-  const existing = await itemRes.json();
-  if (existing.company_id !== me.company_id) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-
-  const body = await req.json();
-  const photos = body.photos || [];
-  if (photos.length > 4) return NextResponse.json({ error: 'Maximum 4 photos allowed' }, { status: 400 });
-
-  const res = await fetch(`${PB_URL}/api/collections/loose_items/records/${id}`, {
-    method: 'PATCH',
-    headers: { Authorization: `Bearer ${adminToken}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      client_name:    body.client_name?.trim() ?? existing.client_name,
-      item_type:      body.item_type ?? existing.item_type,
-      furniture_type: body.furniture_type ?? existing.furniture_type,
-      color:          body.color ?? existing.color,
-      condition:      body.condition ?? existing.condition,
-      status:         body.status ?? existing.status,
-      photos,
-      comments:       body.comments ?? existing.comments,
-    }),
-  });
-  if (!res.ok) return NextResponse.json({ error: 'Failed to update item' }, { status: 500 });
-  return NextResponse.json(await res.json());
-}
+// NOTE: create/edit for loose items runs client-side in lib/api.ts (straight to
+// PocketBase, so File photos survive). Only DELETE still goes through this route.
 
 export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const token = _req.headers.get('Authorization')?.replace('Bearer ', '').trim();
