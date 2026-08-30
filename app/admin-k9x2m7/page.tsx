@@ -226,7 +226,7 @@ export default function AdminPage() {
   ];
 
   // Direct links into the real PocketBase admin — no duplicated data, always live.
-  const PB = process.env.NEXT_PUBLIC_PB_URL || '';
+  const PB = process.env.NEXT_PUBLIC_PB_URL || 'https://pocketbase-production-e699.up.railway.app';
   const pbLink = (collectionId: string) => `${PB}/_/#/collections?collectionId=${collectionId}`;
   const dataLinks: { label: string; desc: string; id: string }[] = [
     { label: 'Usuarios',        desc: 'Todas las cuentas (con o sin empresa)', id: '_pb_users_auth_' },
