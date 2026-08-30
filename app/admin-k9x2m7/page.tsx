@@ -51,7 +51,7 @@ interface DbStatsData {
   ts: number;
 }
 
-type Tab = 'pending' | 'active' | 'suspended' | 'rejected' | 'health' | 'security' | 'stats';
+type Tab = 'pending' | 'active' | 'suspended' | 'rejected' | 'health' | 'security' | 'stats' | 'data';
 
 export default function AdminPage() {
   const router = useRouter();
@@ -219,9 +219,28 @@ export default function AdminPage() {
   ];
 
   const monitorTabs: { id: Tab; label: string }[] = [
+    { id: 'data',     label: 'Live Data' },
     { id: 'health',   label: 'Health' },
     { id: 'security', label: 'Security' },
     { id: 'stats',    label: 'Stats' },
+  ];
+
+  // Direct links into the real PocketBase admin — no duplicated data, always live.
+  const PB = process.env.NEXT_PUBLIC_PB_URL || '';
+  const pbLink = (collectionId: string) => `${PB}/_/#/collections?collectionId=${collectionId}`;
+  const dataLinks: { label: string; desc: string; id: string }[] = [
+    { label: 'Usuarios',        desc: 'Todas las cuentas (con o sin empresa)', id: '_pb_users_auth_' },
+    { label: 'Empresas',        desc: 'Compañías y su estado',                 id: 'pbc_3866053794' },
+    { label: 'Vaults',          desc: 'Todos los volts',                       id: 'pbc_1619759698' },
+    { label: 'Almacenes',       desc: 'Warehouses',                            id: 'pbc_1364849191' },
+    { label: 'Storage Units',   desc: 'Unidades de storage',                   id: 'pbc_1833992216' },
+    { label: 'Artículos sueltos', desc: 'Loose items',                         id: 'pbc_1127995052' },
+    { label: 'Tareas',          desc: 'Tasks',                                 id: 'pbc_2602490748' },
+    { label: 'Chat',            desc: 'Mensajes del equipo',                   id: 'pbc_102036695' },
+    { label: 'Snapshots',       desc: 'Reportes diarios',                      id: 'pbc_700096677' },
+    { label: 'Actividad',       desc: 'Registro de actividad',                 id: 'pbc_444539071' },
+    { label: 'Clientes',        desc: 'Clients',                               id: 'pbc_2442875294' },
+    { label: 'Device tokens',   desc: 'Tokens de notificaciones',              id: 'pbc_2424200676' },
   ];
 
   const listMap: Record<string, CompanyRecord[]> = { pending, active, suspended, rejected };
@@ -429,6 +448,37 @@ export default function AdminPage() {
               </div>
             )}
           </>
+        )}
+
+        {/* ── Live Data tab — direct links into the real PocketBase admin ── */}
+        {tab === 'data' && (
+          <div className="mt-4 space-y-4">
+            <div className="flex items-center justify-between gap-3 bg-white rounded-2xl border border-gray-100 p-5">
+              <div>
+                <h2 className="font-semibold text-gray-900">Datos reales (PocketBase)</h2>
+                <p className="text-sm text-gray-500 mt-0.5">Cada tarjeta abre el dato en vivo — sin copias, control total.</p>
+              </div>
+              <a href={`${PB}/_/`} target="_blank" rel="noopener noreferrer"
+                className="flex-shrink-0 px-4 py-2 bg-gray-950 text-white text-sm font-medium rounded-full hover:bg-gray-800 transition-colors">
+                Abrir panel
+              </a>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              {dataLinks.map(d => (
+                <a key={d.id} href={pbLink(d.id)} target="_blank" rel="noopener noreferrer"
+                  className="flex items-center justify-between gap-3 bg-white rounded-2xl border border-gray-100 p-4 hover:border-blue-400 hover:shadow-sm transition-all group">
+                  <div>
+                    <p className="font-medium text-gray-900 group-hover:text-blue-600 transition-colors">{d.label}</p>
+                    <p className="text-xs text-gray-400 mt-0.5">{d.desc}</p>
+                  </div>
+                  <span className="text-gray-300 group-hover:text-blue-500 transition-colors">↗</span>
+                </a>
+              ))}
+            </div>
+            <p className="text-xs text-gray-400 px-1">
+              Si te pide iniciar sesión, usa las credenciales de PocketBase (PB_ADMIN) — solo una vez por navegador.
+            </p>
+          </div>
         )}
 
         {/* ── Health tab ── */}
