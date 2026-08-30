@@ -143,14 +143,10 @@ export default function WarehouseDetailPage() {
   const [photoLoadError, setPhotoLoadError] = useState(false);
   const [warehouseRows, setWarehouseRows] = useState(10);
   const [warehouseCols, setWarehouseCols] = useState(8);
-  // Map grid scroll hint: whether there are more rows below the fold (mobile).
-  const gridScrollRef = useRef<HTMLDivElement>(null);
-  const [gridHasMore, setGridHasMore] = useState(false);
-  const updateGridHint = useCallback(() => {
-    const el = gridScrollRef.current;
-    if (!el) return;
-    setGridHasMore(el.scrollHeight - el.scrollTop - el.clientHeight > 4);
-  }, []);
+  // Map grid on mobile: fit the WHOLE grid on screen (no scroll) with square
+  // cells sized to the space between the header and the bottom nav. 0 = desktop.
+  const gridWrapRef = useRef<HTMLDivElement>(null);
+  const [cellPx, setCellPx] = useState(0);
   const [showGridEdit, setShowGridEdit] = useState(false);
   const [gridRowsInput, setGridRowsInput] = useState(10);
   const [gridColsInput, setGridColsInput] = useState(8);
@@ -470,12 +466,26 @@ export default function WarehouseDetailPage() {
   const activeRows = ROWS.slice(0, warehouseRows);
   const activeCols = COLUMNS.slice(0, warehouseCols);
 
-  // Recompute the "more rows below" hint whenever the grid content changes.
+  // Size the map cells so the whole grid fits between the header and the bottom
+  // nav — square, no scroll — for any column/row count. Desktop keeps flex sizing.
   useEffect(() => {
-    updateGridHint();
-    window.addEventListener('resize', updateGridHint);
-    return () => window.removeEventListener('resize', updateGridHint);
-  }, [viewMode, mapLevel, boxes, warehouseRows, warehouseCols, updateGridHint]);
+    const measure = () => {
+      const el = gridWrapRef.current;
+      if (!el || window.innerWidth >= 768) { setCellPx(0); return; }
+      const rect = el.getBoundingClientRect();
+      const nav = document.querySelector('.native-bottom-nav') as HTMLElement | null;
+      const bottomReserve = nav ? (window.innerHeight - nav.getBoundingClientRect().top) + 12 : 16;
+      const padH = 16, padV = 16, labelW = 20, headerH = 16, gap = 2;
+      const cols = activeCols.length || 1, rows = activeRows.length || 1;
+      const availW = rect.width - padH - labelW - cols * gap;
+      const availH = window.innerHeight - rect.top - bottomReserve - padV - headerH - rows * gap;
+      const size = Math.max(18, Math.floor(Math.min(availW / cols, availH / rows)));
+      setCellPx(size);
+    };
+    measure();
+    window.addEventListener('resize', measure);
+    return () => window.removeEventListener('resize', measure);
+  }, [viewMode, mapLevel, boxes, warehouseRows, warehouseCols, activeCols.length, activeRows.length]);
 
   const saveGridSize = async () => {
     setGridSaving(true);
@@ -776,24 +786,19 @@ export default function WarehouseDetailPage() {
                   </div>
                 </div>
 
-                {/* Grid — on mobile it scrolls inside its own panel (sticky column
-                    headers, slim scrollbar, fade hint) so bigger cells stay usable
-                    without the whole page scrolling. Desktop is unchanged. */}
-                <div className="bg-white rounded-2xl border border-gray-100 p-2 md:p-6 relative">
-                  <div
-                    ref={gridScrollRef}
-                    onScroll={updateGridHint}
-                    className="grid-scroll overflow-y-auto md:overflow-visible max-h-[calc(100dvh-356px)] md:max-h-none pr-1 md:pr-0"
-                  >
-                    {/* Column headers — stick to the top while the grid scrolls */}
-                    <div className="flex gap-0.5 md:gap-1.5 mb-1 md:mb-1.5 ml-5 md:ml-8 sticky top-0 z-10 bg-white pb-1">
+                {/* Grid — on mobile the whole grid fits on screen (square cells sized
+                    to the free height, no scroll); desktop keeps flexible sizing. */}
+                <div ref={gridWrapRef} className="bg-white rounded-2xl border border-gray-100 p-2 md:p-6">
+                  <div className="w-fit mx-auto md:w-full md:mx-0">
+                    {/* Column headers */}
+                    <div className="flex gap-0.5 md:gap-1.5 mb-0.5 md:mb-1.5 ml-5 md:ml-8">
                       {activeCols.map(col => (
-                        <div key={col} className="flex-1 min-w-0 text-center text-[9px] md:text-xs font-semibold text-gray-400">{col}</div>
+                        <div key={col} style={cellPx ? { width: cellPx } : undefined} className={`text-center text-[9px] md:text-xs font-semibold text-gray-400 ${cellPx ? '' : 'flex-1 min-w-0'}`}>{col}</div>
                       ))}
                     </div>
 
                     {activeRows.map(row => (
-                      <div key={row} className="flex items-center gap-0.5 md:gap-1.5 mb-1 md:mb-1.5">
+                      <div key={row} className="flex items-center gap-0.5 md:gap-1.5 mb-0.5 md:mb-1.5">
                         <div className="w-5 md:w-8 text-center text-xs font-bold text-gray-500 flex-shrink-0">{row}</div>
 
                         {activeCols.map(col => {
@@ -804,8 +809,9 @@ export default function WarehouseDetailPage() {
                               key={col}
                               whileHover={{ scale: 1.03 }}
                               whileTap={{ scale: 0.94 }}
+                              style={cellPx ? { width: cellPx, height: cellPx } : undefined}
                               onClick={() => { box ? selectVault(box) : openAddAtPosition(row, col, mapLevel); }}
-                              className={`flex-1 min-w-0 overflow-hidden h-12 md:h-14 rounded-lg md:rounded-xl border-2 flex flex-col items-center justify-center transition-all
+                              className={`overflow-hidden rounded-md md:rounded-xl border-2 flex flex-col items-center justify-center transition-all ${cellPx ? '' : 'flex-1 min-w-0 h-14'}
                                 ${box
                                   ? `${STATUS_CELL[status!] || 'bg-gray-300'} border-transparent text-white cursor-pointer`
                                   : 'bg-gray-50 border-dashed border-gray-200 hover:border-blue-400 hover:bg-blue-50 cursor-pointer'
@@ -813,10 +819,8 @@ export default function WarehouseDetailPage() {
                             >
                               {box ? (
                                 <>
-                                  <span className="block md:hidden text-[11px] font-bold leading-none text-center tracking-tight">
-                                    {box.client_name
-                                      ? box.client_name.split(' ').map((w: string) => w[0]).join('').slice(0, 3).toUpperCase()
-                                      : '?'}
+                                  <span className="block md:hidden font-bold leading-none text-center tracking-tight" style={{ fontSize: cellPx ? Math.max(8, Math.min(13, Math.round(cellPx * 0.42))) : 10 }}>
+                                    {(() => { const nm = (box.client_name || '').trim(); if (!nm) return '?'; const p = nm.split(/\s+/); return (p.length > 1 ? (p[0][0] + p[1][0]) : nm.slice(0, 2)).toUpperCase(); })()}
                                   </span>
                                   <span className="hidden md:block text-[10px] font-bold leading-tight w-full px-0.5 text-center truncate">{box.client_name}</span>
                                   <span className="hidden md:block text-[9px] opacity-75 mt-0.5 leading-none">{box.job_type}</span>
@@ -829,12 +833,6 @@ export default function WarehouseDetailPage() {
                         })}
                       </div>
                     ))}
-                  </div>
-                  {/* "More rows below" hint (mobile only) — fades in while scrollable */}
-                  <div className={`md:hidden pointer-events-none absolute inset-x-2 bottom-2 h-9 rounded-b-2xl bg-gradient-to-t from-white via-white/85 to-transparent flex items-end justify-center pb-1 transition-opacity duration-200 ${gridHasMore ? 'opacity-100' : 'opacity-0'}`}>
-                    <svg className="w-4 h-4 text-gray-400 animate-bounce" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
-                    </svg>
                   </div>
                 </div>
               </div>
