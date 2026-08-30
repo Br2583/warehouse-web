@@ -1070,7 +1070,7 @@ export default function WarehouseDetailPage() {
                 {/* Zone panel — mobile modal */}
                 <AnimatePresence>
                   {selectedZone && (
-                    <div className="lg:hidden fixed inset-0 bg-black/40 flex items-center justify-center z-[55] p-4"
+                    <div className="lg:hidden fixed inset-0 bg-black/40 flex items-start md:items-center justify-center z-[55] p-4"
                       onClick={() => { setSelectedZone(null); setShowLooseForm(false); }}>
                       <motion.div
                         initial={{ opacity: 0, scale: 0.95, y: 8 }}
@@ -1148,7 +1148,7 @@ export default function WarehouseDetailPage() {
         {/* Detail Modal */}
         <AnimatePresence>
           {selected && (
-            <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-[55] p-4" onClick={() => setSelected(null)}>
+            <div className="fixed inset-0 bg-black/30 flex items-start md:items-center justify-center z-[55] p-4" onClick={() => setSelected(null)}>
               <motion.div
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
@@ -1270,7 +1270,7 @@ export default function WarehouseDetailPage() {
         {/* Edit Vault Modal */}
         <AnimatePresence>
           {showEdit && editForm && selected && (
-            <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-[55] p-4" onClick={() => setShowEdit(false)}>
+            <div className="fixed inset-0 bg-black/30 flex items-start md:items-center justify-center z-[55] p-4" onClick={() => setShowEdit(false)}>
               <motion.div
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
@@ -1306,7 +1306,7 @@ export default function WarehouseDetailPage() {
         {/* Add Vault Modal */}
         <AnimatePresence>
           {showAdd && (
-            <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-[55] p-4" onClick={() => setShowAdd(false)}>
+            <div className="fixed inset-0 bg-black/30 flex items-start md:items-center justify-center z-[55] p-4" onClick={() => setShowAdd(false)}>
               <motion.div
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
@@ -1400,7 +1400,7 @@ export default function WarehouseDetailPage() {
       <AnimatePresence>
         {showLooseForm && (
           <div
-            className="fixed inset-0 bg-black/40 flex items-center justify-center z-[55] p-4"
+            className="fixed inset-0 bg-black/40 flex items-start md:items-center justify-center z-[55] p-4"
             onClick={() => { setShowLooseForm(false); setEditingLooseId(null); }}
           >
             <motion.div
