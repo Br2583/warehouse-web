@@ -227,20 +227,20 @@ export default function AdminPage() {
 
   // Direct links into the real PocketBase admin — no duplicated data, always live.
   const PB = process.env.NEXT_PUBLIC_PB_URL || 'https://pocketbase-production-e699.up.railway.app';
-  const pbLink = (collectionId: string) => `${PB}/_/#/collections?collectionId=${collectionId}`;
+  const pbLink = (collection: string) => `${PB}/_/#/collections?collection=${collection}`;
   const dataLinks: { label: string; desc: string; id: string }[] = [
-    { label: 'Usuarios',        desc: 'Todas las cuentas (con o sin empresa)', id: '_pb_users_auth_' },
-    { label: 'Empresas',        desc: 'Compañías y su estado',                 id: 'pbc_3866053794' },
-    { label: 'Vaults',          desc: 'Todos los volts',                       id: 'pbc_1619759698' },
-    { label: 'Almacenes',       desc: 'Warehouses',                            id: 'pbc_1364849191' },
-    { label: 'Storage Units',   desc: 'Unidades de storage',                   id: 'pbc_1833992216' },
-    { label: 'Artículos sueltos', desc: 'Loose items',                         id: 'pbc_1127995052' },
-    { label: 'Tareas',          desc: 'Tasks',                                 id: 'pbc_2602490748' },
-    { label: 'Chat',            desc: 'Mensajes del equipo',                   id: 'pbc_102036695' },
-    { label: 'Snapshots',       desc: 'Reportes diarios',                      id: 'pbc_700096677' },
-    { label: 'Actividad',       desc: 'Registro de actividad',                 id: 'pbc_444539071' },
-    { label: 'Clientes',        desc: 'Clients',                               id: 'pbc_2442875294' },
-    { label: 'Device tokens',   desc: 'Tokens de notificaciones',              id: 'pbc_2424200676' },
+    { label: 'Usuarios',        desc: 'Todas las cuentas (con o sin empresa)', id: 'users' },
+    { label: 'Empresas',        desc: 'Compañías y su estado',                 id: 'companies' },
+    { label: 'Vaults',          desc: 'Todos los volts',                       id: 'vaults' },
+    { label: 'Almacenes',       desc: 'Warehouses',                            id: 'warehouses' },
+    { label: 'Storage Units',   desc: 'Unidades de storage',                   id: 'storage_units' },
+    { label: 'Artículos sueltos', desc: 'Loose items',                         id: 'loose_items' },
+    { label: 'Tareas',          desc: 'Tasks',                                 id: 'tasks' },
+    { label: 'Chat',            desc: 'Mensajes del equipo',                   id: 'chat_messages' },
+    { label: 'Snapshots',       desc: 'Reportes diarios',                      id: 'snapshots' },
+    { label: 'Actividad',       desc: 'Registro de actividad',                 id: 'activity_logs' },
+    { label: 'Clientes',        desc: 'Clients',                               id: 'clients' },
+    { label: 'Device tokens',   desc: 'Tokens de notificaciones',              id: 'device_tokens' },
   ];
 
   const listMap: Record<string, CompanyRecord[]> = { pending, active, suspended, rejected };
