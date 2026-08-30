@@ -1,6 +1,10 @@
 'use client';
 
-import { useEffect, useState, useCallback, useRef } from 'react';
+import { useEffect, useLayoutEffect, useState, useCallback, useRef } from 'react';
+
+// Measure before paint on the client (avoids the map "resize jump"); falls back
+// to useEffect during SSR where layout effects don't run.
+const useIsoLayoutEffect = typeof window !== 'undefined' ? useLayoutEffect : useEffect;
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -147,6 +151,7 @@ export default function WarehouseDetailPage() {
   // cells sized to the space between the header and the bottom nav. 0 = desktop.
   const gridWrapRef = useRef<HTMLDivElement>(null);
   const [cellPx, setCellPx] = useState(0);
+  const [boxH, setBoxH] = useState(0);
   const [showGridEdit, setShowGridEdit] = useState(false);
   const [gridRowsInput, setGridRowsInput] = useState(10);
   const [gridColsInput, setGridColsInput] = useState(8);
@@ -468,7 +473,7 @@ export default function WarehouseDetailPage() {
 
   // Size the map cells so the whole grid fits between the header and the bottom
   // nav — square, no scroll — for any column/row count. Desktop keeps flex sizing.
-  useEffect(() => {
+  useIsoLayoutEffect(() => {
     const measure = () => {
       const el = gridWrapRef.current;
       if (!el || window.innerWidth >= 768) { setCellPx(0); return; }
@@ -481,6 +486,8 @@ export default function WarehouseDetailPage() {
       const availH = window.innerHeight - rect.top - bottomReserve - padV - headerH - rows * gap;
       const size = Math.max(18, Math.floor(Math.min(availW / cols, availH / rows)));
       setCellPx(size);
+      // Let the white panel fill the free height so the grid isn't stranded up top.
+      setBoxH(Math.max(220, Math.round(window.innerHeight - rect.top - bottomReserve)));
     };
     measure();
     window.addEventListener('resize', measure);
@@ -788,7 +795,7 @@ export default function WarehouseDetailPage() {
 
                 {/* Grid — on mobile the whole grid fits on screen (square cells sized
                     to the free height, no scroll); desktop keeps flexible sizing. */}
-                <div ref={gridWrapRef} className="bg-white rounded-2xl border border-gray-100 p-2 md:p-6">
+                <div ref={gridWrapRef} style={cellPx ? { minHeight: boxH } : undefined} className={`bg-white rounded-2xl border border-gray-100 p-2 md:p-6 ${cellPx ? 'flex flex-col justify-center' : ''}`}>
                   <div className="w-fit mx-auto md:w-full md:mx-0">
                     {/* Column headers */}
                     <div className="flex gap-0.5 md:gap-1.5 mb-0.5 md:mb-1.5 ml-5 md:ml-8">
