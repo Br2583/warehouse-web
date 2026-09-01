@@ -11,7 +11,7 @@ import type { ItemCounts } from '@/lib/item-counts';
 
 const JOB_TYPES       = ['Fire', 'Water', 'Mold', 'Moving', 'Storage'];
 const CONTENTS_TYPES  = ['Boxes', 'Furniture', 'Both'];
-const ROOM_LOCATIONS  = ['Kitchen', 'Patio', 'Living Room', 'Family Room', 'Dining Room', 'Bathroom', 'Bedroom 1', 'Bedroom 2', 'Bedroom 3'];
+const ROOM_LOCATIONS  = ['Kitchen', 'Living Room', 'Dining Room', 'Family Room', 'Master Bedroom', 'Bedroom 1', 'Bedroom 2', 'Bedroom 3', 'Bathroom', 'Garage', 'Basement', 'Attic', 'Home Office', 'Closet', 'Laundry Room', 'Hallway', 'Patio', 'Storage Room', 'Kids Room', 'Den'];
 const VAULT_STATUSES  = ['Total Loss', 'Needs Cleaning', 'Storage Only'];
 const ROWS            = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J'];
 const COLUMNS         = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11];
@@ -78,6 +78,7 @@ export default function VaultForm({
   const { user } = useAuth();
   const photoToken = usePhotoToken();
   const [members, setMembers] = useState<{ user_id: string; name: string }[]>([]);
+  const [roomInput, setRoomInput] = useState('');
   const onChangeRef = useRef(onChange);
   onChangeRef.current = onChange;
 
@@ -99,6 +100,13 @@ export default function VaultForm({
   }, []);
 
   const selectedPackers = parsePackers(value.packer);
+
+  const addRoom = () => {
+    const r = roomInput.trim();
+    if (!r) return;
+    if (!value.room_location.includes(r)) set({ room_location: [...value.room_location, r] });
+    setRoomInput('');
+  };
 
   return (
     <form onSubmit={onSubmit} className="space-y-4">
@@ -170,9 +178,20 @@ export default function VaultForm({
       <div>
         <label className="block text-xs text-gray-500 mb-2">Room Location {mode === 'add' ? '(multi)' : ''}</label>
         <div className="flex flex-wrap gap-2">
-          {ROOM_LOCATIONS.map(r => (
+          {[...ROOM_LOCATIONS, ...value.room_location.filter(r => !ROOM_LOCATIONS.includes(r))].map(r => (
             <button type="button" key={r} onClick={() => set({ room_location: toggle(value.room_location, r) })} className={chip(value.room_location.includes(r))}>{r}</button>
           ))}
+        </div>
+        <div className="flex gap-2 mt-2">
+          <input
+            type="text"
+            value={roomInput}
+            onChange={e => setRoomInput(e.target.value)}
+            onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addRoom(); } }}
+            placeholder="Add another room…"
+            className="flex-1 border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+          <button type="button" onClick={addRoom} className="px-3 py-2 text-sm rounded-xl border border-gray-200 text-gray-600 hover:border-blue-300 transition-colors">Add</button>
         </div>
       </div>
 
