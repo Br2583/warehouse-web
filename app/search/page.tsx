@@ -1,23 +1,171 @@
 'use client';
 
-import { useState, useEffect, Suspense } from 'react';
+import { useState, useEffect, useMemo, Suspense } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  MagnifyingGlassIcon, BuildingOffice2Icon, FunnelIcon, XMarkIcon, ExclamationCircleIcon,
+  MagnifyingGlassIcon, BuildingOffice2Icon, FunnelIcon, XMarkIcon,
+  ExclamationCircleIcon, ChevronDownIcon, ArchiveBoxIcon,
 } from '@/components/icons';
 import Sidebar from '@/components/Sidebar';
 import { api } from '@/lib/api';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { STATUS_COLORS } from '@/lib/constants';
+import { usePhotoToken, photoUrl } from '@/lib/photo-url';
+import { ItemCountsSummary } from '@/components/ItemCounts';
+import { parseCounts } from '@/lib/item-counts';
 
 const JOB_TYPES = ['Fire', 'Water', 'Mold', 'Moving', 'Storage'];
 const STATUSES  = ['PENDING', 'READY', 'DELIVERED'];
+
+function formatDate(d: string) {
+  if (!d) return '';
+  try { return new Date(d.split(/[ T]/)[0] + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }); }
+  catch { return d; }
+}
+
+type Grouped<T> = { client: string; items: T[] };
+function groupByClient<T extends { client_name?: string }>(items: T[]): Grouped<T>[] {
+  const map = new Map<string, T[]>();
+  for (const it of items) {
+    const c = (it.client_name || '').trim() || '—';
+    if (!map.has(c)) map.set(c, []);
+    map.get(c)!.push(it);
+  }
+  return Array.from(map, ([client, items]) => ({ client, items }));
+}
+
+const statusBadge = (s: string) =>
+  `text-xs font-medium px-2.5 py-1 rounded-full flex-shrink-0 ${STATUS_COLORS[s] || 'bg-gray-100 text-gray-600'}`;
+
+// ── One vault, expanded ─────────────────────────────────────────────────────
+function VaultRow({ box, photoToken, whName, onPhoto, onOpen }: {
+  box: any; photoToken: string; whName: (id: string) => string;
+  onPhoto: (url: string) => void; onOpen: () => void;
+}) {
+  const rec = { id: box.box_id, collectionName: 'vaults' };
+  const photos: string[] = box.photos || [];
+  const meta: [string, string][] = [
+    ['Job', box.job_type],
+    ['Condition', Array.isArray(box.vault_status) ? box.vault_status.join(', ') : ''],
+    ['Room', Array.isArray(box.room_location) ? box.room_location.join(', ') : ''],
+    ['Packer', box.packer],
+    ['Packed', formatDate(box.pack_date)],
+  ];
+  return (
+    <div className="p-4">
+      <div className="flex items-start justify-between gap-2 mb-2">
+        <div className="min-w-0">
+          <span className="text-sm font-semibold text-gray-900">{box.position}</span>
+          <span className="text-xs text-gray-400 ml-2">{whName(box.warehouse_id)}</span>
+        </div>
+        <span className={statusBadge(box.estado || box.status)}>{box.estado || box.status}</span>
+      </div>
+      <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-gray-500 mb-2">
+        {meta.filter(([, v]) => v).map(([k, v]) => (
+          <span key={k}>{k}: <span className="text-gray-700">{v}</span></span>
+        ))}
+      </div>
+      <ItemCountsSummary value={parseCounts(box.item_counts)} compact />
+      {photos.length > 0 && (
+        <div className="grid grid-cols-4 sm:grid-cols-6 gap-2 mt-2">
+          {photos.map((p, i) => (
+            <img key={i} src={photoUrl(rec, p, 'grid', photoToken)} alt=""
+              onClick={() => onPhoto(photoUrl(rec, p, 'full', photoToken))}
+              className="w-full h-16 object-cover rounded-lg cursor-pointer hover:opacity-90 transition-opacity" />
+          ))}
+        </div>
+      )}
+      <button onClick={onOpen}
+        className="mt-3 inline-flex items-center gap-1.5 text-sm font-medium text-blue-600 bg-blue-50 border border-blue-100 px-3 py-1.5 rounded-lg hover:bg-blue-100 transition-colors">
+        <ArchiveBoxIcon className="w-4 h-4" /> Open vault
+      </button>
+    </div>
+  );
+}
+
+// ── One storage unit, expanded ──────────────────────────────────────────────
+function StorageRow({ su, photoToken, onPhoto, onOpen }: {
+  su: any; photoToken: string; onPhoto: (url: string) => void; onOpen: () => void;
+}) {
+  const rec = su.photo_ref || { id: su.id, collectionName: 'storage_units' };
+  const photos: string[] = su.photos || [];
+  const meta: [string, string][] = [
+    ['Condition', Array.isArray(su.condition) ? su.condition.join(', ') : ''],
+    ['Contents', su.content_type],
+    ['Job', su.job_type],
+    ['Packer', su.packer],
+    ['Location', [su.city, su.state].filter(Boolean).join(', ')],
+    ['Intake', formatDate(su.intake_date)],
+  ];
+  return (
+    <div className="p-4">
+      <div className="flex items-start justify-between gap-2 mb-2">
+        <span className="text-sm font-semibold text-gray-900">{su.unit_name || '—'}</span>
+        <span className={statusBadge(su.estado)}>{su.estado || '—'}</span>
+      </div>
+      <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-gray-500 mb-2">
+        {meta.filter(([, v]) => v).map(([k, v]) => (
+          <span key={k}>{k}: <span className="text-gray-700">{v}</span></span>
+        ))}
+      </div>
+      <ItemCountsSummary value={parseCounts(su.item_counts)} compact />
+      {photos.length > 0 && (
+        <div className="grid grid-cols-4 sm:grid-cols-6 gap-2 mt-2">
+          {photos.map((p, i) => (
+            <img key={i} src={photoUrl(rec, p, 'grid', photoToken)} alt=""
+              onClick={() => onPhoto(photoUrl(rec, p, 'full', photoToken))}
+              className="w-full h-16 object-cover rounded-lg cursor-pointer hover:opacity-90 transition-opacity" />
+          ))}
+        </div>
+      )}
+      <button onClick={onOpen}
+        className="mt-3 inline-flex items-center gap-1.5 text-sm font-medium text-blue-600 bg-blue-50 border border-blue-100 px-3 py-1.5 rounded-lg hover:bg-blue-100 transition-colors">
+        <BuildingOffice2Icon className="w-4 h-4" /> Open storage
+      </button>
+    </div>
+  );
+}
+
+// ── Collapsible client group ────────────────────────────────────────────────
+function ClientGroup({ client, count, sub, thumbs, photoToken, open, onToggle, children }: {
+  client: string; count: number; sub: string;
+  thumbs: { rec: any; name: string }[]; photoToken: string;
+  open: boolean; onToggle: () => void; children: React.ReactNode;
+}) {
+  return (
+    <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
+      <button onClick={onToggle} className="w-full flex items-center gap-3 p-4 text-left hover:bg-gray-50 transition-colors">
+        <ChevronDownIcon className={`w-4 h-4 text-gray-400 flex-shrink-0 transition-transform ${open ? 'rotate-180' : ''}`} />
+        <div className="flex-1 min-w-0">
+          <p className="font-semibold text-gray-900 truncate">{client}</p>
+          <p className="text-xs text-gray-400 truncate">{count} {count === 1 ? 'item' : 'items'}{sub ? ` · ${sub}` : ''}</p>
+        </div>
+        {thumbs.length > 0 && (
+          <div className="flex -space-x-2 flex-shrink-0">
+            {thumbs.map((t, i) => (
+              <img key={i} src={photoUrl(t.rec, t.name, 'tile', photoToken)} alt=""
+                className="w-9 h-9 rounded-lg object-cover border-2 border-white bg-gray-100" />
+            ))}
+          </div>
+        )}
+      </button>
+      <AnimatePresence initial={false}>
+        {open && (
+          <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden">
+            <div className="border-t border-gray-100 divide-y divide-gray-50">{children}</div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
 
 function SearchContent() {
   const searchParams = useSearchParams();
   const statusFilter = searchParams.get('status');
   const jobTypeFilter = searchParams.get('jobType');
   const router = useRouter();
+  const photoToken = usePhotoToken();
 
   const [query, setQuery]                     = useState(searchParams.get('q') || '');
   const [results, setResults]                 = useState<any[]>([]);
@@ -28,6 +176,8 @@ function SearchContent() {
   const [warehouses, setWarehouses]           = useState<{ id: string; name: string }[]>([]);
   const [showFilters, setShowFilters]         = useState(!!(statusFilter || jobTypeFilter));
   const [searchError, setSearchError]         = useState<string | null>(null);
+  const [expanded, setExpanded]               = useState<Record<string, boolean>>({});
+  const [lightbox, setLightbox]               = useState<string | null>(null);
 
   // Filters
   const [filterStatus, setFilterStatus]       = useState(statusFilter || '');
@@ -46,8 +196,14 @@ function SearchContent() {
       .catch(() => {});
   }, []);
 
+  const applyResults = (data: any) => {
+    setResults(Array.isArray(data) ? data : (data?.vaults ?? []));
+    setStorageResults(Array.isArray(data) ? [] : (data?.storageUnits ?? []));
+    setLooseResults(Array.isArray(data) ? [] : (data?.looseItems ?? []));
+    setExpanded({}); // reset collapse state for a new result set
+  };
+
   useEffect(() => {
-    // If there's already a text query, the live-search effect below will handle it (includes filters)
     if (!statusFilter || query.length >= 2) return;
     runSearch('', statusFilter);
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -59,7 +215,7 @@ function SearchContent() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [jobTypeFilter]);
 
-  // Live search — fires on query or filter change with 300ms debounce, min 2 chars
+  // Live search — debounced, min 2 chars
   useEffect(() => {
     if (query.length < 2) return;
     const params = new URLSearchParams();
@@ -73,10 +229,7 @@ function SearchContent() {
       setSearched(true);
       setSearchError(null);
       try {
-        const data = await api.get(`/api/search/global?${params.toString()}`);
-        setResults(Array.isArray(data) ? data : (data?.vaults ?? []));
-        setStorageResults(Array.isArray(data) ? [] : (data?.storageUnits ?? []));
-        setLooseResults(Array.isArray(data) ? [] : (data?.looseItems ?? []));
+        applyResults(await api.get(`/api/search/global?${params.toString()}`));
       } catch {
         setResults([]); setStorageResults([]); setLooseResults([]);
         setSearchError('Search failed. Please try again.');
@@ -91,15 +244,12 @@ function SearchContent() {
     setSearchError(null);
     try {
       const params = new URLSearchParams();
-      if (q)             params.set('q', q);
-      if (st)            params.set('status', st);
-      if (filterJob)     params.set('job_type', filterJob);
+      if (q)               params.set('q', q);
+      if (st)              params.set('status', st);
+      if (filterJob)       params.set('job_type', filterJob);
       if (filterWarehouse) params.set('warehouse_id', filterWarehouse);
-      if (filterPacker)  params.set('packer', filterPacker);
-      const data = await api.get(`/api/search/global?${params.toString()}`);
-      setResults(Array.isArray(data) ? data : (data?.vaults ?? []));
-      setStorageResults(Array.isArray(data) ? [] : (data?.storageUnits ?? []));
-      setLooseResults(Array.isArray(data) ? [] : (data?.looseItems ?? []));
+      if (filterPacker)    params.set('packer', filterPacker);
+      applyResults(await api.get(`/api/search/global?${params.toString()}`));
     } catch {
       setResults([]); setStorageResults([]); setLooseResults([]);
       setSearchError('Search failed. Please try again.');
@@ -107,17 +257,20 @@ function SearchContent() {
   };
 
   const handleSearch = (e: React.FormEvent) => { e.preventDefault(); runSearch(); };
-
-  const clearFilters = () => {
-    setFilterStatus(''); setFilterJob(''); setFilterWarehouse(''); setFilterPacker('');
-  };
-
+  const clearFilters = () => { setFilterStatus(''); setFilterJob(''); setFilterWarehouse(''); setFilterPacker(''); };
   const whName = (wid: string) => warehouses.find(w => w.id === wid)?.name || wid;
 
-  const formatDate = (d: string) => {
-    if (!d) return '—';
-    try { return new Date(d + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }); }
-    catch { return d; }
+  const vaultGroups   = useMemo(() => groupByClient(results), [results]);
+  const storageGroups = useMemo(() => groupByClient(storageResults), [storageResults]);
+  const totalResults  = results.length + storageResults.length + looseResults.length;
+
+  const isOpen = (key: string, def: boolean) => (key in expanded ? expanded[key] : def);
+  const toggle = (key: string, def: boolean) => setExpanded(e => ({ ...e, [key]: !isOpen(key, def) }));
+
+  const collectThumbs = (items: any[], recOf: (it: any) => any) => {
+    const out: { rec: any; name: string }[] = [];
+    for (const it of items) for (const p of (it.photos || [])) { if (out.length < 4) out.push({ rec: recOf(it), name: p }); }
+    return out;
   };
 
   return (
@@ -149,7 +302,7 @@ function SearchContent() {
                 : 'bg-white text-gray-600 border-gray-100 hover:border-blue-300'}`}
           >
             <FunnelIcon className="w-4 h-4" />
-            Filters
+            <span className="hidden sm:inline">Filters</span>
             {activeFilters > 0 && (
               <span className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center">
                 {activeFilters}
@@ -158,7 +311,7 @@ function SearchContent() {
           </button>
           <button
             type="submit"
-            className="px-6 py-3 bg-gray-950 text-white text-sm font-medium rounded-full hover:bg-gray-800 transition-colors"
+            className="px-5 py-3 bg-gray-950 text-white text-sm font-medium rounded-full hover:bg-gray-800 transition-colors"
           >
             Search
           </button>
@@ -167,10 +320,7 @@ function SearchContent() {
         {/* Filter panel */}
         <AnimatePresence>
           {showFilters && (
-            <motion.div
-              initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }}
-              className="overflow-hidden"
-            >
+            <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="overflow-hidden">
               <div className="bg-white border border-gray-100 rounded-2xl p-4 mb-4 grid grid-cols-2 md:grid-cols-4 gap-3">
                 <div>
                   <label className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1.5 block">Job Status</label>
@@ -198,11 +348,8 @@ function SearchContent() {
                 </div>
                 <div>
                   <label className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1.5 block">Packer</label>
-                  <input
-                    type="text" placeholder="Packer name..."
-                    value={filterPacker} onChange={e => setFilterPacker(e.target.value)}
-                    className="w-full px-3 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
+                  <input type="text" placeholder="Packer name..." value={filterPacker} onChange={e => setFilterPacker(e.target.value)}
+                    className="w-full px-3 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500" />
                 </div>
                 {activeFilters > 0 && (
                   <div className="col-span-2 md:col-span-4 flex justify-end">
@@ -231,194 +378,85 @@ function SearchContent() {
         )}
 
         {!loading && searched && (
-          <div className="space-y-8">
+          totalResults === 0 ? (
+            <div className="text-center py-16 text-gray-400 text-sm">No results match your search</div>
+          ) : (
+            <div className="space-y-6">
 
-            {/* ── Vaults ─────────────────────────────────────────────────────── */}
-            <div>
-              <div className="flex items-center justify-between mb-4">
-                <p className="text-sm text-gray-500">
-                  <span className="font-semibold text-gray-900">{results.length}</span> vault{results.length !== 1 ? 's' : ''} found
-                </p>
-                {results.length > 0 && (
-                  <div className="flex gap-2 flex-wrap">
-                    {filterStatus    && <span className="text-xs bg-amber-100 text-amber-700 px-2.5 py-1 rounded-full font-medium">{filterStatus}</span>}
-                    {filterJob       && <span className="text-xs bg-blue-100 text-blue-700 px-2.5 py-1 rounded-full font-medium">{filterJob}</span>}
-                    {filterWarehouse && <span className="text-xs bg-gray-100 text-gray-700 px-2.5 py-1 rounded-full font-medium">{whName(filterWarehouse)}</span>}
-                    {filterPacker    && <span className="text-xs bg-purple-100 text-purple-700 px-2.5 py-1 rounded-full font-medium">Packer: {filterPacker}</span>}
-                  </div>
-                )}
-              </div>
-
-              {results.length === 0 ? (
-                <div className="text-center py-12 text-gray-400 text-sm">No vaults match your search</div>
-              ) : (
-                <div className="bg-white rounded-2xl border border-gray-100 overflow-x-auto">
-                  <table className="w-full min-w-[320px]">
-                    <thead>
-                      <tr className="border-b border-gray-50">
-                        <th className="text-left text-xs font-medium text-gray-400 uppercase tracking-wide px-4 py-4">Client</th>
-                        <th className="text-left text-xs font-medium text-gray-400 uppercase tracking-wide px-4 py-4">Position</th>
-                        <th className="hidden md:table-cell text-left text-xs font-medium text-gray-400 uppercase tracking-wide px-4 py-4">Job Type</th>
-                        <th className="hidden md:table-cell text-left text-xs font-medium text-gray-400 uppercase tracking-wide px-4 py-4">Warehouse</th>
-                        <th className="hidden md:table-cell text-left text-xs font-medium text-gray-400 uppercase tracking-wide px-4 py-4">Condition</th>
-                        <th className="text-left text-xs font-medium text-gray-400 uppercase tracking-wide px-4 py-4">Job Status</th>
-                        <th className="hidden md:table-cell text-left text-xs font-medium text-gray-400 uppercase tracking-wide px-4 py-4">Pack Date</th>
-                        <th className="hidden md:table-cell text-left text-xs font-medium text-gray-400 uppercase tracking-wide px-4 py-4">Packer</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {results.map((box, i) => (
-                        <motion.tr
-                          key={box.box_id}
-                          initial={{ opacity: 0 }}
-                          animate={{ opacity: 1 }}
-                          transition={{ delay: Math.min(i * 0.03, 0.4) }}
-                          className="border-b border-gray-50 hover:bg-gray-50 transition-colors cursor-pointer"
-                          onClick={() => router.push(`/warehouses/${box.warehouse_id}?vault=${box.box_id}`)}
-                        >
-                          <td className="px-4 py-4 text-sm text-gray-700 max-w-[130px] truncate">{box.client_name}</td>
-                          <td className="px-4 py-4 text-sm font-semibold text-gray-900">{box.position}</td>
-                          <td className="hidden md:table-cell px-4 py-4 text-sm text-gray-500">{box.job_type || '—'}</td>
-                          <td className="hidden md:table-cell px-4 py-4">
-                            <span className="flex items-center gap-1 text-sm text-gray-500">
-                              <BuildingOffice2Icon className="w-3.5 h-3.5 flex-shrink-0" />
-                              {whName(box.warehouse_id)}
-                            </span>
-                          </td>
-                          <td className="hidden md:table-cell px-4 py-4 text-sm text-gray-500">
-                            {Array.isArray(box.vault_status) && box.vault_status.length > 0
-                              ? box.vault_status.join(', ')
-                              : '—'}
-                          </td>
-                          <td className="px-4 py-4">
-                            <span className={`text-xs font-medium px-2.5 py-1 rounded-full ${STATUS_COLORS[box.estado || box.status] || 'bg-gray-100 text-gray-600'}`}>
-                              {box.estado || box.status}
-                            </span>
-                          </td>
-                          <td className="hidden md:table-cell px-4 py-4 text-sm text-gray-500">{formatDate(box.pack_date)}</td>
-                          <td className="hidden md:table-cell px-4 py-4 text-sm text-gray-500">{box.packer || '—'}</td>
-                        </motion.tr>
-                      ))}
-                    </tbody>
-                  </table>
+              {/* ── Vaults grouped by client ── */}
+              {vaultGroups.length > 0 && (
+                <div className="space-y-3">
+                  <p className="text-sm text-gray-500">
+                    <span className="font-semibold text-gray-900">{results.length}</span> vault{results.length !== 1 ? 's' : ''}
+                    <span className="text-gray-400"> · {vaultGroups.length} client{vaultGroups.length !== 1 ? 's' : ''}</span>
+                  </p>
+                  {vaultGroups.map(g => {
+                    const key = 'v:' + g.client;
+                    const def = vaultGroups.length === 1;
+                    const jobs = [...new Set(g.items.map((b: any) => b.job_type).filter(Boolean))].join(', ');
+                    return (
+                      <ClientGroup key={key} client={g.client} count={g.items.length} sub={jobs}
+                        thumbs={collectThumbs(g.items, (b: any) => ({ id: b.box_id, collectionName: 'vaults' }))}
+                        photoToken={photoToken} open={isOpen(key, def)} onToggle={() => toggle(key, def)}>
+                        {g.items.map((box: any) => (
+                          <VaultRow key={box.box_id} box={box} photoToken={photoToken} whName={whName}
+                            onPhoto={setLightbox}
+                            onOpen={() => router.push(`/warehouses/${box.warehouse_id}?vault=${box.box_id}`)} />
+                        ))}
+                      </ClientGroup>
+                    );
+                  })}
                 </div>
               )}
+
+              {/* ── Storage grouped by client ── */}
+              {storageGroups.length > 0 && (
+                <div className="space-y-3">
+                  <h2 className="text-sm font-semibold text-gray-700">
+                    Storage Units <span className="text-gray-400 font-normal">· {storageResults.length}</span>
+                  </h2>
+                  {storageGroups.map(g => {
+                    const key = 's:' + g.client;
+                    const def = storageGroups.length === 1;
+                    return (
+                      <ClientGroup key={key} client={g.client} count={g.items.length} sub="storage"
+                        thumbs={collectThumbs(g.items, (s: any) => s.photo_ref || { id: s.id, collectionName: 'storage_units' })}
+                        photoToken={photoToken} open={isOpen(key, def)} onToggle={() => toggle(key, def)}>
+                        {g.items.map((su: any) => (
+                          <StorageRow key={su.id} su={su} photoToken={photoToken}
+                            onPhoto={setLightbox} onOpen={() => router.push(`/storage/${su.id}`)} />
+                        ))}
+                      </ClientGroup>
+                    );
+                  })}
+                </div>
+              )}
+
+              {/* ── Loose items — compact list ── */}
+              {looseResults.length > 0 && (
+                <div className="space-y-3">
+                  <h2 className="text-sm font-semibold text-gray-700">
+                    Loose Items <span className="text-gray-400 font-normal">· {looseResults.length}</span>
+                  </h2>
+                  <div className="bg-white rounded-2xl border border-gray-100 divide-y divide-gray-50">
+                    {looseResults.map((item: any) => (
+                      <button key={item.id} onClick={() => router.push(`/warehouses/${item.warehouse_id}?tab=loose&zone=${item.grid_x}-${item.grid_y}`)}
+                        className="w-full flex items-center gap-3 p-4 text-left hover:bg-gray-50 transition-colors">
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-gray-900 truncate">{item.client_name || '—'}</p>
+                          <p className="text-xs text-gray-400">
+                            {item.item_type === 'Furniture' ? (item.furniture_type || 'Furniture') : 'Boxes'} · {whName(item.warehouse_id)} · Zone {item.grid_x}-{item.grid_y}
+                          </p>
+                        </div>
+                        <span className={statusBadge(item.status)}>{item.status || '—'}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
             </div>
-
-            {/* ── Storage Units ───────────────────────────────────────────────── */}
-            {storageResults.length > 0 && (
-              <div>
-                <div className="flex items-center gap-3 mb-4">
-                  <h2 className="text-sm font-semibold text-gray-700">Storage Units</h2>
-                  <span className="text-sm text-gray-500">
-                    <span className="font-semibold text-gray-900">{storageResults.length}</span> found
-                  </span>
-                </div>
-                <div className="bg-white rounded-2xl border border-gray-100 overflow-x-auto">
-                  <table className="w-full min-w-[320px]">
-                    <thead>
-                      <tr className="border-b border-gray-50">
-                        <th className="text-left text-xs font-medium text-gray-400 uppercase tracking-wide px-4 py-4">Client</th>
-                        <th className="text-left text-xs font-medium text-gray-400 uppercase tracking-wide px-4 py-4">Unit Name</th>
-                        <th className="hidden md:table-cell text-left text-xs font-medium text-gray-400 uppercase tracking-wide px-4 py-4">City / State</th>
-                        <th className="text-left text-xs font-medium text-gray-400 uppercase tracking-wide px-4 py-4">Status</th>
-                        <th className="hidden md:table-cell text-left text-xs font-medium text-gray-400 uppercase tracking-wide px-4 py-4">Intake Date</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {storageResults.map((su, i) => (
-                        <motion.tr
-                          key={su.id}
-                          initial={{ opacity: 0 }}
-                          animate={{ opacity: 1 }}
-                          transition={{ delay: Math.min(i * 0.03, 0.4) }}
-                          className="border-b border-gray-50 hover:bg-gray-50 transition-colors cursor-pointer"
-                          onClick={() => router.push(`/storage/${su.id}`)}
-                        >
-                          <td className="px-4 py-4 text-sm text-gray-700 max-w-[130px] truncate">{su.client_name || '—'}</td>
-                          <td className="px-4 py-4 text-sm font-semibold text-gray-900">{su.unit_name || '—'}</td>
-                          <td className="hidden md:table-cell px-4 py-4 text-sm text-gray-500">
-                            {[su.city, su.state].filter(Boolean).join(', ') || '—'}
-                          </td>
-                          <td className="px-4 py-4">
-                            <span className={`text-xs font-medium px-2.5 py-1 rounded-full ${STATUS_COLORS[su.estado] || 'bg-gray-100 text-gray-600'}`}>
-                              {su.estado || '—'}
-                            </span>
-                          </td>
-                          <td className="hidden md:table-cell px-4 py-4 text-sm text-gray-500">{formatDate(su.intake_date)}</td>
-                        </motion.tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            )}
-
-            {/* ── Loose Items ─────────────────────────────────────────────────── */}
-            {looseResults.length > 0 && (
-              <div>
-                <div className="flex items-center gap-3 mb-4">
-                  <h2 className="text-sm font-semibold text-gray-700">Loose Items</h2>
-                  <span className="text-sm text-gray-500">
-                    <span className="font-semibold text-gray-900">{looseResults.length}</span> found
-                  </span>
-                </div>
-                <div className="bg-white rounded-2xl border border-gray-100 overflow-x-auto">
-                  <table className="w-full min-w-[320px]">
-                    <thead>
-                      <tr className="border-b border-gray-50">
-                        <th className="text-left text-xs font-medium text-gray-400 uppercase tracking-wide px-4 py-4">Client</th>
-                        <th className="text-left text-xs font-medium text-gray-400 uppercase tracking-wide px-4 py-4">Type</th>
-                        <th className="hidden md:table-cell text-left text-xs font-medium text-gray-400 uppercase tracking-wide px-4 py-4">Condition</th>
-                        <th className="hidden md:table-cell text-left text-xs font-medium text-gray-400 uppercase tracking-wide px-4 py-4">Warehouse</th>
-                        <th className="text-left text-xs font-medium text-gray-400 uppercase tracking-wide px-4 py-4">Zone</th>
-                        <th className="text-left text-xs font-medium text-gray-400 uppercase tracking-wide px-4 py-4">Status</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {looseResults.map((item, i) => (
-                        <motion.tr
-                          key={item.id}
-                          initial={{ opacity: 0 }}
-                          animate={{ opacity: 1 }}
-                          transition={{ delay: Math.min(i * 0.03, 0.4) }}
-                          className="border-b border-gray-50 hover:bg-gray-50 transition-colors cursor-pointer"
-                          onClick={() => router.push(`/warehouses/${item.warehouse_id}?tab=loose&zone=${item.grid_x}-${item.grid_y}`)}
-                        >
-                          <td className="px-4 py-4 text-sm text-gray-700 max-w-[130px] truncate">{item.client_name || '—'}</td>
-                          <td className="px-4 py-4 text-sm text-gray-900">
-                            {item.item_type === 'Furniture'
-                              ? `${item.furniture_type || 'Furniture'}`
-                              : 'Boxes'}
-                          </td>
-                          <td className="hidden md:table-cell px-4 py-4 text-sm text-gray-500">
-                            {Array.isArray(item.condition) && item.condition.length > 0
-                              ? item.condition.join(', ')
-                              : '—'}
-                          </td>
-                          <td className="hidden md:table-cell px-4 py-4">
-                            <span className="flex items-center gap-1 text-sm text-gray-500">
-                              <BuildingOffice2Icon className="w-3.5 h-3.5 flex-shrink-0" />
-                              {whName(item.warehouse_id)}
-                            </span>
-                          </td>
-                          <td className="px-4 py-4 text-sm font-semibold text-gray-900">
-                            {item.grid_x}–{item.grid_y}
-                          </td>
-                          <td className="px-4 py-4">
-                            <span className={`text-xs font-medium px-2.5 py-1 rounded-full ${STATUS_COLORS[item.status] || 'bg-gray-100 text-gray-600'}`}>
-                              {item.status || '—'}
-                            </span>
-                          </td>
-                        </motion.tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            )}
-
-          </div>
+          )
         )}
 
         {!searched && (
@@ -430,6 +468,13 @@ function SearchContent() {
           </div>
         )}
       </main>
+
+      {/* Lightbox */}
+      {lightbox && (
+        <div className="fixed inset-0 z-[80] bg-black/90 flex items-center justify-center p-4" onClick={() => setLightbox(null)}>
+          <img src={lightbox} alt="" className="max-w-full max-h-full object-contain rounded-lg" />
+        </div>
+      )}
     </div>
   );
 }

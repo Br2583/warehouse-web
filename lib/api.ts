@@ -318,22 +318,29 @@ async function routeGet(path: string): Promise<any> {
     if (q2) {
       const storageItems = await pb.collection('storage_units').getFullList({
         filter: `company_id="${cid}" && (client_name~"${sf(q2)}" || unit_name~"${sf(q2)}" || address~"${sf(q2)}" || notes~"${sf(q2)}")`,
-        fields: 'id,unit_name,client_name,address,city,state,status,estado,item_counts,intake_date,created',
+        fields: 'id,unit_name,client_name,address,city,state,status,estado,condition,content_type,job_type,packer,pack_date,item_counts,intake_date,created,photo_files',
       });
       storageUnits = storageItems
         .sort((a: any, b: any) => a.created < b.created ? 1 : -1)
         .map((s: any) => ({
-          id:          s.id,
-          unit_name:   s.unit_name,
-          client_name: s.client_name,
-          address:     s.address,
-          city:        s.city,
-          state:       s.state,
-          status:      s.status,
-          estado:      s.estado || 'PENDING',
-          item_counts: s.item_counts || {},
-          intake_date: s.intake_date || '',
-          created:     s.created,
+          id:           s.id,
+          photo_ref:    { id: s.id, collectionName: 'storage_units' },
+          unit_name:    s.unit_name,
+          client_name:  s.client_name,
+          address:      s.address,
+          city:         s.city,
+          state:        s.state,
+          status:       s.status,
+          estado:       s.estado || 'PENDING',
+          condition:    Array.isArray(s.condition) ? s.condition : [],
+          content_type: s.content_type || '',
+          job_type:     s.job_type || '',
+          packer:       s.packer || '',
+          pack_date:    s.pack_date || '',
+          item_counts:  s.item_counts || {},
+          photos:       Array.isArray(s.photo_files) ? s.photo_files : [],
+          intake_date:  s.intake_date || '',
+          created:      s.created,
         }));
     }
     let looseItems: any[] = [];
