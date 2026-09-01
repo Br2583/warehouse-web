@@ -14,12 +14,27 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { compressImage } from '@/lib/compress-image';
 import { photoSrc, photoUrl, usePhotoToken } from '@/lib/photo-url';
+import { ItemCountsInput, ItemCountsSummary } from '@/components/ItemCounts';
+import { parseCounts, type ItemCounts } from '@/lib/item-counts';
 
-const STATUS_CONFIG: Record<string, { color: string; label: string }> = {
-  AVAILABLE:   { color: 'bg-green-100 text-green-700',  label: 'Available' },
-  OCCUPIED:    { color: 'bg-amber-100 text-amber-700',  label: 'Occupied' },
-  MAINTENANCE: { color: 'bg-red-100 text-red-600',      label: 'Maintenance' },
+const WORKFLOW_BADGE: Record<string, { color: string; label: string }> = {
+  PENDING:   { color: 'bg-amber-100 text-amber-700', label: 'Pending' },
+  READY:     { color: 'bg-green-100 text-green-700', label: 'Ready' },
+  DELIVERED: { color: 'bg-blue-100 text-blue-700',   label: 'Delivered' },
 };
+const ST_CONDITIONS = ['Total Loss', 'Needs Cleaning', 'Storage Only'];
+const ST_CONTENTS   = ['Boxes', 'Furniture', 'Both'];
+const ST_JOBS       = ['Fire', 'Water', 'Mold', 'Moving', 'Storage'];
+const stChip = (active: boolean) =>
+  `px-3 py-1.5 text-sm rounded-lg border transition-colors ${active ? 'bg-blue-600 text-white border-blue-600' : 'border-gray-200 text-gray-600 hover:border-blue-300'}`;
+const emptyStorageForm = () => ({
+  client_name: '', unit_name: '', condition: [] as string[], content_type: '', job_type: '',
+  pack_date: new Date().toISOString().split('T')[0], packer: '', estado: 'PENDING',
+  item_counts: {} as ItemCounts, access_code: '',
+  address: '', city: '', state: '', capacity: '',
+  status: 'AVAILABLE', notes: '', intake_date: new Date().toISOString().split('T')[0],
+  photos: [] as (string | File)[],
+});
 
 export default function StoragePage() {
   const { canManage } = useAuth();
@@ -32,7 +47,7 @@ export default function StoragePage() {
   const [showCreate, setShowCreate] = useState(false);
   const [saving, setSaving] = useState(false);
   const [createError, setCreateError] = useState('');
-  const [form, setForm] = useState({ unit_name: '', address: '', city: '', state: '', client_name: '', capacity: '', access_code: '', status: 'AVAILABLE', notes: '', intake_date: new Date().toISOString().split('T')[0], photos: [] as (string | File)[] });
+  const [form, setForm] = useState(emptyStorageForm());
 
   const addCreatePhoto = (photo: string | File) => {
     setForm(f => ({ ...f, photos: [...f.photos, photo].slice(0, 4) }));
@@ -64,7 +79,7 @@ export default function StoragePage() {
     try {
       const created = await api.post('/api/storage', form);
       setShowCreate(false);
-      setForm({ unit_name: '', address: '', city: '', state: '', client_name: '', capacity: '', access_code: '', status: 'AVAILABLE', notes: '', intake_date: new Date().toISOString().split('T')[0], photos: [] });
+      setForm(emptyStorageForm());
       router.push(`/storage/${created.id}`);
     } catch (e: any) {
       setCreateError(e?.message || 'Failed to create storage unit');
@@ -100,57 +115,116 @@ export default function StoragePage() {
                 <h2 className="font-semibold text-gray-900">New Storage Unit</h2>
                 <button onClick={() => setShowCreate(false)} className="text-gray-400 hover:text-gray-600"><XMarkIcon className="w-4 h-4" /></button>
               </div>
-              <form onSubmit={createUnit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="md:col-span-2">
-                  <label className="block text-xs text-gray-500 mb-1">Unit Name <span className="text-red-500">*</span></label>
-                  <input type="text" placeholder="e.g. Unit A-12, Storage Room 3..." value={form.unit_name}
-                    onChange={e => setForm(f => ({ ...f, unit_name: e.target.value }))} autoFocus
-                    className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
-                </div>
+              <form onSubmit={createUnit} className="space-y-4">
+                {/* Client Name */}
                 <div>
-                  <label className="block text-xs text-gray-500 mb-1">Address</label>
-                  <input type="text" placeholder="Street address" value={form.address}
-                    onChange={e => setForm(f => ({ ...f, address: e.target.value }))}
-                    className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
-                </div>
-                <div>
-                  <label className="block text-xs text-gray-500 mb-1">City</label>
-                  <input type="text" placeholder="City" value={form.city}
-                    onChange={e => setForm(f => ({ ...f, city: e.target.value }))}
-                    className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
-                </div>
-                <div>
-                  <label className="block text-xs text-gray-500 mb-1">State</label>
-                  <input type="text" placeholder="State" value={form.state}
-                    onChange={e => setForm(f => ({ ...f, state: e.target.value }))}
-                    className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
-                </div>
-                <div>
-                  <label className="block text-xs text-gray-500 mb-1">Client (optional)</label>
-                  <input type="text" placeholder="Assigned client" value={form.client_name}
+                  <label className="block text-xs text-gray-500 mb-1">Client Name</label>
+                  <input type="text" placeholder="Client name" value={form.client_name} autoFocus
                     onChange={e => setForm(f => ({ ...f, client_name: e.target.value }))}
                     className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
                 </div>
+                {/* Unit Name */}
                 <div>
-                  <label className="block text-xs text-gray-500 mb-1">Capacity (optional)</label>
-                  <input type="text" placeholder="e.g. 200 sq ft, 50 units" value={form.capacity}
-                    onChange={e => setForm(f => ({ ...f, capacity: e.target.value }))}
+                  <label className="block text-xs text-gray-500 mb-1">Unit Name <span className="text-red-500">*</span></label>
+                  <input type="text" placeholder="e.g. Unit A-12, Storage Room 3..." value={form.unit_name}
+                    onChange={e => setForm(f => ({ ...f, unit_name: e.target.value }))}
                     className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
                 </div>
+                {/* Condition */}
                 <div>
-                  <label className="block text-xs text-gray-500 mb-1">Access Code (optional)</label>
+                  <label className="block text-xs text-gray-500 mb-2">Condition</label>
+                  <div className="flex flex-wrap gap-2">
+                    {ST_CONDITIONS.map(c => {
+                      const active = form.condition.includes(c);
+                      return (
+                        <button key={c} type="button" className={stChip(active)}
+                          onClick={() => setForm(f => ({ ...f, condition: active ? f.condition.filter(x => x !== c) : [...f.condition, c] }))}>{c}</button>
+                      );
+                    })}
+                  </div>
+                </div>
+                {/* Contents */}
+                <div>
+                  <label className="block text-xs text-gray-500 mb-2">Contents</label>
+                  <div className="flex flex-wrap gap-2">
+                    {ST_CONTENTS.map(c => (
+                      <button key={c} type="button" className={stChip(form.content_type === c)}
+                        onClick={() => setForm(f => ({ ...f, content_type: c }))}>{c}</button>
+                    ))}
+                  </div>
+                </div>
+                {/* Job Type */}
+                <div>
+                  <label className="block text-xs text-gray-500 mb-2">Job Type</label>
+                  <div className="flex flex-wrap gap-2">
+                    {ST_JOBS.map(c => (
+                      <button key={c} type="button" className={stChip(form.job_type === c)}
+                        onClick={() => setForm(f => ({ ...f, job_type: c }))}>{c}</button>
+                    ))}
+                  </div>
+                </div>
+                {/* Pack Date + Packer */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs text-gray-500 mb-1">Pack Date</label>
+                    <input type="date" value={form.pack_date}
+                      onChange={e => setForm(f => ({ ...f, pack_date: e.target.value }))}
+                      className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                  </div>
+                  <div>
+                    <label className="block text-xs text-gray-500 mb-1">Packer</label>
+                    <input type="text" placeholder="Who packed this?" value={form.packer}
+                      onChange={e => setForm(f => ({ ...f, packer: e.target.value }))}
+                      className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                  </div>
+                </div>
+                {/* Item counts */}
+                <div>
+                  <label className="block text-xs text-gray-500 mb-2">Inventory count</label>
+                  <ItemCountsInput value={form.item_counts} onChange={ic => setForm(f => ({ ...f, item_counts: ic }))} />
+                </div>
+                {/* Access Code — always visible */}
+                <div>
+                  <label className="block text-xs text-gray-500 mb-1">Access Code</label>
                   <input type="text" placeholder="Gate or door code" value={form.access_code}
                     onChange={e => setForm(f => ({ ...f, access_code: e.target.value }))}
                     className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
                 </div>
-                <div>
-                  <label className="block text-xs text-gray-500 mb-1">Intake Date</label>
-                  <input type="date" value={form.intake_date}
-                    onChange={e => setForm(f => ({ ...f, intake_date: e.target.value }))}
-                    className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                {/* Location, capacity, intake */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs text-gray-500 mb-1">Address</label>
+                    <input type="text" placeholder="Street address" value={form.address}
+                      onChange={e => setForm(f => ({ ...f, address: e.target.value }))}
+                      className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                  </div>
+                  <div>
+                    <label className="block text-xs text-gray-500 mb-1">City</label>
+                    <input type="text" placeholder="City" value={form.city}
+                      onChange={e => setForm(f => ({ ...f, city: e.target.value }))}
+                      className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                  </div>
+                  <div>
+                    <label className="block text-xs text-gray-500 mb-1">State</label>
+                    <input type="text" placeholder="State" value={form.state}
+                      onChange={e => setForm(f => ({ ...f, state: e.target.value }))}
+                      className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                  </div>
+                  <div>
+                    <label className="block text-xs text-gray-500 mb-1">Capacity</label>
+                    <input type="text" placeholder="e.g. 200 sq ft, 50 units" value={form.capacity}
+                      onChange={e => setForm(f => ({ ...f, capacity: e.target.value }))}
+                      className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                  </div>
+                  <div>
+                    <label className="block text-xs text-gray-500 mb-1">Intake Date</label>
+                    <input type="date" value={form.intake_date}
+                      onChange={e => setForm(f => ({ ...f, intake_date: e.target.value }))}
+                      className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                  </div>
                 </div>
                 {/* Photo upload */}
-                <div className="md:col-span-2">
+                <div>
                   <label className="block text-xs text-gray-500 mb-2">Photos (optional, max 4)</label>
                   <div className="flex flex-wrap gap-2">
                     {form.photos.map((photo, i) => (
@@ -210,7 +284,7 @@ export default function StoragePage() {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
             {units.map((unit, i) => {
-              const sc = STATUS_CONFIG[unit.status] || { color: 'bg-gray-100 text-gray-500', label: 'Unknown' };
+              const sc = WORKFLOW_BADGE[unit.estado] || WORKFLOW_BADGE.PENDING;
               const hasPhoto = unit.photos?.length > 0;
               return (
                 <motion.div
@@ -250,6 +324,7 @@ export default function StoragePage() {
                         {unit.capacity && (
                           <p className="text-xs text-gray-400">Capacity: {unit.capacity}</p>
                         )}
+                        <div className="mt-1"><ItemCountsSummary value={parseCounts(unit.item_counts)} compact /></div>
                         <div className="flex items-center justify-between mt-3 pt-3 border-t border-gray-50">
                           <span className="text-xs text-blue-600 font-medium">View details</span>
                           <ChevronRightIcon className="w-4 h-4 text-gray-300 group-hover:text-blue-500 transition-colors" />

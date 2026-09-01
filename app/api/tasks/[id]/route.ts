@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getPbAdminToken, PB_URL, verifySessionUser } from '@/lib/pb-admin';
 import { sendEmail, taskStatusEmail } from '@/lib/email';
 import { sendPush, getTokensForUser } from '@/lib/push';
-import { syncVaultStatus } from '@/lib/task-sync';
+import { syncVaultStatus, syncStorageStatus } from '@/lib/task-sync';
 
 function fmtStatus(s: string): string {
   return s === 'IN_PROGRESS' ? 'In Progress' : s.charAt(0) + s.slice(1).toLowerCase();
@@ -132,9 +132,10 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
   if (!updateRes.ok) return NextResponse.json({ error: 'Failed to update task' }, { status: 500 });
   const updated = await updateRes.json();
 
-  // ── Sync the linked vault's workflow status from all its tasks ──────────────
-  if (task.vault_id && newStatus && newStatus !== task.status) {
-    await syncVaultStatus(task.vault_id, me.company_id, adminToken);
+  // ── Sync the linked vault/storage workflow status from all its tasks ────────
+  if (newStatus && newStatus !== task.status) {
+    if (task.vault_id)   await syncVaultStatus(task.vault_id, me.company_id, adminToken);
+    if (task.storage_id) await syncStorageStatus(task.storage_id, me.company_id, adminToken);
   }
 
   // ── On completion: bump the worker's ranking tally + post a chat note ───────

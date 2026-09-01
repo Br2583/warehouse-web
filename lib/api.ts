@@ -93,6 +93,7 @@ function mapVault(v: any) {
     vault_status: v.vault_status || [],
     content_type: v.content_type,
     room_location: v.room_location || [],
+    item_counts:  v.item_counts || {},
     packer:       v.packer,
     pack_date:    v.pack_date || '',
     // Filenames stored in R2, not image data. Build a URL with photoUrl().
@@ -120,6 +121,14 @@ function mapStorage(s: any) {
     capacity:    s.capacity || '',
     access_code: s.access_code || '',
     status:      s.status || 'AVAILABLE',
+    // Feature #2: condition tags + workflow + job details + counts
+    condition:    Array.isArray(s.condition) ? s.condition : [],
+    content_type: s.content_type || '',
+    job_type:     s.job_type || '',
+    pack_date:    s.pack_date || '',
+    packer:       s.packer || '',
+    estado:       s.estado || 'PENDING',
+    item_counts:  s.item_counts || {},
     photos,
     notes:       s.notes || '',
     intake_date: s.intake_date || '',
@@ -194,7 +203,7 @@ async function routeGet(path: string): Promise<any> {
     if (clientFilter) filter += ` && client_name="${sf(clientFilter)}"`;
     const items = await pb.collection('vaults').getFullList({
       filter,
-      fields: 'id,warehouse_id,row,col,level,position,client_name,client_id,job_type,vault_status,content_type,room_location,packer,pack_date,comments,estado,qr_token,company_id,created,photo_files',
+      fields: 'id,warehouse_id,row,col,level,position,client_name,client_id,job_type,vault_status,content_type,room_location,item_counts,packer,pack_date,comments,estado,qr_token,company_id,created,photo_files',
     });
     return items.map(mapVault).sort((a: any, b: any) => a.created < b.created ? -1 : 1);
   }
@@ -300,7 +309,7 @@ async function routeGet(path: string): Promise<any> {
     if (q2)          filter += ` && (client_name~"${sf(q2)}" || packer~"${sf(q2)}" || position~"${sf(q2)}" || comments~"${sf(q2)}" || job_type~"${sf(q2)}")`;
     const items = await pb.collection('vaults').getFullList({
       filter,
-      fields: 'id,warehouse_id,row,col,level,position,client_name,client_id,job_type,vault_status,content_type,room_location,packer,pack_date,comments,estado,qr_token,company_id,created,photo_files',
+      fields: 'id,warehouse_id,row,col,level,position,client_name,client_id,job_type,vault_status,content_type,room_location,item_counts,packer,pack_date,comments,estado,qr_token,company_id,created,photo_files',
     });
     const vaults = items
       .sort((a: any, b: any) => a.created < b.created ? 1 : -1)
@@ -309,7 +318,7 @@ async function routeGet(path: string): Promise<any> {
     if (q2) {
       const storageItems = await pb.collection('storage_units').getFullList({
         filter: `company_id="${cid}" && (client_name~"${sf(q2)}" || unit_name~"${sf(q2)}" || address~"${sf(q2)}" || notes~"${sf(q2)}")`,
-        fields: 'id,unit_name,client_name,address,city,state,status,intake_date,created',
+        fields: 'id,unit_name,client_name,address,city,state,status,estado,item_counts,intake_date,created',
       });
       storageUnits = storageItems
         .sort((a: any, b: any) => a.created < b.created ? 1 : -1)
@@ -321,6 +330,8 @@ async function routeGet(path: string): Promise<any> {
           city:        s.city,
           state:       s.state,
           status:      s.status,
+          estado:      s.estado || 'PENDING',
+          item_counts: s.item_counts || {},
           intake_date: s.intake_date || '',
           created:     s.created,
         }));
@@ -371,7 +382,7 @@ async function routeGet(path: string): Promise<any> {
     if (!cid) return [];
     const items = await pb.collection('storage_units').getFullList({
       filter: `company_id="${cid}"`,
-      fields: 'id,unit_name,address,city,state,client_name,capacity,access_code,status,notes,intake_date,photo_files,company_id,created,slots,grid_rows,grid_cols',
+      fields: 'id,unit_name,address,city,state,client_name,capacity,access_code,status,condition,content_type,job_type,pack_date,packer,estado,item_counts,notes,intake_date,photo_files,company_id,created,slots,grid_rows,grid_cols',
     });
     return items
       .sort((a: any, b: any) => a.created < b.created ? 1 : -1)
@@ -497,6 +508,7 @@ async function routePost(path: string, body: any): Promise<any> {
         content_type: body.content_type || body.contents_type,
         room_location: body.room_location || [],
         vault_status:  body.vault_status || [],
+        item_counts:  body.item_counts || {},
         packer:       body.packer,
         pack_date:    body.pack_date || '',
         // Files go to R2; the SDK turns the payload into FormData when it sees them
@@ -574,6 +586,13 @@ async function routePost(path: string, body: any): Promise<any> {
       capacity:    body.capacity || '',
       access_code: body.access_code || '',
       status:      body.status || 'AVAILABLE',
+      condition:    body.condition || [],
+      content_type: body.content_type || '',
+      job_type:     body.job_type || '',
+      pack_date:    body.pack_date || '',
+      packer:       body.packer || '',
+      estado:       body.estado || 'PENDING',
+      item_counts:  body.item_counts || {},
       photo_files: photosPayload(body.photos),
       notes:       body.notes || '',
       intake_date: body.intake_date || '',
@@ -592,7 +611,7 @@ async function routePost(path: string, body: any): Promise<any> {
     if (warehouseRef && warehouseRef !== 'all') filter += ` && warehouse_id="${sf(warehouseRef)}"`;
     const vaults = await pb.collection('vaults').getFullList({
       filter,
-      fields: 'id,warehouse_id,row,col,level,position,client_name,client_id,job_type,vault_status,content_type,room_location,packer,pack_date,comments,estado,qr_token,company_id,created,photo_files',
+      fields: 'id,warehouse_id,row,col,level,position,client_name,client_id,job_type,vault_status,content_type,room_location,item_counts,packer,pack_date,comments,estado,qr_token,company_id,created,photo_files',
     });
     const warehouses = await pb.collection('warehouses').getFullList({ filter: `company_id="${cid}"` });
     const wh = warehouses.find(w => w.id === warehouseRef);
@@ -718,6 +737,7 @@ async function routePut(path: string, body: any): Promise<any> {
       content_type: body.content_type || body.contents_type,
       room_location: body.room_location || [],
       vault_status:  body.vault_status || [],
+      item_counts:  body.item_counts || {},
       packer:       body.packer,
       pack_date:    body.pack_date,
       photo_files:  photosPayload(body.photos),
@@ -744,6 +764,13 @@ async function routePut(path: string, body: any): Promise<any> {
       capacity:    body.capacity || '',
       access_code: body.access_code || '',
       status:      body.status || 'AVAILABLE',
+      condition:    body.condition ?? undefined,
+      content_type: body.content_type ?? undefined,
+      job_type:     body.job_type ?? undefined,
+      pack_date:    body.pack_date ?? undefined,
+      packer:       body.packer ?? undefined,
+      estado:       body.estado ?? undefined,
+      item_counts:  body.item_counts ?? undefined,
       photo_files: photosPayload(body.photos),
       notes:       body.notes || '',
       intake_date: body.intake_date ?? undefined,

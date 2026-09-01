@@ -49,3 +49,41 @@ export async function syncVaultStatus(
     /* sync must never break the task operation */
   }
 }
+
+/** Same rules as syncVaultStatus, for a storage unit linked to a task. */
+export async function syncStorageStatus(
+  storageId: string | undefined | null,
+  companyId: string,
+  adminToken: string,
+): Promise<void> {
+  if (!storageId) return;
+  try {
+    const sRes = await fetch(`${PB_URL}/api/collections/storage_units/records/${storageId}`, {
+      headers: { Authorization: `Bearer ${adminToken}` },
+    });
+    if (!sRes.ok) return;
+    const unit = await sRes.json();
+    if (unit.company_id !== companyId) return;
+    if (unit.estado === 'DELIVERED') return;
+
+    const filter = encodeURIComponent(`company_id="${companyId}" && storage_id="${storageId}"`);
+    const tRes = await fetch(
+      `${PB_URL}/api/collections/tasks/records?filter=${filter}&perPage=500&fields=id,status`,
+      { headers: { Authorization: `Bearer ${adminToken}` } },
+    );
+    const tData = tRes.ok ? await tRes.json() : { items: [] };
+    const tasks: { status: string }[] = tData.items || [];
+    if (tasks.length === 0) return;
+
+    const nextEstado = tasks.every(t => t.status === 'DONE') ? 'READY' : 'PENDING';
+    if (nextEstado !== unit.estado) {
+      await fetch(`${PB_URL}/api/collections/storage_units/records/${storageId}`, {
+        method: 'PATCH',
+        headers: { Authorization: `Bearer ${adminToken}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ estado: nextEstado }),
+      });
+    }
+  } catch {
+    /* sync must never break the task operation */
+  }
+}

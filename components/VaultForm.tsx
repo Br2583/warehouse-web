@@ -6,6 +6,8 @@ import { api } from '@/lib/api';
 import { useAuth } from '@/lib/auth-context';
 import PhotoAddButton from '@/components/PhotoAddButton';
 import { photoSrc, usePhotoToken } from '@/lib/photo-url';
+import { ItemCountsInput } from '@/components/ItemCounts';
+import type { ItemCounts } from '@/lib/item-counts';
 
 const JOB_TYPES       = ['Fire', 'Water', 'Mold', 'Moving', 'Storage'];
 const CONTENTS_TYPES  = ['Boxes', 'Furniture', 'Both'];
@@ -20,6 +22,7 @@ export interface VaultFormData {
   contents_type: string;
   room_location: string[];
   vault_status: string[];
+  item_counts: ItemCounts;
   packer: string;
   pack_date: string;
   status: string;
@@ -181,6 +184,12 @@ export default function VaultForm({
             <button type="button" key={s} onClick={() => set({ vault_status: toggle(value.vault_status, s) })} className={chip(value.vault_status.includes(s))}>{s}</button>
           ))}
         </div>
+      </div>
+
+      {/* Item counts */}
+      <div>
+        <label className="block text-xs text-gray-500 mb-2">Inventory count</label>
+        <ItemCountsInput value={value.item_counts} onChange={ic => set({ item_counts: ic })} />
       </div>
 
       {/* Pack Date */}

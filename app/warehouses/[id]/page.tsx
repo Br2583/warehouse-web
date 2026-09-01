@@ -15,6 +15,8 @@ import {
 import ConfirmModal from '@/components/ConfirmModal';
 import Sidebar from '@/components/Sidebar';
 import VaultForm, { VaultFormData } from '@/components/VaultForm';
+import { ItemCountsSummary } from '@/components/ItemCounts';
+import { parseCounts, hasCounts, type ItemCounts } from '@/lib/item-counts';
 import PhotoAddButton from '@/components/PhotoAddButton';
 import QRScanner from '@/components/QRScanner';
 import { api } from '@/lib/api';
@@ -38,6 +40,7 @@ interface Box {
   vault_status: string[];
   content_type: string;
   room_location: string[];
+  item_counts?: ItemCounts;
   packer: string;
   pack_date: string;
   photos: (string | File)[];
@@ -95,6 +98,7 @@ const emptyForm = (): VaultFormData => ({
   contents_type: 'Boxes',
   room_location: [],
   vault_status:  [],
+  item_counts:   {},
   packer:        '',
   pack_date:     new Date().toISOString().split('T')[0],
   status:        'PENDING',
@@ -264,6 +268,7 @@ export default function WarehouseDetailPage() {
       contents_type: box.content_type || 'Boxes',
       room_location: box.room_location || [],
       vault_status:  box.vault_status || [],
+      item_counts:   parseCounts(box.item_counts),
       packer:        box.packer || '',
       pack_date:     box.pack_date || new Date().toISOString().split('T')[0],
       status:        box.estado || box.status || 'PENDING',
@@ -298,6 +303,7 @@ export default function WarehouseDetailPage() {
         content_type:  editForm.contents_type,
         room_location: editForm.room_location,
         vault_status:  editForm.vault_status,
+        item_counts:   editForm.item_counts,
         packer:        editForm.packer,
         pack_date:     editForm.pack_date,
         estado:        editForm.status,
@@ -361,6 +367,7 @@ export default function WarehouseDetailPage() {
         content_type: form.contents_type,
         room_location: form.room_location,
         vault_status: form.vault_status,
+        item_counts: form.item_counts,
         packer: form.packer,
         pack_date: form.pack_date,
         estado: form.status,
@@ -1183,6 +1190,12 @@ export default function WarehouseDetailPage() {
                     </div>
                   ))}
                 </div>
+                {hasCounts(parseCounts(selected.item_counts)) && (
+                  <div className="mt-3 pt-3 border-t border-gray-100">
+                    <p className="text-sm text-gray-400 mb-1.5">Inventory</p>
+                    <ItemCountsSummary value={parseCounts(selected.item_counts)} />
+                  </div>
+                )}
                 {loadingPhotos && (
                   <div className="mt-4 flex items-center gap-2 text-gray-400 text-sm">
                     <div className="w-4 h-4 border-2 border-blue-400 border-t-transparent rounded-full animate-spin" />

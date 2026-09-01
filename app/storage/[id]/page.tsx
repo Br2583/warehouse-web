@@ -16,13 +16,21 @@ import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { compressImage } from '@/lib/compress-image';
 import { photoSrc, usePhotoToken } from '@/lib/photo-url';
+import { ItemCountsInput, ItemCountsSummary } from '@/components/ItemCounts';
+import { parseCounts, hasCounts } from '@/lib/item-counts';
 
-const STATUS_CONFIG: Record<string, { color: string; label: string }> = {
-  AVAILABLE:   { color: 'bg-green-100 text-green-700',  label: 'Available' },
-  OCCUPIED:    { color: 'bg-amber-100 text-amber-700',  label: 'Occupied' },
-  MAINTENANCE: { color: 'bg-red-100 text-red-600',      label: 'Maintenance' },
+// Workflow (mirrors vaults): syncs with tasks. Condition tags describe damage.
+const WORKFLOW = ['PENDING', 'READY', 'DELIVERED'];
+const WORKFLOW_BADGE: Record<string, { color: string; label: string }> = {
+  PENDING:   { color: 'bg-amber-100 text-amber-700', label: 'Pending' },
+  READY:     { color: 'bg-green-100 text-green-700', label: 'Ready' },
+  DELIVERED: { color: 'bg-blue-100 text-blue-700',   label: 'Delivered' },
 };
-const STATUSES = ['AVAILABLE', 'OCCUPIED', 'MAINTENANCE'];
+const ST_CONDITIONS = ['Total Loss', 'Needs Cleaning', 'Storage Only'];
+const ST_CONTENTS   = ['Boxes', 'Furniture', 'Both'];
+const ST_JOBS       = ['Fire', 'Water', 'Mold', 'Moving', 'Storage'];
+const stChip = (active: boolean) =>
+  `px-3 py-1.5 text-sm rounded-lg border transition-colors ${active ? 'bg-blue-600 text-white border-blue-600' : 'border-gray-200 text-gray-600 hover:border-blue-300'}`;
 
 const MAX_PHOTOS = 4;
 
@@ -70,7 +78,6 @@ export default function StorageDetailPage() {
   const [showGridConfig, setShowGridConfig] = useState(false);
   const [gridConfigForm, setGridConfigForm] = useState({ rows: 4, cols: 6 });
   const [confirmModal, setConfirmModal] = useState<{ message: string; onConfirm: () => void } | null>(null);
-  const [showCode, setShowCode] = useState(false);
 
   useEffect(() => {
     api.get(`/api/storage/${id}`)
@@ -216,7 +223,7 @@ export default function StorageDetailPage() {
   }
 
   const displayData = editMode ? form : unit;
-  const sc = STATUS_CONFIG[displayData?.status] || STATUS_CONFIG.AVAILABLE;
+  const sc = WORKFLOW_BADGE[displayData?.estado] || WORKFLOW_BADGE.PENDING;
   const photos: (string | File)[] = displayData?.photos || [];
   const photoRef = { id: displayData?.id || '', collectionName: 'storage_units' };
 
@@ -460,11 +467,92 @@ export default function StorageDetailPage() {
 
           {editMode ? (
             <div className="space-y-4">
+              {/* Client Name */}
+              <div>
+                <label className="block text-xs text-gray-500 mb-1">Client Name</label>
+                <input type="text" placeholder="Client name" value={form.client_name || ''} onChange={e => setForm((f: any) => ({ ...f, client_name: e.target.value }))}
+                  className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+              </div>
+              {/* Unit Name */}
               <div>
                 <label className="block text-xs text-gray-500 mb-1">Unit Name <span className="text-red-500">*</span></label>
                 <input type="text" value={form.unit_name || ''} onChange={e => setForm((f: any) => ({ ...f, unit_name: e.target.value }))}
                   className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
               </div>
+              {/* Condition */}
+              <div>
+                <label className="block text-xs text-gray-500 mb-2">Condition</label>
+                <div className="flex flex-wrap gap-2">
+                  {ST_CONDITIONS.map(c => {
+                    const active = (form.condition || []).includes(c);
+                    return (
+                      <button key={c} type="button" className={stChip(active)}
+                        onClick={() => setForm((f: any) => ({ ...f, condition: active ? (f.condition || []).filter((x: string) => x !== c) : [...(f.condition || []), c] }))}>
+                        {c}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+              {/* Contents */}
+              <div>
+                <label className="block text-xs text-gray-500 mb-2">Contents</label>
+                <div className="flex flex-wrap gap-2">
+                  {ST_CONTENTS.map(c => (
+                    <button key={c} type="button" className={stChip(form.content_type === c)}
+                      onClick={() => setForm((f: any) => ({ ...f, content_type: c }))}>{c}</button>
+                  ))}
+                </div>
+              </div>
+              {/* Job Type */}
+              <div>
+                <label className="block text-xs text-gray-500 mb-2">Job Type</label>
+                <div className="flex flex-wrap gap-2">
+                  {ST_JOBS.map(c => (
+                    <button key={c} type="button" className={stChip(form.job_type === c)}
+                      onClick={() => setForm((f: any) => ({ ...f, job_type: c }))}>{c}</button>
+                  ))}
+                </div>
+              </div>
+              {/* Pack Date + Packer */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs text-gray-500 mb-1">Pack Date</label>
+                  <input type="date" value={form.pack_date || ''} onChange={e => setForm((f: any) => ({ ...f, pack_date: e.target.value }))}
+                    className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                </div>
+                <div>
+                  <label className="block text-xs text-gray-500 mb-1">Packer</label>
+                  <input type="text" placeholder="Who packed this?" value={form.packer || ''} onChange={e => setForm((f: any) => ({ ...f, packer: e.target.value }))}
+                    className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                </div>
+              </div>
+              {/* Job Status (workflow) */}
+              <div>
+                <label className="block text-xs text-gray-500 mb-2">Job Status</label>
+                <div className="flex gap-2">
+                  {WORKFLOW.map(s => (
+                    <button key={s} type="button"
+                      onClick={() => setForm((f: any) => ({ ...f, estado: s }))}
+                      className={`flex-1 py-2 text-xs rounded-xl border transition-colors ${form.estado === s ? 'bg-blue-600 text-white border-blue-600' : 'border-gray-200 text-gray-600 hover:border-blue-300'}`}>
+                      {WORKFLOW_BADGE[s].label}
+                    </button>
+                  ))}
+                </div>
+                <p className="text-[11px] text-gray-400 mt-1.5">Auto-updates from linked tasks. A manual Delivered is never overridden.</p>
+              </div>
+              {/* Item counts */}
+              <div>
+                <label className="block text-xs text-gray-500 mb-2">Inventory count</label>
+                <ItemCountsInput value={parseCounts(form.item_counts)} onChange={ic => setForm((f: any) => ({ ...f, item_counts: ic }))} />
+              </div>
+              {/* Access Code — always visible */}
+              <div>
+                <label className="block text-xs text-gray-500 mb-1">Access Code</label>
+                <input type="text" placeholder="Gate or door code" value={form.access_code || ''} onChange={e => setForm((f: any) => ({ ...f, access_code: e.target.value }))}
+                  className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+              </div>
+              {/* Location & capacity */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs text-gray-500 mb-1">Address</label>
@@ -482,18 +570,8 @@ export default function StorageDetailPage() {
                     className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
                 </div>
                 <div>
-                  <label className="block text-xs text-gray-500 mb-1">Client</label>
-                  <input type="text" placeholder="Assigned client (optional)" value={form.client_name || ''} onChange={e => setForm((f: any) => ({ ...f, client_name: e.target.value }))}
-                    className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
-                </div>
-                <div>
                   <label className="block text-xs text-gray-500 mb-1">Capacity</label>
                   <input type="text" placeholder="e.g. 200 sq ft" value={form.capacity || ''} onChange={e => setForm((f: any) => ({ ...f, capacity: e.target.value }))}
-                    className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
-                </div>
-                <div>
-                  <label className="block text-xs text-gray-500 mb-1">Access Code</label>
-                  <input type="text" placeholder="Gate or door code" value={form.access_code || ''} onChange={e => setForm((f: any) => ({ ...f, access_code: e.target.value }))}
                     className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
                 </div>
                 <div>
@@ -501,19 +579,8 @@ export default function StorageDetailPage() {
                   <input type="date" value={form.intake_date || ''} onChange={e => setForm((f: any) => ({ ...f, intake_date: e.target.value }))}
                     className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
                 </div>
-                <div>
-                  <label className="block text-xs text-gray-500 mb-2">Status</label>
-                  <div className="flex gap-2">
-                    {STATUSES.map(s => (
-                      <button key={s} type="button"
-                        onClick={() => setForm((f: any) => ({ ...f, status: s }))}
-                        className={`flex-1 py-2 text-xs rounded-xl border transition-colors ${form.status === s ? 'bg-blue-600 text-white border-blue-600' : 'border-gray-200 text-gray-600 hover:border-blue-300'}`}>
-                        {STATUS_CONFIG[s].label}
-                      </button>
-                    ))}
-                  </div>
-                </div>
               </div>
+              {/* Notes */}
               <div>
                 <label className="block text-xs text-gray-500 mb-1">Notes</label>
                 <textarea rows={3} placeholder="Additional notes..." value={form.notes || ''} onChange={e => setForm((f: any) => ({ ...f, notes: e.target.value }))}
@@ -523,36 +590,28 @@ export default function StorageDetailPage() {
           ) : (
             <div className="space-y-3">
               {[
-                { label: 'Unit Name',    value: unit?.unit_name },
-                { label: 'Address',      value: [unit?.address, unit?.city, unit?.state].filter(Boolean).join(', ') || '—' },
                 { label: 'Client',       value: unit?.client_name || '—' },
+                { label: 'Unit Name',    value: unit?.unit_name || '—' },
+                { label: 'Condition',    value: (unit?.condition || []).join(', ') || '—' },
+                { label: 'Contents',     value: unit?.content_type || '—' },
+                { label: 'Job Type',     value: unit?.job_type || '—' },
+                { label: 'Pack Date',    value: unit?.pack_date || '—' },
+                { label: 'Packer',       value: unit?.packer || '—' },
+                { label: 'Access Code',  value: unit?.access_code || '—' },
+                { label: 'Address',      value: [unit?.address, unit?.city, unit?.state].filter(Boolean).join(', ') || '—' },
                 { label: 'Capacity',     value: unit?.capacity || '—' },
                 { label: 'Intake Date',  value: unit?.intake_date || '—' },
                 { label: 'Notes',        value: unit?.notes || '—' },
               ].map(({ label, value }) => (
                 <div key={label} className="flex justify-between text-sm gap-4">
                   <span className="text-gray-400 flex-shrink-0">{label}</span>
-                  <span className="text-gray-900 font-medium text-right">{value}</span>
+                  <span className="text-gray-900 font-medium text-right break-words">{value}</span>
                 </div>
               ))}
-              {/* Access Code with reveal toggle */}
-              {unit?.access_code && (
-                <div className="flex justify-between text-sm gap-4">
-                  <span className="text-gray-400 flex-shrink-0">Access Code</span>
-                  <div className="flex items-center gap-2">
-                    <span className="text-gray-900 font-medium font-mono">
-                      {showCode ? unit.access_code : '••••••'}
-                    </span>
-                    <button onClick={() => setShowCode(s => !s)} className="text-xs text-blue-600 hover:text-blue-800 underline">
-                      {showCode ? 'Hide' : 'Reveal'}
-                    </button>
-                  </div>
-                </div>
-              )}
-              {!unit?.access_code && (
-                <div className="flex justify-between text-sm gap-4">
-                  <span className="text-gray-400 flex-shrink-0">Access Code</span>
-                  <span className="text-gray-900 font-medium text-right">—</span>
+              {hasCounts(parseCounts(unit?.item_counts)) && (
+                <div className="pt-3 border-t border-gray-100">
+                  <p className="text-sm text-gray-400 mb-1.5">Inventory</p>
+                  <ItemCountsSummary value={parseCounts(unit?.item_counts)} />
                 </div>
               )}
             </div>

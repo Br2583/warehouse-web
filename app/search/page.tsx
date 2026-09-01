@@ -12,11 +12,6 @@ import { STATUS_COLORS } from '@/lib/constants';
 
 const JOB_TYPES = ['Fire', 'Water', 'Mold', 'Moving', 'Storage'];
 const STATUSES  = ['PENDING', 'READY', 'DELIVERED'];
-const STORAGE_STATUS_COLORS: Record<string, string> = {
-  AVAILABLE:   'bg-green-100 text-green-700',
-  OCCUPIED:    'bg-blue-100 text-blue-700',
-  MAINTENANCE: 'bg-amber-100 text-amber-700',
-};
 
 function SearchContent() {
   const searchParams = useSearchParams();
@@ -346,8 +341,8 @@ function SearchContent() {
                             {[su.city, su.state].filter(Boolean).join(', ') || '—'}
                           </td>
                           <td className="px-4 py-4">
-                            <span className={`text-xs font-medium px-2.5 py-1 rounded-full ${STORAGE_STATUS_COLORS[su.status] || 'bg-gray-100 text-gray-600'}`}>
-                              {su.status || '—'}
+                            <span className={`text-xs font-medium px-2.5 py-1 rounded-full ${STATUS_COLORS[su.estado] || 'bg-gray-100 text-gray-600'}`}>
+                              {su.estado || '—'}
                             </span>
                           </td>
                           <td className="hidden md:table-cell px-4 py-4 text-sm text-gray-500">{formatDate(su.intake_date)}</td>
