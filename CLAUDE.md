@@ -57,8 +57,10 @@ NEXT_PUBLIC_EMAILJS_PUBLIC_KEY=I_NflBogOJ5lZnKiG
 ```
 box_id, warehouse_id, row (A-J), column (1-8), level (1=lower / 2=upper), position
 client_name, job_type (Fire/Water/Moving/Storage), content_type (Boxes/Furniture/Both)
-room_location[], vault_status[] (Total Loss / Needs Cleaning / Ready to Go / Storage Only)
-packer, estado/status (PENDING/READY/DELIVERED), comments
+room_location[], vault_status[] = CONDITION tags (Total Loss / Needs Cleaning / Storage Only)
+packer, estado/status = WORKFLOW (PENDING → READY → DELIVERED), comments
+  ↳ estado is auto-synced from tasks: linking a task → PENDING; all its tasks DONE → READY;
+    a manual DELIVERED is never auto-overridden. Logic in lib/task-sync.ts + app/api/tasks/*.
 photo_files[] (Cloudflare R2 via PocketBase S3, protected, max 6, ~2MB compressed, thumbs 300x300/100x100)
 deleted_at/deleted_by (soft-delete: mark instead of destroy; keeps id/box_id/qr_token so the printed QR label survives a restore)
 ```

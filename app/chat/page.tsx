@@ -17,6 +17,7 @@ interface Message {
   sender_photo?: string;
   text: string;
   timestamp: string;
+  type?: 'text' | 'image' | 'system';
 }
 
 function formatTime(ts: string): string {
@@ -79,7 +80,7 @@ export default function ChatPage() {
         const hadNew  = lastCountRef.current >= 0 && !!newest && newest.id !== lastIdRef.current;
         if (hadNew) {
           if (newest && newest.sender_id !== user?.id) {
-            notify(`${newest.sender_name}`, newest.text);
+            notify(newest.type === 'system' ? 'Task update' : `${newest.sender_name}`, newest.text);
           }
           markChatSeen();
         } else if (lastCountRef.current < 0) {
@@ -216,6 +217,16 @@ export default function ChatPage() {
             <div className="text-center py-16 text-gray-400 text-sm">No messages yet. Start the conversation!</div>
           ) : (
             messages.map((msg, i) => {
+              // System notes (e.g. a completed task) render centered, not as a bubble
+              if (msg.type === 'system') {
+                return (
+                  <motion.div key={msg.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex justify-center">
+                    <div className="text-[11px] text-gray-500 bg-gray-100 border border-gray-200 rounded-full px-3 py-1 max-w-[85%] text-center">
+                      {msg.text} · {formatTime(msg.timestamp)}
+                    </div>
+                  </motion.div>
+                );
+              }
               const isMe = msg.sender_id === user?.id;
               const senderPicture = members.find(m => m.user_id === msg.sender_id)?.picture;
               return (

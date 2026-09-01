@@ -80,7 +80,7 @@ const ROWS    = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J'];
 const COLUMNS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11];
 
 const FURNITURE_TYPES = ['Sofa', 'Table', 'Chair', 'Bed', 'Dresser', 'TV', 'Other'];
-const LOOSE_CONDITIONS = ['Total Loss', 'Needs Cleaning', 'Ready to Go', 'Storage Only'];
+const LOOSE_CONDITIONS = ['Total Loss', 'Needs Cleaning', 'Storage Only'];
 const LOOSE_STATUSES = ['PENDING', 'READY', 'DELIVERED'];
 const ITEM_EMOJI: Record<string, string> = {
   Boxes: '📦', Sofa: '🛋️', Table: '🪑', Chair: '🪑', Bed: '🛏️', Dresser: '🗄️', TV: '📺', Other: '📋',

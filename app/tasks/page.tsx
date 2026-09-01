@@ -7,15 +7,19 @@ import {
   PlusIcon, XMarkIcon, TrashIcon, CalendarIcon, UserCircleIcon,
   ExclamationCircleIcon, ListBulletIcon, ViewColumnsIcon, PencilIcon,
   ClipboardDocumentListIcon, MagnifyingGlassIcon, ArchiveBoxIcon, ArrowPathIcon,
+  CheckCircleIcon, ClockIcon,
 } from '@/components/icons';
 import Link from 'next/link';
 import Sidebar from '@/components/Sidebar';
 import { SkeletonTaskRow } from '@/components/Skeleton';
 import { UserAvatar } from '@/components/UserAvatar';
+import PhotoAddButton from '@/components/PhotoAddButton';
 import { api } from '@/lib/api';
 import { useAuth } from '@/lib/auth-context';
 import { useToast } from '@/lib/toast-context';
 import { pb } from '@/lib/pb';
+import { compressImage } from '@/lib/compress-image';
+import { photoSrc, photoUrl, usePhotoToken } from '@/lib/photo-url';
 
 type TaskStatus   = 'PENDING' | 'IN_PROGRESS' | 'DONE';
 type TaskPriority = 'normal' | 'urgent';
@@ -23,19 +27,24 @@ type TaskType     = 'Cleaning' | 'Restoration' | 'Delivery' | 'Free';
 type TaskFilter   = 'all' | 'mine' | 'overdue' | 'today';
 
 interface Task {
-  id:          string;
-  title:       string;
-  type:        TaskType;
-  assigned_to: string;
-  priority:    TaskPriority;
-  status:      TaskStatus;
-  vault_id?:   string;
-  storage_id?: string;
-  due_date?:   string;
-  notes?:      string;
-  company_id:  string;
-  created_by:  string;
-  created:     string;
+  id:              string;
+  title:           string;
+  type:            TaskType;
+  assigned_to:     string;
+  priority:        TaskPriority;
+  status:          TaskStatus;
+  vault_id?:       string;
+  storage_id?:     string;
+  due_date?:       string;
+  notes?:          string;
+  company_id:      string;
+  created_by:      string;
+  created:         string;
+  started_at?:     string;
+  completed_at?:   string;
+  completion_note?: string;
+  before_photos?:  string[];
+  after_photos?:   string[];
 }
 
 interface Member {
@@ -95,6 +104,27 @@ function formatDate(d?: string) {
   try {
     return new Date(d.split(/[ T]/)[0] + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
   } catch { return d; }
+}
+
+// Server timestamps come as UTC; render them in the viewer's local time.
+function formatDateTime(d?: string) {
+  if (!d) return '';
+  try {
+    const iso = d.includes('T') ? d : d.replace(' ', 'T');
+    return new Date(iso).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
+  } catch { return d; }
+}
+
+function formatDuration(startedAt?: string, completedAt?: string) {
+  if (!startedAt || !completedAt) return '';
+  const ms = Date.parse(completedAt.replace(' ', 'T')) - Date.parse(startedAt.replace(' ', 'T'));
+  if (isNaN(ms) || ms < 0) return '';
+  const mins = Math.round(ms / 60000);
+  if (mins < 1) return 'under a minute';
+  if (mins < 60) return `${mins}m`;
+  const h = Math.floor(mins / 60);
+  const m = mins % 60;
+  return m ? `${h}h ${m}m` : `${h}h`;
 }
 
 const emptyForm = {
@@ -273,8 +303,30 @@ function TaskDetailSheet({ task, members, isOwner, onStatus, onDelete, onEdit, o
   const createdBy = members.find(m => m.user_id === task.created_by);
   const todayStr  = new Date().toLocaleDateString('en-CA');
   const isOverdue = !!task.due_date && task.status !== 'DONE' && task.due_date.split(/[ T]/)[0] < todayStr;
+  const photoToken = usePhotoToken();
+  const [lightbox, setLightbox] = useState<string | null>(null);
+  const photoRecord = { id: task.id, collectionName: 'tasks' };
+  const duration = formatDuration(task.started_at, task.completed_at);
+  const hasCompletionInfo = !!(task.completed_at || task.completion_note || task.before_photos?.length || task.after_photos?.length);
+
+  const renderSavedPhotos = (files: string[] | undefined, label: string) => {
+    if (!files || files.length === 0) return null;
+    return (
+      <div>
+        <p className="text-[10px] font-medium text-gray-400 mb-1.5">{label}</p>
+        <div className="grid grid-cols-3 gap-2">
+          {files.map((name, i) => (
+            <img key={i} src={photoUrl(photoRecord, name, 'grid', photoToken)} alt=""
+              className="w-full h-20 object-cover rounded-lg cursor-pointer"
+              onClick={() => setLightbox(photoUrl(photoRecord, name, 'full', photoToken))} />
+          ))}
+        </div>
+      </div>
+    );
+  };
 
   return (
+    <>
     <div className="fixed inset-0 z-[60] flex items-end justify-center bg-black/40" onClick={onClose}>
       <motion.div
         initial={{ y: '100%' }}
@@ -360,6 +412,29 @@ function TaskDetailSheet({ task, members, isOwner, onStatus, onDelete, onEdit, o
               </div>
             )}
 
+            {/* Completion record — before/after photos, duration, note */}
+            {hasCompletionInfo && (
+              <div className="rounded-xl border border-green-100 bg-green-50/60 px-3.5 py-3 space-y-3">
+                <div className="flex items-center gap-2">
+                  <CheckCircleIcon className="w-4 h-4 text-green-600 flex-shrink-0" />
+                  <span className="text-xs font-semibold text-green-700">Completed</span>
+                  {task.completed_at && (
+                    <span className="ml-auto text-[11px] text-gray-500">{formatDateTime(task.completed_at)}</span>
+                  )}
+                </div>
+                {duration && (
+                  <div className="flex items-center gap-1.5 text-xs text-gray-500">
+                    <ClockIcon className="w-3.5 h-3.5 flex-shrink-0" /> Took {duration}
+                  </div>
+                )}
+                {renderSavedPhotos(task.before_photos, 'Before')}
+                {renderSavedPhotos(task.after_photos, 'After')}
+                {task.completion_note && (
+                  <p className="text-sm text-gray-700 leading-relaxed whitespace-pre-wrap">{task.completion_note}</p>
+                )}
+              </div>
+            )}
+
             {(task.vault_id || task.storage_id) && (
               <div className="flex flex-wrap gap-2">
                 {task.vault_id && vault ? (
@@ -421,6 +496,13 @@ function TaskDetailSheet({ task, members, isOwner, onStatus, onDelete, onEdit, o
         </div>
       </motion.div>
     </div>
+
+    {lightbox && (
+      <div className="fixed inset-0 z-[85] bg-black/90 flex items-center justify-center p-4" onClick={() => setLightbox(null)}>
+        <img src={lightbox} alt="" className="max-w-full max-h-full object-contain rounded-lg" />
+      </div>
+    )}
+    </>
   );
 }
 
@@ -833,6 +915,141 @@ function TaskFormModal({ open, onClose, members, editTask, onSave, allVaults }: 
   );
 }
 
+// ── Complete Task Sheet (before/after photos + note → status DONE) ─────────────
+function CompleteTaskSheet({ task, onClose, onCompleted }: {
+  task:        Task;
+  onClose:     () => void;
+  onCompleted: () => void;
+}) {
+  const [before, setBefore]     = useState<File[]>([]);
+  const [after,  setAfter]      = useState<File[]>([]);
+  const [note,   setNote]       = useState('');
+  const [saving, setSaving]     = useState(false);
+  const [error,  setError]      = useState('');
+  const [lightbox, setLightbox] = useState<string | null>(null);
+
+  const addPhotos = async (files: FileList | null, target: 'before' | 'after') => {
+    if (!files || files.length === 0) return;
+    const setter  = target === 'before' ? setBefore : setAfter;
+    const current = target === 'before' ? before : after;
+    const picked  = Array.from(files).slice(0, Math.max(0, 4 - current.length));
+    const out: File[] = [];
+    for (const f of picked) {
+      try { out.push(await compressImage(f)); } catch { /* skip undecodable */ }
+    }
+    if (out.length) setter(prev => [...prev, ...out].slice(0, 4));
+  };
+  const addNative = (file: File, target: 'before' | 'after') => {
+    const setter = target === 'before' ? setBefore : setAfter;
+    compressImage(file).then(c => setter(prev => [...prev, c].slice(0, 4))).catch(() => {});
+  };
+  const removePhoto = (target: 'before' | 'after', idx: number) => {
+    const setter = target === 'before' ? setBefore : setAfter;
+    setter(prev => prev.filter((_, i) => i !== idx));
+  };
+
+  const submit = async () => {
+    setSaving(true);
+    setError('');
+    try {
+      const fd = new FormData();
+      fd.append('status', 'DONE');
+      if (note.trim()) fd.append('completion_note', note.trim());
+      before.forEach(f => fd.append('before_photos', f));
+      after.forEach(f => fd.append('after_photos', f));
+      const token = pb.authStore.token;
+      const res = await fetch(`/api/tasks/${task.id}`, {
+        method: 'PUT',
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        body: fd,
+      });
+      if (!res.ok) {
+        const d = await res.json().catch(() => ({}));
+        throw new Error((d as any)?.error || 'Failed to complete task');
+      }
+      onCompleted();
+      onClose();
+    } catch (e: any) {
+      setError(e?.message || 'Failed to complete task');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const renderPhotos = (files: File[], target: 'before' | 'after', label: string) => (
+    <div>
+      <label className="block text-xs font-medium text-gray-500 mb-2">{label}</label>
+      {files.length > 0 && (
+        <div className="grid grid-cols-3 gap-2 mb-2">
+          {files.map((f, i) => (
+            <div key={i} className="relative">
+              <img src={photoSrc(f, { id: '' }, 'grid')} alt=""
+                className="w-full h-20 object-cover rounded-xl cursor-pointer"
+                onClick={() => setLightbox(photoSrc(f, { id: '' }, 'full'))} />
+              <button type="button" onClick={() => removePhoto(target, i)}
+                className="absolute top-1 right-1 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center">
+                <XMarkIcon className="w-3 h-3" />
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+      {files.length < 4 && (
+        <PhotoAddButton onFiles={f => addPhotos(f, target)} onPhotoNative={p => addNative(p, target)} />
+      )}
+    </div>
+  );
+
+  return (
+    <>
+      <div className="fixed inset-0 z-[70] flex items-start md:items-center justify-center p-4 bg-black/40 overflow-y-auto" onClick={onClose}>
+        <motion.div
+          initial={{ opacity: 0, y: 24 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: 24 }}
+          transition={{ type: 'spring', stiffness: 380, damping: 30 }}
+          onClick={e => e.stopPropagation()}
+          className="bg-white rounded-2xl p-6 w-full max-w-md shadow-xl my-auto max-h-[92vh] overflow-y-auto"
+        >
+          <div className="flex items-center justify-between mb-1">
+            <h2 className="text-lg font-bold text-gray-900">Complete task</h2>
+            <button onClick={onClose} className="text-gray-400 hover:text-gray-600"><XMarkIcon className="w-5 h-5" /></button>
+          </div>
+          <p className="text-sm text-gray-500 mb-5 line-clamp-2">{task.title}</p>
+
+          <div className="space-y-4">
+            {renderPhotos(before, 'before', 'Before (optional)')}
+            {renderPhotos(after, 'after', 'After (optional)')}
+            <div>
+              <label className="block text-xs font-medium text-gray-500 mb-2">Completion note (optional)</label>
+              <textarea value={note} onChange={e => setNote(e.target.value)} rows={3} maxLength={2000}
+                placeholder="What was done…"
+                className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 resize-none" />
+            </div>
+            {error && (
+              <div className="flex items-center gap-2 bg-red-50 border border-red-100 text-red-600 text-sm px-4 py-2.5 rounded-xl">
+                <ExclamationCircleIcon className="w-4 h-4 flex-shrink-0" />{error}
+              </div>
+            )}
+            <button onClick={submit} disabled={saving}
+              className="w-full flex items-center justify-center gap-2 py-3 bg-green-600 text-white text-sm font-semibold rounded-full hover:bg-green-700 transition-colors disabled:opacity-50">
+              <CheckCircleIcon className="w-5 h-5" />
+              {saving ? 'Completing…' : 'Mark as Done'}
+            </button>
+          </div>
+        </motion.div>
+      </div>
+
+      {lightbox && (
+        <div className="fixed inset-0 z-[85] bg-black/90 flex items-center justify-center p-4"
+          onClick={() => setLightbox(null)}>
+          <img src={lightbox} alt="" className="max-w-full max-h-full object-contain rounded-lg" />
+        </div>
+      )}
+    </>
+  );
+}
+
 // ── Main page ─────────────────────────────────────────────────────────────────
 export default function TasksPage() {
   return <Suspense><TasksPageInner /></Suspense>;
@@ -858,6 +1075,7 @@ function TasksPageInner() {
   const [clearingAll, setClearingAll] = useState(false);
   const [taskFilter, setTaskFilter]     = useState<TaskFilter>('all');
   const [statusLoading, setStatusLoading] = useState<Record<string, boolean>>({});
+  const [completeTask, setCompleteTask]   = useState<Task | null>(null);
 
   const loadTasks = async () => {
     try {
@@ -892,6 +1110,12 @@ function TasksPageInner() {
   useEffect(() => { if (formOpen) loadVaults(); }, [formOpen]);
 
   const handleStatusChange = async (taskId: string, newStatus: TaskStatus) => {
+    // Completing a task opens the completion sheet (before/after photos + note)
+    // instead of an immediate write.
+    if (newStatus === 'DONE') {
+      const t = tasks.find(x => x.id === taskId);
+      if (t && t.status !== 'DONE') { setCompleteTask(t); return; }
+    }
     setStatusLoading(prev => ({ ...prev, [taskId]: true }));
     setTasks(prev => prev.map(t => t.id === taskId ? { ...t, status: newStatus } : t));
     try {
@@ -1195,6 +1419,17 @@ function TasksPageInner() {
         onSave={handleSave}
         allVaults={allVaults}
       />
+
+      {/* Complete task sheet (before/after photos + note) */}
+      <AnimatePresence>
+        {completeTask && (
+          <CompleteTaskSheet
+            task={completeTask}
+            onClose={() => setCompleteTask(null)}
+            onCompleted={() => { showToast('Task completed'); loadTasks(); }}
+          />
+        )}
+      </AnimatePresence>
 
       {/* Clear all confirm */}
       <AnimatePresence>

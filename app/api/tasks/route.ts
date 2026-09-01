@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getPbAdminToken, PB_URL, verifySessionUser } from '@/lib/pb-admin';
 import { sendEmail, taskAssignedEmail } from '@/lib/email';
 import { sendPush, getTokensForUser } from '@/lib/push';
+import { syncVaultStatus } from '@/lib/task-sync';
 
 export async function GET(req: NextRequest) {
   const token = req.headers.get('Authorization')?.replace('Bearer ', '').trim();
@@ -94,6 +95,12 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: (err as any)?.message || 'Failed to create task' }, { status: 500 });
   }
   const created = await res.json();
+
+  // Linking a task to a vault reopens it: the vault moves to PENDING (unless
+  // it was manually marked DELIVERED). Fire-and-forget — never blocks creation.
+  if (body.vault_id) {
+    await syncVaultStatus(body.vault_id, me.company_id, adminToken);
+  }
 
   if (body.assigned_to) {
     try {

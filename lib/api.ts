@@ -163,6 +163,7 @@ function mapMessage(m: any) {
     sender_id:   m.author_id,
     text:        m.content,
     timestamp:   raw.replace(' ', 'T'),
+    type:        m.type || 'text',
   };
 }
 
@@ -277,7 +278,7 @@ async function routeGet(path: string): Promise<any> {
     const page = await pb.collection('chat_messages').getList(1, 500, {
       filter: `company_id="${chatCid}"`,
       sort: '-sent_at,-id',
-      fields: 'id,author_name,author_id,content,sent_at,created',
+      fields: 'id,author_name,author_id,content,sent_at,created,type',
     });
     return page.items.reverse().map(mapMessage);
   }
