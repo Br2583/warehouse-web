@@ -146,7 +146,8 @@ export default function ChatPage() {
             const title = newest.type === 'system'
               ? 'Task update'
               : (user?.id && newest.mentions?.includes(user.id) ? `${newest.sender_name} mentioned you` : newest.sender_name);
-            notify(title, newest.text);
+            const preview = newest.text || (newest.photos?.length ? 'Photo' : '');
+            notify(title, preview);
           }
           markChatSeen();
         } else if (lastCountRef.current < 0) {
