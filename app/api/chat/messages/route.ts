@@ -50,7 +50,7 @@ export async function GET(req: NextRequest) {
     const sort    = ['sent_at', '-sent_at'].includes(rawSort) ? rawSort : 'sent_at';
 
     const res = await pbFetch(
-      `${PB_URL}/api/collections/chat_messages/records?perPage=${encodeURIComponent(perPage)}&sort=${encodeURIComponent(sort)}&filter=${encodeURIComponent(`company_id="${companyId}"`)}&fields=id,author_name,author_id,content,type,mentions,sent_at`,
+      `${PB_URL}/api/collections/chat_messages/records?perPage=${encodeURIComponent(perPage)}&sort=${encodeURIComponent(sort)}&filter=${encodeURIComponent(`company_id="${companyId}"`)}&fields=id,author_name,author_id,content,type,mentions,photos,sent_at`,
       { headers: { Authorization: `Bearer ${adminToken}` } },
     );
     const data = await res.json();
@@ -63,6 +63,7 @@ export async function GET(req: NextRequest) {
       text:        m.content,
       type:        m.type || 'text',
       mentions:    Array.isArray(m.mentions) ? m.mentions : [],
+      photos:      Array.isArray(m.photos) ? m.photos : [],
       timestamp:   m.sent_at || '',
     }));
 
@@ -81,14 +82,37 @@ export async function POST(req: NextRequest) {
     const userToken = authHeader.replace('Bearer ', '').trim();
     if (!userToken) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-    const body = await req.json();
-    if (!body.text?.trim()) return NextResponse.json({ error: 'Message text is required' }, { status: 400 });
-    if (body.text.trim().length > 2000) return NextResponse.json({ error: 'Message too long (max 2000 characters)' }, { status: 400 });
+    // Accept JSON (text only) or multipart/form-data (text + up to 4 photos).
+    const contentType = req.headers.get('content-type') || '';
+    const isMultipart = contentType.includes('multipart/form-data');
+    let text = '';
+    let rawMentions: unknown = [];
+    const photoFiles: File[] = [];
+    if (isMultipart) {
+      const fd = await req.formData();
+      text = String(fd.get('text') || '');
+      const mraw = fd.get('mentions');
+      try { rawMentions = mraw ? JSON.parse(String(mraw)) : []; } catch { rawMentions = []; }
+      for (const v of fd.getAll('photos')) {
+        if (v instanceof File && v.size > 0) photoFiles.push(v);
+      }
+    } else {
+      const body = await req.json();
+      text = String(body.text || '');
+      rawMentions = body.mentions;
+    }
+
+    const content = text.trim();
+    if (!content && photoFiles.length === 0) {
+      return NextResponse.json({ error: 'Message text or a photo is required' }, { status: 400 });
+    }
+    if (content.length > 2000) return NextResponse.json({ error: 'Message too long (max 2000 characters)' }, { status: 400 });
+    if (photoFiles.length > 4) return NextResponse.json({ error: 'Up to 4 photos per message' }, { status: 400 });
 
     // @mention targets — PB record ids only, deduped and capped. Membership is
     // enforced later at push time (company-scoped token lookup).
-    const mentions: string[] = Array.isArray(body.mentions)
-      ? [...new Set(body.mentions.filter((x: unknown) => typeof x === 'string' && /^[a-z0-9]{1,20}$/i.test(x as string)))].slice(0, 20) as string[]
+    const mentions: string[] = Array.isArray(rawMentions)
+      ? [...new Set((rawMentions as unknown[]).filter((x: unknown) => typeof x === 'string' && /^[a-z0-9]{1,20}$/i.test(x as string)))].slice(0, 20) as string[]
       : [];
 
     const refreshRes = await pbFetch(`${PB_URL}/api/collections/users/auth-refresh`, {
@@ -106,19 +130,40 @@ export async function POST(req: NextRequest) {
     }
 
     const adminToken = await getPbAdminToken();
-    const res = await pbFetch(`${PB_URL}/api/collections/chat_messages/records`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${adminToken}` },
-      body: JSON.stringify({
-        company_id:  companyId,
-        author_id:   record.id,
-        author_name: record.name || record.email || 'Unknown',
-        content:     body.text.trim(),
-        type:        'text',
-        mentions,
-        sent_at:     new Date().toISOString(),
-      }),
-    });
+    const nowIso = new Date().toISOString();
+    const type = photoFiles.length ? 'image' : 'text';
+    const authorName = record.name || record.email || 'Unknown';
+    let res: Response;
+    if (photoFiles.length) {
+      const form = new FormData();
+      form.append('company_id', companyId);
+      form.append('author_id', record.id);
+      form.append('author_name', authorName);
+      form.append('content', content);
+      form.append('type', type);
+      form.append('mentions', JSON.stringify(mentions));
+      form.append('sent_at', nowIso);
+      for (const f of photoFiles) form.append('photos', f, f.name);
+      res = await pbFetch(`${PB_URL}/api/collections/chat_messages/records`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${adminToken}` },
+        body: form,
+      });
+    } else {
+      res = await pbFetch(`${PB_URL}/api/collections/chat_messages/records`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${adminToken}` },
+        body: JSON.stringify({
+          company_id:  companyId,
+          author_id:   record.id,
+          author_name: authorName,
+          content,
+          type,
+          mentions,
+          sent_at:     nowIso,
+        }),
+      });
+    }
     const msg = await res.json();
     if (!res.ok) throw new Error(msg?.message || 'Failed to send message');
 
@@ -126,7 +171,7 @@ export async function POST(req: NextRequest) {
     // "mentioned you" push; everyone else in the company gets the generic one.
     (async () => {
       const senderName = record.name?.split(' ')[0] || 'Someone';
-      const full = body.text.trim();
+      const full = content || (photoFiles.length ? 'Photo' : '');
       const preview = full.slice(0, 60);
       const previewBody = preview.length < full.length ? preview + '…' : preview;
       if (mentions.length) {
@@ -152,8 +197,9 @@ export async function POST(req: NextRequest) {
       sender_name: msg.author_name,
       sender_id:   msg.author_id,
       text:        msg.content,
-      type:        msg.type || 'text',
+      type:        msg.type || type,
       mentions:    Array.isArray(msg.mentions) ? msg.mentions : mentions,
+      photos:      Array.isArray(msg.photos) ? msg.photos : [],
       timestamp:   msg.sent_at || '',
     });
   } catch (e: any) {

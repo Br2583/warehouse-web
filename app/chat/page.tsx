@@ -2,11 +2,13 @@
 
 import { useEffect, useState, useRef, useCallback, useMemo, Fragment } from 'react';
 import { motion } from 'framer-motion';
-import { PaperAirplaneIcon, TrashIcon } from '@/components/icons';
+import { PaperAirplaneIcon, TrashIcon, PaperClipIcon, XMarkIcon, ArrowDownTrayIcon } from '@/components/icons';
 import Sidebar from '@/components/Sidebar';
 import { UserAvatar } from '@/components/UserAvatar';
 import { useAuth } from '@/lib/auth-context';
 import { api, getToken } from '@/lib/api';
+import { usePhotoToken, photoUrl, photoSrc } from '@/lib/photo-url';
+import { compressImage } from '@/lib/compress-image';
 import { notify, requestNotificationPermission } from '@/lib/notifications';
 import { markChatSeen } from '@/lib/unread-chat';
 
@@ -19,6 +21,29 @@ interface Message {
   timestamp: string;
   type?: 'text' | 'image' | 'system';
   mentions?: string[];
+  photos?: string[];
+}
+
+const CHAT_REC = (id: string) => ({ id, collectionName: 'chat_messages' });
+
+// Saves a photo to the device. Uses the native share sheet when available
+// (Capacitor WebView), falling back to a plain download link on the web.
+async function downloadPhoto(url: string, name: string) {
+  try {
+    const res = await fetch(url);
+    const blob = await res.blob();
+    const file = new File([blob], name || 'photo.jpg', { type: blob.type || 'image/jpeg' });
+    const nav = navigator as Navigator & { canShare?: (d: unknown) => boolean; share?: (d: unknown) => Promise<void> };
+    if (nav.canShare && nav.share && nav.canShare({ files: [file] })) {
+      await nav.share({ files: [file] });
+      return;
+    }
+    const obj = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = obj; a.download = name || 'photo.jpg';
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(obj), 1000);
+  } catch { /* best effort */ }
 }
 
 // PocketBase returns "2024-01-15 14:30:00.000Z" — parse it as UTC.
@@ -72,6 +97,12 @@ export default function ChatPage() {
   const isAtBottomRef = useRef(true);
   const fetchingRef = useRef(false);
   const inputRef = useRef<HTMLInputElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const photoToken = usePhotoToken();
+
+  // photo attachments (before send) + lightbox (viewing)
+  const [attachments, setAttachments] = useState<File[]>([]);
+  const [lightbox, setLightbox] = useState<{ url: string; name: string } | null>(null);
 
   // @mention autocomplete
   const [mentionOpen, setMentionOpen] = useState(false);
@@ -154,24 +185,36 @@ export default function ChatPage() {
 
   const send = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!text.trim() || sending) return;
+    if ((!text.trim() && attachments.length === 0) || sending) return;
     setSending(true);
     setSendError('');
     try {
       const token = getToken();
-      const res = await fetch('/api/chat/messages', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
-        body: JSON.stringify({ text: text.trim(), mentions: extractMentions(text) }),
-      });
+      const mentions = extractMentions(text);
+      let res: Response;
+      if (attachments.length) {
+        const form = new FormData();
+        form.append('text', text.trim());
+        form.append('mentions', JSON.stringify(mentions));
+        for (const f of attachments) form.append('photos', f, f.name);
+        res = await fetch('/api/chat/messages', {
+          method: 'POST',
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+          body: form,
+        });
+      } else {
+        res = await fetch('/api/chat/messages', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+          body: JSON.stringify({ text: text.trim(), mentions }),
+        });
+      }
       if (!res.ok) {
         const d = await res.json().catch(() => ({}));
         throw new Error(d?.error || 'Failed to send message');
       }
       setText('');
+      setAttachments([]);
       setMentionOpen(false);
       isAtBottomRef.current = true;
       scrollToBottom();
@@ -182,6 +225,22 @@ export default function ChatPage() {
       setSending(false);
     }
   };
+
+  const onPickPhotos = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    e.target.value = ''; // allow re-picking the same file
+    if (!files.length) return;
+    const room = 4 - attachments.length;
+    if (room <= 0) { setSendError('Up to 4 photos per message.'); return; }
+    const compressed: File[] = [];
+    for (const f of files.slice(0, room)) {
+      try { compressed.push(await compressImage(f)); }
+      catch { setSendError('A photo could not be processed. Try another.'); }
+    }
+    if (compressed.length) setAttachments(a => [...a, ...compressed].slice(0, 4));
+  };
+
+  const removeAttachment = (i: number) => setAttachments(a => a.filter((_, idx) => idx !== i));
 
   const clearChat = async () => {
     setClearing(true);
@@ -381,9 +440,25 @@ export default function ChatPage() {
                     <UserAvatar picture={senderPicture} name={msg.sender_name} size={32} className="mt-1" />
                     <div className={`max-w-[75%] md:max-w-md ${isMe ? 'items-end' : 'items-start'} flex flex-col`}>
                       <span className="text-xs text-gray-400 mb-1">{isMe ? 'You' : msg.sender_name}</span>
-                      <div className={`px-4 py-2.5 rounded-2xl text-sm break-words whitespace-pre-wrap ${isMe ? 'bg-blue-600 text-white rounded-tr-sm' : 'bg-white border border-gray-100 text-gray-800 rounded-tl-sm'}`}>
-                        {renderText(msg.text, isMe)}
-                      </div>
+                      {msg.photos && msg.photos.length > 0 && (
+                        <div className={`grid gap-1 mb-1 ${msg.photos.length === 1 ? 'grid-cols-1' : 'grid-cols-2'}`}>
+                          {msg.photos.map((p, pi) => (
+                            <img
+                              key={pi}
+                              src={photoUrl(CHAT_REC(msg.id), p, 'grid', photoToken)}
+                              alt="Shared photo"
+                              loading="lazy"
+                              onClick={() => setLightbox({ url: photoUrl(CHAT_REC(msg.id), p, 'full', photoToken), name: p })}
+                              className="w-32 h-32 md:w-40 md:h-40 object-cover rounded-xl cursor-pointer bg-gray-100"
+                            />
+                          ))}
+                        </div>
+                      )}
+                      {msg.text && (
+                        <div className={`px-4 py-2.5 rounded-2xl text-sm break-words whitespace-pre-wrap ${isMe ? 'bg-blue-600 text-white rounded-tr-sm' : 'bg-white border border-gray-100 text-gray-800 rounded-tl-sm'}`}>
+                          {renderText(msg.text, isMe)}
+                        </div>
+                      )}
                       <span className="text-xs text-gray-300 mt-1">{formatTime(msg.timestamp)}</span>
                     </div>
                     {isMe && (
@@ -414,7 +489,33 @@ export default function ChatPage() {
               {sendError}
             </div>
           )}
+          {attachments.length > 0 && (
+            <div className="px-4 pt-3">
+              <div className="flex gap-2 flex-wrap">
+                {attachments.map((f, i) => (
+                  <div key={i} className="relative">
+                    <img src={photoSrc(f, CHAT_REC(''), 'tile')} alt="" className="w-16 h-16 object-cover rounded-lg border border-gray-200" />
+                    <button type="button" onClick={() => removeAttachment(i)}
+                      className="absolute -top-1.5 -right-1.5 bg-gray-900 text-white rounded-full p-0.5 shadow">
+                      <XMarkIcon className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+              <p className="text-[11px] text-gray-400 mt-1.5">Photos are deleted automatically after 30 days.</p>
+            </div>
+          )}
           <form onSubmit={send} className="p-4 pb-6 md:pb-4 flex gap-3 items-end">
+            <input ref={fileInputRef} type="file" accept="image/*" multiple className="hidden" onChange={onPickPhotos} />
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={sending || attachments.length >= 4}
+              title="Attach photos"
+              className="p-2.5 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-full transition-colors disabled:opacity-40 flex-shrink-0"
+            >
+              <PaperClipIcon className="w-5 h-5" />
+            </button>
             <div className="relative flex-1">
               {mentionOpen && mentionCandidates.length > 0 && (
                 <div className="absolute bottom-full mb-2 left-0 right-0 bg-white border border-gray-200 rounded-xl shadow-lg overflow-hidden z-10 max-h-56 overflow-y-auto">
@@ -448,7 +549,7 @@ export default function ChatPage() {
             </div>
             <button
               type="submit"
-              disabled={!text.trim() || sending}
+              disabled={(!text.trim() && attachments.length === 0) || sending}
               className="px-4 py-2.5 bg-gray-950 text-white rounded-full hover:bg-gray-800 disabled:opacity-50 transition-colors flex items-center flex-shrink-0"
             >
               {sending
@@ -475,6 +576,29 @@ export default function ChatPage() {
                 {clearing ? 'Clearing…' : 'Clear All'}
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Photo lightbox */}
+      {lightbox && (
+        <div className="fixed inset-0 z-[80] bg-black/90 flex items-center justify-center p-4" onClick={() => setLightbox(null)}>
+          <img src={lightbox.url} alt="Shared photo" className="max-w-full max-h-full object-contain rounded-lg" onClick={e => e.stopPropagation()} />
+          <div className="absolute top-4 right-4 flex gap-2">
+            <button
+              onClick={e => { e.stopPropagation(); downloadPhoto(lightbox.url, lightbox.name); }}
+              title="Download"
+              className="bg-white/15 hover:bg-white/25 text-white rounded-full p-2.5 backdrop-blur transition-colors"
+            >
+              <ArrowDownTrayIcon className="w-5 h-5" />
+            </button>
+            <button
+              onClick={() => setLightbox(null)}
+              title="Close"
+              className="bg-white/15 hover:bg-white/25 text-white rounded-full p-2.5 backdrop-blur transition-colors"
+            >
+              <XMarkIcon className="w-5 h-5" />
+            </button>
           </div>
         </div>
       )}
