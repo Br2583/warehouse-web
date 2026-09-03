@@ -1,5 +1,5 @@
 /** Shown on the landing page (hero pill, download meta, APK button). Bump on release. */
-export const APP_VERSION = '2.6';
+export const APP_VERSION = '2.7';
 
 export const STATUS_COLORS: Record<string, string> = {
   PENDING:   'bg-amber-100 text-amber-700',
