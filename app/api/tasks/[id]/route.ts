@@ -31,22 +31,26 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
 
-  // Accept JSON (simple status changes) or multipart/form-data (completion with photos)
+  // Accept JSON (simple status changes) or multipart/form-data (photo capture).
+  // Photo fields carry a mix of kept filenames (strings) and new uploads (Files),
+  // so a target's set can be added to, replaced, or cleared. A field absent from
+  // the request is left untouched; sending it with a single '' clears it.
   const contentType = req.headers.get('content-type') || '';
   const isMultipart = contentType.includes('multipart/form-data');
   const body: Record<string, any> = {};
-  const beforeFiles: File[] = [];
-  const afterFiles:  File[] = [];
+  const beforeParts: (string | File)[] = [];
+  const afterParts:  (string | File)[] = [];
   if (isMultipart) {
     const fd = await req.formData();
     for (const [k, v] of fd.entries()) {
-      if (k === 'before_photos' && v instanceof File) beforeFiles.push(v);
-      else if (k === 'after_photos' && v instanceof File) afterFiles.push(v);
+      if (k === 'before_photos') beforeParts.push(v as string | File);
+      else if (k === 'after_photos') afterParts.push(v as string | File);
       else body[k] = typeof v === 'string' ? v : '';
     }
   } else {
     Object.assign(body, await req.json());
   }
+  const touchesPhotos = beforeParts.length > 0 || afterParts.length > 0;
 
   let updateData: Record<string, any>;
 
@@ -54,12 +58,21 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     if (task.assigned_to !== me.id) {
       return NextResponse.json({ error: 'Can only update your own tasks' }, { status: 403 });
     }
+    // A worker may move their task through the workflow, add a completion note,
+    // and manage the before/after photos — nothing else.
     const VALID_STATUSES = ['PENDING', 'IN_PROGRESS', 'DONE'];
-    if (!body.status) return NextResponse.json({ error: 'status required' }, { status: 400 });
-    if (!VALID_STATUSES.includes(body.status)) return NextResponse.json({ error: 'Invalid status' }, { status: 400 });
-    if (body.completion_note && body.completion_note.length > 2000) return NextResponse.json({ error: 'Note must be 2000 characters or fewer' }, { status: 400 });
-    updateData = { status: body.status };
-    if (body.completion_note !== undefined) updateData.completion_note = body.completion_note;
+    updateData = {};
+    if (body.status !== undefined && body.status !== '') {
+      if (!VALID_STATUSES.includes(body.status)) return NextResponse.json({ error: 'Invalid status' }, { status: 400 });
+      updateData.status = body.status;
+    }
+    if (body.completion_note !== undefined) {
+      if (body.completion_note.length > 2000) return NextResponse.json({ error: 'Note must be 2000 characters or fewer' }, { status: 400 });
+      updateData.completion_note = body.completion_note;
+    }
+    if (updateData.status === undefined && updateData.completion_note === undefined && !touchesPhotos) {
+      return NextResponse.json({ error: 'Nothing to update' }, { status: 400 });
+    }
   } else {
     const VALID_STATUSES  = ['PENDING', 'IN_PROGRESS', 'DONE'];
     const VALID_TYPES     = ['Free', 'Cleaning', 'Restoration', 'Delivery'];
@@ -109,13 +122,14 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
   }
   if (reopening) updateData.completed_at = '';
 
-  // ── Persist (multipart when photos are attached, JSON otherwise) ────────────
+  // ── Persist (multipart when photos are touched, JSON otherwise) ─────────────
   let updateRes: Response;
-  if (beforeFiles.length || afterFiles.length) {
+  if (touchesPhotos) {
     const pbForm = new FormData();
     for (const [k, v] of Object.entries(updateData)) pbForm.append(k, v == null ? '' : String(v));
-    beforeFiles.forEach(f => pbForm.append('before_photos', f));
-    afterFiles.forEach(f => pbForm.append('after_photos', f));
+    // Kept filenames (strings) + new uploads (Files) define the resulting set.
+    for (const p of beforeParts) pbForm.append('before_photos', p as string | Blob);
+    for (const p of afterParts)  pbForm.append('after_photos', p as string | Blob);
     updateRes = await fetch(`${PB_URL}/api/collections/tasks/records/${id}`, {
       method: 'PATCH',
       headers: { Authorization: `Bearer ${adminToken}` },

@@ -288,16 +288,18 @@ function TaskCard({ task, members, isOwner, onStatus, onDelete, onEdit, statusLo
 }
 
 // ── Task Detail Sheet ─────────────────────────────────────────────────────────
-function TaskDetailSheet({ task, members, isOwner, onStatus, onDelete, onEdit, onClose, statusLoading, vault }: {
-  task:          Task;
-  members:       Member[];
-  isOwner:       boolean;
-  onStatus:      (id: string, s: TaskStatus) => void;
-  onDelete:      (id: string) => void;
-  onEdit:        (t: Task) => void;
-  onClose:       () => void;
-  statusLoading: boolean;
-  vault?:        VaultResult;
+function TaskDetailSheet({ task, members, isOwner, onStatus, onDelete, onEdit, onClose, statusLoading, vault, canEditPhotos, onManagePhotos }: {
+  task:            Task;
+  members:         Member[];
+  isOwner:         boolean;
+  onStatus:        (id: string, s: TaskStatus) => void;
+  onDelete:        (id: string) => void;
+  onEdit:          (t: Task) => void;
+  onClose:         () => void;
+  statusLoading:   boolean;
+  vault?:          VaultResult;
+  canEditPhotos?:  boolean;
+  onManagePhotos?: (target: 'before' | 'after') => void;
 }) {
   const assignee  = members.find(m => m.user_id === task.assigned_to);
   const createdBy = members.find(m => m.user_id === task.created_by);
@@ -307,20 +309,32 @@ function TaskDetailSheet({ task, members, isOwner, onStatus, onDelete, onEdit, o
   const [lightbox, setLightbox] = useState<string | null>(null);
   const photoRecord = { id: task.id, collectionName: 'tasks' };
   const duration = formatDuration(task.started_at, task.completed_at);
-  const hasCompletionInfo = !!(task.completed_at || task.completion_note || task.before_photos?.length || task.after_photos?.length);
+  const showPhotoBlock = !!(canEditPhotos || task.completed_at || task.completion_note || task.before_photos?.length || task.after_photos?.length);
 
-  const renderSavedPhotos = (files: string[] | undefined, label: string) => {
-    if (!files || files.length === 0) return null;
+  const renderPhotoSection = (target: 'before' | 'after', label: string) => {
+    const files = (target === 'before' ? task.before_photos : task.after_photos) || [];
+    if (files.length === 0 && !canEditPhotos) return null;
     return (
       <div>
-        <p className="text-[10px] font-medium text-gray-400 mb-1.5">{label}</p>
-        <div className="grid grid-cols-3 gap-2">
-          {files.map((name, i) => (
-            <img key={i} src={photoUrl(photoRecord, name, 'grid', photoToken)} alt=""
-              className="w-full h-20 object-cover rounded-lg cursor-pointer"
-              onClick={() => setLightbox(photoUrl(photoRecord, name, 'full', photoToken))} />
-          ))}
+        <div className="flex items-center justify-between mb-1.5">
+          <p className="text-[10px] font-medium text-gray-400">{label}</p>
+          {canEditPhotos && onManagePhotos && (
+            <button onClick={() => onManagePhotos(target)} className="text-[11px] font-medium text-blue-600 hover:text-blue-800">
+              {files.length ? 'Manage' : 'Add'}
+            </button>
+          )}
         </div>
+        {files.length > 0 ? (
+          <div className="grid grid-cols-3 gap-2">
+            {files.map((name, i) => (
+              <img key={i} src={photoUrl(photoRecord, name, 'grid', photoToken)} alt=""
+                className="w-full h-20 object-cover rounded-lg cursor-pointer"
+                onClick={() => setLightbox(photoUrl(photoRecord, name, 'full', photoToken))} />
+            ))}
+          </div>
+        ) : (
+          <p className="text-xs text-gray-300">No photos yet</p>
+        )}
       </div>
     );
   };
@@ -412,23 +426,23 @@ function TaskDetailSheet({ task, members, isOwner, onStatus, onDelete, onEdit, o
               </div>
             )}
 
-            {/* Completion record — before/after photos, duration, note */}
-            {hasCompletionInfo && (
-              <div className="rounded-xl border border-green-100 bg-green-50/60 px-3.5 py-3 space-y-3">
-                <div className="flex items-center gap-2">
-                  <CheckCircleIcon className="w-4 h-4 text-green-600 flex-shrink-0" />
-                  <span className="text-xs font-semibold text-green-700">Completed</span>
-                  {task.completed_at && (
+            {/* Photos — before (start) / after (done) + duration + note */}
+            {showPhotoBlock && (
+              <div className="rounded-xl border border-gray-100 bg-gray-50/60 px-3.5 py-3 space-y-3">
+                {task.completed_at && (
+                  <div className="flex items-center gap-2">
+                    <CheckCircleIcon className="w-4 h-4 text-green-600 flex-shrink-0" />
+                    <span className="text-xs font-semibold text-green-700">Completed</span>
                     <span className="ml-auto text-[11px] text-gray-500">{formatDateTime(task.completed_at)}</span>
-                  )}
-                </div>
+                  </div>
+                )}
                 {duration && (
                   <div className="flex items-center gap-1.5 text-xs text-gray-500">
                     <ClockIcon className="w-3.5 h-3.5 flex-shrink-0" /> Took {duration}
                   </div>
                 )}
-                {renderSavedPhotos(task.before_photos, 'Before')}
-                {renderSavedPhotos(task.after_photos, 'After')}
+                {renderPhotoSection('before', 'Before')}
+                {renderPhotoSection('after', 'After')}
                 {task.completion_note && (
                   <p className="text-sm text-gray-700 leading-relaxed whitespace-pre-wrap">{task.completion_note}</p>
                 )}
@@ -507,15 +521,17 @@ function TaskDetailSheet({ task, members, isOwner, onStatus, onDelete, onEdit, o
 }
 
 // ── List row ──────────────────────────────────────────────────────────────────
-function TaskRow({ task, members, isOwner, onStatus, onDelete, onEdit, statusLoading, vault }: {
-  task:          Task;
-  members:       Member[];
-  isOwner:       boolean;
-  onStatus:      (id: string, s: TaskStatus) => void;
-  onDelete:      (id: string) => void;
-  onEdit:        (t: Task) => void;
-  statusLoading: boolean;
-  vault?:        VaultResult;
+function TaskRow({ task, members, isOwner, onStatus, onDelete, onEdit, statusLoading, vault, canEditPhotos, onManagePhotos }: {
+  task:            Task;
+  members:         Member[];
+  isOwner:         boolean;
+  onStatus:        (id: string, s: TaskStatus) => void;
+  onDelete:        (id: string) => void;
+  onEdit:          (t: Task) => void;
+  statusLoading:   boolean;
+  vault?:          VaultResult;
+  canEditPhotos?:  boolean;
+  onManagePhotos?: (target: 'before' | 'after') => void;
 }) {
   const [sheetOpen, setSheetOpen] = useState(false);
   const assignee  = members.find(m => m.user_id === task.assigned_to);
@@ -605,6 +621,8 @@ function TaskRow({ task, members, isOwner, onStatus, onDelete, onEdit, statusLoa
             onClose={() => setSheetOpen(false)}
             statusLoading={statusLoading}
             vault={vault}
+            canEditPhotos={canEditPhotos}
+            onManagePhotos={onManagePhotos}
           />
         )}
       </AnimatePresence>
@@ -915,134 +933,120 @@ function TaskFormModal({ open, onClose, members, editTask, onSave, allVaults }: 
   );
 }
 
-// ── Complete Task Sheet (before/after photos + note → status DONE) ─────────────
-function CompleteTaskSheet({ task, onClose, onCompleted }: {
-  task:        Task;
-  onClose:     () => void;
-  onCompleted: () => void;
+// ── Task Photo Sheet — capture/manage BEFORE (at start) or AFTER (at done) ─────
+function TaskPhotoSheet({ task, target, setStatus, withNote, onClose, onDone }: {
+  task:       Task;
+  target:     'before' | 'after';
+  setStatus?: TaskStatus;
+  withNote?:  boolean;
+  onClose:    () => void;
+  onDone:     (msg: string) => void;
 }) {
-  const [before, setBefore]     = useState<File[]>([]);
-  const [after,  setAfter]      = useState<File[]>([]);
-  const [note,   setNote]       = useState('');
+  const photoToken = usePhotoToken();
+  const rec = { id: task.id, collectionName: 'tasks' };
+  const initial = (target === 'before' ? task.before_photos : task.after_photos) || [];
+  const [photos, setPhotos]     = useState<(string | File)[]>(initial);
+  const [note, setNote]         = useState(task.completion_note || '');
   const [saving, setSaving]     = useState(false);
-  const [error,  setError]      = useState('');
+  const [error, setError]       = useState('');
   const [lightbox, setLightbox] = useState<string | null>(null);
 
-  const addPhotos = async (files: FileList | null, target: 'before' | 'after') => {
+  const addFiles = async (files: FileList | null) => {
     if (!files || files.length === 0) return;
-    const setter  = target === 'before' ? setBefore : setAfter;
-    const current = target === 'before' ? before : after;
-    const picked  = Array.from(files).slice(0, Math.max(0, 4 - current.length));
     const out: File[] = [];
-    for (const f of picked) {
+    for (const f of Array.from(files).slice(0, Math.max(0, 4 - photos.length))) {
       try { out.push(await compressImage(f)); } catch { /* skip undecodable */ }
     }
-    if (out.length) setter(prev => [...prev, ...out].slice(0, 4));
+    if (out.length) setPhotos(p => [...p, ...out].slice(0, 4));
   };
-  const addNative = (file: File, target: 'before' | 'after') => {
-    const setter = target === 'before' ? setBefore : setAfter;
-    compressImage(file).then(c => setter(prev => [...prev, c].slice(0, 4))).catch(() => {});
-  };
-  const removePhoto = (target: 'before' | 'after', idx: number) => {
-    const setter = target === 'before' ? setBefore : setAfter;
-    setter(prev => prev.filter((_, i) => i !== idx));
-  };
+  const addNative = (file: File) => { compressImage(file).then(c => setPhotos(p => [...p, c].slice(0, 4))).catch(() => {}); };
+  const removeAt  = (i: number) => setPhotos(p => p.filter((_, j) => j !== i));
 
   const submit = async () => {
     setSaving(true);
     setError('');
     try {
       const fd = new FormData();
-      fd.append('status', 'DONE');
-      if (note.trim()) fd.append('completion_note', note.trim());
-      before.forEach(f => fd.append('before_photos', f));
-      after.forEach(f => fd.append('after_photos', f));
+      if (setStatus) fd.append('status', setStatus);
+      if (withNote)  fd.append('completion_note', note.trim());
+      const key = target === 'before' ? 'before_photos' : 'after_photos';
+      // Kept filenames (strings) + new Files define the resulting set; '' clears it.
+      if (photos.length === 0) fd.append(key, '');
+      else photos.forEach(p => fd.append(key, p));
       const token = pb.authStore.token;
       const res = await fetch(`/api/tasks/${task.id}`, {
-        method: 'PUT',
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
-        body: fd,
+        method: 'PUT', headers: token ? { Authorization: `Bearer ${token}` } : {}, body: fd,
       });
-      if (!res.ok) {
-        const d = await res.json().catch(() => ({}));
-        throw new Error((d as any)?.error || 'Failed to complete task');
-      }
-      onCompleted();
+      if (!res.ok) { const d = await res.json().catch(() => ({})); throw new Error((d as any)?.error || 'Failed to save'); }
+      onDone(setStatus === 'DONE' ? 'Task completed' : setStatus === 'IN_PROGRESS' ? 'Task started' : 'Photos saved');
       onClose();
     } catch (e: any) {
-      setError(e?.message || 'Failed to complete task');
-    } finally {
-      setSaving(false);
-    }
+      setError(e?.message || 'Failed to save');
+    } finally { setSaving(false); }
   };
 
-  const renderPhotos = (files: File[], target: 'before' | 'after', label: string) => (
-    <div>
-      <label className="block text-xs font-medium text-gray-500 mb-2">{label}</label>
-      {files.length > 0 && (
-        <div className="grid grid-cols-3 gap-2 mb-2">
-          {files.map((f, i) => (
-            <div key={i} className="relative">
-              <img src={photoSrc(f, { id: '' }, 'grid')} alt=""
-                className="w-full h-20 object-cover rounded-xl cursor-pointer"
-                onClick={() => setLightbox(photoSrc(f, { id: '' }, 'full'))} />
-              <button type="button" onClick={() => removePhoto(target, i)}
-                className="absolute top-1 right-1 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center">
-                <XMarkIcon className="w-3 h-3" />
-              </button>
-            </div>
-          ))}
-        </div>
-      )}
-      {files.length < 4 && (
-        <PhotoAddButton onFiles={f => addPhotos(f, target)} onPhotoNative={p => addNative(p, target)} />
-      )}
-    </div>
-  );
+  const heading = setStatus === 'IN_PROGRESS' ? 'Start task' : setStatus === 'DONE' ? 'Complete task' : (target === 'before' ? 'Before photos' : 'After photos');
+  const cta     = setStatus === 'IN_PROGRESS' ? 'Start task' : setStatus === 'DONE' ? 'Mark as Done' : 'Save photos';
+  const ctaColor = setStatus === 'DONE' ? 'bg-green-600 hover:bg-green-700' : 'bg-gray-950 hover:bg-gray-800';
 
   return (
     <>
       <div className="fixed inset-0 z-[70] flex items-start md:items-center justify-center p-4 bg-black/40 overflow-y-auto" onClick={onClose}>
-        <motion.div
-          initial={{ opacity: 0, y: 24 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: 24 }}
-          transition={{ type: 'spring', stiffness: 380, damping: 30 }}
-          onClick={e => e.stopPropagation()}
-          className="bg-white rounded-2xl p-6 w-full max-w-md shadow-xl my-auto max-h-[92vh] overflow-y-auto"
-        >
+        <motion.div initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 24 }}
+          transition={{ type: 'spring', stiffness: 380, damping: 30 }} onClick={e => e.stopPropagation()}
+          className="bg-white rounded-2xl p-6 w-full max-w-md shadow-xl my-auto max-h-[92vh] overflow-y-auto">
           <div className="flex items-center justify-between mb-1">
-            <h2 className="text-lg font-bold text-gray-900">Complete task</h2>
+            <h2 className="text-lg font-bold text-gray-900">{heading}</h2>
             <button onClick={onClose} className="text-gray-400 hover:text-gray-600"><XMarkIcon className="w-5 h-5" /></button>
           </div>
           <p className="text-sm text-gray-500 mb-5 line-clamp-2">{task.title}</p>
 
           <div className="space-y-4">
-            {renderPhotos(before, 'before', 'Before (optional)')}
-            {renderPhotos(after, 'after', 'After (optional)')}
             <div>
-              <label className="block text-xs font-medium text-gray-500 mb-2">Completion note (optional)</label>
-              <textarea value={note} onChange={e => setNote(e.target.value)} rows={3} maxLength={2000}
-                placeholder="What was done…"
-                className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 resize-none" />
+              <label className="block text-xs font-medium text-gray-500 mb-2">
+                {target === 'before' ? 'Before photos' : 'After photos'} <span className="text-gray-300">(optional, max 4)</span>
+              </label>
+              {photos.length > 0 && (
+                <div className="grid grid-cols-3 gap-2 mb-2">
+                  {photos.map((p, i) => (
+                    <div key={i} className="relative">
+                      <img src={photoSrc(p, rec, 'grid', photoToken)} alt=""
+                        className="w-full h-20 object-cover rounded-xl cursor-pointer"
+                        onClick={() => setLightbox(photoSrc(p, rec, 'full', photoToken))} />
+                      <button type="button" onClick={() => removeAt(i)}
+                        className="absolute top-1 right-1 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center">
+                        <XMarkIcon className="w-3 h-3" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+              {photos.length < 4 && <PhotoAddButton onFiles={addFiles} onPhotoNative={addNative} />}
             </div>
+
+            {withNote && (
+              <div>
+                <label className="block text-xs font-medium text-gray-500 mb-2">Completion note (optional)</label>
+                <textarea value={note} onChange={e => setNote(e.target.value)} rows={3} maxLength={2000} placeholder="What was done…"
+                  className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 resize-none" />
+              </div>
+            )}
             {error && (
               <div className="flex items-center gap-2 bg-red-50 border border-red-100 text-red-600 text-sm px-4 py-2.5 rounded-xl">
                 <ExclamationCircleIcon className="w-4 h-4 flex-shrink-0" />{error}
               </div>
             )}
             <button onClick={submit} disabled={saving}
-              className="w-full flex items-center justify-center gap-2 py-3 bg-green-600 text-white text-sm font-semibold rounded-full hover:bg-green-700 transition-colors disabled:opacity-50">
+              className={`w-full flex items-center justify-center gap-2 py-3 text-white text-sm font-semibold rounded-full transition-colors disabled:opacity-50 ${ctaColor}`}>
               <CheckCircleIcon className="w-5 h-5" />
-              {saving ? 'Completing…' : 'Mark as Done'}
+              {saving ? 'Saving…' : cta}
             </button>
           </div>
         </motion.div>
       </div>
 
       {lightbox && (
-        <div className="fixed inset-0 z-[85] bg-black/90 flex items-center justify-center p-4"
-          onClick={() => setLightbox(null)}>
+        <div className="fixed inset-0 z-[85] bg-black/90 flex items-center justify-center p-4" onClick={() => setLightbox(null)}>
           <img src={lightbox} alt="" className="max-w-full max-h-full object-contain rounded-lg" />
         </div>
       )}
@@ -1075,7 +1079,7 @@ function TasksPageInner() {
   const [clearingAll, setClearingAll] = useState(false);
   const [taskFilter, setTaskFilter]     = useState<TaskFilter>('all');
   const [statusLoading, setStatusLoading] = useState<Record<string, boolean>>({});
-  const [completeTask, setCompleteTask]   = useState<Task | null>(null);
+  const [photoSheet, setPhotoSheet] = useState<{ task: Task; target: 'before' | 'after'; setStatus?: TaskStatus; withNote?: boolean } | null>(null);
 
   const loadTasks = async () => {
     try {
@@ -1110,14 +1114,20 @@ function TasksPageInner() {
   useEffect(() => { if (formOpen) loadVaults(); }, [formOpen]);
 
   const handleStatusChange = async (taskId: string, newStatus: TaskStatus) => {
-    // Completing a task opens the completion sheet (before/after photos + note)
-    // instead of an immediate write.
-    if (newStatus === 'DONE') {
-      const t = tasks.find(x => x.id === taskId);
-      if (t && t.status !== 'DONE') { setCompleteTask(t); return; }
+    const t = tasks.find(x => x.id === taskId);
+    if (!t) return;
+    // Starting a task prompts the BEFORE photo; completing prompts the AFTER photo
+    // + note. Both are optional but the moment is captured at the right step.
+    if (newStatus === 'IN_PROGRESS' && t.status === 'PENDING') {
+      setPhotoSheet({ task: t, target: 'before', setStatus: 'IN_PROGRESS' });
+      return;
+    }
+    if (newStatus === 'DONE' && t.status !== 'DONE') {
+      setPhotoSheet({ task: t, target: 'after', setStatus: 'DONE', withNote: true });
+      return;
     }
     setStatusLoading(prev => ({ ...prev, [taskId]: true }));
-    setTasks(prev => prev.map(t => t.id === taskId ? { ...t, status: newStatus } : t));
+    setTasks(prev => prev.map(x => x.id === taskId ? { ...x, status: newStatus } : x));
     try {
       await api.put(`/api/tasks/${taskId}`, { status: newStatus });
     } catch {
@@ -1126,6 +1136,9 @@ function TasksPageInner() {
       setStatusLoading(prev => ({ ...prev, [taskId]: false }));
     }
   };
+
+  const openManagePhotos = (task: Task, target: 'before' | 'after') =>
+    setPhotoSheet({ task, target });
 
   const handleSave = async (form: typeof emptyForm, editId?: string) => {
     if (editId) {
@@ -1222,6 +1235,8 @@ function TasksPageInner() {
             onEdit={openEdit}
             statusLoading={!!statusLoading[task.id]}
             vault={task.vault_id ? allVaults.find(v => v.id === task.vault_id) : undefined}
+            canEditPhotos={isOwner || task.assigned_to === user?.id}
+            onManagePhotos={(target) => openManagePhotos(task, target)}
           />
         </motion.div>
       ))}
@@ -1420,13 +1435,16 @@ function TasksPageInner() {
         allVaults={allVaults}
       />
 
-      {/* Complete task sheet (before/after photos + note) */}
+      {/* Task photo sheet — before (start) / after (done) / manage anytime */}
       <AnimatePresence>
-        {completeTask && (
-          <CompleteTaskSheet
-            task={completeTask}
-            onClose={() => setCompleteTask(null)}
-            onCompleted={() => { showToast('Task completed'); loadTasks(); }}
+        {photoSheet && (
+          <TaskPhotoSheet
+            task={photoSheet.task}
+            target={photoSheet.target}
+            setStatus={photoSheet.setStatus}
+            withNote={photoSheet.withNote}
+            onClose={() => setPhotoSheet(null)}
+            onDone={(msg) => { showToast(msg); loadTasks(); }}
           />
         )}
       </AnimatePresence>
