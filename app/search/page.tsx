@@ -5,14 +5,19 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   MagnifyingGlassIcon, BuildingOffice2Icon, FunnelIcon, XMarkIcon,
   ExclamationCircleIcon, ChevronDownIcon, ArchiveBoxIcon,
+  ChevronLeftIcon, ChevronRightIcon, ArrowDownTrayIcon,
 } from '@/components/icons';
 import Sidebar from '@/components/Sidebar';
 import { api } from '@/lib/api';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { STATUS_COLORS } from '@/lib/constants';
 import { usePhotoToken, photoUrl } from '@/lib/photo-url';
+import { useOverlayBack } from '@/lib/overlay-back';
+import { downloadPhoto } from '@/lib/download-photo';
 import { ItemCountsSummary } from '@/components/ItemCounts';
 import { parseCounts } from '@/lib/item-counts';
+
+type Lightbox = { photos: string[]; index: number; rec: { id: string; collectionName?: string } };
 
 const JOB_TYPES = ['Fire', 'Water', 'Mold', 'Moving', 'Storage'];
 const STATUSES  = ['PENDING', 'READY', 'DELIVERED'];
@@ -40,7 +45,7 @@ const statusBadge = (s: string) =>
 // ── One vault, expanded ─────────────────────────────────────────────────────
 function VaultRow({ box, photoToken, whName, onPhoto, onOpen }: {
   box: any; photoToken: string; whName: (id: string) => string;
-  onPhoto: (url: string) => void; onOpen: () => void;
+  onPhoto: (lb: Lightbox) => void; onOpen: () => void;
 }) {
   const rec = { id: box.box_id, collectionName: 'vaults' };
   const photos: string[] = box.photos || [];
@@ -70,7 +75,7 @@ function VaultRow({ box, photoToken, whName, onPhoto, onOpen }: {
         <div className="grid grid-cols-4 sm:grid-cols-6 gap-2 mt-2">
           {photos.map((p, i) => (
             <img key={i} src={photoUrl(rec, p, 'grid', photoToken)} alt=""
-              onClick={() => onPhoto(photoUrl(rec, p, 'full', photoToken))}
+              onClick={() => onPhoto({ photos, index: i, rec })}
               className="w-full h-16 object-cover rounded-lg cursor-pointer hover:opacity-90 transition-opacity" />
           ))}
         </div>
@@ -85,7 +90,7 @@ function VaultRow({ box, photoToken, whName, onPhoto, onOpen }: {
 
 // ── One storage unit, expanded ──────────────────────────────────────────────
 function StorageRow({ su, photoToken, onPhoto, onOpen }: {
-  su: any; photoToken: string; onPhoto: (url: string) => void; onOpen: () => void;
+  su: any; photoToken: string; onPhoto: (lb: Lightbox) => void; onOpen: () => void;
 }) {
   const rec = su.photo_ref || { id: su.id, collectionName: 'storage_units' };
   const photos: string[] = su.photos || [];
@@ -113,7 +118,7 @@ function StorageRow({ su, photoToken, onPhoto, onOpen }: {
         <div className="grid grid-cols-4 sm:grid-cols-6 gap-2 mt-2">
           {photos.map((p, i) => (
             <img key={i} src={photoUrl(rec, p, 'grid', photoToken)} alt=""
-              onClick={() => onPhoto(photoUrl(rec, p, 'full', photoToken))}
+              onClick={() => onPhoto({ photos, index: i, rec })}
               className="w-full h-16 object-cover rounded-lg cursor-pointer hover:opacity-90 transition-opacity" />
           ))}
         </div>
@@ -177,7 +182,11 @@ function SearchContent() {
   const [showFilters, setShowFilters]         = useState(!!(statusFilter || jobTypeFilter));
   const [searchError, setSearchError]         = useState<string | null>(null);
   const [expanded, setExpanded]               = useState<Record<string, boolean>>({});
-  const [lightbox, setLightbox]               = useState<string | null>(null);
+  const [lightbox, setLightbox]               = useState<Lightbox | null>(null);
+
+  // Hardware back (Android) closes the open overlay first
+  useOverlayBack(!!lightbox, () => setLightbox(null));
+  useOverlayBack(showFilters, () => setShowFilters(false));
 
   // Filters
   const [filterStatus, setFilterStatus]       = useState(statusFilter || '');
@@ -469,12 +478,37 @@ function SearchContent() {
         )}
       </main>
 
-      {/* Lightbox */}
-      {lightbox && (
-        <div className="fixed inset-0 z-[80] bg-black/90 flex items-center justify-center p-4" onClick={() => setLightbox(null)}>
-          <img src={lightbox} alt="" className="max-w-full max-h-full object-contain rounded-lg" />
-        </div>
-      )}
+      {/* Lightbox — multi-photo with swipe + arrows */}
+      {lightbox && (() => {
+        const cur = lightbox.photos[lightbox.index];
+        const many = lightbox.photos.length > 1;
+        const go = (d: number) => setLightbox(l => l ? { ...l, index: (l.index + d + l.photos.length) % l.photos.length } : null);
+        return (
+          <div className="fixed inset-0 z-[80] bg-black/90 flex items-center justify-center p-4"
+            onClick={() => setLightbox(null)}
+            onTouchStart={e => { (e.currentTarget as unknown as { _tx: number })._tx = e.touches[0].clientX; }}
+            onTouchEnd={e => { const dx = e.changedTouches[0].clientX - ((e.currentTarget as unknown as { _tx: number })._tx || 0); if (!many || Math.abs(dx) < 40) return; go(dx < 0 ? 1 : -1); }}
+          >
+            <img key={lightbox.index} src={photoUrl(lightbox.rec, cur, 'full', photoToken)} alt="Photo"
+              className="max-w-full max-h-full object-contain rounded-lg" onClick={e => e.stopPropagation()} />
+            {many && (
+              <>
+                <button onClick={e => { e.stopPropagation(); go(-1); }} title="Previous"
+                  className="absolute left-3 top-1/2 -translate-y-1/2 bg-white/15 hover:bg-white/25 text-white rounded-full p-2.5 backdrop-blur transition-colors"><ChevronLeftIcon className="w-6 h-6" /></button>
+                <button onClick={e => { e.stopPropagation(); go(1); }} title="Next"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 bg-white/15 hover:bg-white/25 text-white rounded-full p-2.5 backdrop-blur transition-colors"><ChevronRightIcon className="w-6 h-6" /></button>
+                <div className="absolute top-4 left-1/2 -translate-x-1/2 text-white/80 text-xs bg-white/10 rounded-full px-3 py-1">{lightbox.index + 1} / {lightbox.photos.length}</div>
+              </>
+            )}
+            <div className="absolute top-4 right-4 flex gap-2">
+              <button onClick={e => { e.stopPropagation(); downloadPhoto(photoUrl(lightbox.rec, cur, 'full', photoToken), cur); }} title="Download"
+                className="bg-white/15 hover:bg-white/25 text-white rounded-full p-2.5 backdrop-blur transition-colors"><ArrowDownTrayIcon className="w-5 h-5" /></button>
+              <button onClick={() => setLightbox(null)} title="Close"
+                className="bg-white/15 hover:bg-white/25 text-white rounded-full p-2.5 backdrop-blur transition-colors"><XMarkIcon className="w-5 h-5" /></button>
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 }

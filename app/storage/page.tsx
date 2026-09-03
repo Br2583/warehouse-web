@@ -9,6 +9,7 @@ import {
 import PhotoAddButton from '@/components/PhotoAddButton';
 import Sidebar from '@/components/Sidebar';
 import { api } from '@/lib/api';
+import { useOverlayBack } from '@/lib/overlay-back';
 import { useAuth } from '@/lib/auth-context';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -45,6 +46,7 @@ export default function StoragePage() {
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [showCreate, setShowCreate] = useState(false);
+  useOverlayBack(showCreate, () => setShowCreate(false));
   const [saving, setSaving] = useState(false);
   const [createError, setCreateError] = useState('');
   const [form, setForm] = useState(emptyStorageForm());

@@ -9,6 +9,7 @@ import {
 import ConfirmModal from '@/components/ConfirmModal';
 import Sidebar from '@/components/Sidebar';
 import { useToast } from '@/lib/toast-context';
+import { useOverlayBack } from '@/lib/overlay-back';
 import { api } from '@/lib/api';
 import { pb } from '@/lib/pb';
 import { useAuth } from '@/lib/auth-context';
@@ -38,6 +39,7 @@ export default function SnapshotsPage() {
   const [actionError, setActionError] = useState('');
   const [loadError, setLoadError] = useState<string | null>(null);
   const [confirmModal, setConfirmModal] = useState<{ message: string; onConfirm: () => void } | null>(null);
+  useOverlayBack(!!confirmModal, () => setConfirmModal(null));
   const [creatingSnap, setCreatingSnap] = useState<string | null>(null);
 
   const fetchSnapshots = () => {

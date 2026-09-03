@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { pb } from '@/lib/pb';
+import { useOverlayBack } from '@/lib/overlay-back';
 import { useAuth } from '@/lib/auth-context';
 import {
   BuildingOffice2Icon, UserCircleIcon, ChevronRightIcon,
@@ -63,6 +64,7 @@ export default function OnboardingPage() {
   const [industry, setIndustry] = useState('');
   const [description, setDescription] = useState('');
   const [showIndustryDropdown, setShowIndustryDropdown] = useState(false);
+  useOverlayBack(showIndustryDropdown, () => setShowIndustryDropdown(false));
   const industryRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {

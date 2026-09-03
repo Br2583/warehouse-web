@@ -11,6 +11,7 @@ import ConfirmModal from '@/components/ConfirmModal';
 import PhotoAddButton from '@/components/PhotoAddButton';
 import Sidebar from '@/components/Sidebar';
 import { api } from '@/lib/api';
+import { useOverlayBack } from '@/lib/overlay-back';
 import { useAuth } from '@/lib/auth-context';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -78,6 +79,10 @@ export default function StorageDetailPage() {
   const [showGridConfig, setShowGridConfig] = useState(false);
   const [gridConfigForm, setGridConfigForm] = useState({ rows: 4, cols: 6 });
   const [confirmModal, setConfirmModal] = useState<{ message: string; onConfirm: () => void } | null>(null);
+  // Hardware back (Android) closes the top open overlay before leaving the screen
+  useOverlayBack(!!confirmModal, () => setConfirmModal(null));
+  useOverlayBack(lightbox !== null, () => setLightbox(null));
+  useOverlayBack(showGridConfig, () => setShowGridConfig(false));
 
   useEffect(() => {
     api.get(`/api/storage/${id}`)

@@ -10,6 +10,7 @@ import { api, getToken } from '@/lib/api';
 import { usePhotoToken, photoUrl, photoSrc } from '@/lib/photo-url';
 import { compressImage } from '@/lib/compress-image';
 import { useOverlayBack } from '@/lib/overlay-back';
+import { downloadPhoto } from '@/lib/download-photo';
 import { notify, requestNotificationPermission } from '@/lib/notifications';
 import { markChatSeen } from '@/lib/unread-chat';
 
@@ -26,26 +27,6 @@ interface Message {
 }
 
 const CHAT_REC = (id: string) => ({ id, collectionName: 'chat_messages' });
-
-// Saves a photo to the device. Uses the native share sheet when available
-// (Capacitor WebView), falling back to a plain download link on the web.
-async function downloadPhoto(url: string, name: string) {
-  try {
-    const res = await fetch(url);
-    const blob = await res.blob();
-    const file = new File([blob], name || 'photo.jpg', { type: blob.type || 'image/jpeg' });
-    const nav = navigator as Navigator & { canShare?: (d: unknown) => boolean; share?: (d: unknown) => Promise<void> };
-    if (nav.canShare && nav.share && nav.canShare({ files: [file] })) {
-      await nav.share({ files: [file] });
-      return;
-    }
-    const obj = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = obj; a.download = name || 'photo.jpg';
-    document.body.appendChild(a); a.click(); a.remove();
-    setTimeout(() => URL.revokeObjectURL(obj), 1000);
-  } catch { /* best effort */ }
-}
 
 // PocketBase returns "2024-01-15 14:30:00.000Z" — parse it as UTC.
 function msgDate(ts: string): Date | null {

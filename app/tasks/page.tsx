@@ -334,6 +334,7 @@ function TaskDetailSheet({ task, members, isOwner, onStatus, onDelete, onEdit, o
   const isOverdue = !!task.due_date && task.status !== 'DONE' && task.due_date.split(/[ T]/)[0] < todayStr;
   const photoToken = usePhotoToken();
   const [lightbox, setLightbox] = useState<string | null>(null);
+  useOverlayBack(lightbox !== null, () => setLightbox(null));
   const photoRecord = { id: task.id, collectionName: 'tasks' };
   const duration = formatDuration(task.started_at, task.completed_at);
   const showPhotoBlock = !!(canEditPhotos || task.completed_at || task.completion_note || task.before_photos?.length || task.after_photos?.length);
@@ -978,6 +979,7 @@ function TaskPhotoSheet({ task, target, setStatus, withNote, onClose, onDone }: 
   const [saving, setSaving]     = useState(false);
   const [error, setError]       = useState('');
   const [lightbox, setLightbox] = useState<string | null>(null);
+  useOverlayBack(lightbox !== null, () => setLightbox(null));
 
   const addFiles = async (files: FileList | null) => {
     if (!files || files.length === 0) return;

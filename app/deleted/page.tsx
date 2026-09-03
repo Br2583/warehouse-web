@@ -6,6 +6,7 @@ import { TrashIcon, ArrowPathIcon, XMarkIcon, ExclamationCircleIcon } from '@/co
 import Sidebar from '@/components/Sidebar';
 import HistoryTabs from '@/components/HistoryTabs';
 import { api } from '@/lib/api';
+import { useOverlayBack } from '@/lib/overlay-back';
 import { pb } from '@/lib/pb';
 import { useAuth } from '@/lib/auth-context';
 import ConfirmModal from '@/components/ConfirmModal';
@@ -18,6 +19,7 @@ export default function DeletedPage() {
   const [error, setError] = useState('');
   const [whNames, setWhNames] = useState<Record<string, string>>({});
   const [confirmModal, setConfirmModal] = useState<{ message: string; onConfirm: () => void } | null>(null);
+  useOverlayBack(!!confirmModal, () => setConfirmModal(null));
 
   const fetchDeleted = () =>
     api.get('/api/deleted-boxes')
