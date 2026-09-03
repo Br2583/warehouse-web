@@ -108,14 +108,51 @@ export async function getTokensForUser(
   }
 }
 
+// PocketBase record ids are safe alphanumerics, but escape defensively before
+// interpolating any id into a filter string.
+const sfId = (s: string) => String(s).replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+
 export async function getTokensForCompany(
+  companyId: string,
+  excludeUserId: string,
+  adminToken: string,
+  pbUrl: string,
+  extraExcludeUserIds: string[] = []
+): Promise<string[]> {
+  try {
+    const excludes = [excludeUserId, ...extraExcludeUserIds]
+      .filter(Boolean)
+      .map(id => `user_id!="${sfId(id)}"`)
+      .join(' && ');
+    const filter = `company_id="${sfId(companyId)}"${excludes ? ` && ${excludes}` : ''}`;
+    const res = await fetch(
+      `${pbUrl}/api/collections/device_tokens/records?filter=${encodeURIComponent(filter)}&perPage=50`,
+      { headers: { Authorization: `Bearer ${adminToken}` } }
+    );
+    if (!res.ok) return [];
+    const data = await res.json();
+    return (data.items || []).map((r: { token: string }) => r.token).filter(Boolean);
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * Device tokens for a set of mentioned users, scoped to the company so a forged
+ * user id from another company can never receive a push. Excludes the sender.
+ */
+export async function getTokensForMentions(
+  userIds: string[],
   companyId: string,
   excludeUserId: string,
   adminToken: string,
   pbUrl: string
 ): Promise<string[]> {
+  const ids = userIds.filter(id => id && id !== excludeUserId);
+  if (ids.length === 0) return [];
   try {
-    const filter = `company_id="${companyId}" && user_id!="${excludeUserId}"`;
+    const orExpr = ids.map(id => `user_id="${sfId(id)}"`).join(' || ');
+    const filter = `company_id="${sfId(companyId)}" && (${orExpr})`;
     const res = await fetch(
       `${pbUrl}/api/collections/device_tokens/records?filter=${encodeURIComponent(filter)}&perPage=50`,
       { headers: { Authorization: `Bearer ${adminToken}` } }

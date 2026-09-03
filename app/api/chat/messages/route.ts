@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getPbAdminToken, PB_URL } from '@/lib/pb-admin';
-import { sendPush, getTokensForCompany } from '@/lib/push';
+import { sendPush, getTokensForCompany, getTokensForMentions } from '@/lib/push';
 import { chatRateLimit, checkLimit } from '@/lib/rate-limit';
 
 const TIMEOUT_MS = 28_000;
@@ -50,7 +50,7 @@ export async function GET(req: NextRequest) {
     const sort    = ['sent_at', '-sent_at'].includes(rawSort) ? rawSort : 'sent_at';
 
     const res = await pbFetch(
-      `${PB_URL}/api/collections/chat_messages/records?perPage=${encodeURIComponent(perPage)}&sort=${encodeURIComponent(sort)}&filter=${encodeURIComponent(`company_id="${companyId}"`)}&fields=id,author_name,author_id,content,sent_at`,
+      `${PB_URL}/api/collections/chat_messages/records?perPage=${encodeURIComponent(perPage)}&sort=${encodeURIComponent(sort)}&filter=${encodeURIComponent(`company_id="${companyId}"`)}&fields=id,author_name,author_id,content,type,mentions,sent_at`,
       { headers: { Authorization: `Bearer ${adminToken}` } },
     );
     const data = await res.json();
@@ -61,6 +61,8 @@ export async function GET(req: NextRequest) {
       sender_name: m.author_name,
       sender_id:   m.author_id,
       text:        m.content,
+      type:        m.type || 'text',
+      mentions:    Array.isArray(m.mentions) ? m.mentions : [],
       timestamp:   m.sent_at || '',
     }));
 
@@ -82,6 +84,12 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     if (!body.text?.trim()) return NextResponse.json({ error: 'Message text is required' }, { status: 400 });
     if (body.text.trim().length > 2000) return NextResponse.json({ error: 'Message too long (max 2000 characters)' }, { status: 400 });
+
+    // @mention targets — PB record ids only, deduped and capped. Membership is
+    // enforced later at push time (company-scoped token lookup).
+    const mentions: string[] = Array.isArray(body.mentions)
+      ? [...new Set(body.mentions.filter((x: unknown) => typeof x === 'string' && /^[a-z0-9]{1,20}$/i.test(x as string)))].slice(0, 20) as string[]
+      : [];
 
     const refreshRes = await pbFetch(`${PB_URL}/api/collections/users/auth-refresh`, {
       method: 'POST',
@@ -107,29 +115,45 @@ export async function POST(req: NextRequest) {
         author_name: record.name || record.email || 'Unknown',
         content:     body.text.trim(),
         type:        'text',
+        mentions,
         sent_at:     new Date().toISOString(),
       }),
     });
     const msg = await res.json();
     if (!res.ok) throw new Error(msg?.message || 'Failed to send message');
 
-    // Push notification to all company members (except sender) — fire and forget
-    getTokensForCompany(companyId, record.id, adminToken, PB_URL).then(tokens => {
+    // Push notifications — fire and forget. Mentioned users get a distinct
+    // "mentioned you" push; everyone else in the company gets the generic one.
+    (async () => {
       const senderName = record.name?.split(' ')[0] || 'Someone';
-      const preview = body.text.trim().slice(0, 60);
-      return sendPush(tokens, {
-        title: `${senderName} in Team Chat`,
-        body: preview.length < body.text.trim().length ? preview + '…' : preview,
-        route: '/chat',
-        tag: 'chat',
-      }, PB_URL, adminToken);
-    }).catch(() => {});
+      const full = body.text.trim();
+      const preview = full.slice(0, 60);
+      const previewBody = preview.length < full.length ? preview + '…' : preview;
+      if (mentions.length) {
+        const mentionTokens = await getTokensForMentions(mentions, companyId, record.id, adminToken, PB_URL);
+        if (mentionTokens.length) {
+          await sendPush(mentionTokens, {
+            title: `${senderName} mentioned you`,
+            body: previewBody, route: '/chat', tag: 'chat',
+          }, PB_URL, adminToken);
+        }
+      }
+      const genericTokens = await getTokensForCompany(companyId, record.id, adminToken, PB_URL, mentions);
+      if (genericTokens.length) {
+        await sendPush(genericTokens, {
+          title: `${senderName} in Team Chat`,
+          body: previewBody, route: '/chat', tag: 'chat',
+        }, PB_URL, adminToken);
+      }
+    })().catch(() => {});
 
     return NextResponse.json({
       id:          msg.id,
       sender_name: msg.author_name,
       sender_id:   msg.author_id,
       text:        msg.content,
+      type:        msg.type || 'text',
+      mentions:    Array.isArray(msg.mentions) ? msg.mentions : mentions,
       timestamp:   msg.sent_at || '',
     });
   } catch (e: any) {
