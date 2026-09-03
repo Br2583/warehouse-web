@@ -182,20 +182,24 @@ function TaskStatusPicker({ status, isOwner, loading, onChange }: {
 }
 
 // ── Kanban card ───────────────────────────────────────────────────────────────
-function TaskCard({ task, members, isOwner, onStatus, onDelete, onEdit, statusLoading, vault }: {
-  task:          Task;
-  members:       Member[];
-  isOwner:       boolean;
-  onStatus:      (id: string, s: TaskStatus) => void;
-  onDelete:      (id: string) => void;
-  onEdit:        (t: Task) => void;
-  statusLoading: boolean;
-  vault?:        VaultResult;
+function TaskCard({ task, members, isOwner, onStatus, onDelete, onEdit, statusLoading, vault, canEditPhotos, onManagePhotos }: {
+  task:            Task;
+  members:         Member[];
+  isOwner:         boolean;
+  onStatus:        (id: string, s: TaskStatus) => void;
+  onDelete:        (id: string) => void;
+  onEdit:          (t: Task) => void;
+  statusLoading:   boolean;
+  vault?:          VaultResult;
+  canEditPhotos?:  boolean;
+  onManagePhotos?: (target: 'before' | 'after') => void;
 }) {
   const assignee    = members.find(m => m.user_id === task.assigned_to);
+  const [sheetOpen, setSheetOpen] = useState(false);
 
   return (
-    <div className="bg-white rounded-xl border border-gray-100 p-3.5 shadow-sm hover:shadow-md transition-shadow group">
+    <>
+    <div onClick={() => setSheetOpen(true)} className="bg-white rounded-xl border border-gray-100 p-3.5 shadow-sm hover:shadow-md transition-shadow group cursor-pointer">
       <div className="flex items-start gap-2 mb-2">
         <div className="flex-1 min-w-0">
           <div className="flex flex-wrap items-center gap-1.5 mb-1.5">
@@ -211,7 +215,7 @@ function TaskCard({ task, members, isOwner, onStatus, onDelete, onEdit, statusLo
           <p className="text-sm font-semibold text-gray-900 leading-snug line-clamp-2">{task.title}</p>
         </div>
         {isOwner && (
-          <div className="flex items-center gap-0.5 md:opacity-0 md:group-hover:opacity-100 transition-opacity flex-shrink-0">
+          <div onClick={e => e.stopPropagation()} className="flex items-center gap-0.5 md:opacity-0 md:group-hover:opacity-100 transition-opacity flex-shrink-0">
             <button onClick={() => onEdit(task)} title="Edit"
               className="p-1 text-gray-300 hover:text-blue-500 hover:bg-blue-50 rounded-lg transition-colors">
               <PencilIcon className="w-3.5 h-3.5" />
@@ -252,7 +256,7 @@ function TaskCard({ task, members, isOwner, onStatus, onDelete, onEdit, statusLo
 
       {/* Navigation chips */}
       {(task.vault_id || task.storage_id) && (
-        <div className="flex flex-wrap gap-1.5 mb-2">
+        <div onClick={e => e.stopPropagation()} className="flex flex-wrap gap-1.5 mb-2">
           {task.vault_id && vault ? (
             <Link
               href={`/warehouses/${vault.warehouse_id}?vault=${task.vault_id}`}
@@ -277,13 +281,34 @@ function TaskCard({ task, members, isOwner, onStatus, onDelete, onEdit, statusLo
       )}
 
       {/* Status control */}
-      <TaskStatusPicker
-        status={task.status}
-        isOwner={isOwner}
-        loading={statusLoading}
-        onChange={s => onStatus(task.id, s)}
-      />
+      <div onClick={e => e.stopPropagation()}>
+        <TaskStatusPicker
+          status={task.status}
+          isOwner={isOwner}
+          loading={statusLoading}
+          onChange={s => onStatus(task.id, s)}
+        />
+      </div>
     </div>
+
+    <AnimatePresence>
+      {sheetOpen && (
+        <TaskDetailSheet
+          task={task}
+          members={members}
+          isOwner={isOwner}
+          onStatus={onStatus}
+          onDelete={onDelete}
+          onEdit={onEdit}
+          onClose={() => setSheetOpen(false)}
+          statusLoading={statusLoading}
+          vault={vault}
+          canEditPhotos={canEditPhotos}
+          onManagePhotos={onManagePhotos}
+        />
+      )}
+    </AnimatePresence>
+    </>
   );
 }
 
@@ -341,14 +366,14 @@ function TaskDetailSheet({ task, members, isOwner, onStatus, onDelete, onEdit, o
 
   return (
     <>
-    <div className="fixed inset-0 z-[60] flex items-end justify-center bg-black/40" onClick={onClose}>
+    <div className="fixed inset-0 z-[60] flex items-end md:items-center justify-center md:p-4 bg-black/40" onClick={onClose}>
       <motion.div
         initial={{ y: '100%' }}
         animate={{ y: 0 }}
         exit={{ y: '100%' }}
         transition={{ type: 'spring', damping: 32, stiffness: 300 }}
         onClick={e => e.stopPropagation()}
-        className="bg-white rounded-t-2xl w-full max-w-lg shadow-2xl max-h-[85vh] overflow-y-auto"
+        className="bg-white rounded-t-2xl md:rounded-2xl w-full max-w-lg shadow-2xl max-h-[85vh] overflow-y-auto"
       >
         {/* Handle */}
         <div className="flex justify-center pt-3 pb-1">
@@ -1402,6 +1427,8 @@ function TasksPageInner() {
                               onEdit={openEdit}
                               statusLoading={!!statusLoading[task.id]}
                               vault={task.vault_id ? allVaults.find(v => v.id === task.vault_id) : undefined}
+                              canEditPhotos={isOwner || task.assigned_to === user?.id}
+                              onManagePhotos={(target) => openManagePhotos(task, target)}
                             />
                           ))}
                         </AnimatePresence>
