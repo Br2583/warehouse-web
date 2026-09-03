@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getPbAdminToken, PB_URL, verifySessionUser } from '@/lib/pb-admin';
 import { sendEmail, taskStatusEmail } from '@/lib/email';
-import { sendPush, getTokensForUser } from '@/lib/push';
+import { sendPush, getTokensForUser, getTokensForCompany } from '@/lib/push';
 import { syncVaultStatus, syncStorageStatus } from '@/lib/task-sync';
 
 function fmtStatus(s: string): string {
@@ -195,12 +195,20 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
             sent_at:     nowIso,
           }),
         });
+        // Notify the whole team a task was finished (everyone except whoever finished it)
+        try {
+          const teamTokens = await getTokensForCompany(me.company_id, actorId, adminToken, PB_URL);
+          if (teamTokens.length > 0) {
+            await sendPush(teamTokens, { title: 'Task completed', body: content, route: '/tasks', tag: 'task' }, PB_URL, adminToken);
+          }
+        } catch { /* team push is best-effort */ }
       }
     } catch { /* ranking + chat note must never break the task update */ }
   }
 
-  // Worker changes status → notify task creator (email + push)
-  if (me.role === 'worker' && body.status && body.status !== task.status && task.created_by) {
+  // Worker changes status → notify task creator (email + push). DONE is handled
+  // by the team-wide "Task completed" push above, so skip it here to avoid dupes.
+  if (me.role === 'worker' && body.status && body.status !== task.status && body.status !== 'DONE' && task.created_by) {
     try {
       const [ownerRes, workerRes] = await Promise.all([
         fetch(`${PB_URL}/api/collections/users/records/${task.created_by}`, {
@@ -235,8 +243,9 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     } catch { /* notifications never break the task update */ }
   }
 
-  // Owner/manager changes status → notify assigned worker via push
-  if ((me.role === 'owner' || me.role === 'manager') && body.status && body.status !== task.status && task.assigned_to && task.assigned_to !== me.id) {
+  // Owner/manager changes status → notify assigned worker via push. DONE is
+  // covered by the team-wide "Task completed" push above.
+  if ((me.role === 'owner' || me.role === 'manager') && body.status && body.status !== task.status && body.status !== 'DONE' && task.assigned_to && task.assigned_to !== me.id) {
     try {
       const workerTokens = await getTokensForUser(task.assigned_to, adminToken, PB_URL);
       if (workerTokens.length > 0) {

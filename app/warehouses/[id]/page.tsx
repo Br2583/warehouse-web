@@ -25,6 +25,7 @@ import { useToast } from '@/lib/toast-context';
 import { useParams, useSearchParams } from 'next/navigation';
 import { compressImage } from '@/lib/compress-image';
 import { photoSrc, usePhotoToken } from '@/lib/photo-url';
+import { useOverlayBack } from '@/lib/overlay-back';
 import { QRCodeSVG } from 'qrcode.react';
 import { STATUS_COLORS, STATUS_CELL } from '@/lib/constants';
 
@@ -179,6 +180,16 @@ export default function WarehouseDetailPage() {
   const [selectedZone, setSelectedZone] = useState<string | null>(null);
   const [showLooseForm, setShowLooseForm] = useState(false);
   const [editingLooseId, setEditingLooseId] = useState<string | null>(null);
+
+  // Hardware back (Android) closes the top open overlay before leaving the screen
+  useOverlayBack(!!lightbox, () => setLightbox(null));
+  useOverlayBack(!!confirmModal, () => setConfirmModal(null));
+  useOverlayBack(showQR, () => setShowQR(false));
+  useOverlayBack(showMove, () => setShowMove(false));
+  useOverlayBack(!!editForm, () => setEditForm(null));
+  useOverlayBack(showAdd, () => setShowAdd(false));
+  useOverlayBack(editingLooseId !== null, () => setEditingLooseId(null));
+  useOverlayBack(!!selected, () => setSelected(null));
   const [looseForm, setLooseForm] = useState<LooseForm>(emptyLooseForm());
   const [looseSaving, setLooseSaving] = useState(false);
   const [looseError, setLooseError] = useState('');

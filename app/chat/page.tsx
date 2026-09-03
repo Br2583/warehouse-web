@@ -2,13 +2,14 @@
 
 import { useEffect, useState, useRef, useCallback, useMemo, Fragment } from 'react';
 import { motion } from 'framer-motion';
-import { PaperAirplaneIcon, TrashIcon, PaperClipIcon, XMarkIcon, ArrowDownTrayIcon } from '@/components/icons';
+import { PaperAirplaneIcon, TrashIcon, PaperClipIcon, XMarkIcon, ArrowDownTrayIcon, ChevronLeftIcon, ChevronRightIcon } from '@/components/icons';
 import Sidebar from '@/components/Sidebar';
 import { UserAvatar } from '@/components/UserAvatar';
 import { useAuth } from '@/lib/auth-context';
 import { api, getToken } from '@/lib/api';
 import { usePhotoToken, photoUrl, photoSrc } from '@/lib/photo-url';
 import { compressImage } from '@/lib/compress-image';
+import { useOverlayBack } from '@/lib/overlay-back';
 import { notify, requestNotificationPermission } from '@/lib/notifications';
 import { markChatSeen } from '@/lib/unread-chat';
 
@@ -100,9 +101,9 @@ export default function ChatPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const photoToken = usePhotoToken();
 
-  // photo attachments (before send) + lightbox (viewing)
+  // photo attachments (before send) + lightbox (viewing, multi-photo)
   const [attachments, setAttachments] = useState<File[]>([]);
-  const [lightbox, setLightbox] = useState<{ url: string; name: string } | null>(null);
+  const [lightbox, setLightbox] = useState<{ photos: string[]; index: number; recId: string } | null>(null);
 
   // @mention autocomplete
   const [mentionOpen, setMentionOpen] = useState(false);
@@ -380,6 +381,10 @@ export default function ChatPage() {
     else if (e.key === 'Escape') { e.preventDefault(); setMentionOpen(false); }
   };
 
+  // Hardware back closes the open overlay first (Android)
+  useOverlayBack(!!lightbox, () => setLightbox(null));
+  useOverlayBack(confirmClear, () => setConfirmClear(false));
+
   return (
     <div className="flex min-h-screen bg-gray-50">
       <Sidebar />
@@ -449,7 +454,7 @@ export default function ChatPage() {
                               src={photoUrl(CHAT_REC(msg.id), p, 'grid', photoToken)}
                               alt="Shared photo"
                               loading="lazy"
-                              onClick={() => setLightbox({ url: photoUrl(CHAT_REC(msg.id), p, 'full', photoToken), name: p })}
+                              onClick={() => setLightbox({ photos: msg.photos!, index: pi, recId: msg.id })}
                               className="w-32 h-32 md:w-40 md:h-40 object-cover rounded-xl cursor-pointer bg-gray-100"
                             />
                           ))}
@@ -581,28 +586,53 @@ export default function ChatPage() {
         </div>
       )}
 
-      {/* Photo lightbox */}
-      {lightbox && (
-        <div className="fixed inset-0 z-[80] bg-black/90 flex items-center justify-center p-4" onClick={() => setLightbox(null)}>
-          <img src={lightbox.url} alt="Shared photo" className="max-w-full max-h-full object-contain rounded-lg" onClick={e => e.stopPropagation()} />
-          <div className="absolute top-4 right-4 flex gap-2">
-            <button
-              onClick={e => { e.stopPropagation(); downloadPhoto(lightbox.url, lightbox.name); }}
-              title="Download"
-              className="bg-white/15 hover:bg-white/25 text-white rounded-full p-2.5 backdrop-blur transition-colors"
-            >
-              <ArrowDownTrayIcon className="w-5 h-5" />
-            </button>
-            <button
-              onClick={() => setLightbox(null)}
-              title="Close"
-              className="bg-white/15 hover:bg-white/25 text-white rounded-full p-2.5 backdrop-blur transition-colors"
-            >
-              <XMarkIcon className="w-5 h-5" />
-            </button>
+      {/* Photo lightbox — multi-photo with swipe + arrows */}
+      {lightbox && (() => {
+        const cur = lightbox.photos[lightbox.index];
+        const rec = CHAT_REC(lightbox.recId);
+        const many = lightbox.photos.length > 1;
+        const go = (d: number) => setLightbox(l => l ? { ...l, index: (l.index + d + l.photos.length) % l.photos.length } : null);
+        return (
+          <div
+            className="fixed inset-0 z-[80] bg-black/90 flex items-center justify-center p-4"
+            onClick={() => setLightbox(null)}
+            onTouchStart={e => { (e.currentTarget as unknown as { _tx: number })._tx = e.touches[0].clientX; }}
+            onTouchEnd={e => {
+              const dx = e.changedTouches[0].clientX - ((e.currentTarget as unknown as { _tx: number })._tx || 0);
+              if (!many || Math.abs(dx) < 40) return;
+              go(dx < 0 ? 1 : -1);
+            }}
+          >
+            <img key={lightbox.index} src={photoUrl(rec, cur, 'full', photoToken)} alt="Shared photo"
+              className="max-w-full max-h-full object-contain rounded-lg" onClick={e => e.stopPropagation()} />
+            {many && (
+              <>
+                <button onClick={e => { e.stopPropagation(); go(-1); }} title="Previous"
+                  className="absolute left-3 top-1/2 -translate-y-1/2 bg-white/15 hover:bg-white/25 text-white rounded-full p-2.5 backdrop-blur transition-colors">
+                  <ChevronLeftIcon className="w-6 h-6" />
+                </button>
+                <button onClick={e => { e.stopPropagation(); go(1); }} title="Next"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 bg-white/15 hover:bg-white/25 text-white rounded-full p-2.5 backdrop-blur transition-colors">
+                  <ChevronRightIcon className="w-6 h-6" />
+                </button>
+                <div className="absolute top-4 left-1/2 -translate-x-1/2 text-white/80 text-xs bg-white/10 rounded-full px-3 py-1">
+                  {lightbox.index + 1} / {lightbox.photos.length}
+                </div>
+              </>
+            )}
+            <div className="absolute top-4 right-4 flex gap-2">
+              <button onClick={e => { e.stopPropagation(); downloadPhoto(photoUrl(rec, cur, 'full', photoToken), cur); }} title="Download"
+                className="bg-white/15 hover:bg-white/25 text-white rounded-full p-2.5 backdrop-blur transition-colors">
+                <ArrowDownTrayIcon className="w-5 h-5" />
+              </button>
+              <button onClick={() => setLightbox(null)} title="Close"
+                className="bg-white/15 hover:bg-white/25 text-white rounded-full p-2.5 backdrop-blur transition-colors">
+                <XMarkIcon className="w-5 h-5" />
+              </button>
+            </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
     </div>
   );
 }

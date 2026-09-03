@@ -20,6 +20,7 @@ import { useToast } from '@/lib/toast-context';
 import { pb } from '@/lib/pb';
 import { compressImage } from '@/lib/compress-image';
 import { photoSrc, photoUrl, usePhotoToken } from '@/lib/photo-url';
+import { useOverlayBack } from '@/lib/overlay-back';
 
 type TaskStatus   = 'PENDING' | 'IN_PROGRESS' | 'DONE';
 type TaskPriority = 'normal' | 'urgent';
@@ -196,6 +197,7 @@ function TaskCard({ task, members, isOwner, onStatus, onDelete, onEdit, statusLo
 }) {
   const assignee    = members.find(m => m.user_id === task.assigned_to);
   const [sheetOpen, setSheetOpen] = useState(false);
+  useOverlayBack(sheetOpen, () => setSheetOpen(false));
 
   return (
     <>
@@ -559,6 +561,7 @@ function TaskRow({ task, members, isOwner, onStatus, onDelete, onEdit, statusLoa
   onManagePhotos?: (target: 'before' | 'after') => void;
 }) {
   const [sheetOpen, setSheetOpen] = useState(false);
+  useOverlayBack(sheetOpen, () => setSheetOpen(false));
   const assignee  = members.find(m => m.user_id === task.assigned_to);
   const todayStr = new Date().toLocaleDateString('en-CA');
   const isOverdue = !!task.due_date && task.status !== 'DONE' && task.due_date.split(/[ T]/)[0] < todayStr;
@@ -1105,6 +1108,13 @@ function TasksPageInner() {
   const [taskFilter, setTaskFilter]     = useState<TaskFilter>('all');
   const [statusLoading, setStatusLoading] = useState<Record<string, boolean>>({});
   const [photoSheet, setPhotoSheet] = useState<{ task: Task; target: 'before' | 'after'; setStatus?: TaskStatus; withNote?: boolean } | null>(null);
+
+  // Hardware back (Android) closes the top open overlay before leaving the screen
+  useOverlayBack(!!photoSheet, () => setPhotoSheet(null));
+  useOverlayBack(clearAll, () => setClearAll(false));
+  useOverlayBack(deleteId !== null, () => setDeleteId(null));
+  useOverlayBack(!!editTask, () => setEditTask(null));
+  useOverlayBack(formOpen, () => setFormOpen(false));
 
   const loadTasks = async () => {
     try {
