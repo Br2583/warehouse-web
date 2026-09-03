@@ -112,7 +112,10 @@ export default function ChatPage() {
         const hadNew  = lastCountRef.current >= 0 && !!newest && newest.id !== lastIdRef.current;
         if (hadNew) {
           if (newest && newest.sender_id !== user?.id) {
-            notify(newest.type === 'system' ? 'Task update' : `${newest.sender_name}`, newest.text);
+            const title = newest.type === 'system'
+              ? 'Task update'
+              : (user?.id && newest.mentions?.includes(user.id) ? `${newest.sender_name} mentioned you` : newest.sender_name);
+            notify(title, newest.text);
           }
           markChatSeen();
         } else if (lastCountRef.current < 0) {
@@ -348,9 +351,10 @@ export default function ChatPage() {
           ) : (
             messages.map((msg, i) => {
               const prev = messages[i - 1];
-              const daySep = (!prev || !sameDay(prev.timestamp, msg.timestamp)) ? (
+              const dayLabel = (!prev || !sameDay(prev.timestamp, msg.timestamp)) ? formatDay(msg.timestamp) : '';
+              const daySep = dayLabel ? (
                 <div className="flex justify-center my-3">
-                  <span className="text-[11px] font-semibold text-gray-400 bg-gray-100 rounded-full px-3 py-1">{formatDay(msg.timestamp)}</span>
+                  <span className="text-[11px] font-semibold text-gray-400 bg-gray-100 rounded-full px-3 py-1">{dayLabel}</span>
                 </div>
               ) : null;
 
@@ -438,6 +442,7 @@ export default function ChatPage() {
                 disabled={sending}
                 onChange={handleInputChange}
                 onKeyDown={handleInputKeyDown}
+                onBlur={() => setTimeout(() => setMentionOpen(false), 150)}
                 className="w-full px-4 py-2.5 bg-gray-50 border border-gray-100 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-60"
               />
             </div>
