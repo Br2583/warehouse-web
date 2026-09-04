@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getPbAdminToken } from '@/lib/pb-admin';
-import { cleanupChatPhotos } from '@/lib/cron-cleanups';
+import { cleanupDoneTasks } from '@/lib/cron-cleanups';
 
-// Deletes chat photos older than 30 days (see lib/cron-cleanups). Callable on
-// its own with the CRON_SECRET bearer, but it also runs automatically inside
-// the chat-digest job, so no dedicated cron registration is required.
+// Deletes tasks marked DONE more than 30 days ago (see lib/cron-cleanups). The
+// worker ranking (users.tasks_completed / task_minutes) is persisted separately,
+// so no ranking data is lost. Callable with the CRON_SECRET bearer, and also run
+// automatically inside the chat-digest job.
 export async function POST(req: NextRequest) {
   const secret = process.env.CRON_SECRET;
   const auth = req.headers.get('Authorization') || '';
@@ -16,6 +17,6 @@ export async function POST(req: NextRequest) {
   try { adminToken = await getPbAdminToken(); }
   catch { return NextResponse.json({ error: 'Admin auth failed' }, { status: 500 }); }
 
-  const result = await cleanupChatPhotos(adminToken);
+  const result = await cleanupDoneTasks(adminToken);
   return NextResponse.json({ ok: true, ...result });
 }

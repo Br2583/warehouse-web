@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getPbAdminToken, PB_URL } from '@/lib/pb-admin';
 import { sendEmail, chatDigestEmail } from '@/lib/email';
+import { cleanupChatPhotos, cleanupDoneTasks } from '@/lib/cron-cleanups';
 
 export async function POST(req: NextRequest) {
   const secret = process.env.CRON_SECRET;
@@ -91,5 +92,10 @@ export async function POST(req: NextRequest) {
     sent += results.filter(r => r.status === 'fulfilled' && r.value).length;
   }
 
-  return NextResponse.json({ ok: true, sent, total: users.length });
+  // Ride this 2h cron for the 30-day retention cleanups — no separate job needed.
+  const cleanups: Record<string, unknown> = {};
+  try { cleanups.chatPhotos = await cleanupChatPhotos(adminToken); } catch { cleanups.chatPhotos = 'error'; }
+  try { cleanups.doneTasks  = await cleanupDoneTasks(adminToken);  } catch { cleanups.doneTasks  = 'error'; }
+
+  return NextResponse.json({ ok: true, sent, total: users.length, cleanups });
 }
