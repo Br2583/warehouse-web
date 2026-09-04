@@ -10,6 +10,7 @@ import ConfirmModal from '@/components/ConfirmModal';
 import Sidebar from '@/components/Sidebar';
 import { useToast } from '@/lib/toast-context';
 import { useOverlayBack } from '@/lib/overlay-back';
+import { countTotals, parseCounts } from '@/lib/item-counts';
 import { api } from '@/lib/api';
 import { pb } from '@/lib/pb';
 import { useAuth } from '@/lib/auth-context';
@@ -115,6 +116,13 @@ export default function SnapshotsPage() {
     const pend = boxes.filter(b => (b.estado || b.status) === 'PENDING').length;
     const rdy  = boxes.filter(b => (b.estado || b.status) === 'READY').length;
     const dlv  = boxes.filter(b => (b.estado || b.status) === 'DELIVERED').length;
+
+    // Global item count (Art + Wardrobe count as boxes). Present only on snapshots
+    // taken after item_counts was captured — older snapshots simply omit the line.
+    const itemT = boxes.reduce((acc, b) => {
+      const c = countTotals(parseCounts((b as any).item_counts));
+      return { boxes: acc.boxes + c.boxes, furniture: acc.furniture + c.furniture, total: acc.total + c.total };
+    }, { boxes: 0, furniture: 0, total: 0 });
 
     // Max possible positions in the warehouse (rows × cols × 2 levels)
     const maxRow  = Math.max(0, ...boxes.map(b => b.row?.charCodeAt(0) - 64 || 0));
@@ -233,6 +241,7 @@ tr:hover td { background: #fafafa; }
   <div class="stat s-rdy"> <div class="n">${rdy}</div> <div class="l">Ready to Go</div></div>
   <div class="stat s-dlv"> <div class="n">${dlv}</div> <div class="l">Delivered</div></div>
 </div>
+${itemT.total > 0 ? `<div style="font-size:9.5px;color:#555;margin:-4px 0 10px;padding:6px 10px;background:#f9fafb;border:1.5px solid #e5e5e5;border-radius:7px;">Item count: <b>${itemT.boxes}</b> boxes · <b>${itemT.furniture}</b> furniture · <b>${itemT.total}</b> total</div>` : ''}
 
 ${capacity > 0 ? `
 <div class="avail">

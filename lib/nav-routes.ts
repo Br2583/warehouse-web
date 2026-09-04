@@ -17,7 +17,7 @@ export const NAV_ITEMS: NavItem[] = [
   { href: '/storage',    label: 'Storage',    icon: ArchiveBoxIcon },
   { href: '/tasks',      label: 'Tasks',      icon: ClipboardDocumentListIcon },
   { href: '/search',     label: 'Search',     icon: MagnifyingGlassIcon },
-  { href: '/stats',      label: 'Stats',      icon: ChartBarSquareIcon },
+  { href: '/stats',      label: 'Stats',      icon: ChartBarSquareIcon, managerOnly: true },
   { href: '/snapshots',  label: 'Snapshots',  icon: CameraIcon },
   { href: '/chat',       label: 'Chat',       icon: ChatBubbleLeftRightIcon },
   { href: '/activity',   label: 'Activity',   icon: ClipboardDocumentCheckIcon, managerOnly: true },

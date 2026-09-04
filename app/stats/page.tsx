@@ -10,6 +10,8 @@ import {
 } from '@/components/icons';
 import Sidebar from '@/components/Sidebar';
 import { api } from '@/lib/api';
+import { useAuth } from '@/lib/auth-context';
+import { countTotals, parseCounts } from '@/lib/item-counts';
 import { CountUp } from '@/components/CountUp';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid,
@@ -54,9 +56,16 @@ type ClientSort = 'count' | 'days' | 'az';
 
 export default function StatsPage() {
   const router = useRouter();
+  const { user, canManage } = useAuth();
   const [boxes, setBoxes]               = useState<any[]>([]);
   const [whNames, setWhNames]           = useState<Record<string, string>>({});
   const [storageUnits, setStorageUnits] = useState<any[]>([]);
+  const [members, setMembers]           = useState<{ user_id: string; name: string; picture?: string; role?: string; tasks_completed: number; task_minutes: number }[]>([]);
+
+  // Stats are for owners/managers only — send regular workers back to the dashboard.
+  useEffect(() => {
+    if (user && !canManage) router.replace('/dashboard');
+  }, [user, canManage, router]);
   const [loading, setLoading]           = useState(true);
   const [loadError, setLoadError]       = useState<string | null>(null);
   const [expandedClient, setExpandedClient] = useState<string | null>(null);
@@ -70,11 +79,13 @@ export default function StatsPage() {
     if (isRefresh) setRefreshing(true); else setLoading(true);
     setLoadError(null);
     try {
-      const [ab, whs, st] = await Promise.allSettled([
+      const [ab, whs, st, mb] = await Promise.allSettled([
         api.get('/api/boxes'),
         api.get('/api/warehouses'),
         api.get('/api/storage'),
+        api.get('/api/company/members'),
       ]);
+      if (mb.status === 'fulfilled') setMembers(Array.isArray(mb.value) ? mb.value : []);
       if (ab.status === 'fulfilled') {
         const d = ab.value;
         setBoxes(Array.isArray(d) ? d : d?.boxes || []);
@@ -120,6 +131,23 @@ export default function StatsPage() {
   const pending   = filteredBoxes.filter(b => (b.estado || b.status || 'PENDING') === 'PENDING').length;
   const ready     = filteredBoxes.filter(b => (b.estado || b.status || '') === 'READY').length;
   const delivered = filteredBoxes.filter(b => (b.estado || b.status || '') === 'DELIVERED').length;
+
+  // Worker ranking — persisted on the user record, so it survives the task cleanup
+  const ranking = useMemo(() =>
+    [...members]
+      .filter(m => (m.tasks_completed || 0) > 0 || (m.task_minutes || 0) > 0)
+      .sort((a, b) => (b.tasks_completed - a.tasks_completed) || (b.task_minutes - a.task_minutes))
+      .slice(0, 10),
+    [members]);
+
+  // Global item count across vaults + storage (Art + Wardrobe count as boxes)
+  const itemTotals = useMemo(() => {
+    const t = { boxes: 0, furniture: 0, total: 0 };
+    for (const b of boxes)        { const c = countTotals(parseCounts(b.item_counts)); t.boxes += c.boxes; t.furniture += c.furniture; t.total += c.total; }
+    for (const s of storageUnits) { const c = countTotals(parseCounts(s.item_counts)); t.boxes += c.boxes; t.furniture += c.furniture; t.total += c.total; }
+    return t;
+  }, [boxes, storageUnits]);
+  const fmtMin = (m: number) => m >= 60 ? `${Math.floor(m / 60)}h ${m % 60}m` : `${m}m`;
 
   const jobData = useMemo(() => {
     const map: Record<string, number> = {};
@@ -323,6 +351,67 @@ export default function StatsPage() {
               </motion.div>
             ))}
           </div>
+
+          {/* ── Global item count (vaults + storage) ── */}
+          {itemTotals.total > 0 && (
+            <motion.div
+              initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.22 }}
+              className="bg-white rounded-2xl border border-gray-100 p-6" style={{ boxShadow: '0 1px 4px rgba(0,0,0,0.04)' }}
+            >
+              <div className="flex items-center gap-2 mb-4">
+                <ArchiveBoxIcon className="w-4 h-4 text-gray-400" />
+                <h2 className="font-bold text-gray-900">Item Count</h2>
+                <span className="text-xs text-gray-400">across all vaults &amp; storage</span>
+              </div>
+              <div className="grid grid-cols-3 gap-3">
+                <div className="text-center p-3 rounded-xl bg-gray-50">
+                  <p className="text-2xl font-bold text-gray-900"><CountUp value={itemTotals.boxes} /></p>
+                  <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mt-1">Boxes</p>
+                </div>
+                <div className="text-center p-3 rounded-xl bg-gray-50">
+                  <p className="text-2xl font-bold text-gray-900"><CountUp value={itemTotals.furniture} /></p>
+                  <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mt-1">Furniture</p>
+                </div>
+                <div className="text-center p-3 rounded-xl bg-blue-50">
+                  <p className="text-2xl font-bold text-blue-700"><CountUp value={itemTotals.total} /></p>
+                  <p className="text-xs font-semibold text-blue-400 uppercase tracking-wide mt-1">Total items</p>
+                </div>
+              </div>
+            </motion.div>
+          )}
+
+          {/* ── Team ranking (persisted; survives task cleanup) ── */}
+          {ranking.length > 0 && (
+            <motion.div
+              initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 }}
+              className="bg-white rounded-2xl border border-gray-100 p-6" style={{ boxShadow: '0 1px 4px rgba(0,0,0,0.04)' }}
+            >
+              <div className="flex items-center gap-2 mb-4">
+                <ArrowTrendingUpIcon className="w-4 h-4 text-gray-400" />
+                <h2 className="font-bold text-gray-900">Team Ranking</h2>
+                <span className="text-xs text-gray-400">tasks completed · time worked</span>
+              </div>
+              <div className="space-y-2">
+                {ranking.map((m, i) => (
+                  <div key={m.user_id} className="flex items-center gap-3">
+                    <span className={`w-6 text-center text-sm font-bold ${i === 0 ? 'text-amber-500' : i === 1 ? 'text-gray-400' : i === 2 ? 'text-orange-400' : 'text-gray-300'}`}>{i + 1}</span>
+                    <div className="w-8 h-8 rounded-full bg-blue-50 flex items-center justify-center flex-shrink-0 overflow-hidden">
+                      {m.picture
+                        ? <img src={m.picture} alt="" className="w-full h-full object-cover" />
+                        : <span className="text-xs font-bold text-blue-600">{m.name?.[0]?.toUpperCase() || '?'}</span>}
+                    </div>
+                    <p className="text-sm font-semibold text-gray-900 truncate flex-1 min-w-0">
+                      {m.name}{m.user_id === user?.id ? ' (you)' : ''}
+                    </p>
+                    <div className="text-right flex-shrink-0">
+                      <p className="text-sm font-bold text-gray-900">{m.tasks_completed}<span className="font-normal text-gray-400 text-xs"> tasks</span></p>
+                      <p className="text-[11px] text-gray-400">{fmtMin(m.task_minutes)}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </motion.div>
+          )}
 
           {/* ── Clients (HERO — most useful section) ── */}
           <motion.div

@@ -36,7 +36,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ war
   if (warehouseId && warehouseId !== 'all') vaultFilter += ` && warehouse_id="${sf(warehouseId)}"`;
 
   const vaults: any[] = [];
-  const FIELDS = 'id,warehouse_id,row,col,level,position,client_name,job_type,vault_status,content_type,room_location,packer,pack_date,comments,estado,company_id';
+  const FIELDS = 'id,warehouse_id,row,col,level,position,client_name,job_type,vault_status,content_type,room_location,packer,pack_date,comments,estado,company_id,item_counts';
   let page = 1;
   while (true) {
     const vaultsRes = await fetch(
@@ -95,6 +95,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ war
           comments: v.comments,
           estado: v.estado,
           status: v.estado,
+          item_counts: v.item_counts,
         })),
       },
       created_by: me.id,
