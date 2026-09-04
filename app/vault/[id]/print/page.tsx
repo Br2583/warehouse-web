@@ -92,8 +92,8 @@ function VaultPrintContent() {
   ];
   const CONDITIONS = [
     { label: 'To be Cleaned',       match: 'Needs Cleaning' },
-    { label: 'Cleaning Complete',   match: 'Ready to Go'    },
     { label: 'Total Loss Contents', match: 'Total Loss'     },
+    { label: 'Storage Only',        match: 'Storage Only'   },
     { label: 'Textiles',            match: 'Textiles'       },
   ];
   const vaultStatus: string[] = Array.isArray(vault.vault_status) ? vault.vault_status : [];
