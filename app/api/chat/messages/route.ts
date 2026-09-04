@@ -44,19 +44,39 @@ export async function GET(req: NextRequest) {
       getPbAdminToken(),
     ]);
 
+    // Paginated (infinite scroll). Three modes, all returning ascending batches:
+    //  · default        → newest `limit` messages
+    //  · before=<ts>     → the `limit` messages just older than <ts> (scroll up)
+    //  · after=<ts>      → everything newer than <ts> (poll for new)
     const url = req.nextUrl;
-    const perPage = Math.min(parseInt(url.searchParams.get('perPage') || '500', 10), 500).toString();
-    const rawSort = url.searchParams.get('sort') || 'sent_at';
-    const sort    = ['sent_at', '-sent_at'].includes(rawSort) ? rawSort : 'sent_at';
+    const sf = (s: string) => s.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+    const limit = Math.min(Math.max(parseInt(url.searchParams.get('limit') || '50', 10) || 50, 1), 100);
+    const after  = url.searchParams.get('after');
+    const before = url.searchParams.get('before');
+
+    let filter  = `company_id="${companyId}"`;
+    let sort    = '-sent_at';
+    let perPage = limit;
+    if (after) {                        // new messages since last seen
+      filter += ` && sent_at>"${sf(after)}"`;
+      sort = 'sent_at';
+      perPage = 200;
+    } else if (before) {                // an older page
+      filter += ` && sent_at<"${sf(before)}"`;
+      sort = '-sent_at';
+    }
 
     const res = await pbFetch(
-      `${PB_URL}/api/collections/chat_messages/records?perPage=${encodeURIComponent(perPage)}&sort=${encodeURIComponent(sort)}&filter=${encodeURIComponent(`company_id="${companyId}"`)}&fields=id,author_name,author_id,content,type,mentions,photos,sent_at`,
+      `${PB_URL}/api/collections/chat_messages/records?perPage=${perPage}&sort=${encodeURIComponent(sort)}&filter=${encodeURIComponent(filter)}&fields=id,author_name,author_id,content,type,mentions,photos,sent_at`,
       { headers: { Authorization: `Bearer ${adminToken}` } },
     );
     const data = await res.json();
     if (!res.ok) throw new Error(data?.message || 'Failed to load messages');
 
-    const msgs = (data.items as any[]).map((m: any) => ({
+    let items = (data.items as any[]) || [];
+    if (sort === '-sent_at') items = items.reverse();   // always hand back oldest→newest
+
+    const msgs = items.map((m: any) => ({
       id:          m.id,
       sender_name: m.author_name,
       sender_id:   m.author_id,

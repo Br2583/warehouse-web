@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useRef, useCallback, useMemo, Fragment } from 'react';
+import { useEffect, useLayoutEffect, useState, useRef, useCallback, useMemo, Fragment } from 'react';
 import { motion } from 'framer-motion';
 import { PaperAirplaneIcon, TrashIcon, PaperClipIcon, XMarkIcon, ArrowDownTrayIcon, ChevronLeftIcon, ChevronRightIcon } from '@/components/icons';
 import Sidebar from '@/components/Sidebar';
@@ -73,11 +73,13 @@ export default function ChatPage() {
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [confirmClear, setConfirmClear] = useState(false);
   const [clearing, setClearing] = useState(false);
-  const lastCountRef = useRef(-1);
-  const lastIdRef    = useRef('');
   const containerRef = useRef<HTMLDivElement>(null);
   const isAtBottomRef = useRef(true);
-  const fetchingRef = useRef(false);
+  const newestTsRef = useRef('');            // sent_at of newest loaded msg (poll cursor)
+  const oldestTsRef = useRef('');            // sent_at of oldest loaded msg (older-page cursor)
+  const loadingOlderRef = useRef(false);
+  const scrollAnchorRef = useRef<{ height: number; top: number } | null>(null);
+  const [hasMoreOlder, setHasMoreOlder] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const photoToken = usePhotoToken();
@@ -101,56 +103,89 @@ export default function ChatPage() {
     }
   }, []);
 
+  const PAGE = 50;
+
+  // Ascending by sent_at, deduped by id — safe against page-boundary overlap.
+  const mergeMessages = (a: Message[], b: Message[]): Message[] => {
+    const map = new Map<string, Message>();
+    for (const m of a) map.set(m.id, m);
+    for (const m of b) map.set(m.id, m);
+    return [...map.values()].sort((x, y) => (msgDate(x.timestamp)?.getTime() || 0) - (msgDate(y.timestamp)?.getTime() || 0));
+  };
+
+  const chatFetch = useCallback(async (qs: string): Promise<Message[]> => {
+    const token = getToken();
+    const ctrl = new AbortController();
+    const tid = setTimeout(() => ctrl.abort(), 15_000);
+    try {
+      const r = await fetch(`/api/chat/messages${qs}`, { headers: token ? { Authorization: `Bearer ${token}` } : {}, signal: ctrl.signal });
+      const data = await r.json();
+      if (!Array.isArray(data)) throw new Error((data as { error?: string })?.error || 'Failed to load messages');
+      return data as Message[];
+    } finally { clearTimeout(tid); }
+  }, []);
+
+  // Initial load: the newest page. Older pages load on scroll-up; polling only
+  // ever fetches messages newer than the last one we hold.
+  const loadInitial = useCallback(async () => {
+    if (!user?.company_id) { setLoading(false); return; }
+    try {
+      const msgs = await chatFetch(`?limit=${PAGE}`);
+      setMessages(msgs);
+      if (msgs.length) { newestTsRef.current = msgs[msgs.length - 1].timestamp; oldestTsRef.current = msgs[0].timestamp; }
+      setHasMoreOlder(msgs.length >= PAGE);
+      markChatSeen();
+      setSendError('');
+    } catch (err: any) {
+      setSendError(err?.name === 'AbortError' ? 'Connection timed out — retrying…' : (err?.message || 'Could not load messages'));
+    } finally { setLoading(false); }
+  }, [user?.company_id, chatFetch]);
+
+  const poll = useCallback(async () => {
+    if (!user?.company_id || !newestTsRef.current) return;
+    try {
+      const fresh = await chatFetch(`?after=${encodeURIComponent(newestTsRef.current)}`);
+      if (!fresh.length) return;
+      newestTsRef.current = fresh[fresh.length - 1].timestamp;
+      setMessages(prev => mergeMessages(prev, fresh));
+      const fromOther = fresh.filter(m => m.sender_id !== user?.id);
+      const last = fromOther[fromOther.length - 1];
+      if (last) {
+        const title = last.type === 'system'
+          ? 'Task update'
+          : (user?.id && last.mentions?.includes(user.id) ? `${last.sender_name} mentioned you` : last.sender_name);
+        notify(title, last.text || (last.photos?.length ? 'Photo' : ''));
+      }
+      markChatSeen();
+    } catch { /* transient — next poll retries */ }
+  }, [user?.company_id, user?.id, chatFetch]);
+
+  const loadOlder = useCallback(async () => {
+    if (loadingOlderRef.current || !oldestTsRef.current) return;
+    loadingOlderRef.current = true;
+    const el = containerRef.current;
+    if (el) scrollAnchorRef.current = { height: el.scrollHeight, top: el.scrollTop };
+    try {
+      const older = await chatFetch(`?before=${encodeURIComponent(oldestTsRef.current)}&limit=${PAGE}`);
+      if (older.length) { oldestTsRef.current = older[0].timestamp; setMessages(prev => mergeMessages(older, prev)); }
+      setHasMoreOlder(older.length >= PAGE);
+    } catch { scrollAnchorRef.current = null; }
+    finally { loadingOlderRef.current = false; }
+  }, [chatFetch]);
+
   const onScroll = useCallback(() => {
     const el = containerRef.current;
     if (!el) return;
     isAtBottomRef.current = el.scrollHeight - el.scrollTop - el.clientHeight < 80;
-  }, []);
-
-  const fetchMessages = useCallback(() => {
-    if (fetchingRef.current) return Promise.resolve();
-    if (!user?.company_id) { setLoading(false); return Promise.resolve(); }
-    fetchingRef.current = true;
-    const token = getToken();
-    const ctrl = new AbortController();
-    const tid = setTimeout(() => ctrl.abort(), 15_000);
-    return fetch('/api/chat/messages', {
-      headers: token ? { Authorization: `Bearer ${token}` } : {},
-      signal: ctrl.signal,
-    })
-      .then(r => r.json())
-      .then((msgs: Message[]) => {
-        if (!Array.isArray(msgs)) throw new Error((msgs as any)?.error || 'Failed to load messages');
-        const newest  = msgs[msgs.length - 1];
-        const hadNew  = lastCountRef.current >= 0 && !!newest && newest.id !== lastIdRef.current;
-        if (hadNew) {
-          if (newest && newest.sender_id !== user?.id) {
-            const title = newest.type === 'system'
-              ? 'Task update'
-              : (user?.id && newest.mentions?.includes(user.id) ? `${newest.sender_name} mentioned you` : newest.sender_name);
-            const preview = newest.text || (newest.photos?.length ? 'Photo' : '');
-            notify(title, preview);
-          }
-          markChatSeen();
-        } else if (lastCountRef.current < 0) {
-          markChatSeen(); // first load
-        }
-        lastCountRef.current = msgs.length;
-        if (newest) lastIdRef.current = newest.id;
-        setMessages(msgs);
-        setSendError('');
-      }).catch((err: any) => {
-        const msg = err?.name === 'AbortError' ? 'Connection timed out — retrying…' : (err?.message || 'Could not load messages');
-        setSendError(msg);
-      }).finally(() => { clearTimeout(tid); fetchingRef.current = false; setLoading(false); });
-  }, [user?.company_id, user?.id]);
+    if (el.scrollTop < 60 && hasMoreOlder && !loadingOlderRef.current) loadOlder();
+  }, [hasMoreOlder, loadOlder]);
 
   useEffect(() => {
     requestNotificationPermission();
-    fetchMessages();
-    const interval = setInterval(fetchMessages, 5000);
+    loadInitial();
+    const interval = setInterval(poll, 5000);
     return () => clearInterval(interval);
-  }, [fetchMessages]);
+  }, [loadInitial, poll]);
 
   useEffect(() => {
     if (!user?.company_id) return;
@@ -159,11 +194,19 @@ export default function ChatPage() {
       .catch(() => {});
   }, [user?.company_id]);
 
-  useEffect(() => {
-    if (messages.length === 0) return;
-    if (loading || isAtBottomRef.current) {
-      scrollToBottom(loading);
+  // Keep the viewport anchored when older messages are prepended; otherwise
+  // stick to the bottom on new messages / first load.
+  useLayoutEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    if (scrollAnchorRef.current) {
+      const { height, top } = scrollAnchorRef.current;
+      el.scrollTop = top + (el.scrollHeight - height);
+      scrollAnchorRef.current = null;
+      return;
     }
+    if (messages.length === 0) return;
+    if (loading || isAtBottomRef.current) scrollToBottom(loading);
   }, [messages, loading, scrollToBottom]);
 
   const send = async (e: React.FormEvent) => {
@@ -196,12 +239,16 @@ export default function ChatPage() {
         const d = await res.json().catch(() => ({}));
         throw new Error(d?.error || 'Failed to send message');
       }
+      const created = await res.json().catch(() => null);
       setText('');
       setAttachments([]);
       setMentionOpen(false);
       isAtBottomRef.current = true;
+      if (created?.id) {
+        setMessages(prev => mergeMessages(prev, [created]));
+        if (created.timestamp) newestTsRef.current = created.timestamp;
+      }
       scrollToBottom();
-      fetchMessages(); // fire-and-forget; polling picks it up within 5s
     } catch (err: any) {
       setSendError(err?.message || 'Failed to send message');
     } finally {
@@ -239,7 +286,9 @@ export default function ChatPage() {
         return;
       }
       setMessages([]);
-      lastCountRef.current = 0;
+      newestTsRef.current = '';
+      oldestTsRef.current = '';
+      setHasMoreOlder(false);
     } catch {
       setSendError('Failed to clear chat');
     } finally {
@@ -259,7 +308,7 @@ export default function ChatPage() {
         const d = await res.json().catch(() => ({}));
         throw new Error(d?.error || 'Failed to delete message');
       }
-      await fetchMessages();
+      setMessages(prev => prev.filter(m => m.id !== id));
     } catch (err: any) {
       setSendError(err?.message || 'Could not delete message');
     }
