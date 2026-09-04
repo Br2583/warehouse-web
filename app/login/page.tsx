@@ -8,7 +8,6 @@ import {
 } from '@/components/icons';
 import { Turnstile } from '@marsidev/react-turnstile';
 import { pb } from '@/lib/pb';
-import { genCode } from '@/lib/utils';
 import AuthShell from '@/components/AuthShell';
 import AuthRight from '@/components/AuthRight';
 import { iBase, iStyle, iFocus, iBlur } from '@/lib/auth-styles';
@@ -113,10 +112,19 @@ function LoginForm() {
 
   const createCompany = async (userId: string, name: string, ownerEmail: string) => {
     try {
-      const code = genCode();
-      const company = await pb.collection('companies').create({ name, invite_code: code, owner_id: userId, plan: 'active', approved: false, suspended: false, rejected: false });
       const model = pb.authStore.model;
-      await pb.collection('users').update(userId, { company_id: company.id, role: 'owner', pending_action: '', pending_company_name: '' });
+      // Company assignment is privileged — done server-side (admin token). The
+      // users rules forbid a browser from setting its own company_id/role.
+      const res = await fetch('/api/company/create', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${pb.authStore.token}` },
+        body: JSON.stringify({ name }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        setError(data.error || 'Could not create company. Try again.');
+        setLoading(false); return;
+      }
       await pb.collection('users').authRefresh();
       fetch('/api/admin/notify', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${pb.authStore.token}` }, body: JSON.stringify({ companyName: name, ownerName: model?.name || '', ownerEmail }) }).catch(() => {});
       router.replace('/pending');
