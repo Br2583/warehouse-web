@@ -1,49 +1,58 @@
-// Google sign-in via PocketBase's OAuth2 (provider already enabled in PB admin).
+// Google sign-in via PocketBase OAuth2 — manual redirect ("code") flow.
 //
-// Web/PWA: PocketBase's own all-in-one flow calls window.open only AFTER awaiting
-// the auth-methods request + realtime subscribe, by which point the browser no
-// longer treats it as part of the click and blocks the popup (the "click it ten
-// times" symptom). So we open the window synchronously here and hand it to PB
-// through urlCallback.
+// We deliberately do NOT use pb.authWithOAuth2()'s all-in-one flow: it delivers the
+// result over PocketBase's realtime channel, and on this deployment the realtime
+// subscription POST is answered by a different instance than the one holding the SSE
+// connection ("Invalid realtime client", 400) — so it could never complete. The
+// redirect flow needs no realtime and no popup, so it is immune to that and to
+// popup blockers.
 //
-// Native (Capacitor WebView): a popup can't post back, so we open the provider URL
-// in the in-app browser and let PocketBase finish over its realtime channel.
+// Flow: listAuthMethods() → stash PKCE verifier + state → send the browser to Google
+// → Google returns to /auth/google?code=…&state=… → authWithOAuth2Code() there.
 
 import { pb } from './pb';
-import { isNativePlatform } from './pick-photo';
 
-export async function signInWithGoogle() {
-  if (isNativePlatform()) {
-    const { Browser } = await import('@capacitor/browser');
-    try {
-      return await pb.collection('users').authWithOAuth2({
-        provider: 'google',
-        urlCallback: (url: string) => { Browser.open({ url }); },
-      });
-    } finally {
-      Browser.close().catch(() => {});
-    }
-  }
+const REDIRECT_PATH = '/auth/google';
+const K_VERIFIER = 'wm_g_verifier';
+const K_STATE    = 'wm_g_state';
+const K_RETURN   = 'wm_g_returnto';
 
-  // IMPORTANT: no await before this line — it must run inside the click gesture.
-  const popup = window.open('', 'wm-google-auth', 'width=500,height=640');
-  if (!popup) throw new Error('POPUP_BLOCKED');
+export function googleRedirectUrl(): string {
+  return `${window.location.origin}${REDIRECT_PATH}`;
+}
 
-  let timer: ReturnType<typeof setInterval> | undefined;
-  try {
-    const authPromise = pb.collection('users').authWithOAuth2({
-      provider: 'google',
-      urlCallback: (url: string) => { popup.location.href = url; },
-    });
-    // If the user closes the window, stop waiting instead of hanging forever.
-    const closed = new Promise<never>((_, reject) => {
-      timer = setInterval(() => {
-        if (popup.closed) reject(new Error('POPUP_CLOSED'));
-      }, 500);
-    });
-    return await Promise.race([authPromise, closed]);
-  } finally {
-    if (timer) clearInterval(timer);
-    try { if (!popup.closed) popup.close(); } catch { /* cross-origin while on google.com */ }
-  }
+/** Sends the browser to Google. Never resolves normally — the page navigates away. */
+export async function startGoogleSignIn(returnTo?: string): Promise<void> {
+  const methods = await pb.collection('users').listAuthMethods();
+  const provider = methods.oauth2?.providers?.find(p => p.name === 'google');
+  if (!provider) throw new Error('Google sign-in is not enabled.');
+
+  sessionStorage.setItem(K_VERIFIER, provider.codeVerifier);
+  sessionStorage.setItem(K_STATE, provider.state);
+  if (returnTo) sessionStorage.setItem(K_RETURN, returnTo);
+  else sessionStorage.removeItem(K_RETURN);
+
+  // PocketBase hands back an authURL that ends in "&redirect_uri=" for us to complete.
+  window.location.href = provider.authURL + encodeURIComponent(googleRedirectUrl());
+}
+
+/** Completes the flow on the callback page. Returns the authenticated record. */
+export async function completeGoogleSignIn(code: string, state: string) {
+  const verifier = sessionStorage.getItem(K_VERIFIER);
+  const expected = sessionStorage.getItem(K_STATE);
+  if (!verifier || !expected) throw new Error('Sign-in session expired. Try again.');
+  if (state !== expected) throw new Error('Sign-in could not be verified. Try again.');
+
+  const auth = await pb.collection('users').authWithOAuth2Code(
+    'google', code, verifier, googleRedirectUrl(),
+  );
+  sessionStorage.removeItem(K_VERIFIER);
+  sessionStorage.removeItem(K_STATE);
+  return auth;
+}
+
+export function consumeGoogleReturnTo(): string | null {
+  const v = sessionStorage.getItem(K_RETURN);
+  sessionStorage.removeItem(K_RETURN);
+  return v;
 }

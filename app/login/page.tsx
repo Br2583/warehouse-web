@@ -8,7 +8,7 @@ import {
 } from '@/components/icons';
 import { Turnstile } from '@marsidev/react-turnstile';
 import { pb } from '@/lib/pb';
-import { signInWithGoogle } from '@/lib/auth-oauth';
+import { startGoogleSignIn } from '@/lib/auth-oauth';
 import AuthShell from '@/components/AuthShell';
 import AuthRight from '@/components/AuthRight';
 import { iBase, iStyle, iFocus, iBlur } from '@/lib/auth-styles';
@@ -105,13 +105,10 @@ function LoginForm() {
     setError('');
     setLoading(true);
     try {
-      const auth = await signInWithGoogle();
-      await routeAfterAuth(auth.record);
+      // Navigates to Google; the /auth/google page finishes the sign-in.
+      await startGoogleSignIn(params.get('returnTo') || undefined);
     } catch (e: any) {
-      const msg = String(e?.message || '');
-      if (msg === 'POPUP_BLOCKED') setError('Allow pop-ups for this site to continue with Google.');
-      // Window closed / cancelled by the user — stay quiet, just re-enable the form.
-      else if (!/POPUP_CLOSED|cancel|abort/i.test(msg)) setError('Google sign-in failed. Try again.');
+      setError(e?.message || 'Could not start Google sign-in. Try again.');
       setLoading(false);
     }
   };

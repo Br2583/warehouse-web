@@ -8,7 +8,7 @@ import {
 } from '@/components/icons';
 import { Turnstile } from '@marsidev/react-turnstile';
 import { pb } from '@/lib/pb';
-import { signInWithGoogle } from '@/lib/auth-oauth';
+import { startGoogleSignIn } from '@/lib/auth-oauth';
 import AuthShell from '@/components/AuthShell';
 import AuthRight from '@/components/AuthRight';
 import { iBase, iStyle, iFocus, iBlur } from '@/lib/auth-styles';
@@ -50,19 +50,10 @@ export default function SignupPage() {
     setError('');
     setLoading(true);
     try {
-      const auth = await signInWithGoogle();
-      const m: any = auth.record;
-      // New Google users have no company yet → login page shows the company setup.
-      if (!m.company_id) { router.replace('/login'); return; }
-      const company = await pb.collection('companies').getOne(m.company_id).catch(() => null);
-      if (company?.suspended) { router.replace('/suspended'); return; }
-      if (company?.rejected)  { router.replace('/rejected');  return; }
-      if (company && !company.approved) { router.replace('/pending'); return; }
-      router.replace(m.profile_complete ? '/dashboard' : '/onboarding');
+      // Navigates to Google; the /auth/google page finishes the sign-in and routing.
+      await startGoogleSignIn();
     } catch (e: any) {
-      const msg = String(e?.message || '');
-      if (msg === 'POPUP_BLOCKED') setError('Allow pop-ups for this site to continue with Google.');
-      else if (!/POPUP_CLOSED|cancel|abort/i.test(msg)) setError('Google sign-in failed. Try again.');
+      setError(e?.message || 'Could not start Google sign-in. Try again.');
       setLoading(false);
     }
   };
