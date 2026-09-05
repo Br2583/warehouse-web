@@ -37,6 +37,7 @@ export default function CameraCapture({ open, onClose, onCapture, max }: Props) 
   const [facing, setFacing] = useState<'environment' | 'user'>('environment');
   const [error, setError] = useState<string | null>(null);
   const [starting, setStarting] = useState(false);
+  const [ready, setReady] = useState(false); // true once the video is actually playing frames
 
   const remaining = typeof max === 'number' ? Math.max(0, max - shots.length) : Infinity;
   const atLimit = remaining <= 0;
@@ -50,6 +51,7 @@ export default function CameraCapture({ open, onClose, onCapture, max }: Props) 
   const startStream = useCallback(async (mode: 'environment' | 'user') => {
     stopStream();
     setError(null);
+    setReady(false);
     setStarting(true);
     try {
       // On native, make sure the OS-level camera permission is granted first;
@@ -98,7 +100,7 @@ export default function CameraCapture({ open, onClose, onCapture, max }: Props) 
 
   const capture = () => {
     const video = videoRef.current;
-    if (!video || atLimit || starting || error) return;
+    if (!video || atLimit || !ready || error) return;
     const vw = video.videoWidth, vh = video.videoHeight;
     if (!vw || !vh) return;
     const scale = Math.min(1, MAX_SIDE / Math.max(vw, vh));
@@ -162,10 +164,18 @@ export default function CameraCapture({ open, onClose, onCapture, max }: Props) 
         </button>
       </div>
 
-      {/* Viewfinder */}
-      <div className="relative flex-1 min-h-0 overflow-hidden flex items-center justify-center">
-        <video ref={videoRef} autoPlay playsInline muted className="w-full h-full object-cover" />
-        {starting && !error && (
+      {/* Viewfinder — video stays hidden (black) until it's really playing, so the
+          WebView's default play-button placeholder never shows. */}
+      <div className="relative flex-1 min-h-0 overflow-hidden flex items-center justify-center bg-black">
+        <video
+          ref={videoRef}
+          autoPlay
+          playsInline
+          muted
+          onPlaying={() => setReady(true)}
+          className={`w-full h-full object-cover transition-opacity duration-150 ${ready ? 'opacity-100' : 'opacity-0'}`}
+        />
+        {!ready && !error && (
           <div className="absolute inset-0 flex items-center justify-center">
             <span className="w-8 h-8 border-2 border-white/30 border-t-white rounded-full animate-spin" />
           </div>
@@ -205,7 +215,7 @@ export default function CameraCapture({ open, onClose, onCapture, max }: Props) 
         <button
           type="button"
           onClick={capture}
-          disabled={atLimit || starting || !!error}
+          disabled={atLimit || !ready || !!error}
           aria-label="Take photo"
           className="w-16 h-16 rounded-full border-4 border-white bg-white/20 active:bg-white/40 disabled:opacity-40 transition-colors"
         >
