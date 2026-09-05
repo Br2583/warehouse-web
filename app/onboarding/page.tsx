@@ -12,6 +12,7 @@ import {
 } from '@/components/icons';
 import { UserAvatar } from '@/components/UserAvatar';
 import { compressAvatar } from '@/lib/compress-image';
+import { isNativePlatform, pickPhotoFileNative } from '@/lib/pick-photo';
 
 const INDUSTRIES = [
   'Warehouse & Logistics',
@@ -111,10 +112,7 @@ export default function OnboardingPage() {
     return 'Something went wrong. Please try again.';
   };
 
-  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    e.target.value = '';
-    if (!file) return;
+  const processAvatarFile = async (file: File) => {
     setAvatarUploading(true);
     setAvatarError('');
     try {
@@ -124,6 +122,26 @@ export default function OnboardingPage() {
       setAvatarError(e?.message || 'Failed to upload photo');
     }
     setAvatarUploading(false);
+  };
+
+  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (file) await processAvatarFile(file);
+  };
+
+  // Native uses the Capacitor camera/gallery chooser; web clicks the hidden input.
+  const openAvatarPicker = async () => {
+    if (isNativePlatform()) {
+      try {
+        const file = await pickPhotoFileNative('prompt');
+        if (file) await processAvatarFile(file);
+      } catch {
+        setAvatarError('Could not open the camera. Check the app’s camera and photo permissions.');
+      }
+    } else {
+      photoInputRef.current?.click();
+    }
   };
 
   const saveProfile = async () => {
@@ -250,14 +268,14 @@ export default function OnboardingPage() {
                     )}
                   </div>
                   <div className="flex flex-col gap-1.5">
-                    <label className="text-sm text-blue-600 hover:text-blue-700 font-medium flex items-center gap-1.5 cursor-pointer">
+                    <button type="button" onClick={openAvatarPicker} className="text-sm text-blue-600 hover:text-blue-700 font-medium flex items-center gap-1.5">
                       <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
                       </svg>
                       Upload photo
-                      <input ref={photoInputRef} type="file" accept="image/*" className="hidden" onChange={handlePhotoUpload} />
-                    </label>
+                    </button>
+                    <input ref={photoInputRef} type="file" accept="image/*" className="hidden" onChange={handlePhotoUpload} />
                     {avatarValue && (
                       <button type="button" onClick={() => setAvatarValue('')} className="text-xs text-gray-400 hover:text-gray-600">
                         Remove

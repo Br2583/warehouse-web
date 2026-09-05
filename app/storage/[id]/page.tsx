@@ -287,7 +287,7 @@ export default function StorageDetailPage() {
           )}
           {editMode && photos.length < MAX_PHOTOS && (
             <div className="mt-3">
-              <PhotoAddButton onFiles={addPhotos} onPhotoNative={addPhoto} />
+              <PhotoAddButton onFiles={addPhotos} onPhotoNative={addPhoto} remaining={MAX_PHOTOS - photos.length} />
             </div>
           )}
           {photoError && <p className="text-xs text-red-500 mt-2">{photoError}</p>}

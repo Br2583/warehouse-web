@@ -2,13 +2,15 @@
 
 import { useEffect, useLayoutEffect, useState, useRef, useCallback, useMemo, Fragment } from 'react';
 import { motion } from 'framer-motion';
-import { PaperAirplaneIcon, TrashIcon, PaperClipIcon, XMarkIcon, ArrowDownTrayIcon, ChevronLeftIcon, ChevronRightIcon } from '@/components/icons';
+import { PaperAirplaneIcon, TrashIcon, PaperClipIcon, XMarkIcon, ArrowDownTrayIcon, ChevronLeftIcon, ChevronRightIcon, CameraIcon } from '@/components/icons';
+import CameraCapture, { cameraCaptureSupported } from '@/components/CameraCapture';
 import Sidebar from '@/components/Sidebar';
 import { UserAvatar } from '@/components/UserAvatar';
 import { useAuth } from '@/lib/auth-context';
 import { api, getToken } from '@/lib/api';
 import { usePhotoToken, photoUrl, photoSrc } from '@/lib/photo-url';
 import { compressImage } from '@/lib/compress-image';
+import { isNativePlatform, pickPhotoFileNative, pickImagesFilesNative } from '@/lib/pick-photo';
 import { useOverlayBack } from '@/lib/overlay-back';
 import { downloadPhoto } from '@/lib/download-photo';
 import { notify, requestNotificationPermission } from '@/lib/notifications';
@@ -86,6 +88,7 @@ export default function ChatPage() {
 
   // photo attachments (before send) + lightbox (viewing, multi-photo)
   const [attachments, setAttachments] = useState<File[]>([]);
+  const [showCamera, setShowCamera] = useState(false);
   const [lightbox, setLightbox] = useState<{ photos: string[]; index: number; recId: string } | null>(null);
 
   // @mention autocomplete
@@ -256,9 +259,8 @@ export default function ChatPage() {
     }
   };
 
-  const onPickPhotos = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(e.target.files || []);
-    e.target.value = ''; // allow re-picking the same file
+  // Shared by the web <input> path and the native camera/gallery path.
+  const addPhotoFiles = async (files: File[]) => {
     if (!files.length) return;
     const room = 4 - attachments.length;
     if (room <= 0) { setSendError('Up to 4 photos per message.'); return; }
@@ -268,6 +270,40 @@ export default function ChatPage() {
       catch { setSendError('A photo could not be processed. Try another.'); }
     }
     if (compressed.length) setAttachments(a => [...a, ...compressed].slice(0, 4));
+  };
+
+  // Web: hidden <input> change handler.
+  const onPickPhotos = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    e.target.value = ''; // allow re-picking the same file
+    await addPhotoFiles(files);
+  };
+
+  // Paperclip → gallery. Native multi-select (pickImages); web <input multiple>.
+  const openGallery = async () => {
+    if (attachments.length >= 4) { setSendError('Up to 4 photos per message.'); return; }
+    if (isNativePlatform()) {
+      try {
+        const files = await pickImagesFilesNative(4 - attachments.length);
+        if (files.length) await addPhotoFiles(files);
+      } catch {
+        setSendError('Could not open the gallery. Check the app’s photo permissions.');
+      }
+    } else {
+      fileInputRef.current?.click();
+    }
+  };
+
+  // Camera → in-app multi-shot camera; falls back to one shot if unsupported.
+  const openCamera = async () => {
+    if (attachments.length >= 4) { setSendError('Up to 4 photos per message.'); return; }
+    if (cameraCaptureSupported()) { setShowCamera(true); return; }
+    try {
+      const file = await pickPhotoFileNative('camera');
+      if (file) await addPhotoFiles([file]);
+    } catch {
+      setSendError('Could not open the camera. Check the app’s camera permissions.');
+    }
   };
 
   const removeAttachment = (i: number) => setAttachments(a => a.filter((_, idx) => idx !== i));
@@ -545,7 +581,16 @@ export default function ChatPage() {
             <input ref={fileInputRef} type="file" accept="image/*" multiple className="hidden" onChange={onPickPhotos} />
             <button
               type="button"
-              onClick={() => fileInputRef.current?.click()}
+              onClick={openCamera}
+              disabled={sending || attachments.length >= 4}
+              title="Take photos"
+              className="p-2.5 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-full transition-colors disabled:opacity-40 flex-shrink-0"
+            >
+              <CameraIcon className="w-5 h-5" />
+            </button>
+            <button
+              type="button"
+              onClick={openGallery}
               disabled={sending || attachments.length >= 4}
               title="Attach photos"
               className="p-2.5 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-full transition-colors disabled:opacity-40 flex-shrink-0"
@@ -615,6 +660,14 @@ export default function ChatPage() {
           </div>
         </div>
       )}
+
+      {/* In-app multi-shot camera */}
+      <CameraCapture
+        open={showCamera}
+        max={4 - attachments.length}
+        onClose={() => setShowCamera(false)}
+        onCapture={files => { addPhotoFiles(files); }}
+      />
 
       {/* Photo lightbox — multi-photo with swipe + arrows */}
       {lightbox && (() => {

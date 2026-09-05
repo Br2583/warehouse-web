@@ -241,7 +241,7 @@ export default function StoragePage() {
                     ))}
                     {form.photos.length < 4 && (
                       <div className="w-full mt-2">
-                        <PhotoAddButton onFiles={handleCreatePhotoFiles} onPhotoNative={addCreatePhoto} />
+                        <PhotoAddButton onFiles={handleCreatePhotoFiles} onPhotoNative={addCreatePhoto} remaining={4 - form.photos.length} />
                       </div>
                     )}
                   </div>

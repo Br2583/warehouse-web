@@ -18,6 +18,7 @@ import { useAuth } from '@/lib/auth-context';
 import { api } from '@/lib/api';
 import { pb } from '@/lib/pb';
 import { compressAvatar } from '@/lib/compress-image';
+import { isNativePlatform, pickPhotoFileNative } from '@/lib/pick-photo';
 import { useToast } from '@/lib/toast-context';
 import ConfirmModal from '@/components/ConfirmModal';
 
@@ -195,10 +196,8 @@ export default function SettingsPage() {
     }
   };
 
-  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    e.target.value = '';
-    if (!file || !user) return;
+  const processAvatarFile = async (file: File) => {
+    if (!user) return;
     setAvatarSaving(true);
     setAvatarError('');
     try {
@@ -210,6 +209,26 @@ export default function SettingsPage() {
       setAvatarError(err?.message || 'Failed to upload photo');
     }
     setAvatarSaving(false);
+  };
+
+  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (file) await processAvatarFile(file);
+  };
+
+  // Native uses the Capacitor camera/gallery chooser; web clicks the hidden input.
+  const openAvatarPicker = async () => {
+    if (isNativePlatform()) {
+      try {
+        const file = await pickPhotoFileNative('prompt');
+        if (file) await processAvatarFile(file);
+      } catch {
+        setAvatarError('Could not open the camera. Check the app’s camera and photo permissions.');
+      }
+    } else {
+      photoInputRef.current?.click();
+    }
   };
 
   const saveName = async () => {
@@ -357,7 +376,7 @@ export default function SettingsPage() {
             <div className={card}>
               <div className="flex items-center gap-4">
                 <button
-                  onClick={() => photoInputRef.current?.click()}
+                  onClick={openAvatarPicker}
                   disabled={avatarSaving}
                   title="Change photo"
                   className="relative rounded-full flex-shrink-0 group disabled:opacity-60"

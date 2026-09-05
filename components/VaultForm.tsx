@@ -298,7 +298,7 @@ export default function VaultForm({
           </div>
         )}
         {value.photos.length < 6 && (
-          <PhotoAddButton onFiles={onPhotos} onPhotoNative={onPhotoNative} />
+          <PhotoAddButton onFiles={onPhotos} onPhotoNative={onPhotoNative} remaining={6 - value.photos.length} />
         )}
       </div>
 

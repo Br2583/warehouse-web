@@ -2,6 +2,8 @@
 
 import { useEffect, useState, useRef } from 'react';
 import { CameraIcon } from '@/components/icons';
+import CameraCapture, { cameraCaptureSupported } from '@/components/CameraCapture';
+import { dataUrlToFile, pickImagesFilesNative } from '@/lib/pick-photo';
 
 const GalleryIcon = () => (
   <svg className="w-5 h-5 text-gray-400 mb-0.5" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
@@ -10,28 +12,26 @@ const GalleryIcon = () => (
 );
 
 /**
- * The native camera returns a base64 data URL, but the photo pipeline (R2 upload)
- * works with File objects — the same as the web <input type=file>. Convert here so
- * every consumer receives a File and the photo actually uploads.
+ * Camera / Gallery photo adder.
+ *  · Camera → in-app multi-shot camera (getUserMedia) so several photos can be taken
+ *    in one session. Falls back to the single-shot native/web picker where getUserMedia
+ *    isn't available (old WebViews).
+ *  · Gallery → multi-select: native Camera.pickImages, web <input multiple>.
+ * Every produced photo is handed over one File at a time via onPhotoNative (web bulk
+ * selection still routes through onFiles), matching the existing consumer contract.
+ *
+ * `remaining` (optional) = free photo slots; caps the camera and gallery multi-pick.
  */
-function dataUrlToFile(dataUrl: string): File {
-  const [head, body] = dataUrl.split(',');
-  const mime = head.match(/data:(.*?);/)?.[1] || 'image/jpeg';
-  const bin = atob(body || '');
-  const arr = new Uint8Array(bin.length);
-  for (let i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
-  const ext = mime.split('/')[1] || 'jpg';
-  return new File([arr], `camera-${Date.now()}.${ext}`, { type: mime });
-}
-
-export default function PhotoAddButton({ onFiles, onPhotoNative }: {
+export default function PhotoAddButton({ onFiles, onPhotoNative, remaining }: {
   onFiles: (files: FileList | null) => void;
   onPhotoNative: (photo: File) => void;
+  remaining?: number;
 }) {
   const isNativeRef = useRef(false);
   const cameraInputRef = useRef<HTMLInputElement>(null);
   const galleryInputRef = useRef<HTMLInputElement>(null);
   const [camError, setCamError] = useState<string | null>(null);
+  const [showCamera, setShowCamera] = useState(false);
 
   useEffect(() => {
     import('@capacitor/core').then(({ Capacitor }) => {
@@ -39,7 +39,8 @@ export default function PhotoAddButton({ onFiles, onPhotoNative }: {
     });
   }, []);
 
-  const openNativeCamera = async (source: 'camera' | 'gallery') => {
+  // Fallback single-shot native camera (used only when getUserMedia is unavailable).
+  const openNativeCameraOnce = async () => {
     setCamError(null);
     try {
       const { Camera, CameraResultType, CameraSource } = await import('@capacitor/camera');
@@ -52,7 +53,7 @@ export default function PhotoAddButton({ onFiles, onPhotoNative }: {
         width: 1200,
         allowEditing: false,
         resultType: CameraResultType.DataUrl,
-        source: source === 'camera' ? CameraSource.Camera : CameraSource.Photos,
+        source: CameraSource.Camera,
       });
       if (photo.dataUrl) onPhotoNative(dataUrlToFile(photo.dataUrl));
     } catch (err: any) {
@@ -61,6 +62,46 @@ export default function PhotoAddButton({ onFiles, onPhotoNative }: {
         setCamError(msg || 'Camera error');
       }
     }
+  };
+
+  // Native gallery multi-select via Camera.pickImages → convert each to a File.
+  const openNativeGallery = async () => {
+    setCamError(null);
+    try {
+      const { Camera } = await import('@capacitor/camera');
+      const perms = await Camera.checkPermissions();
+      if (perms.photos === 'denied') {
+        await Camera.requestPermissions({ permissions: ['photos'] });
+      }
+      const limit = typeof remaining === 'number' ? Math.max(1, remaining) : 0; // 0 = no limit
+      const res = await Camera.pickImages({ quality: 80, width: 1600, limit });
+      for (const p of res.photos || []) {
+        const path = p.webPath || (p as any).path;
+        if (!path) continue;
+        try {
+          const blob = await (await fetch(path)).blob();
+          const ext = (p.format || 'jpg').replace('jpeg', 'jpg');
+          onPhotoNative(new File([blob], `photo-${Date.now()}-${Math.random().toString(36).slice(2, 7)}.${ext}`, { type: blob.type || 'image/jpeg' }));
+        } catch { /* skip a single unreadable pick */ }
+      }
+    } catch (err: any) {
+      const msg = err?.message || String(err);
+      if (!msg.includes('cancel') && !msg.includes('No image')) setCamError(msg || 'Gallery error');
+    }
+  };
+
+  const onCameraClick = () => {
+    setCamError(null);
+    if (cameraCaptureSupported()) { setShowCamera(true); return; }
+    // getUserMedia unsupported → one-shot fallback.
+    if (isNativeRef.current) openNativeCameraOnce();
+    else cameraInputRef.current?.click();
+  };
+
+  const onGalleryClick = () => {
+    setCamError(null);
+    if (isNativeRef.current) openNativeGallery();
+    else galleryInputRef.current?.click();
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -76,19 +117,11 @@ export default function PhotoAddButton({ onFiles, onPhotoNative }: {
       <input ref={galleryInputRef} type="file" accept="image/*" multiple className="hidden" onChange={handleChange} />
 
       <div className="grid grid-cols-2 gap-2">
-        <button
-          type="button"
-          className={btnCls}
-          onClick={() => isNativeRef.current ? openNativeCamera('camera') : cameraInputRef.current?.click()}
-        >
+        <button type="button" className={btnCls} onClick={onCameraClick}>
           <CameraIcon className="w-5 h-5 text-gray-400 mb-0.5" />
           <span className="text-xs text-gray-400">Camera</span>
         </button>
-        <button
-          type="button"
-          className={btnCls}
-          onClick={() => isNativeRef.current ? openNativeCamera('gallery') : galleryInputRef.current?.click()}
-        >
+        <button type="button" className={btnCls} onClick={onGalleryClick}>
           <GalleryIcon />
           <span className="text-xs text-gray-400">Gallery</span>
         </button>
@@ -97,6 +130,13 @@ export default function PhotoAddButton({ onFiles, onPhotoNative }: {
       {camError && (
         <p className="text-xs text-red-500 mt-1 break-all">{camError}</p>
       )}
+
+      <CameraCapture
+        open={showCamera}
+        max={remaining}
+        onClose={() => setShowCamera(false)}
+        onCapture={files => files.forEach(onPhotoNative)}
+      />
     </>
   );
 }

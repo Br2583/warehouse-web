@@ -1051,7 +1051,7 @@ function TaskPhotoSheet({ task, target, setStatus, withNote, onClose, onDone }: 
                   ))}
                 </div>
               )}
-              {photos.length < 4 && <PhotoAddButton onFiles={addFiles} onPhotoNative={addNative} />}
+              {photos.length < 4 && <PhotoAddButton onFiles={addFiles} onPhotoNative={addNative} remaining={4 - photos.length} />}
             </div>
 
             {withNote && (

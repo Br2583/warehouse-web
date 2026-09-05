@@ -1534,7 +1534,7 @@ export default function WarehouseDetailPage() {
                   <label className="block text-xs text-gray-500 mb-2">Photos (max 4)</label>
                   {looseForm.photos.length < 4 && (
                     <div className="mb-2">
-                      <PhotoAddButton onFiles={handleLoosePhotoFiles} onPhotoNative={handleLoosePhotoAdd} />
+                      <PhotoAddButton onFiles={handleLoosePhotoFiles} onPhotoNative={handleLoosePhotoAdd} remaining={4 - looseForm.photos.length} />
                     </div>
                   )}
                   {looseForm.photos.length > 0 && (
