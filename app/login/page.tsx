@@ -109,8 +109,9 @@ function LoginForm() {
       await routeAfterAuth(auth.record);
     } catch (e: any) {
       const msg = String(e?.message || '');
-      // Popup closed / user cancelled — stay quiet, just re-enable the form.
-      if (!/cancel|closed|abort|popup/i.test(msg)) setError('Google sign-in failed. Try again.');
+      if (msg === 'POPUP_BLOCKED') setError('Allow pop-ups for this site to continue with Google.');
+      // Window closed / cancelled by the user — stay quiet, just re-enable the form.
+      else if (!/POPUP_CLOSED|cancel|abort/i.test(msg)) setError('Google sign-in failed. Try again.');
       setLoading(false);
     }
   };

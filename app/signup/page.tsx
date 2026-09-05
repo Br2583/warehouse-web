@@ -61,7 +61,8 @@ export default function SignupPage() {
       router.replace(m.profile_complete ? '/dashboard' : '/onboarding');
     } catch (e: any) {
       const msg = String(e?.message || '');
-      if (!/cancel|closed|abort|popup/i.test(msg)) setError('Google sign-in failed. Try again.');
+      if (msg === 'POPUP_BLOCKED') setError('Allow pop-ups for this site to continue with Google.');
+      else if (!/POPUP_CLOSED|cancel|abort/i.test(msg)) setError('Google sign-in failed. Try again.');
       setLoading(false);
     }
   };
