@@ -22,11 +22,17 @@ export function setBiometricLockEnabled(on: boolean): void {
   } catch { /* private mode / storage disabled */ }
 }
 
-export type BiometryInfo = { available: boolean; label: string };
+export type BiometryInfo = {
+  available: boolean;
+  label: string;
+  /** '' when available; 'web' | 'unsupported' (plugin missing → old app build) | the
+   *  platform's own explanation (e.g. nothing enrolled). Used to tell the user WHY. */
+  reason: string;
+};
 
-/** Whether this device has usable biometry, plus a human label for the UI. */
+/** Whether this device has usable biometry, plus a human label and a reason if not. */
 export async function checkBiometry(): Promise<BiometryInfo> {
-  if (!isNativePlatform()) return { available: false, label: '' };
+  if (!isNativePlatform()) return { available: false, label: '', reason: 'web' };
   try {
     const { BiometricAuth, BiometryType } = await import('@aparajita/capacitor-biometric-auth');
     const res = await BiometricAuth.checkBiometry();
@@ -38,9 +44,10 @@ export async function checkBiometry(): Promise<BiometryInfo> {
       case BiometryType.faceAuthentication: label = 'Face unlock'; break;
       case BiometryType.irisAuthentication: label = 'Iris'; break;
     }
-    return { available: res.isAvailable, label };
+    return { available: res.isAvailable, label, reason: res.isAvailable ? '' : (res.reason || '') };
   } catch {
-    return { available: false, label: '' };
+    // Plugin not present in this build → they're running an older APK.
+    return { available: false, label: '', reason: 'unsupported' };
   }
 }
 

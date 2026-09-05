@@ -68,13 +68,25 @@ export default function SettingsPage() {
   // Security — biometric app lock (native only)
   const [bioAvailable, setBioAvailable] = useState(false);
   const [bioLabel, setBioLabel] = useState('');
+  const [bioReason, setBioReason] = useState('');
+  const [bioNative, setBioNative] = useState(false);
   const [bioOn, setBioOn] = useState(false);
   const [bioBusy, setBioBusy] = useState(false);
 
   useEffect(() => {
-    checkBiometry().then(r => { setBioAvailable(r.available); setBioLabel(r.label); }).catch(() => {});
+    setBioNative(isNativePlatform());
+    checkBiometry()
+      .then(r => { setBioAvailable(r.available); setBioLabel(r.label); setBioReason(r.reason); })
+      .catch(() => {});
     setBioOn(biometricLockEnabled());
   }, []);
+
+  // Why the lock can't be used, shown under the row instead of hiding it silently.
+  const bioHint = bioAvailable
+    ? `Require ${bioLabel.toLowerCase()} to open the app`
+    : bioReason === 'unsupported'
+      ? 'Install the latest app version (2.8 or newer) to use this'
+      : bioReason || 'Set up a fingerprint or face unlock on this device first';
 
   const toggleBiometric = async () => {
     setBioBusy(true);
@@ -675,7 +687,7 @@ export default function SettingsPage() {
           <motion.div custom={canManage ? 3 : 2} variants={fade} initial="hidden" animate="show">
             <p className={sectionTitle}>Security</p>
             <div className={card}>
-              {bioAvailable && (
+              {bioNative && (
                 <div className="flex items-center justify-between mb-4 pb-4 border-b border-gray-100">
                   <div className="flex items-center gap-3">
                     <div className="w-9 h-9 bg-gray-50 rounded-xl flex items-center justify-center flex-shrink-0">
@@ -685,7 +697,7 @@ export default function SettingsPage() {
                     </div>
                     <div>
                       <p className="text-sm font-semibold text-gray-900">App lock</p>
-                      <p className="text-xs text-gray-400">Require {bioLabel.toLowerCase()} to open the app</p>
+                      <p className="text-xs text-gray-400">{bioHint}</p>
                     </div>
                   </div>
                   <button
@@ -694,7 +706,7 @@ export default function SettingsPage() {
                     aria-checked={bioOn}
                     aria-label="Require biometrics to open the app"
                     onClick={toggleBiometric}
-                    disabled={bioBusy}
+                    disabled={bioBusy || !bioAvailable}
                     className={`relative w-11 h-6 rounded-full transition-colors flex-shrink-0 disabled:opacity-50 ${bioOn ? 'bg-blue-600' : 'bg-gray-200'}`}
                   >
                     <span className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-all ${bioOn ? 'left-[22px]' : 'left-0.5'}`} />
