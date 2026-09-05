@@ -23,7 +23,8 @@ export default function BiometricLock({ active }: { active: boolean }) {
   const backgroundedAt = useRef<number | null>(null);
 
   // Read the preference on the client only (avoids any SSR/hydration mismatch).
-  useEffect(() => { setArmed(isNativePlatform() && biometricLockEnabled()); }, [active]);
+  // Works on native (Capacitor plugin) and on the web/PWA (WebAuthn).
+  useEffect(() => { setArmed(biometricLockEnabled()); }, [active]);
 
   const prompt = useCallback(async () => {
     if (promptingRef.current) return;
@@ -42,9 +43,26 @@ export default function BiometricLock({ active }: { active: boolean }) {
     prompt();
   }, [active, armed, prompt]);
 
-  // Re-lock when coming back from the background.
+  // Re-lock when coming back from the background (web/PWA path).
   useEffect(() => {
-    if (!active || !armed) return;
+    if (!active || !armed || isNativePlatform()) return;
+    const onVisibility = () => {
+      if (promptingRef.current) return;
+      if (document.hidden) { backgroundedAt.current = Date.now(); return; }
+      const since = backgroundedAt.current;
+      backgroundedAt.current = null;
+      if (since && Date.now() - since > RELOCK_AFTER_MS) {
+        setLocked(true);
+        prompt();
+      }
+    };
+    document.addEventListener('visibilitychange', onVisibility);
+    return () => document.removeEventListener('visibilitychange', onVisibility);
+  }, [active, armed, prompt]);
+
+  // Re-lock when coming back from the background (native path).
+  useEffect(() => {
+    if (!active || !armed || !isNativePlatform()) return;
     let remove: (() => void) | undefined;
     import('@capacitor/app')
       .then(({ App }) =>

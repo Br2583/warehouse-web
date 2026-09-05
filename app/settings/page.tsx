@@ -19,7 +19,7 @@ import { api } from '@/lib/api';
 import { pb } from '@/lib/pb';
 import { compressAvatar } from '@/lib/compress-image';
 import { isNativePlatform, pickPhotoFileNative } from '@/lib/pick-photo';
-import { checkBiometry, biometricLockEnabled, setBiometricLockEnabled, biometricUnlock } from '@/lib/biometric';
+import { checkBiometry, biometricLockEnabled, setBiometricLockEnabled, enrollBiometric } from '@/lib/biometric';
 import { useToast } from '@/lib/toast-context';
 import ConfirmModal from '@/components/ConfirmModal';
 
@@ -95,8 +95,9 @@ export default function SettingsPage() {
       setBioOn(false);
       showToast('App lock disabled');
     } else {
-      // Verify once before turning it on, so nobody enables a lock they can't pass.
-      const ok = await biometricUnlock('Confirm to enable app lock');
+      // Verify (and on web, create the credential) before turning it on, so nobody
+      // enables a lock they can't pass.
+      const ok = user ? await enrollBiometric({ id: user.id, email: user.email, name: user.name }) : false;
       if (ok) {
         setBiometricLockEnabled(true);
         setBioOn(true);
@@ -687,7 +688,7 @@ export default function SettingsPage() {
           <motion.div custom={canManage ? 3 : 2} variants={fade} initial="hidden" animate="show">
             <p className={sectionTitle}>Security</p>
             <div className={card}>
-              {bioNative && (
+              {(bioNative || bioAvailable) && (
                 <div className="flex items-center justify-between mb-4 pb-4 border-b border-gray-100">
                   <div className="flex items-center gap-3">
                     <div className="w-9 h-9 bg-gray-50 rounded-xl flex items-center justify-center flex-shrink-0">
