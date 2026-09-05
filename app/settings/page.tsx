@@ -19,6 +19,7 @@ import { api } from '@/lib/api';
 import { pb } from '@/lib/pb';
 import { compressAvatar } from '@/lib/compress-image';
 import { isNativePlatform, pickPhotoFileNative } from '@/lib/pick-photo';
+import { checkBiometry, biometricLockEnabled, setBiometricLockEnabled, biometricUnlock } from '@/lib/biometric';
 import { useToast } from '@/lib/toast-context';
 import ConfirmModal from '@/components/ConfirmModal';
 
@@ -63,6 +64,35 @@ export default function SettingsPage() {
   const [confirmLeave, setConfirmLeave] = useState(false);
   const [leaveSaving, setLeaveSaving] = useState(false);
   const [leaveError, setLeaveError] = useState('');
+
+  // Security — biometric app lock (native only)
+  const [bioAvailable, setBioAvailable] = useState(false);
+  const [bioLabel, setBioLabel] = useState('');
+  const [bioOn, setBioOn] = useState(false);
+  const [bioBusy, setBioBusy] = useState(false);
+
+  useEffect(() => {
+    checkBiometry().then(r => { setBioAvailable(r.available); setBioLabel(r.label); }).catch(() => {});
+    setBioOn(biometricLockEnabled());
+  }, []);
+
+  const toggleBiometric = async () => {
+    setBioBusy(true);
+    if (bioOn) {
+      setBiometricLockEnabled(false);
+      setBioOn(false);
+      showToast('App lock disabled');
+    } else {
+      // Verify once before turning it on, so nobody enables a lock they can't pass.
+      const ok = await biometricUnlock('Confirm to enable app lock');
+      if (ok) {
+        setBiometricLockEnabled(true);
+        setBioOn(true);
+        showToast('App lock enabled');
+      }
+    }
+    setBioBusy(false);
+  };
 
   // Security — change password
   const [showPasswordForm, setShowPasswordForm] = useState(false);
@@ -645,6 +675,32 @@ export default function SettingsPage() {
           <motion.div custom={canManage ? 3 : 2} variants={fade} initial="hidden" animate="show">
             <p className={sectionTitle}>Security</p>
             <div className={card}>
+              {bioAvailable && (
+                <div className="flex items-center justify-between mb-4 pb-4 border-b border-gray-100">
+                  <div className="flex items-center gap-3">
+                    <div className="w-9 h-9 bg-gray-50 rounded-xl flex items-center justify-center flex-shrink-0">
+                      <svg className="w-4 h-4 text-gray-500" fill="none" viewBox="0 0 24 24" strokeWidth={1.6} stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M7.864 4.243A7.5 7.5 0 0 1 19.5 10.5c0 2.92-.556 5.709-1.568 8.268M5.742 6.364A7.465 7.465 0 0 0 4.5 10.5a7.464 7.464 0 0 1-1.15 3.993m1.989 3.559A11.209 11.209 0 0 0 8.25 10.5a3.75 3.75 0 1 1 7.5 0c0 .527-.021 1.049-.064 1.565M12 10.5a14.94 14.94 0 0 1-3.6 9.75m6.633-4.596a18.666 18.666 0 0 1-2.485 5.33" />
+                      </svg>
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold text-gray-900">App lock</p>
+                      <p className="text-xs text-gray-400">Require {bioLabel.toLowerCase()} to open the app</p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    role="switch"
+                    aria-checked={bioOn}
+                    aria-label="Require biometrics to open the app"
+                    onClick={toggleBiometric}
+                    disabled={bioBusy}
+                    className={`relative w-11 h-6 rounded-full transition-colors flex-shrink-0 disabled:opacity-50 ${bioOn ? 'bg-blue-600' : 'bg-gray-200'}`}
+                  >
+                    <span className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-all ${bioOn ? 'left-[22px]' : 'left-0.5'}`} />
+                  </button>
+                </div>
+              )}
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <div className="w-9 h-9 bg-gray-50 rounded-xl flex items-center justify-center flex-shrink-0">

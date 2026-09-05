@@ -20,6 +20,13 @@ function GoogleCallback() {
     if (ran.current) return;
     ran.current = true;
 
+    // On native we arrived here via an App Link from the system browser — dismiss it.
+    import('@/lib/pick-photo').then(({ isNativePlatform }) => {
+      if (isNativePlatform()) {
+        import('@capacitor/browser').then(({ Browser }) => Browser.close().catch(() => {})).catch(() => {});
+      }
+    }).catch(() => {});
+
     const code  = params.get('code');
     const state = params.get('state');
     const denied = params.get('error');

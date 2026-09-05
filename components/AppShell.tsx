@@ -8,6 +8,7 @@ import TopBar from './TopBar';
 import Tutorial from './Tutorial';
 import CapacitorBackHandler from './CapacitorBackHandler';
 import NativeBottomNav from './NativeBottomNav';
+import BiometricLock from './BiometricLock';
 import { motion } from 'framer-motion';
 import { useAuth } from '@/lib/auth-context';
 import { useTutorial } from '@/lib/use-tutorial';
@@ -76,6 +77,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   return (
     <NavDataContext.Provider value={{ unreadChat, pendingTasks, chatPreview, chatSender, firstTaskTitle }}>
       <CapacitorBackHandler />
+      <BiometricLock active={isProtected && !!user} />
       {showTutorial && isProtected && !loading && <Tutorial onDismiss={dismissTutorial} />}
       {showNav && <TopBar onOpenNav={() => setNavOpen(true)} />}
       <motion.div

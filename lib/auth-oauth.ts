@@ -11,6 +11,7 @@
 // → Google returns to /auth/google?code=…&state=… → authWithOAuth2Code() there.
 
 import { pb } from './pb';
+import { isNativePlatform } from './pick-photo';
 
 const REDIRECT_PATH = '/auth/google';
 const K_VERIFIER = 'wm_g_verifier';
@@ -33,7 +34,18 @@ export async function startGoogleSignIn(returnTo?: string): Promise<void> {
   else sessionStorage.removeItem(K_RETURN);
 
   // PocketBase hands back an authURL that ends in "&redirect_uri=" for us to complete.
-  window.location.href = provider.authURL + encodeURIComponent(googleRedirectUrl());
+  const url = provider.authURL + encodeURIComponent(googleRedirectUrl());
+
+  if (isNativePlatform()) {
+    // Google refuses OAuth inside embedded WebViews ("disallowed_useragent"), so it
+    // must run in the system browser (a Custom Tab, which Google does allow). The
+    // https App Link on managerwarehouse.cc brings the ?code back into the app, where
+    // CapacitorInit's appUrlOpen handler routes it to /auth/google.
+    const { Browser } = await import('@capacitor/browser');
+    await Browser.open({ url });
+    return;
+  }
+  window.location.href = url;
 }
 
 /** Completes the flow on the callback page. Returns the authenticated record. */
