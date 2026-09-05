@@ -8,6 +8,7 @@ import {
 } from '@/components/icons';
 import { Turnstile } from '@marsidev/react-turnstile';
 import { pb } from '@/lib/pb';
+import { signInWithGoogle } from '@/lib/auth-oauth';
 import AuthShell from '@/components/AuthShell';
 import AuthRight from '@/components/AuthRight';
 import { iBase, iStyle, iFocus, iBlur } from '@/lib/auth-styles';
@@ -57,7 +58,9 @@ function LoginForm() {
   useEffect(() => {
     fetch('/api/ping').catch(() => {});
     if (sessionExpired) { pb.authStore.clear(); router.replace('/login'); return; }
-    if (!pb.authStore.isValid || !pb.authStore.model?.company_id) return;
+    if (!pb.authStore.isValid) return;
+    // Already signed in (e.g. via Google) but no company yet → show company setup.
+    if (!pb.authStore.model?.company_id) { setNeedsCompany(true); return; }
     pb.collection('companies').getOne(pb.authStore.model.company_id)
       .then(c => {
         if (c.suspended) router.replace('/suspended');
@@ -68,6 +71,50 @@ function LoginForm() {
       .catch(() => router.replace('/dashboard'));
   }, [sessionExpired, router]);
 
+  // Shared post-authentication routing (used by password login and Google OAuth).
+  const routeAfterAuth = async (model: any) => {
+    if (!model.verified) {
+      pb.authStore.clear();
+      localStorage.setItem('verify_email', (model.email || email || '').toLowerCase());
+      setLoading(false);
+      router.push('/verify-email');
+      return;
+    }
+    if (!model.company_id) {
+      const pendingAction = model.pending_action as string;
+      const pendingData   = model.pending_company_name as string;
+      if (pendingAction === 'create' && pendingData) { await createCompany(model.id, pendingData, (model.email || email || '').toLowerCase()); return; }
+      if (pendingAction === 'join'   && pendingData) { await joinCompany(pendingData); return; }
+      setNeedsCompany(true); setLoading(false); return;
+    }
+    try {
+      const company = await pb.collection('companies').getOne(model.company_id);
+      if (company.suspended) { router.replace('/suspended'); return; }
+      if (company.rejected)  { router.replace('/rejected');  return; }
+      if (!company.approved) { router.replace('/pending');   return; }
+    } catch {
+      setError('Could not verify account status. Try again.');
+      setLoading(false); return;
+    }
+    if (!model.profile_complete) { router.replace('/onboarding'); return; }
+    const returnTo = params.get('returnTo');
+    router.replace(returnTo && returnTo.startsWith('/') && !returnTo.startsWith('//') ? returnTo : '/dashboard');
+  };
+
+  const handleGoogle = async () => {
+    setError('');
+    setLoading(true);
+    try {
+      const auth = await signInWithGoogle();
+      await routeAfterAuth(auth.record);
+    } catch (e: any) {
+      const msg = String(e?.message || '');
+      // Popup closed / user cancelled — stay quiet, just re-enable the form.
+      if (!/cancel|closed|abort|popup/i.test(msg)) setError('Google sign-in failed. Try again.');
+      setLoading(false);
+    }
+  };
+
   const handleLogin = async () => {
     setError('');
     if (!email.trim() || !password) { setError('Enter your email and password.'); return; }
@@ -75,35 +122,7 @@ function LoginForm() {
     setLoading(true);
     try {
       const auth = await pb.collection('users').authWithPassword(email.trim().toLowerCase(), password);
-      const model = auth.record;
-      if (!model.verified) {
-        pb.authStore.clear();
-        localStorage.setItem('verify_email', email.trim().toLowerCase());
-        setLoading(false);
-        router.push('/verify-email');
-        return;
-      }
-      if (!model.company_id) {
-        const pendingAction = model.pending_action as string;
-        const pendingData   = model.pending_company_name as string;
-        if (pendingAction === 'create' && pendingData) { await createCompany(model.id, pendingData, email.trim().toLowerCase()); return; }
-        if (pendingAction === 'join'   && pendingData) { await joinCompany(pendingData); return; }
-        setNeedsCompany(true); setLoading(false); return;
-      }
-      if (model.company_id) {
-        try {
-          const company = await pb.collection('companies').getOne(model.company_id);
-          if (company.suspended) { router.replace('/suspended'); return; }
-          if (company.rejected)  { router.replace('/rejected');  return; }
-          if (!company.approved) { router.replace('/pending');   return; }
-        } catch {
-          setError('Could not verify account status. Try again.');
-          setLoading(false); return;
-        }
-      }
-      if (!model.profile_complete) { router.replace('/onboarding'); return; }
-      const returnTo = params.get('returnTo');
-      router.replace(returnTo && returnTo.startsWith('/') && !returnTo.startsWith('//') ? returnTo : '/dashboard');
+      await routeAfterAuth(auth.record);
     } catch (e: any) {
       setError(e?.status === 400 ? 'Incorrect email or password.' : (e?.message || 'Sign in failed. Try again.'));
       setLoading(false);
@@ -275,6 +294,27 @@ function LoginForm() {
                   {loading
                     ? <span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
                     : <>Sign In</>}
+                </button>
+
+                <div className="flex items-center gap-3 py-0.5">
+                  <span className="h-px flex-1 bg-gray-200" />
+                  <span className="text-[11px] text-slate-400 uppercase tracking-wide">or</span>
+                  <span className="h-px flex-1 bg-gray-200" />
+                </div>
+
+                <button
+                  type="button"
+                  onClick={handleGoogle}
+                  disabled={loading}
+                  className="w-full py-3.5 rounded-full bg-white border border-gray-300 text-gray-700 font-semibold text-sm hover:bg-gray-50 hover:-translate-y-0.5 active:translate-y-0 transition-all disabled:opacity-50 flex items-center justify-center gap-2.5"
+                >
+                  <svg className="w-[18px] h-[18px]" viewBox="0 0 48 48" aria-hidden="true">
+                    <path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3c-1.6 4.7-6 8-11.3 8-6.6 0-12-5.4-12-12s5.4-12 12-12c3 0 5.8 1.1 7.9 3l5.7-5.7C36.7 6.1 30.7 3.5 24 3.5 12.7 3.5 3.5 12.7 3.5 24S12.7 44.5 24 44.5c11 0 20.5-8 20.5-20.5 0-1.4-.1-2.4-.4-3.5z"/>
+                    <path fill="#FF3D00" d="m6.3 14.7 6.6 4.8C14.7 15.1 19 12 24 12c3 0 5.8 1.1 7.9 3l5.7-5.7C36.7 6.1 30.7 3.5 24 3.5 16 3.5 9 8 6.3 14.7z"/>
+                    <path fill="#4CAF50" d="M24 44.5c6.5 0 12.4-2.5 16.9-6.6l-6.2-5.2c-2.1 1.6-4.9 2.6-8.7 2.6-5.3 0-9.7-3.3-11.3-8l-6.5 5C7 40 14.9 44.5 24 44.5z"/>
+                    <path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.2 4.1-4.1 5.5l6.2 5.2c-.4.4 6.6-4.8 6.6-14.7 0-1.4-.1-2.4-.4-3.5z"/>
+                  </svg>
+                  Continue with Google
                 </button>
 
                 <p className="text-center text-[13px] text-slate-500">
